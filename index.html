@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ClassNote</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    /* ===== 공통 ===== */
+    body {
+      margin: 0;
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #f8f9fa;
+      color: #333;
+    }
+    header {
+      background: #fff;
+      border-bottom: 1px solid #dee2e6;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      color: #007bff;
+    }
+    #profile-icon {
+      cursor: pointer;
+      font-size: 1.3rem;
+      margin-left: 1rem;
+    }
+    nav {
+      background: #fff;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      padding: 0.75rem;
+    }
+    nav a {
+      text-decoration: none;
+      color: #495057;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+    }
+    nav a:hover {
+      background: #e9ecef;
+      color: #007bff;
+    }
+    .content {
+      padding: 2rem;
+      max-width: 1000px;
+      margin: auto;
+    }
+    .panel {
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    button {
+      background: #007bff;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    input[type=text],
+    input[type=password],
+    input[type=email],
+    input[type=number],
+    textarea {
+      display: block;
+      width: 100%;
+      height: 40px;
+      padding: 0 0.6rem;
+      border-radius: 0.5rem;
+      border: 1px solid #ced4da;
+      margin-bottom: 0.8rem;
+      font-size: 0.95rem;
+      background: #fff;
+      box-sizing: border-box;
+    }
+    textarea {
+      height: 80px;
+      padding: 0.6rem;
+    }
+    #login-screen {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #ffffff;
+    }
+    .auth-box {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 320px;
+      text-align: center;
+    }
+    .auth-box h2 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      color: #007bff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 로그인/회원가입 -->
+  <div id="login-screen">
+    <div class="auth-box" id="login-box">
+      <h2>로그인</h2>
+      <input id="loginUsername" type="text" placeholder="아이디">
+      <input id="loginPassword" type="password" placeholder="비밀번호">
+      <button onclick="loginDirect()">로그인</button>
+      <p style="font-size:0.85rem;">
+        아이디가 없으신가요? <a href="#" onclick="showSignup()">회원가입</a>
+      </p>
+      <div id="loginStatus" style="font-size:0.85rem;color:red;"></div>
+    </div>
+
+    <div class="auth-box" id="signup-box" style="display:none;">
+      <h2>회원가입</h2>
+      <input id="signupUsername" type="text" placeholder="아이디">
+      <input id="signupEmail" type="email" placeholder="이메일">
+      <input id="signupPassword" type="password" placeholder="비밀번호 (6자 이상)">
+      <input id="signupName" type="text" placeholder="이름">
+      <input id="signupGrade" type="number" placeholder="학년">
+      <input id="signupClass" type="number" placeholder="반">
+      <input id="signupNumber" type="number" placeholder="번호">
+      <button onclick="signup()">가입하기</button>
+      <p style="font-size:0.85rem;">
+        <a href="#" onclick="showLogin()">← 로그인으로 돌아가기</a>
+      </p>
+      <div id="signupStatus" style="font-size:0.85rem;color:red;"></div>
+    </div>
+  </div>
+
+  <!-- 메인 앱 -->
+  <div id="main-app" style="display:none;">
+    <header>
+      <h1>ClassNote</h1>
+      <div style="display:flex;align-items:center;">
+        <button onclick="logout()">로그아웃</button>
+        <span id="profile-icon">👤</span>
+      </div>
+    </header>
+
+    <nav id="main-nav">
+      <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
+      <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
+      <a href="#" onclick="showPanel('student-panel')">학생 관리</a>
+      <a href="#" onclick="showPanel('homework-panel')">과제 제출</a>
+      <a href="#" onclick="showPanel('chat-panel')">상담실</a>
+    </nav>
+
+    <div class="content">
+      <div id="doc-panel" class="panel">
+        <h2>📄 문서 업로드</h2>
+        <input type="file" id="doc-file" accept=".pdf,.jpg,.png"/>
+        <button onclick="analyzeDocument()">문서 분석하기</button>
+        <div id="doc-result" style="margin-top:1rem; white-space:pre-wrap;"></div>
+      </div>
+
+      <div id="notice-panel" class="panel" style="display:none;">
+        <h2>📢 공지사항</h2>
+        <div id="notice-list"></div>
+        <h3>새 공지 등록</h3>
+        <input type="text" id="notice-title" placeholder="제목"/>
+        <textarea id="notice-content" placeholder="내용"></textarea>
+        <button onclick="addNotice()">공지 추가</button>
+      </div>
+
+      <div id="student-panel" class="panel" style="display:none;">
+        <h2>👩‍🎓 학생 관리</h2>
+        <button onclick="loadStudents()">학생 목록 불러오기</button>
+        <ul id="student-list"></ul>
+      </div>
+
+      <div id="homework-panel" class="panel" style="display:none;">
+        <h2>📚 과제 제출</h2>
+        <input type="file" id="homework-file"/>
+        <button onclick="submitHomework()">제출하기</button>
+        <div id="homework-status" style="margin-top:0.5rem;"></div>
+        <h3>📋 내 과제 목록</h3>
+        <ul id="homework-list"></ul>
+      </div>
+
+      <div id="chat-panel" class="panel" style="display:none;">
+        <h2>💬 상담실</h2>
+        <div id="chat-box" style="border:1px solid #ccc; height:200px; overflow-y:auto; padding:0.5rem; margin-bottom:0.5rem;"></div>
+        <input type="text" id="chat-input" placeholder="메시지를 입력하세요"/>
+        <button onclick="sendChat()">보내기</button>
+      </div>
+
+      <div id="profile-panel" class="panel" style="display:none;">
+        <h2>내 정보 수정</h2>
+        <input type="text" id="update-name" placeholder="이름 수정">
+        <input type="password" id="update-password" placeholder="비밀번호 수정">
+        <button onclick="updateProfile()">수정하기</button>
+        <button onclick="showPanel('doc-panel')">← 돌아가기</button>
+      </div>
+
+      <div id="admin-panel" class="panel" style="display:none;">
+        <h2>⚙️ 관리자 설정</h2>
+        <input type="text" id="admin-user-id" placeholder="사용자 ID"/>
+        <select id="admin-role">
+          <option value="user">user</option>
+          <option value="admin">admin</option>
+        </select>
+        <button onclick="changeRole()">권한 변경</button>
+        <button onclick="deleteUser()">사용자 삭제</button>
+        <div id="admin-status" style="margin-top:0.5rem;"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const { createClient } = supabase;
+const supabaseClient = createClient(
+  'https://ucmzrkwrsezfdjnnwsww.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw'
+);
+
+let currentUserRole = 'user';
+
+async function loginDirect() {
+  const username = document.getElementById('loginUsername').value;
+  const password = document.getElementById('loginPassword').value;
+  const { data: user } = await supabaseClient
+    .from('users')
+    .select('*')
+    .eq('username', username)
+    .eq('password', password)
+    .single();
+
+  if (user) {
+    currentUserRole = user.role || 'user';
+    showMain();
+  } else {
+    document.getElementById('loginStatus').innerText = '아이디 또는 비밀번호가 틀렸습니다.';
+  }
+}
+
+async function signup() {
+  const username = document.getElementById('signupUsername').value.trim();
+  const password = document.getElementById('signupPassword').value.trim();
+  const name = document.getElementById('signupName').value.trim();
+  const grade = parseInt(document.getElementById('signupGrade').value);
+  const classNum = parseInt(document.getElementById('signupClass').value);
+  const studentNumber = parseInt(document.getElementById('signupNumber').value);
+
+  // 1. username 중복 체크
+  const { data: existing, error: checkError } = await supabaseClient
+    .from('users')
+    .select('username')
+    .eq('username', username)
+    .maybeSingle();
+
+  if (checkError) {
+    console.error('중복체크 오류:', checkError);
+    document.getElementById('signupStatus').innerText = '오류 발생: ' + checkError.message;
+    return;
+  }
+
+  if (existing) {
+    document.getElementById('signupStatus').innerText = '이미 사용 중인 아이디입니다.';
+    return;
+  }
+
+  // 2. insert
+  const { data, error } = await supabaseClient.from('users').insert([{
+    username: username,
+    password: password,
+    name: name,
+    grade: grade,
+    class_num: classNum,
+    student_number: studentNumber,
+    coin_balance: 0,
+    role: 'user'
+  }]);
+
+  if (error) {
+    console.error('insert 오류:', error);
+    document.getElementById('signupStatus').innerText = '회원가입 실패: ' + error.message;
+    return;
+  }
+
+  console.log('회원가입 성공:', data);
+  document.getElementById('signupStatus').innerText = '회원가입 완료! 로그인 해주세요.';
+  showLogin();
+}
+
+function showMain() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+  setupAdminNav();
+}
+
+function showSignup() {
+  document.getElementById('login-box').style.display = 'none';
+  document.getElementById('signup-box').style.display = 'block';
+}
+
+function showLogin() {
+  document.getElementById('login-box').style.display = 'block';
+  document.getElementById('signup-box').style.display = 'none';
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+async function updateProfile() {
+  const newName = document.getElementById('update-name').value;
+  const newPass = document.getElementById('update-password').value;
+
+  if (newPass) {
+    const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+    if (error) alert('비밀번호 수정 오류:' + error.message);
+    else alert('비밀번호 수정 완료!');
+  }
+  if (newName) {
+    const user = await supabaseClient.auth.getUser();
+    if (user && user.data.user) {
+      await supabaseClient.from('users').update({ name: newName }).eq('id', user.data.user.id);
+      alert('이름 수정 완료!');
+    }
+  }
+}
+
+function showPanel(panelId) {
+  document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+  document.getElementById(panelId).style.display = 'block';
+}
+
+document.getElementById('profile-icon').addEventListener('click', () => {
+  showPanel('profile-panel');
+});
+
+supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
+  if (session) {
+    const { data: user } = await supabaseClient
+      .from('users')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+    if (user) currentUserRole = user.role;
+    showMain();
+  } else {
+    showLogin();
+  }
+});
+
+function setupAdminNav() {
+  if (currentUserRole === 'admin') {
+    if (!document.getElementById('admin-nav')) {
+      const nav = document.getElementById('main-nav');
+      const a = document.createElement('a');
+      a.href = '#';
+      a.id = 'admin-nav';
+      a.innerText = '관리자 설정';
+      a.onclick = () => { showPanel('admin-panel'); };
+      nav.appendChild(a);
+    }
+  }
+}
+// ✅ 페이지가 로드될 때 세션을 확인해서 자동 로그인 처리
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) {
+      console.error('세션 확인 오류:', error.message);
+      showLogin(); // 세션 못 가져오면 로그인 화면으로
+      return;
+    }
+
+    // 세션이 있는 경우
+    if (data.session && data.session.user) {
+      console.log('자동 로그인 성공:', data.session.user);
+      currentUserRole = 'user'; // 필요하면 role 조회
+      showMain();               // 메인화면 열기
+    } else {
+      console.log('자동 로그인 세션 없음');
+      showLogin();
+    }
+  } catch (err) {
+    console.error('자동 로그인 중 오류 발생:', err);
+    showLogin();
+  }
+});
+
+
+</script>
+</body>
+</html>
