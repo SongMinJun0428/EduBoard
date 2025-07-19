@@ -221,51 +221,159 @@
       min-height: 80px;
       resize: vertical;
     }
-    
+
     /* 📱 태블릿 이하 (768px 이하) */
     @media (max-width: 768px) {
-      header h1 {
-        font-size: 18px;
+      body {
+        background: #ffffff;
+        font-size: 15px;
+        line-height: 1.6;
       }
-      header .logout {
-        font-size: 12px;
-        padding: 6px 12px;
-      }
-      .menu {
-        gap: 6px;
-        padding: 6px 8px;
-      }
-      .menu-item {
-        font-size: 12px;
-        padding: 6px 8px;
-      }
-      .card {
-        margin: 12px;
-        padding: 12px;
-      }
-      .card h2 {
-        font-size: 16px;
-      }
-    }
 
-    /* 📱 모바일 소형 (480px 이하) */
-    @media (max-width: 480px) {
       header {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
+        padding: 16px;
+        background: #2563eb;
       }
+
+      header h1 {
+        font-size: 24px;
+        color: #fff;
+        margin-bottom: 12px;
+      }
+
       header .logout {
-        margin-top: 8px;
+        background: #ffffff;
+        color: #2563eb;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 12px;
+        font-size: 16px;
         width: 100%;
-        text-align: center;
       }
+
+      /* 메뉴를 세로 리스트처럼 */
       .menu {
+        display: flex;
         flex-wrap: wrap;
         justify-content: center;
+        gap: 10px;
+        padding: 12px;
+        background: #f0f4ff;
+      }
+
+      .menu-item {
+        flex: 1 1 40%;
+        background: #ffffff;
+        border: 1px solid #ccc;
+        padding: 12px;
+        text-align: center;
+        font-size: 16px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      }
+
+      /* 카드 스타일을 모바일 전용으로 큼직하게 */
+      .card {
+        max-width: none;
+        margin: 16px;
+        padding: 20px;
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      }
+
+      .card h2 {
+        font-size: 20px;
+        margin-bottom: 12px;
+      }
+
+      .card p {
+        font-size: 15px;
+        margin-bottom: 16px;
+      }
+
+      .card button {
+        display: block;
+        width: 100%;
+        background: #2563eb;
+        color: #fff;
+        padding: 14px 0;
+        font-size: 16px;
+        border-radius: 12px;
+        margin-top: 12px;
+        border: none;
+      }
+
+      .card textarea {
+        width: 100%;
+        padding: 14px;
+        font-size: 15px;
+        border: 1px solid #ccc;
+        border-radius: 12px;
+        resize: vertical;
+        margin-bottom: 12px;
       }
     }
+    /* 햄버거 기본 숨김 체크박스 */
+#menu-toggle {
+  display: none;
+}
 
+/* 햄버거 아이콘 초기값 (PC에선 안 보이게) */
+.hamburger {
+  display: none;
+  font-size: 28px;
+  cursor: pointer;
+  user-select: none;
+  color: #333;
+  margin-left: auto;
+}
 
+/* 모바일에서 햄버거 보이기 */
+@media (max-width: 768px) {
+  /* 기존 메뉴 숨기기 */
+  #main-nav {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 60px;
+    right: 16px;
+    background: #fff;
+    width: 220px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    padding: 12px;
+    z-index: 1000;
+  }
+
+  #main-nav a {
+    color: #333;
+    padding: 10px 0;
+    text-align: left;
+    font-size: 16px;
+    border-bottom: 1px solid #eee;
+  }
+
+  #main-nav a:last-child {
+    border-bottom: none;
+  }
+
+  /* 햄버거 버튼 보이기 */
+  .hamburger {
+    display: block;
+    color: #007bff;
+    background: none;
+    border: none;
+  }
+
+  /* 체크박스가 체크되면 메뉴 표시 */
+  #menu-toggle:checked ~ #main-nav {
+    display: flex;
+  }
+}
 
 
   </style>
@@ -312,6 +420,8 @@
       </div>
     </header>
 
+    <input type="checkbox" id="menu-toggle">
+    <label for="menu-toggle" class="hamburger">☰</label>
     <nav id="main-nav">
       <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
       <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
