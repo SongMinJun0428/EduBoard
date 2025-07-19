@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ClassNote</title>
+  <title>EduBoard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
   <style>
     /* ===== 공통 ===== */
     body {
@@ -119,6 +120,109 @@
       margin-bottom: 1rem;
       color: #007bff;
     }
+    /* 문서 분석 패널 내부 전용 스타일 */
+    #doc-panel h2 {
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      color: #343a40;
+    }
+
+    #doc-panel input[type="file"] {
+      margin-bottom: 0.8rem;
+    }
+
+    #doc-panel h3 {
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+      color: #495057;
+      border-top: 1px solid #dee2e6;
+      padding-top: 0.8rem;
+    }
+
+    #doc-panel textarea {
+      width: 100%;
+      min-height: 150px;
+      resize: vertical;
+      font-size: 0.95rem;
+      line-height: 1.4rem;
+      padding: 0.8rem;
+      border: 1px solid #ced4da;
+      border-radius: 0.5rem;
+      background: #fdfdfd;
+      margin-bottom: 1rem;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    /* 버튼들을 나란히 두고 싶다면 flex */
+    #doc-panel .button-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    #doc-panel .button-group button {
+      flex: 1;
+    }
+
+    /* 버튼 색상 개선 */
+    #doc-panel button {
+      background: #007bff;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.6rem 1rem;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #doc-panel button:hover {
+      background: #0056b3;
+    }
+
+    #doc-result {
+      width: 100%;
+      min-height: 100px;       /* 최소 높이 */
+      resize: none;            /* 수동 크기조절 비활성화 */
+      overflow: hidden;        /* 넘치는 스크롤 제거 */
+      font-size: 0.95rem;
+      line-height: 1.4rem;
+      padding: 0.8rem;
+      border: 1px solid #ced4da;
+      border-radius: 0.5rem;
+      background: #fdfdfd;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    #homework-panel label {
+      font-weight: 600;
+      margin-top: 0.5rem;
+      display: block;
+      margin-bottom: 0.3rem;
+      color: #495057;
+    }
+
+    #homework-panel input[type="text"],
+    #homework-panel input[type="file"],
+    #homework-panel textarea {
+      display: block;
+      width: 100%;
+      padding: 0.6rem;
+      border-radius: 0.5rem;
+      border: 1px solid #ced4da;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    #homework-panel textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+
   </style>
 </head>
 <body>
@@ -156,7 +260,7 @@
   <!-- 메인 앱 -->
   <div id="main-app" style="display:none;">
     <header>
-      <h1>ClassNote</h1>
+      <h1>EduBoard</h1>
       <div style="display:flex;align-items:center;">
         <button onclick="logout()">로그아웃</button>
         <span id="profile-icon">👤</span>
@@ -164,21 +268,16 @@
     </header>
 
     <nav id="main-nav">
-      <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
       <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
+      <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
       <a href="#" onclick="showPanel('student-panel')">학생 관리</a>
       <a href="#" onclick="showPanel('homework-panel')">과제 제출</a>
       <a href="#" onclick="showPanel('chat-panel')">상담실</a>
+      <a href="#" onclick="showPanel('timetable-panel')">시간표</a>
+      <a href="#" onclick="showPanel('materials-panel')">자료실</a>
     </nav>
 
     <div class="content">
-      <div id="doc-panel" class="panel">
-        <h2>📄 문서 업로드</h2>
-        <input type="file" id="doc-file" accept=".pdf,.jpg,.png"/>
-        <button onclick="analyzeDocument()">문서 분석하기</button>
-        <div id="doc-result" style="margin-top:1rem; white-space:pre-wrap;"></div>
-      </div>
-
       <div id="notice-panel" class="panel" style="display:none;">
         <h2>📢 공지사항</h2>
         <div id="notice-list"></div>
@@ -188,6 +287,41 @@
         <button onclick="addNotice()">공지 추가</button>
       </div>
 
+      <div id="doc-panel" class="panel">
+        <h2>📄 문서 업로드</h2>
+        <input type="file" id="doc-file" accept=".pdf,.jpg,.png"/>
+        <div class="button-group">
+          <button onclick="analyzeDocument()">문서 분석하기</button>
+        </div>
+
+        <h3>분석 결과 (수정 가능)</h3>
+          <textarea 
+            id="doc-result"
+            placeholder="분석된 내용이 여기에 표시됩니다. 필요하면 수정 후 등록하세요."
+            style="
+              min-height:100px;
+              resize:none;
+              overflow:hidden;
+              width:100%;
+              padding:0.8rem;
+              font-size:0.95rem;
+              line-height:1.4rem;
+              border:1px solid #ced4da;
+              border-radius:0.5rem;
+              background:#fdfdfd;
+              box-shadow:inset 0 1px 2px rgba(0,0,0,0.04);
+            ">
+          </textarea>
+
+
+
+        <div class="button-group">
+          <button onclick="registerAnalyzedText()">분석된 글 등록하기</button>
+        </div>
+      </div>
+
+
+
       <div id="student-panel" class="panel" style="display:none;">
         <h2>👩‍🎓 학생 관리</h2>
         <button onclick="loadStudents()">학생 목록 불러오기</button>
@@ -195,13 +329,28 @@
       </div>
 
       <div id="homework-panel" class="panel" style="display:none;">
-        <h2>📚 과제 제출</h2>
-        <input type="file" id="homework-file"/>
+        <h2>📚 숙제 제출하기</h2>
+        
+        <!-- 이름 -->
+        <label for="homework-name">이름</label>
+        <input type="text" id="homework-name" placeholder="이름을 입력해 주세요">
+
+        <!-- 과제명 -->
+        <label for="homework-title">과제명</label>
+        <input type="text" id="homework-title" placeholder="예: 파이썬 2주차 숙제">
+
+        <!-- 파일 업로드 -->
+        <label for="homework-file">숙제 파일 업로드</label>
+        <input type="file" id="homework-file">
+
+        <!-- 코멘트 -->
+        <label for="homework-comment">코멘트 (선택)</label>
+        <textarea id="homework-comment" placeholder="코멘트를 입력해 주세요"></textarea>
+
         <button onclick="submitHomework()">제출하기</button>
-        <div id="homework-status" style="margin-top:0.5rem;"></div>
-        <h3>📋 내 과제 목록</h3>
-        <ul id="homework-list"></ul>
+        <div id="homework-status" style="margin-top:0.5rem;font-size:0.9rem;color:#007bff;"></div>
       </div>
+
 
       <div id="chat-panel" class="panel" style="display:none;">
         <h2>💬 상담실</h2>
@@ -229,6 +378,66 @@
         <button onclick="deleteUser()">사용자 삭제</button>
         <div id="admin-status" style="margin-top:0.5rem;"></div>
       </div>
+
+      <!-- ✅ 시간표 패널 -->
+      <!-- ✅ 시간표 패널 (EduBoard 스타일 맞춤) -->
+      <div id="timetable-panel" class="panel" style="display:none;">
+        <h2>🗓️ 나의 시간표</h2>
+        <p style="margin-bottom:1rem; color:#495057; font-size:0.95rem;">
+          봉담중학교 / 로그인한 학년·반 기준 시간표를 아래에서 확인하세요.
+        </p>
+
+        <!-- 상단 정보 영역 -->
+        <div id="timetable-info" style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              background:#f1f3f5;
+              padding:0.75rem 1rem;
+              border-radius:0.5rem;
+              margin-bottom:1rem;
+              font-size:0.9rem;
+              color:#333;">
+          <span id="timetable-grade-info">학년/반 정보 불러오는 중...</span>
+          <button onclick="reloadTimetable()" style="
+              background:#007bff;
+              border:none;
+              border-radius:0.5rem;
+              padding:0.4rem 0.8rem;
+              color:#fff;
+              font-weight:600;
+              cursor:pointer;">
+            🔄 새로고침
+          </button>
+        </div>
+
+        <!-- iframe 영역 -->
+        <div style="
+              border:1px solid #dee2e6;
+              border-radius:0.75rem;
+              overflow:hidden;
+              box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+          <iframe id="timetable-iframe"
+                  width="100%"
+                  height="600"
+                  frameborder="0"
+                  style="border:none; display:block;">
+          </iframe>
+        </div>
+      </div>
+
+
+
+      <!-- ✅ 자료실 패널 -->
+      <div id="materials-panel" class="panel" style="display:none;">
+        <h2>📂 자료실</h2>
+        <input type="file" id="material-file">
+        <button onclick="uploadMaterial()">업로드</button>
+        <div id="material-status" style="margin-top:0.5rem;"></div>
+        <h3>자료 목록</h3>
+        <ul id="material-list"></ul>
+        <button onclick="loadMaterials()">목록 불러오기</button>
+      </div>
     </div>
   </div>
 
@@ -244,6 +453,7 @@ let currentUserRole = 'user';
 async function loginDirect() {
   const username = document.getElementById('loginUsername').value;
   const password = document.getElementById('loginPassword').value;
+
   const { data: user } = await supabaseClient
     .from('users')
     .select('*')
@@ -253,15 +463,22 @@ async function loginDirect() {
 
   if (user) {
     currentUserRole = user.role || 'user';
+    showMyTimetable(user.grade, user.class_num);
     showMain();
+    loadNotices();
+
+    // ✅ 로그인 성공 시 localStorage에 저장
+    localStorage.setItem('savedUsername', username);
   } else {
     document.getElementById('loginStatus').innerText = '아이디 또는 비밀번호가 틀렸습니다.';
   }
 }
 
+
 async function signup() {
   const username = document.getElementById('signupUsername').value.trim();
   const password = document.getElementById('signupPassword').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
   const name = document.getElementById('signupName').value.trim();
   const grade = parseInt(document.getElementById('signupGrade').value);
   const classNum = parseInt(document.getElementById('signupClass').value);
@@ -291,6 +508,7 @@ async function signup() {
     password: password,
     name: name,
     grade: grade,
+    email: email,
     class_num: classNum,
     student_number: studentNumber,
     coin_balance: 0,
@@ -326,6 +544,7 @@ function showLogin() {
 
 async function logout() {
   await supabaseClient.auth.signOut();
+  localStorage.removeItem('savedUsername'); // ✅ 로그아웃 시 저장된 아이디 삭제
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
 }
@@ -384,30 +603,263 @@ function setupAdminNav() {
     }
   }
 }
-// ✅ 페이지가 로드될 때 세션을 확인해서 자동 로그인 처리
-window.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const { data, error } = await supabaseClient.auth.getSession();
-    if (error) {
-      console.error('세션 확인 오류:', error.message);
-      showLogin(); // 세션 못 가져오면 로그인 화면으로
+
+// ===== 공지사항 등록 =====
+async function addNotice() {
+  const title = document.getElementById('notice-title').value.trim();
+  const content = document.getElementById('notice-content').value.trim();
+  if (!title || !content) {
+    alert('제목과 내용을 입력해 주세요.');
+    return;
+  }
+
+  const { error } = await supabaseClient.from('notices').insert([{ title, content }]);
+  if (error) {
+    alert('공지 등록 실패: ' + error.message);
+    return;
+  }
+
+  // 입력 초기화
+  document.getElementById('notice-title').value = '';
+  document.getElementById('notice-content').value = '';
+
+  alert('공지 등록 완료!');
+
+  // 공지 목록 다시 불러오기
+  await loadNotices();
+
+  // ✅ 공지 패널로 전환
+  showPanel('notice-panel');
+}
+
+
+// ===== 공지사항 목록 불러오기 =====
+async function loadNotices() {
+  const { data, error } = await supabaseClient
+    .from('notices')
+    .select('*')
+    .order('id', { ascending: false });
+  if (error) {
+    console.error('공지 불러오기 실패:', error);
+    return;
+  }
+  const listEl = document.getElementById('notice-list');
+  listEl.innerHTML = '';
+  data.forEach(item => {
+    // 줄바꿈(\n)을 <br>로 변환
+    const formattedContent = item.content.replace(/\n/g, '<br>');
+    const div = document.createElement('div');
+    div.style.borderBottom = '1px solid #ddd';
+    div.style.padding = '0.5rem 0';
+    div.innerHTML = `<strong>${item.title}</strong><br>${formattedContent}`;
+    listEl.appendChild(div);
+  });
+}
+
+
+// ===== 문서 분석(OCR) =====
+async function analyzeDocument() {
+  const fileInput = document.getElementById('doc-file');
+  if (!fileInput.files.length) {
+    alert('파일을 선택해 주세요.');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  document.getElementById('doc-result').value = '문서 분석 중... 잠시만 기다려 주세요.';
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    Tesseract.recognize(reader.result, 'kor', { logger: m => console.log(m) })
+      .then(({ data: { text } }) => {
+        // OCR 결과를 textarea에 표시 (수정 가능)
+        document.getElementById('doc-result').value = text;
+        autoResize();
+        alert('문서 분석이 완료되었습니다. 필요하면 내용을 수정한 뒤 등록 버튼을 눌러주세요.');
+      })
+      .catch(err => {
+        console.error('OCR 오류:', err);
+        document.getElementById('doc-result').value = '문서 분석 실패: ' + err.message;
+      });
+  };
+  reader.readAsDataURL(file);
+}
+
+
+async function registerAnalyzedText() {
+  const text = document.getElementById('doc-result').value.trim();
+  if (!text) {
+    alert('내용이 비어 있습니다.');
+    return;
+  }
+
+  const { error } = await supabaseClient.from('notices').insert([
+    { title: '문서 분석 등록', content: text }
+  ]);
+
+  if (error) {
+    alert('공지 등록 실패: ' + error.message);
+    return;
+  }
+
+  alert('분석된 글이 공지로 등록되었습니다.');
+  loadNotices(); // 공지 목록 갱신
+  }
+
+  const docResult = document.getElementById('doc-result');
+
+  // 높이 자동 조정 함수
+  function autoResize() {
+    docResult.style.height = 'auto';  // 초기화
+    docResult.style.height = docResult.scrollHeight + 'px'; // 내용에 맞게 늘림
+  }
+
+  // 사용자가 직접 입력할 때도 적용
+  docResult.addEventListener('input', autoResize);
+
+    async function submitHomework() {
+    const name = document.getElementById('homework-name').value.trim();
+    const title = document.getElementById('homework-title').value.trim();
+    const comment = document.getElementById('homework-comment').value.trim();
+    const fileInput = document.getElementById('homework-file');
+    const statusEl = document.getElementById('homework-status');
+
+    if (!name || !title || !fileInput.files.length) {
+      alert('이름, 과제명, 파일을 모두 입력해 주세요.');
       return;
     }
 
-    // 세션이 있는 경우
-    if (data.session && data.session.user) {
-      console.log('자동 로그인 성공:', data.session.user);
-      currentUserRole = 'user'; // 필요하면 role 조회
-      showMain();               // 메인화면 열기
-    } else {
-      console.log('자동 로그인 세션 없음');
-      showLogin();
+    // Supabase 스토리지에 파일 업로드
+    const file = fileInput.files[0];
+    const fileName = Date.now() + '_' + file.name;
+
+    let { error: uploadError } = await supabaseClient.storage
+      .from('homework-files') // 스토리지 버킷 이름
+      .upload(fileName, file);
+
+    if (uploadError) {
+      statusEl.style.color = 'red';
+      statusEl.textContent = '파일 업로드 실패: ' + uploadError.message;
+      return;
     }
-  } catch (err) {
-    console.error('자동 로그인 중 오류 발생:', err);
-    showLogin();
+
+    const { data: publicURLData } = supabaseClient
+      .storage
+      .from('homework-files')
+      .getPublicUrl(fileName);
+
+    const fileURL = publicURLData.publicUrl;
+
+    // DB에 기록
+    const { error: insertError } = await supabaseClient.from('homeworks').insert([{
+      name: name,
+      title: title,
+      comment: comment,
+      file_url: fileURL
+    }]);
+
+    if (insertError) {
+      statusEl.style.color = 'red';
+      statusEl.textContent = '제출 실패: ' + insertError.message;
+      return;
+    }
+
+    statusEl.style.color = 'green';
+    statusEl.textContent = '✅ 제출이 완료되었습니다!';
+    
+    // 입력 초기화
+    document.getElementById('homework-name').value = '';
+    document.getElementById('homework-title').value = '';
+    document.getElementById('homework-comment').value = '';
+    document.getElementById('homework-file').value = '';
   }
-});
+
+  // 봉담중학교 코드 고정
+  const SCHOOL_CODE = 'M100000655';
+
+  let currentGrade = null;
+  let currentClassNum = null;
+
+  // ✅ 봉담중학교 시간표 불러오기
+  function showMyTimetable(grade, classNum) {
+    currentGrade = grade;
+    currentClassNum = classNum;
+
+    // 상단 정보 업데이트
+    const infoEl = document.getElementById('timetable-grade-info');
+    if (infoEl) infoEl.textContent = `${grade}학년 ${classNum}반`;
+
+    // URL 구성
+    const url = `http://comci.net:4082/st?sch=${SCHOOL_CODE}&grade=${grade}&class=${classNum}`;
+    const iframe = document.getElementById('timetable-iframe');
+    if (iframe) iframe.src = url;
+
+    // 시간표 패널 표시
+    showPanel('timetable-panel');
+  }
+
+  // 🔄 새로고침 버튼
+  function reloadTimetable() {
+    if (currentGrade && currentClassNum) {
+      showMyTimetable(currentGrade, currentClassNum);
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    // 👉 이전에 로그인한 아이디가 localStorage에 저장돼 있는지 확인
+    const savedUsername = localStorage.getItem('savedUsername');
+
+    if (savedUsername) {
+      // Supabase에서 해당 사용자 정보 불러오기
+      const { data: user, error } = await supabaseClient
+        .from('users')
+        .select('*')
+        .eq('username', savedUsername)
+        .maybeSingle();
+
+      if (error) {
+        console.error('자동 로그인 조회 오류:', error);
+        showLogin();
+        return;
+      }
+
+      if (user) {
+        currentUserRole = user.role || 'user';
+        currentGrade = user.grade;
+        currentClassNum = user.class_num;
+
+        // 👉 학년/반 시간표 불러오기
+        showMyTimetable(user.grade, user.class_num);
+        showMain();
+        loadNotices();
+        return; // 자동 로그인 성공했으므로 종료
+      }
+    }
+
+    // 👉 저장된 아이디가 없거나 조회 실패 시 로그인 화면
+    showLogin();
+  });
+
+
+  function setupAdminNav() {
+    const existing = document.getElementById('admin-nav');
+
+    if (currentUserRole === 'admin') {
+      if (!existing) {
+        const nav = document.getElementById('main-nav');
+        const a = document.createElement('a');
+        a.href = '#';
+        a.id = 'admin-nav';
+        a.innerText = '관리자 설정';
+        a.onclick = () => { showPanel('admin-panel'); };
+        nav.appendChild(a);
+      }
+    } else {
+      if (existing) existing.remove();
+    }
+  }
+
+
 
 
 </script>
