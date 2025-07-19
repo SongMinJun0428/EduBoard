@@ -317,65 +317,86 @@
       }
     }
     /* 햄버거 기본 숨김 체크박스 */
-#menu-toggle {
-  display: none;
-}
+      /* 햄버거 기본 숨김 */
+      #menu-toggle {
+        display: none;
+        }
 
-/* 햄버거 아이콘 초기값 (PC에선 안 보이게) */
-.hamburger {
-  display: none;
-  font-size: 28px;
-  cursor: pointer;
-  user-select: none;
-  color: #333;
-  margin-left: auto;
-}
+        /* 기본 PC 메뉴 */
+        #main-nav {
+          display: flex;
+          justify-content: center;
+          gap: 1rem;
+          padding: 0.75rem;
+        }
 
-/* 모바일에서 햄버거 보이기 */
-@media (max-width: 768px) {
-  /* 기존 메뉴 숨기기 */
-  #main-nav {
-    display: none;
-    flex-direction: column;
-    position: absolute;
-    top: 60px;
-    right: 16px;
-    background: #fff;
-    width: 220px;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    padding: 12px;
-    z-index: 1000;
-  }
+        /* 햄버거 스타일 */
+        .hamburger {
+          display: none; /* PC에서는 안보이게 */
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.2);
+          justify-content: center;
+          align-items: center;
+          flex-direction: column;
+          gap: 5px;
+          cursor: pointer;
+          margin-left: 10px;
+        }
+        .hamburger span {
+          width: 20px;
+          height: 3px;
+          background: #333;
+          border-radius: 2px;
+          transition: all 0.3s ease;
+        }
 
-  #main-nav a {
-    color: #333;
-    padding: 10px 0;
-    text-align: left;
-    font-size: 16px;
-    border-bottom: 1px solid #eee;
-  }
+        /* 📱 모바일에서 메뉴 숨기기 & 햄버거 보이기 */
+        @media (max-width: 768px) {
+          #main-nav {
+            display: none;
+            flex-direction: column;
+            position: absolute;
+            top: 70px;
+            right: 16px;
+            background: #fff;
+            width: 200px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 12px;
+            z-index: 1000;
+          }
+          #main-nav a {
+            padding: 12px;
+            color: #333;
+            text-decoration: none;
+            border-bottom: 1px solid #eee;
+          }
+          #main-nav a:last-child {
+            border-bottom: none;
+          }
 
-  #main-nav a:last-child {
-    border-bottom: none;
-  }
+          .hamburger {
+            display: flex; /* 모바일에서만 보이기 */
+          }
 
-  /* 햄버거 버튼 보이기 */
-  .hamburger {
-    display: block;
-    color: #007bff;
-    background: none;
-    border: none;
-  }
+          /* 체크박스가 체크되면 메뉴 표시 */
+          #menu-toggle:checked ~ nav#main-nav {
+            display: flex;
+          }
 
-  /* 체크박스가 체크되면 메뉴 표시 */
-  #menu-toggle:checked ~ #main-nav {
-    display: flex;
-  }
-}
-
-
+          /* 햄버거 X자 애니메이션 */
+          #menu-toggle:checked + .hamburger span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+          }
+          #menu-toggle:checked + .hamburger span:nth-child(2) {
+            opacity: 0;
+          }
+          #menu-toggle:checked + .hamburger span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+          }
+        }
   </style>
 </head>
 <body>
@@ -414,14 +435,19 @@
   <div id="main-app" style="display:none;">
     <header>
       <h1>EduBoard</h1>
-      <div style="display:flex;align-items:center;">
+      <div style="display:flex;align-items:center; gap:10px;">
         <button onclick="logout()">로그아웃</button>
         <span id="profile-icon">👤</span>
       </div>
     </header>
 
     <input type="checkbox" id="menu-toggle">
-    <label for="menu-toggle" class="hamburger">☰</label>
+    <label for="menu-toggle" class="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </label>
+
     <nav id="main-nav">
       <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
       <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
@@ -1014,6 +1040,11 @@ async function registerAnalyzedText() {
     }
   }
 
+  document.querySelectorAll('#main-nav a').forEach(link => {
+    link.addEventListener('click', () => {
+      document.getElementById('menu-toggle').checked = false; // ✅ 체크 해제 → 메뉴 닫힘
+    });
+  });
 
 
 
