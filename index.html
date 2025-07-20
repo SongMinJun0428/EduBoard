@@ -451,9 +451,9 @@
     <nav id="main-nav">
       <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
       <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
-      <a href="#" onclick="showPanel('student-panel')">학생 관리</a>
-      <a href="#" onclick="showPanel('homework-panel')">과제 제출</a>
-      <a href="#" onclick="showPanel('chat-panel')">상담실</a>
+      <!-- <a href="#" onclick="showPanel('student-panel')">학생 관리</a> -->
+      <a href="#" onclick="showPanel('homework-panel')">파일 공유</a>
+      <!-- <a href="#" onclick="showPanel('chat-panel')">상담실</a> -->
       <a href="#" onclick="showPanel('timetable-panel')">시간표</a>
       <a href="#" onclick="showPanel('materials-panel')">자료실</a>
     </nav>
@@ -528,7 +528,7 @@
       </div>
 
       <div id="homework-panel" class="panel" style="display:none;">
-        <h2>📚 숙제 제출하기</h2>
+        <h2>📚 파일 공유</h2>
         
         <!-- 이름 -->
         <label for="homework-name">이름</label>
@@ -632,130 +632,130 @@
   </div>
 
 <script>
-const { createClient } = supabase;
-const supabaseClient = createClient(
-  'https://ucmzrkwrsezfdjnnwsww.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw'
-);
+  const { createClient } = supabase;
+  const supabaseClient = createClient(
+    'https://ucmzrkwrsezfdjnnwsww.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw'
+  );
 
-let currentUserRole = 'user';
+  let currentUserRole = 'user';
 
-async function loginDirect() {
-  const username = document.getElementById('loginUsername').value;
-  const password = document.getElementById('loginPassword').value;
+  async function loginDirect() {
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
 
-  const { data: user } = await supabaseClient
-    .from('users')
-    .select('*')
-    .eq('username', username)
-    .eq('password', password)
-    .single();
+    const { data: user } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .eq('password', password)
+      .single();
 
-  if (user) {
-    currentUserRole = user.role || 'user';
-    loadTimetableWeek(user.grade, user.class_num);
-    showMain();
-    loadNotices();
+    if (user) {
+      currentUserRole = user.role || 'user';
+      loadTimetableWeek(user.grade, user.class_num);
+      showMain();
+      loadNotices();
 
-    // ✅ 로그인 성공 시 localStorage에 저장
-    localStorage.setItem('savedUsername', username);
-  } else {
-    document.getElementById('loginStatus').innerText = '아이디 또는 비밀번호가 틀렸습니다.';
-  }
-}
-
-
-async function signup() {
-  const username = document.getElementById('signupUsername').value.trim();
-  const password = document.getElementById('signupPassword').value.trim();
-  const email = document.getElementById('signupEmail').value.trim();
-  const name = document.getElementById('signupName').value.trim();
-  const grade = parseInt(document.getElementById('signupGrade').value);
-  const classNum = parseInt(document.getElementById('signupClass').value);
-  const studentNumber = parseInt(document.getElementById('signupNumber').value);
-
-  // 1. username 중복 체크
-  const { data: existing, error: checkError } = await supabaseClient
-    .from('users')
-    .select('username')
-    .eq('username', username)
-    .maybeSingle();
-
-  if (checkError) {
-    console.error('중복체크 오류:', checkError);
-    document.getElementById('signupStatus').innerText = '오류 발생: ' + checkError.message;
-    return;
-  }
-
-  if (existing) {
-    document.getElementById('signupStatus').innerText = '이미 사용 중인 아이디입니다.';
-    return;
-  }
-
-  // 2. insert
-  const { data, error } = await supabaseClient.from('users').insert([{
-    username: username,
-    password: password,
-    name: name,
-    grade: grade,
-    email: email,
-    class_num: classNum,
-    student_number: studentNumber,
-    coin_balance: 0,
-    role: 'user'
-  }]);
-
-  if (error) {
-    console.error('insert 오류:', error);
-    document.getElementById('signupStatus').innerText = '회원가입 실패: ' + error.message;
-    return;
-  }
-
-  console.log('회원가입 성공:', data);
-  document.getElementById('signupStatus').innerText = '회원가입 완료! 로그인 해주세요.';
-  showLogin();
-}
-
-function showMain() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('main-app').style.display = 'block';
-  setupAdminNav();
-}
-
-function showSignup() {
-  document.getElementById('login-box').style.display = 'none';
-  document.getElementById('signup-box').style.display = 'block';
-}
-
-function showLogin() {
-  document.getElementById('login-box').style.display = 'block';
-  document.getElementById('signup-box').style.display = 'none';
-}
-
-async function logout() {
-  await supabaseClient.auth.signOut();
-  localStorage.removeItem('savedUsername'); // ✅ 로그아웃 시 저장된 아이디 삭제
-  document.getElementById('main-app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-}
-
-async function updateProfile() {
-  const newName = document.getElementById('update-name').value;
-  const newPass = document.getElementById('update-password').value;
-
-  if (newPass) {
-    const { error } = await supabaseClient.auth.updateUser({ password: newPass });
-    if (error) alert('비밀번호 수정 오류:' + error.message);
-    else alert('비밀번호 수정 완료!');
-  }
-  if (newName) {
-    const user = await supabaseClient.auth.getUser();
-    if (user && user.data.user) {
-      await supabaseClient.from('users').update({ name: newName }).eq('id', user.data.user.id);
-      alert('이름 수정 완료!');
+      // ✅ 로그인 성공 시 localStorage에 저장
+      localStorage.setItem('savedUsername', username);
+    } else {
+      document.getElementById('loginStatus').innerText = '아이디 또는 비밀번호가 틀렸습니다.';
     }
   }
-}
+
+
+  async function signup() {
+    const username = document.getElementById('signupUsername').value.trim();
+    const password = document.getElementById('signupPassword').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const name = document.getElementById('signupName').value.trim();
+    const grade = parseInt(document.getElementById('signupGrade').value);
+    const classNum = parseInt(document.getElementById('signupClass').value);
+    const studentNumber = parseInt(document.getElementById('signupNumber').value);
+
+    // 1. username 중복 체크
+    const { data: existing, error: checkError } = await supabaseClient
+      .from('users')
+      .select('username')
+      .eq('username', username)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('중복체크 오류:', checkError);
+      document.getElementById('signupStatus').innerText = '오류 발생: ' + checkError.message;
+      return;
+    }
+
+    if (existing) {
+      document.getElementById('signupStatus').innerText = '이미 사용 중인 아이디입니다.';
+      return;
+    }
+
+    // 2. insert
+    const { data, error } = await supabaseClient.from('users').insert([{
+      username: username,
+      password: password,
+      name: name,
+      grade: grade,
+      email: email,
+      class_num: classNum,
+      student_number: studentNumber,
+      coin_balance: 0,
+      role: 'user'
+    }]);
+
+    if (error) {
+      console.error('insert 오류:', error);
+      document.getElementById('signupStatus').innerText = '회원가입 실패: ' + error.message;
+      return;
+    }
+
+    console.log('회원가입 성공:', data);
+    document.getElementById('signupStatus').innerText = '회원가입 완료! 로그인 해주세요.';
+    showLogin();
+  }
+
+  function showMain() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    setupAdminNav();
+  }
+
+  function showSignup() {
+    document.getElementById('login-box').style.display = 'none';
+    document.getElementById('signup-box').style.display = 'block';
+  }
+
+  function showLogin() {
+    document.getElementById('login-box').style.display = 'block';
+    document.getElementById('signup-box').style.display = 'none';
+  }
+
+  async function logout() {
+    await supabaseClient.auth.signOut();
+    localStorage.removeItem('savedUsername'); // ✅ 로그아웃 시 저장된 아이디 삭제
+    document.getElementById('main-app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+
+  async function updateProfile() {
+    const newName = document.getElementById('update-name').value;
+    const newPass = document.getElementById('update-password').value;
+
+    if (newPass) {
+      const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+      if (error) alert('비밀번호 수정 오류:' + error.message);
+      else alert('비밀번호 수정 완료!');
+    }
+    if (newName) {
+      const user = await supabaseClient.auth.getUser();
+      if (user && user.data.user) {
+        await supabaseClient.from('users').update({ name: newName }).eq('id', user.data.user.id);
+        alert('이름 수정 완료!');
+      }
+    }
+  }
 
 function showPanel(panelId) {
   document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
@@ -808,7 +808,6 @@ async function addNotice() {
 
   let imageUrl = '';
 
-  // 체크한 경우에만 이미지 업로드
   if (uploadChecked && fileInput.files.length) {
     const file = fileInput.files[0];
     const uniqueName = Date.now() + '_' + file.name;
@@ -832,61 +831,87 @@ async function addNotice() {
     imageUrl = publicData.publicUrl;
   }
 
-  // 공지 테이블에 등록
-  const { error } = await supabaseClient.from('notices').insert([
-    { title: title, content: content, image_url: imageUrl }
-  ]);
+  // ✅ 현재 로그인한 사용자 정보 가져오기
+  const { data: writerData, error: writerError } = await supabaseClient
+    .from('users')
+    .select('username,name,role,grade,class_num')
+    .eq('username', localStorage.getItem('savedUsername'))
+    .single();
 
-  if (error) {
-    alert('공지 등록 실패: ' + error.message);
+  if (writerError || !writerData) {
+    alert('사용자 정보 확인 중 오류가 발생했습니다.');
     return;
   }
 
-  alert('공지 등록 완료!');
-  document.getElementById('notice-title').value = '';
-  document.getElementById('notice-content').value = '';
-  document.getElementById('notice-image').value = '';
-  document.getElementById('notice-upload-check').checked = false;
+  // ✅ 테이블에 등록할 데이터
+  const newNotice = {
+    title: title,
+    content: content,
+    image_url: imageUrl,
+    writer: writerData.name,        // 작성자 이름
+    writer_role: writerData.role,   // 작성자 역할
+    grade: writerData.grade,        // 작성자 학년
+    class_num: writerData.class_num // 작성자 반
+  };
 
-  loadNotices();
-}
-
-
-// ===== 공지사항 목록 불러오기 =====
-// ===== 공지사항 목록 불러오기 (중복 제거 + 이미지 표시) =====
-async function loadNotices() {
-  const { data, error } = await supabaseClient
-    .from('notices')
-    .select('*')
-    .order('id', { ascending: false });
-
-  if (error) {
-    console.error('공지 불러오기 실패:', error);
-    return;
-  }
-
-  const listEl = document.getElementById('notice-list');
-  listEl.innerHTML = '';
-
-  data.forEach(item => {
-    const formattedContent = item.content.replace(/\n/g, '<br>');
-    const div = document.createElement('div');
-    div.style.borderBottom = '1px solid #ddd';
-    div.style.padding = '0.5rem 0';
-    div.innerHTML = `<strong>${item.title}</strong><br>${formattedContent}`;
-
-    // 이미지가 있으면 추가
-    if (item.image_url) {
-      div.innerHTML += `<br><img src="${item.image_url}" style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem;">`;
+  const { error } = await supabaseClient.from('notices').insert([ newNotice ]);
+    if (error) {
+      alert('공지 등록 실패: ' + error.message);
+      return;
     }
 
-    listEl.appendChild(div);
-  });
-}
+    alert('공지 등록 완료!');
+    document.getElementById('notice-title').value = '';
+    document.getElementById('notice-content').value = '';
+    document.getElementById('notice-image').value = '';
+    document.getElementById('notice-upload-check').checked = false;
 
+    loadNotices();
+  }
 
+  // ===== 공지사항 목록 불러오기 (중복 제거 + 이미지 표시) =====
+  async function loadNotices() {
+    // ✅ 현재 로그인한 사용자 정보
+    const { data: user } = await supabaseClient
+      .from('users')
+      .select('grade,class_num')
+      .eq('username', localStorage.getItem('savedUsername'))
+      .single();
 
+    if (!user) return;
 
+    // ✅ 같은 학년/반의 공지만 가져오되, writer_role이 'admin'이 아닌 것만
+    const { data, error } = await supabaseClient
+      .from('notices')
+      .select('*')
+      .eq('grade', user.grade)
+      .eq('class_num', user.class_num)
+      .neq('writer_role', 'admin') // 어드민 제외
+      .order('id', { ascending: false });
+
+    if (error) {
+      console.error('공지 불러오기 실패:', error);
+      return;
+    }
+
+    const listEl = document.getElementById('notice-list');
+    listEl.innerHTML = '';
+
+    data.forEach(item => {
+      const formattedContent = item.content.replace(/\n/g, '<br>');
+      const div = document.createElement('div');
+      div.style.borderBottom = '1px solid #ddd';
+      div.style.padding = '0.5rem 0';
+      // ✅ 작성자 표시
+      div.innerHTML = `<strong>${item.title}</strong> <span style="color:#888;font-size:0.85rem;">(작성자: ${item.writer})</span><br>${formattedContent}`;
+
+      if (item.image_url) {
+        div.innerHTML += `<br><img src="${item.image_url}" style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem;">`;
+      }
+
+      listEl.appendChild(div);
+    });
+  }
 
 // ===== 문서 분석(OCR) =====
 async function analyzeDocument() {
@@ -931,7 +956,6 @@ async function registerAnalyzedText() {
   const shouldUploadImage = document.getElementById('upload-image-check').checked;
 
   if (shouldUploadImage && lastAnalyzedFile) {
-    // 이미지 업로드 진행
     const fileName = Date.now() + '_' + lastAnalyzedFile.name;
     const { error: uploadErr } = await supabaseClient
       .storage
@@ -949,10 +973,29 @@ async function registerAnalyzedText() {
     imageUrl = publicData.publicUrl;
   }
 
-  // DB에 공지 등록
-  const { error } = await supabaseClient.from('notices').insert([
-    { title: '문서 분석 등록', content: text, image_url: imageUrl }
-  ]);
+  // ✅ 현재 로그인한 사용자 정보 가져오기
+  const { data: writerData, error: writerError } = await supabaseClient
+    .from('users')
+    .select('username,name,role,grade,class_num')
+    .eq('username', localStorage.getItem('savedUsername'))
+    .single();
+
+  if (writerError || !writerData) {
+    alert('사용자 정보 확인 중 오류가 발생했습니다.');
+    return;
+  }
+
+  // ✅ DB에 공지 등록 (문서 분석 결과)
+  const { error } = await supabaseClient.from('notices').insert([{
+    title: '문서 분석 등록',
+    content: text,
+    image_url: imageUrl,
+    writer: writerData.name,
+    writer_role: writerData.role,
+    grade: writerData.grade,
+    class_num: writerData.class_num
+  }]);
+
   if (error) {
     alert('공지 등록 실패: ' + error.message);
     return;
@@ -968,6 +1011,7 @@ async function registerAnalyzedText() {
   document.getElementById('upload-image-check').checked = false;
   document.getElementById('doc-result').value = '';
 }
+
 
   const docResult = document.getElementById('doc-result');
 
