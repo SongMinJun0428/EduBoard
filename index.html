@@ -871,23 +871,18 @@ async function addNotice() {
 
   // ===== 공지사항 목록 불러오기 (중복 제거 + 이미지 표시) =====
   async function loadNotices() {
-    // ✅ 현재 로그인한 사용자 정보
-    const { data: user } = await supabaseClient
-      .from('users')
-      .select('grade,class_num')
-      .eq('username', localStorage.getItem('savedUsername'))
-      .single();
+    let query = supabaseClient.from('notices').select('*').order('id', { ascending: false });
 
-    if (!user) return;
+    if (currentUserRole !== 'admin') {
+      // ✅ 학생이라면 같은 학년/반 & 어드민이 올린 글 제외
+      query = query
+        .eq('grade', currentGrade)
+        .eq('class_num', currentClassNum)
+        .neq('writer_role', 'admin');
+    }
+    // ✅ admin이면 모든 공지를 그대로 불러옴
 
-    // ✅ 같은 학년/반의 공지만 가져오되, writer_role이 'admin'이 아닌 것만
-    const { data, error } = await supabaseClient
-      .from('notices')
-      .select('*')
-      .eq('grade', user.grade)
-      .eq('class_num', user.class_num)
-      .neq('writer_role', 'admin') // 어드민 제외
-      .order('id', { ascending: false });
+    const { data, error } = await query;
 
     if (error) {
       console.error('공지 불러오기 실패:', error);
@@ -902,8 +897,8 @@ async function addNotice() {
       const div = document.createElement('div');
       div.style.borderBottom = '1px solid #ddd';
       div.style.padding = '0.5rem 0';
-      // ✅ 작성자 표시
-      div.innerHTML = `<strong>${item.title}</strong> <span style="color:#888;font-size:0.85rem;">(작성자: ${item.writer})</span><br>${formattedContent}`;
+      // 누가 올린 글인지 표시
+      div.innerHTML = `<strong>${item.title}</strong> <span style="font-size:0.8rem;color:#888;">(${item.writer})</span><br>${formattedContent}`;
 
       if (item.image_url) {
         div.innerHTML += `<br><img src="${item.image_url}" style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem;">`;
@@ -912,6 +907,7 @@ async function addNotice() {
       listEl.appendChild(div);
     });
   }
+
 
 // ===== 문서 분석(OCR) =====
 async function analyzeDocument() {
