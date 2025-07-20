@@ -641,8 +641,8 @@
   let currentUserRole = 'user';
 
   async function loginDirect() {
-    const username = document.getElementById('loginUsername').value;
-    const password = document.getElementById('loginPassword').value;
+    const username = document.getElementById('loginUsername').value.replace(/\s+/g, '');
+    const password = document.getElementById('loginPassword').value.replace(/\s+/g, '');
 
     const { data: user } = await supabaseClient
       .from('users')
@@ -666,13 +666,14 @@
 
 
   async function signup() {
-    const username = document.getElementById('signupUsername').value.trim();
-    const password = document.getElementById('signupPassword').value.trim();
-    const email = document.getElementById('signupEmail').value.trim();
+    const username = document.getElementById('signupUsername').value.replace(/\s+/g, '');
+    const password = document.getElementById('signupPassword').value.replace(/\s+/g, '');
+    const email = document.getElementById('signupEmail').value.replace(/\s+/g, '');
     const name = document.getElementById('signupName').value.trim();
-    const grade = parseInt(document.getElementById('signupGrade').value);
-    const classNum = parseInt(document.getElementById('signupClass').value);
-    const studentNumber = parseInt(document.getElementById('signupNumber').value);
+    const grade = parseInt(document.getElementById('signupGrade').value.replace(/\s+/g, ''), 10);
+    const classNum = parseInt(document.getElementById('signupClass').value.replace(/\s+/g, ''), 10);
+    const studentNumber = parseInt(document.getElementById('signupNumber').value.replace(/\s+/g, ''), 10);
+
 
     // 1. username 중복 체크
     const { data: existing, error: checkError } = await supabaseClient
