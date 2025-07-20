@@ -465,6 +465,14 @@
         <h3>새 공지 등록</h3>
         <input type="text" id="notice-title" placeholder="제목"/>
         <textarea id="notice-content" placeholder="내용"></textarea>
+        <!-- 사진 파일 선택 -->
+        <input type="file" id="notice-image" accept="image/*">
+
+        <!-- 사진 업로드 여부 선택 -->
+        <label style="display:flex;align-items:center;margin-top:0.5rem;">
+          <input type="checkbox" id="notice-upload-check" style="margin-right:0.5rem;">
+          이 사진을 공지에 포함하기
+        </label>
         <button onclick="addNotice()">공지 추가</button>
       </div>
 
@@ -495,6 +503,16 @@
           </textarea>
 
 
+
+        
+        <!-- 사진 미리보기 -->
+        <img id="doc-preview" style="max-width:100%; margin-top:1rem; display:none; border-radius:0.5rem;" />
+
+        <!-- 업로드 여부 선택 -->
+        <label style="display:flex;align-items:center;margin-top:0.5rem;">
+          <input type="checkbox" id="upload-image-check" style="margin-right:0.5rem;">
+          이 사진을 공지에 같이 올리기
+        </label>
 
         <div class="button-group">
           <button onclick="registerAnalyzedText()">분석된 글 등록하기</button>
@@ -592,18 +610,9 @@
           </button>
         </div>
 
-        <!-- iframe 영역 -->
-        <div style="
-              border:1px solid #dee2e6;
-              border-radius:0.75rem;
-              overflow:hidden;
-              box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-          <iframe id="timetable-iframe"
-                  width="100%"
-                  height="600"
-                  frameborder="0"
-                  style="border:none; display:block;">
-          </iframe>
+        <!-- ✅ 시간표 UI 컨테이너 -->
+        <div id="timetable-container"
+            style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">
         </div>
       </div>
 
@@ -644,7 +653,7 @@ async function loginDirect() {
 
   if (user) {
     currentUserRole = user.role || 'user';
-    showMyTimetable(user.grade, user.class_num);
+    loadTimetableWeek(user.grade, user.class_num);
     showMain();
     loadNotices();
 
@@ -785,57 +794,98 @@ function setupAdminNav() {
   }
 }
 
-// ===== 공지사항 등록 =====
+// ===== 공지사항 등록 (이미지 업로드 추가) =====
 async function addNotice() {
   const title = document.getElementById('notice-title').value.trim();
   const content = document.getElementById('notice-content').value.trim();
+  const fileInput = document.getElementById('notice-image');
+  const uploadChecked = document.getElementById('notice-upload-check').checked;
+
   if (!title || !content) {
     alert('제목과 내용을 입력해 주세요.');
     return;
   }
 
-  const { error } = await supabaseClient.from('notices').insert([{ title, content }]);
+  let imageUrl = '';
+
+  // 체크한 경우에만 이미지 업로드
+  if (uploadChecked && fileInput.files.length) {
+    const file = fileInput.files[0];
+    const uniqueName = Date.now() + '_' + file.name;
+    const filePath = `public/${uniqueName}`;
+
+    const { error: uploadErr } = await supabaseClient
+      .storage
+      .from('notice-images')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadErr) {
+      alert('이미지 업로드 실패: ' + uploadErr.message);
+      return;
+    }
+
+    const { data: publicData } = supabaseClient
+      .storage
+      .from('notice-images')
+      .getPublicUrl(filePath);
+
+    imageUrl = publicData.publicUrl;
+  }
+
+  // 공지 테이블에 등록
+  const { error } = await supabaseClient.from('notices').insert([
+    { title: title, content: content, image_url: imageUrl }
+  ]);
+
   if (error) {
     alert('공지 등록 실패: ' + error.message);
     return;
   }
 
-  // 입력 초기화
+  alert('공지 등록 완료!');
   document.getElementById('notice-title').value = '';
   document.getElementById('notice-content').value = '';
+  document.getElementById('notice-image').value = '';
+  document.getElementById('notice-upload-check').checked = false;
 
-  alert('공지 등록 완료!');
-
-  // 공지 목록 다시 불러오기
-  await loadNotices();
-
-  // ✅ 공지 패널로 전환
-  showPanel('notice-panel');
+  loadNotices();
 }
 
 
 // ===== 공지사항 목록 불러오기 =====
+// ===== 공지사항 목록 불러오기 (중복 제거 + 이미지 표시) =====
 async function loadNotices() {
   const { data, error } = await supabaseClient
     .from('notices')
     .select('*')
     .order('id', { ascending: false });
+
   if (error) {
     console.error('공지 불러오기 실패:', error);
     return;
   }
+
   const listEl = document.getElementById('notice-list');
   listEl.innerHTML = '';
+
   data.forEach(item => {
-    // 줄바꿈(\n)을 <br>로 변환
     const formattedContent = item.content.replace(/\n/g, '<br>');
     const div = document.createElement('div');
     div.style.borderBottom = '1px solid #ddd';
     div.style.padding = '0.5rem 0';
     div.innerHTML = `<strong>${item.title}</strong><br>${formattedContent}`;
+
+    // 이미지가 있으면 추가
+    if (item.image_url) {
+      div.innerHTML += `<br><img src="${item.image_url}" style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem;">`;
+    }
+
     listEl.appendChild(div);
   });
 }
+
+
+
 
 
 // ===== 문서 분석(OCR) =====
@@ -847,16 +897,19 @@ async function analyzeDocument() {
   }
 
   const file = fileInput.files[0];
+  lastAnalyzedFile = file; // 분석한 파일을 저장
+  document.getElementById('doc-preview').src = URL.createObjectURL(file);
+  document.getElementById('doc-preview').style.display = 'block';
+
   document.getElementById('doc-result').value = '문서 분석 중... 잠시만 기다려 주세요.';
 
   const reader = new FileReader();
   reader.onload = () => {
     Tesseract.recognize(reader.result, 'kor', { logger: m => console.log(m) })
       .then(({ data: { text } }) => {
-        // OCR 결과를 textarea에 표시 (수정 가능)
         document.getElementById('doc-result').value = text;
         autoResize();
-        alert('문서 분석이 완료되었습니다. 필요하면 내용을 수정한 뒤 등록 버튼을 눌러주세요.');
+        alert('문서 분석이 완료되었습니다. 아래 체크박스로 사진 업로드 여부를 선택 후 등록하세요.');
       })
       .catch(err => {
         console.error('OCR 오류:', err);
@@ -874,18 +927,47 @@ async function registerAnalyzedText() {
     return;
   }
 
-  const { error } = await supabaseClient.from('notices').insert([
-    { title: '문서 분석 등록', content: text }
-  ]);
+  let imageUrl = '';
+  const shouldUploadImage = document.getElementById('upload-image-check').checked;
 
+  if (shouldUploadImage && lastAnalyzedFile) {
+    // 이미지 업로드 진행
+    const fileName = Date.now() + '_' + lastAnalyzedFile.name;
+    const { error: uploadErr } = await supabaseClient
+      .storage
+      .from('notice-images')
+      .upload(fileName, lastAnalyzedFile);
+
+    if (uploadErr) {
+      alert('이미지 업로드 실패: ' + uploadErr.message);
+      return;
+    }
+    const { data: publicData } = supabaseClient
+      .storage
+      .from('notice-images')
+      .getPublicUrl(fileName);
+    imageUrl = publicData.publicUrl;
+  }
+
+  // DB에 공지 등록
+  const { error } = await supabaseClient.from('notices').insert([
+    { title: '문서 분석 등록', content: text, image_url: imageUrl }
+  ]);
   if (error) {
     alert('공지 등록 실패: ' + error.message);
     return;
   }
 
-  alert('분석된 글이 공지로 등록되었습니다.');
-  loadNotices(); // 공지 목록 갱신
-  }
+  alert('등록이 완료되었습니다!');
+  loadNotices();
+
+  // 초기화
+  lastAnalyzedFile = null;
+  document.getElementById('doc-file').value = '';
+  document.getElementById('doc-preview').style.display = 'none';
+  document.getElementById('upload-image-check').checked = false;
+  document.getElementById('doc-result').value = '';
+}
 
   const docResult = document.getElementById('doc-result');
 
@@ -955,36 +1037,89 @@ async function registerAnalyzedText() {
     document.getElementById('homework-file').value = '';
   }
 
-  // 봉담중학교 코드 고정
-  const SCHOOL_CODE = 'M100000655';
+  const NEIS_KEY = 'e36bb5b5fc694ca6857efc954946f98f';
+    const ATPT_OFCDC_SC_CODE = 'J10'; // 경기도교육청
+    const SD_SCHUL_CODE = '7530083'; // 봉담중학교 코드
 
-  let currentGrade = null;
-  let currentClassNum = null;
+    let currentGrade = null;
+    let currentClassNum = null;
 
-  // ✅ 봉담중학교 시간표 불러오기
-  function showMyTimetable(grade, classNum) {
-    currentGrade = grade;
-    currentClassNum = classNum;
+    // 📌 시간표 불러오기
+    async function loadTimetableWeek(grade, classNum) {
+      currentGrade = grade;
+      currentClassNum = classNum;
 
-    // 상단 정보 업데이트
-    const infoEl = document.getElementById('timetable-grade-info');
-    if (infoEl) infoEl.textContent = `${grade}학년 ${classNum}반`;
+      document.getElementById('timetable-grade-info').innerText = `${grade}학년 ${classNum}반 (주간)`;
 
-    // URL 구성
-    const url = `http://comci.net:4082/st?sch=${SCHOOL_CODE}&grade=${grade}&class=${classNum}`;
-    const iframe = document.getElementById('timetable-iframe');
-    if (iframe) iframe.src = url;
+      const container = document.getElementById('timetable-container');
+      container.innerHTML = '<p>시간표 불러오는 중...</p>';
 
-    // 시간표 패널 표시
-    showPanel('timetable-panel');
-  }
+      // 이번 주 월~금 날짜 계산
+      const today = new Date();
+      const day = today.getDay(); // 0(일)~6(토)
+      // 이번 주 월요일 날짜
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
 
-  // 🔄 새로고침 버튼
-  function reloadTimetable() {
-    if (currentGrade && currentClassNum) {
-      showMyTimetable(currentGrade, currentClassNum);
+      // 5일(월~금) 날짜 배열
+      const dates = Array.from({ length: 5 }, (_, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}${mm}${dd}`;
+      });
+
+      try {
+        // 5일치 병렬 호출
+        const results = await Promise.all(
+          dates.map(async (dateStr) => {
+            const url = `https://open.neis.go.kr/hub/hisTimetable?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLRM_NM=${encodeURIComponent(classNum+'반')}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            return { dateStr, data };
+          })
+        );
+
+        container.innerHTML = ''; // 초기화
+
+        // 각 날짜별 블록 렌더링
+        for (const { dateStr, data } of results) {
+          const dayBox = document.createElement('div');
+          dayBox.style.border = '1px solid #ccc';
+          dayBox.style.borderRadius = '8px';
+          dayBox.style.padding = '8px';
+          dayBox.style.background = '#fdfdfd';
+          dayBox.style.marginBottom = '10px';
+
+          const title = document.createElement('h4');
+          title.innerText = `${dateStr.slice(0,4)}-${dateStr.slice(4,6)}-${dateStr.slice(6,8)}`;
+          dayBox.appendChild(title);
+
+          if (data.hisTimetable && data.hisTimetable[1]) {
+            const rows = data.hisTimetable[1].row;
+            rows.forEach(row => {
+              const item = document.createElement('div');
+              item.innerHTML = `<strong>${row.PERIO}교시</strong> : ${row.ITRT_CNTNT}`;
+              dayBox.appendChild(item);
+            });
+          } else {
+            const none = document.createElement('p');
+            none.innerText = '시간표 데이터 없음';
+            dayBox.appendChild(none);
+          }
+
+          container.appendChild(dayBox);
+        }
+      } catch (err) {
+        console.error('주간 시간표 오류:', err);
+        container.innerHTML = '<p>시간표를 불러오는 중 오류가 발생했습니다.</p>';
+      }
+
+      showPanel('timetable-panel');
     }
-  }
+
 
   window.addEventListener('DOMContentLoaded', async () => {
     // 👉 이전에 로그인한 아이디가 localStorage에 저장돼 있는지 확인
@@ -1009,8 +1144,8 @@ async function registerAnalyzedText() {
         currentGrade = user.grade;
         currentClassNum = user.class_num;
 
-        // 👉 학년/반 시간표 불러오기
-        showMyTimetable(user.grade, user.class_num);
+        // 로그인 성공 시
+        loadTimetableWeek(user.grade, user.class_num);
         showMain();
         loadNotices();
         return; // 자동 로그인 성공했으므로 종료
