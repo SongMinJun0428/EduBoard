@@ -1037,12 +1037,13 @@ async function registerAnalyzedText() {
     document.getElementById('homework-file').value = '';
   }
 
-  const NEIS_KEY = 'e36bb5b5fc694ca6857efc954946f98f';
-    const ATPT_OFCDC_SC_CODE = 'J10'; // 경기도교육청
-    const SD_SCHUL_CODE = '7530083'; // 봉담중학교 코드
+  const NEIS_KEY = '1692c030b074479784fa252d2886f919';
+  const ATPT_OFCDC_SC_CODE = 'J10'; // 경기도교육청
+  const SD_SCHUL_CODE = '7679111';  // ✅ 봉담중학교 코드로 수정
 
-    let currentGrade = null;
-    let currentClassNum = null;
+
+  let currentGrade = null;
+  let currentClassNum = null;
 
     // 📌 시간표 불러오기
     async function loadTimetableWeek(grade, classNum) {
@@ -1050,41 +1051,37 @@ async function registerAnalyzedText() {
       currentClassNum = classNum;
 
       document.getElementById('timetable-grade-info').innerText = `${grade}학년 ${classNum}반 (주간)`;
-
       const container = document.getElementById('timetable-container');
       container.innerHTML = '<p>시간표 불러오는 중...</p>';
 
-      // 이번 주 월~금 날짜 계산
       const today = new Date();
-      const day = today.getDay(); // 0(일)~6(토)
-      // 이번 주 월요일 날짜
+      const day = today.getDay();
       const monday = new Date(today);
       monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
 
-      // 5일(월~금) 날짜 배열
+      const year = new Date().getFullYear();
+      const semester = (new Date().getMonth() + 1) <= 6 ? 1 : 2;
+
       const dates = Array.from({ length: 5 }, (_, i) => {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${yyyy}${mm}${dd}`;
+        return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
       });
 
       try {
-        // 5일치 병렬 호출
         const results = await Promise.all(
           dates.map(async (dateStr) => {
-            const url = `https://open.neis.go.kr/hub/hisTimetable?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLRM_NM=${encodeURIComponent(classNum+'반')}`;
+            const url = `https://open.neis.go.kr/hub/misTimetable?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&AY=${year}&SEM=${semester}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
+            console.log(url);
             const res = await fetch(url);
             const data = await res.json();
+            
             return { dateStr, data };
           })
         );
 
-        container.innerHTML = ''; // 초기화
+        container.innerHTML = '';
 
-        // 각 날짜별 블록 렌더링
         for (const { dateStr, data } of results) {
           const dayBox = document.createElement('div');
           dayBox.style.border = '1px solid #ccc';
@@ -1097,8 +1094,8 @@ async function registerAnalyzedText() {
           title.innerText = `${dateStr.slice(0,4)}-${dateStr.slice(4,6)}-${dateStr.slice(6,8)}`;
           dayBox.appendChild(title);
 
-          if (data.hisTimetable && data.hisTimetable[1]) {
-            const rows = data.hisTimetable[1].row;
+          if (data.misTimetable && data.misTimetable[1]) {
+            const rows = data.misTimetable[1].row;
             rows.forEach(row => {
               const item = document.createElement('div');
               item.innerHTML = `<strong>${row.PERIO}교시</strong> : ${row.ITRT_CNTNT}`;
@@ -1119,6 +1116,7 @@ async function registerAnalyzedText() {
 
       showPanel('timetable-panel');
     }
+
 
 
   window.addEventListener('DOMContentLoaded', async () => {
@@ -1180,6 +1178,17 @@ async function registerAnalyzedText() {
       document.getElementById('menu-toggle').checked = false; // ✅ 체크 해제 → 메뉴 닫힘
     });
   });
+
+  function reloadTimetable() {
+    if (currentGrade && currentClassNum) {
+      loadTimetableWeek(currentGrade, currentClassNum);
+    } else {
+      alert('로그인 후 다시 시도해 주세요.');
+    }
+  }
+
+  
+
 
 
 
