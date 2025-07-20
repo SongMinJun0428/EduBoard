@@ -1046,76 +1046,110 @@ async function registerAnalyzedText() {
   let currentClassNum = null;
 
     // 📌 시간표 불러오기
-    async function loadTimetableWeek(grade, classNum) {
-      currentGrade = grade;
-      currentClassNum = classNum;
+      async function loadTimetableWeek(grade, classNum) {
+        currentGrade = grade;
+        currentClassNum = classNum;
 
-      document.getElementById('timetable-grade-info').innerText = `${grade}학년 ${classNum}반 (주간)`;
-      const container = document.getElementById('timetable-container');
-      container.innerHTML = '<p>시간표 불러오는 중...</p>';
+        document.getElementById('timetable-grade-info').innerText = `${grade}학년 ${classNum}반 (주간)`;
+        const container = document.getElementById('timetable-container');
+        container.innerHTML = '<p>시간표 불러오는 중...</p>';
 
-      const today = new Date();
-      const day = today.getDay();
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+        const today = new Date();
+        const day = today.getDay();
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
 
-      const year = new Date().getFullYear();
-      const semester = (new Date().getMonth() + 1) <= 6 ? 1 : 2;
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        // ✅ 학기 구분: 7월까지는 1학기, 8월부터 2학기
+        const semester = (month <= 8) ? 1 : 2;
 
-      const dates = Array.from({ length: 5 }, (_, i) => {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-      });
+        const dates = Array.from({ length: 5 }, (_, i) => {
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + i);
+          return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+        });
 
-      try {
-        const results = await Promise.all(
-          dates.map(async (dateStr) => {
-            const url = `https://open.neis.go.kr/hub/misTimetable?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&AY=${year}&SEM=${semester}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
-            console.log(url);
-            const res = await fetch(url);
-            const data = await res.json();
-            
-            return { dateStr, data };
-          })
-        );
+        try {
+          const results = await Promise.all(
+            dates.map(async (dateStr) => {
+              const url = `https://open.neis.go.kr/hub/misTimetable?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&AY=${year}&SEM=${semester}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
+              console.log(url);
+              const res = await fetch(url);
+              const data = await res.json();
+              return { dateStr, data };
+            })
+          );
 
-        container.innerHTML = '';
+          container.innerHTML = '';
 
-        for (const { dateStr, data } of results) {
-          const dayBox = document.createElement('div');
-          dayBox.style.border = '1px solid #ccc';
-          dayBox.style.borderRadius = '8px';
-          dayBox.style.padding = '8px';
-          dayBox.style.background = '#fdfdfd';
-          dayBox.style.marginBottom = '10px';
+          for (const { dateStr, data } of results) {
+            const dayBox = document.createElement('div');
+            dayBox.style.border = '1px solid #ccc';
+            dayBox.style.borderRadius = '8px';
+            dayBox.style.padding = '8px';
+            dayBox.style.background = '#fdfdfd';
+            dayBox.style.marginBottom = '10px';
 
-          const title = document.createElement('h4');
-          title.innerText = `${dateStr.slice(0,4)}-${dateStr.slice(4,6)}-${dateStr.slice(6,8)}`;
-          dayBox.appendChild(title);
+            const title = document.createElement('h4');
+            title.innerText = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+            dayBox.appendChild(title);
 
-          if (data.misTimetable && data.misTimetable[1]) {
-            const rows = data.misTimetable[1].row;
-            rows.forEach(row => {
-              const item = document.createElement('div');
-              item.innerHTML = `<strong>${row.PERIO}교시</strong> : ${row.ITRT_CNTNT}`;
-              dayBox.appendChild(item);
-            });
-          } else {
-            const none = document.createElement('p');
-            none.innerText = '시간표 데이터 없음';
-            dayBox.appendChild(none);
+            if (data.misTimetable && data.misTimetable[1]) {
+              const rows = data.misTimetable[1].row;
+              rows.forEach(row => {
+                const item = document.createElement('div');
+                item.innerHTML = `<strong>${row.PERIO}교시</strong> : ${row.ITRT_CNTNT}`;
+                dayBox.appendChild(item);
+              });
+            } else {
+              const none = document.createElement('p');
+              none.innerText = '시간표 데이터 없음';
+              dayBox.appendChild(none);
+            }
+
+            container.appendChild(dayBox);
           }
-
-          container.appendChild(dayBox);
+        } catch (err) {
+          console.error('주간 시간표 오류:', err);
+          container.innerHTML = '<p>시간표를 불러오는 중 오류가 발생했습니다.</p>';
         }
-      } catch (err) {
-        console.error('주간 시간표 오류:', err);
-        container.innerHTML = '<p>시간표를 불러오는 중 오류가 발생했습니다.</p>';
+
+        showPanel('timetable-panel');
       }
 
-      showPanel('timetable-panel');
-    }
+      // 📌 페이지 로드시 자동 로그인 확인
+      window.addEventListener('DOMContentLoaded', async () => {
+        const savedUsername = localStorage.getItem('savedUsername');
+
+        if (savedUsername) {
+          const { data: user, error } = await supabaseClient
+            .from('users')
+            .select('*')
+            .eq('username', savedUsername)
+            .maybeSingle();
+
+          if (error) {
+            console.error('자동 로그인 조회 오류:', error);
+            showLogin();
+            return;
+          }
+
+          if (user) {
+            currentUserRole = user.role || 'user';
+            currentGrade = user.grade;
+            currentClassNum = user.class_num;
+
+            await loadTimetableWeek(user.grade, user.class_num);
+            showMain();
+            loadNotices();
+            return;
+          }
+        }
+
+        showLogin();
+      });
+
 
 
 
