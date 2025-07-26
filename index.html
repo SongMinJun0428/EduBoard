@@ -415,21 +415,44 @@
     </div>
 
     <div class="auth-box" id="signup-box" style="display:none;">
-      <h2>회원가입</h2>
-      <input id="signupUsername" type="text" placeholder="아이디">
-      <input id="signupEmail" type="email" placeholder="이메일">
-      <input id="signupPassword" type="password" placeholder="비밀번호 (6자 이상)">
-      <input id="signupName" type="text" placeholder="이름">
-      <input id="signupGrade" type="number" placeholder="학년">
-      <input id="signupClass" type="number" placeholder="반">
-      <input id="signupNumber" type="number" placeholder="번호">
-      <button onclick="signup()">가입하기</button>
-      <p style="font-size:0.85rem;">
-        <a href="#" onclick="showLogin()">← 로그인으로 돌아가기</a>
+  <h2>회원가입</h2>
+
+  <!-- 1단계: 개인정보 동의 -->
+  <div id="agree-step">
+    <div style="text-align:left; font-size:0.8rem; margin:0.5rem 0; border:1px solid #ddd; padding:0.6rem; border-radius:0.5rem; background:#f8f9fa;">
+      <p style="margin:0 0 0.4rem 0; font-weight:bold;">📌 개인정보 수집·이용 동의</p>
+      <p style="margin:0 0 0.3rem 0; line-height:1.4;">
+        <strong>수집하는 개인정보 항목:</strong> 아이디, 비밀번호, 이메일, 이름, 학년, 반, 번호<br>
+        <strong>수집·이용 목적:</strong> EduBoard 회원 관리, 수업 자료 제공, 공지 전달 등 서비스 운영<br>
+        <strong>보유·이용 기간:</strong> 회원 탈퇴 시까지(단, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관)<br>
+        <strong>동의 거부권 및 불이익:</strong> 동의를 거부할 수 있으나, 이 경우 회원가입이 제한됩니다.
       </p>
-      <div id="signupStatus" style="font-size:0.85rem;color:red;"></div>
+      <label style="display:flex;align-items:center; font-weight:600;">
+        <input type="checkbox" id="privacy-agree" style="margin-right:0.4rem;">
+        위 개인정보 수집·이용에 동의합니다.
+      </label>
     </div>
+    <button id="agree-next-btn" disabled>다음</button>
   </div>
+
+  <!-- 2단계: 실제 정보 입력 (초기에는 숨김) -->
+  <div id="input-step" style="display:none;">
+    <input id="signupUsername" type="text" placeholder="아이디">
+    <input id="signupPassword" type="password" placeholder="비밀번호 (6자 이상)">
+    <input id="signupEmail" type="email" placeholder="이메일">
+    <input id="signupName" type="text" placeholder="이름">
+    <input id="signupGrade" type="number" placeholder="학년">
+    <input id="signupClass" type="number" placeholder="반">
+    <input id="signupNumber" type="number" placeholder="번호">
+
+    <button onclick="signup()">가입하기</button>
+    <p style="font-size:0.85rem;">
+      <a href="#" onclick="showLogin()">← 로그인으로 돌아가기</a>
+    </p>
+    <div id="signupStatus" style="font-size:0.85rem;color:red;"></div>
+  </div>
+</div>
+
 
   <!-- 메인 앱 -->
   <div id="main-app" style="display:none;">
@@ -452,10 +475,9 @@
       <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
       <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
       <!-- <a href="#" onclick="showPanel('student-panel')">학생 관리</a> -->
-      <a href="#" onclick="showPanel('homework-panel')">파일 공유</a>
+      <a href="#" onclick="showPanel('homework-panel')">파일 공유 & 자료실</a>
       <!-- <a href="#" onclick="showPanel('chat-panel')">상담실</a> -->
       <a href="#" onclick="showPanel('timetable-panel')">시간표</a>
-      <a href="#" onclick="showPanel('materials-panel')">자료실</a>
     </nav>
 
     <div class="content">
@@ -528,27 +550,39 @@
       </div>
 
       <div id="homework-panel" class="panel" style="display:none;">
-        <h2>📚 파일 공유</h2>
+        <h2>📚 파일 공유 & 자료실</h2>
         
-        <!-- 이름 -->
-        <label for="homework-name">이름</label>
-        <input type="text" id="homework-name" placeholder="이름을 입력해 주세요">
+        <!-- 업로드 영역 -->
+        <label for="homework-scope">공유 범위</label>
+        <select id="homework-scope">
+          <option value="school">전교</option>
+          <option value="grade">같은 학년</option>
+          <option value="class">같은 반</option>
+        </select>
 
-        <!-- 과제명 -->
-        <label for="homework-title">과제명</label>
-        <input type="text" id="homework-title" placeholder="예: 파이썬 2주차 숙제">
+        <label for="homework-userinfo">학번 + 이름</label>
+        <input type="text" id="homework-userinfo" readonly style="background:#f1f3f5; font-weight:bold; margin-bottom:0.8rem;">
 
-        <!-- 파일 업로드 -->
-        <label for="homework-file">숙제 파일 업로드</label>
+        <label for="homework-title">제목</label>
+        <input type="text" id="homework-title" placeholder="예: 체험학습 사진">
+
+        <label for="homework-file">파일 업로드</label>
         <input type="file" id="homework-file">
 
-        <!-- 코멘트 -->
         <label for="homework-comment">코멘트 (선택)</label>
         <textarea id="homework-comment" placeholder="코멘트를 입력해 주세요"></textarea>
 
-        <button onclick="submitHomework()">제출하기</button>
+        <button onclick="submitHomework()">업로드하기</button>
         <div id="homework-status" style="margin-top:0.5rem;font-size:0.9rem;color:#007bff;"></div>
+
+        <hr style="margin:1.5rem 0;">
+
+        <!-- 자료 목록 영역 -->
+        <h3>📂 업로드된 자료</h3>
+        <button onclick="loadMaterials()">🔄 목록 새로고침</button>
+        <ul id="material-list" style="margin-top:1rem;"></ul>
       </div>
+
 
 
       <div id="chat-panel" class="panel" style="display:none;">
@@ -640,6 +674,9 @@
 
   let currentUserRole = 'user';
 
+  let currentUserName = '';
+  let currentStudentNumber = '';
+
   async function loginDirect() {
     const username = document.getElementById('loginUsername').value.replace(/\s+/g, '');
     const password = document.getElementById('loginPassword').value.replace(/\s+/g, '');
@@ -652,15 +689,44 @@
       .single();
 
     if (user) {
+      currentUserName = user.name;
+      currentStudentNumber = user.student_number;
+
+      // ✅ localStorage 에 저장
+      localStorage.setItem('savedUsername', username);
+      localStorage.setItem('savedName', currentUserName);
+      localStorage.setItem('savedStudentNum', currentStudentNumber);
+
+      // 화면에 표시
+      setUserInfoInput();
+
       currentUserRole = user.role || 'user';
+      currentGrade = user.grade;
+      currentClassNum = user.class_num;
+
       loadTimetableWeek(user.grade, user.class_num);
       showMain();
       loadNotices();
-
-      // ✅ 로그인 성공 시 localStorage에 저장
-      localStorage.setItem('savedUsername', username);
     } else {
       document.getElementById('loginStatus').innerText = '아이디 또는 비밀번호가 틀렸습니다.';
+    }
+  }
+
+  // ✅ 로그인 없이도 새로고침 시 저장된 이름/학번을 불러와서 표시
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedName = localStorage.getItem('savedName');
+    const savedNum = localStorage.getItem('savedStudentNum');
+    if (savedName && savedNum) {
+      currentUserName = savedName;
+      currentStudentNumber = savedNum;
+      setUserInfoInput();
+    }
+  });
+
+  function setUserInfoInput() {
+    const inputEl = document.getElementById('homework-userinfo');
+    if (inputEl) {
+      inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
     }
   }
 
@@ -674,7 +740,24 @@
     const classNum = parseInt(document.getElementById('signupClass').value.replace(/\s+/g, ''), 10);
     const studentNumber = parseInt(document.getElementById('signupNumber').value.replace(/\s+/g, ''), 10);
 
+    if (!username || !password || !email || !name || !grade || !classNum || !studentNumber) {
+    document.getElementById('signupStatus').innerText = '모든 항목을 입력해 주세요.';
+    return;
+  }
 
+  // ✅ 비밀번호 길이 확인
+  if (password.length < 6) {
+    document.getElementById('signupStatus').innerText = '비밀번호는 6자리 이상이어야 합니다.';
+    return;
+  }
+
+  // ✅ 이메일 형식 확인
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailPattern.test(email)) {
+    document.getElementById('signupStatus').innerText = '올바른 이메일 주소를 입력해 주세요.';
+    return;
+  }
+  
     // 1. username 중복 체크
     const { data: existing, error: checkError } = await supabaseClient
       .from('users')
@@ -1071,6 +1154,7 @@ async function registerAnalyzedText() {
     statusEl.style.color = 'green';
     statusEl.textContent = '✅ 제출이 완료되었습니다!';
     
+    loadMaterials();
     // 입력 초기화
     document.getElementById('homework-name').value = '';
     document.getElementById('homework-title').value = '';
@@ -1261,6 +1345,160 @@ async function registerAnalyzedText() {
       alert('로그인 후 다시 시도해 주세요.');
     }
   }
+
+  // 📂 자료실 목록 불러오기
+// 📂 자료실 목록 불러오기
+async function loadMaterials() {
+
+  query = query.or(`
+    share_scope.eq.school,
+    and(share_scope.eq.grade, grade.eq.${currentGrade}),
+    and(share_scope.eq.class, grade.eq.${currentGrade}, class_num.eq.${currentClassNum})
+  `);
+  
+  const { data, error } = await supabaseClient
+    .from('homeworks')
+    .select('*')
+    .order('id', { ascending: false });
+
+  const listEl = document.getElementById('material-list');
+  listEl.innerHTML = '';
+
+  if (error) {
+    console.error('자료 불러오기 오류:', error);
+    listEl.innerHTML = '<li>자료를 불러오는 중 오류가 발생했습니다.</li>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    listEl.innerHTML = '<li>등록된 자료가 없습니다.</li>';
+    return;
+  }
+
+  data.forEach(item => {
+    // 제목과 작성자(학번+이름)
+    const titleLine = `📌 ${item.title} (${item.grade}학년${item.class_num}반${item.student_number}번 ${item.name})`;
+
+    // 코멘트(있다면)
+    const commentHtml = item.comment
+      ? `<p style="margin:6px 0;">${item.comment}</p>`
+      : '';
+
+    // 파일 다운로드 링크
+    const fileHtml = `<a href="${item.file_url}" target="_blank"
+      style="display:inline-block;margin-top:6px;color:#007bff;text-decoration:none;">
+      📥 다운로드
+    </a>`;
+
+    // 이미지 파일이면 썸네일도 표시
+    let imageHtml = '';
+    if (item.file_url.match(/\.(jpg|jpeg|png|gif)$/i)) {
+      imageHtml = `<div style="margin-top:8px;">
+        <img src="${item.file_url}" style="max-width:200px;border-radius:8px;">
+      </div>`;
+    }
+
+    // li 요소 생성
+    const li = document.createElement('li');
+    li.style.borderBottom = '1px solid #ddd';
+    li.style.padding = '10px 0';
+    li.innerHTML = `
+      <div style="font-weight:bold;">${titleLine}</div>
+      ${commentHtml}
+      ${fileHtml}
+      ${imageHtml}
+    `;
+
+    listEl.appendChild(li);
+  });
+}
+
+
+const scope = document.getElementById('homework-scope').value;
+async function submitHomework() {
+  // ✅ 학번과 이름은 고정값 사용
+  const name = currentUserName;
+  const studentNum = currentStudentNumber;
+  const title = document.getElementById('homework-title').value.trim();
+  const comment = document.getElementById('homework-comment').value.trim();
+  
+  const fileInput = document.getElementById('homework-file');
+  const statusEl = document.getElementById('homework-status');
+
+  if (!name || !studentNum || !title || !fileInput.files.length) {
+    alert('과제명과 파일을 모두 입력해 주세요.');
+    return;
+  }
+
+  // ✅ Supabase 스토리지 업로드
+  const file = fileInput.files[0];
+  const fileName = Date.now() + '_' + file.name;
+
+  let { error: uploadError } = await supabaseClient.storage
+    .from('homework-files') // 스토리지 버킷 이름
+    .upload(fileName, file);
+
+  if (uploadError) {
+    statusEl.style.color = 'red';
+    statusEl.textContent = '파일 업로드 실패: ' + uploadError.message;
+    return;
+  }
+
+  const { data: publicURLData } = supabaseClient
+    .storage
+    .from('homework-files')
+    .getPublicUrl(fileName);
+
+  const fileURL = publicURLData.publicUrl;
+
+  // ✅ DB에 기록 (학번과 이름 포함)
+  const { error: insertError } = await supabaseClient.from('homeworks').insert([{
+    name: name,
+    student_number: studentNum,
+    title: title,
+    grade: currentGrade,      
+    class_num: currentClassNum, 
+    comment: comment,
+    file_url: fileURL,
+    share_scope: scope 
+  }]);
+
+  if (insertError) {
+    statusEl.style.color = 'red';
+    statusEl.textContent = '제출 실패: ' + insertError.message;
+    return;
+  }
+
+  statusEl.style.color = 'green';
+  statusEl.textContent = '✅ 제출이 완료되었습니다!';
+
+  // 입력 초기화
+  document.getElementById('homework-title').value = '';
+  document.getElementById('homework-comment').value = '';
+  document.getElementById('homework-file').value = '';
+
+  // 자료 목록 갱신
+  loadMaterials();
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const privacyAgree = document.getElementById('privacy-agree');
+  const agreeNextBtn = document.getElementById('agree-next-btn');
+  const agreeStep = document.getElementById('agree-step');
+  const inputStep = document.getElementById('input-step');
+
+  // 체크 여부에 따라 '다음' 버튼 활성화
+  privacyAgree.addEventListener('change', () => {
+    agreeNextBtn.disabled = !privacyAgree.checked;
+  });
+
+  // 다음 버튼 클릭 시 정보 입력 단계로 전환
+  agreeNextBtn.addEventListener('click', () => {
+    agreeStep.style.display = 'none';
+    inputStep.style.display = 'block';
+  });
+});
 
   
 
