@@ -315,92 +315,92 @@
         resize: vertical;
         margin-bottom: 12px;
       }
-    }
-    /* 햄버거 기본 숨김 체크박스 */
-      /* 햄버거 기본 숨김 */
-      #menu-toggle {
-        display: none;
-        }
+      }
+      /* 햄버거 기본 숨김 체크박스 */
+        /* 햄버거 기본 숨김 */
+        #menu-toggle {
+          display: none;
+          }
 
-        /* 기본 PC 메뉴 */
-        #main-nav {
-          display: flex;
-          justify-content: center;
-          gap: 1rem;
-          padding: 0.75rem;
-        }
-
-        /* 햄버거 스타일 */
-        .hamburger {
-          display: none; /* PC에서는 안보이게 */
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.2);
-          justify-content: center;
-          align-items: center;
-          flex-direction: column;
-          gap: 5px;
-          cursor: pointer;
-          margin-left: 10px;
-        }
-        .hamburger span {
-          width: 20px;
-          height: 3px;
-          background: #333;
-          border-radius: 2px;
-          transition: all 0.3s ease;
-        }
-
-        /* 📱 모바일에서 메뉴 숨기기 & 햄버거 보이기 */
-        @media (max-width: 768px) {
+          /* 기본 PC 메뉴 */
           #main-nav {
-            display: none;
-            flex-direction: column;
-            position: absolute;
-            top: 70px;
-            right: 16px;
-            background: #fff;
-            width: 200px;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            padding: 12px;
-            z-index: 1000;
-          }
-          #main-nav a {
-            padding: 12px;
-            color: #333;
-            text-decoration: none;
-            border-bottom: 1px solid #eee;
-          }
-          #main-nav a:last-child {
-            border-bottom: none;
-          }
-
-          .hamburger {
-            display: flex; /* 모바일에서만 보이기 */
-          }
-
-          /* 체크박스가 체크되면 메뉴 표시 */
-          #menu-toggle:checked ~ nav#main-nav {
             display: flex;
+            justify-content: center;
+            gap: 1rem;
+            padding: 0.75rem;
           }
 
-          /* 햄버거 X자 애니메이션 */
-          #menu-toggle:checked + .hamburger span:nth-child(1) {
-            transform: rotate(45deg) translate(5px, 5px);
+          /* 햄버거 스타일 */
+          .hamburger {
+            display: none; /* PC에서는 안보이게 */
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            margin-left: 10px;
           }
-          #menu-toggle:checked + .hamburger span:nth-child(2) {
-            opacity: 0;
+          .hamburger span {
+            width: 20px;
+            height: 3px;
+            background: #333;
+            border-radius: 2px;
+            transition: all 0.3s ease;
           }
-          #menu-toggle:checked + .hamburger span:nth-child(3) {
-            transform: rotate(-45deg) translate(5px, -5px);
+
+          /* 📱 모바일에서 메뉴 숨기기 & 햄버거 보이기 */
+          @media (max-width: 768px) {
+            #main-nav {
+              display: none;
+              flex-direction: column;
+              position: absolute;
+              top: 70px;
+              right: 16px;
+              background: #fff;
+              width: 200px;
+              border-radius: 12px;
+              box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+              padding: 12px;
+              z-index: 1000;
+            }
+            #main-nav a {
+              padding: 12px;
+              color: #333;
+              text-decoration: none;
+              border-bottom: 1px solid #eee;
+            }
+            #main-nav a:last-child {
+              border-bottom: none;
+            }
+
+            .hamburger {
+              display: flex; /* 모바일에서만 보이기 */
+            }
+
+            /* 체크박스가 체크되면 메뉴 표시 */
+            #menu-toggle:checked ~ nav#main-nav {
+              display: flex;
+            }
+
+            /* 햄버거 X자 애니메이션 */
+            #menu-toggle:checked + .hamburger span:nth-child(1) {
+              transform: rotate(45deg) translate(5px, 5px);
+            }
+            #menu-toggle:checked + .hamburger span:nth-child(2) {
+              opacity: 0;
+            }
+            #menu-toggle:checked + .hamburger span:nth-child(3) {
+              transform: rotate(-45deg) translate(5px, -5px);
+            }
           }
-        }
   </style>
 </head>
-<body>
 
+<body>
   <!-- 로그인/회원가입 -->
   <div id="login-screen">
     <div class="auth-box" id="login-box">
@@ -414,45 +414,62 @@
       <div id="loginStatus" style="font-size:0.85rem;color:red;"></div>
     </div>
 
-    <div class="auth-box" id="signup-box" style="display:none;">
+    <!-- 📌 회원가입 박스 -->
+<div class="auth-box" id="signup-box" style="display:none;">
   <h2>회원가입</h2>
 
-  <!-- 1단계: 개인정보 동의 -->
-  <div id="agree-step">
-    <div style="text-align:left; font-size:0.8rem; margin:0.5rem 0; border:1px solid #ddd; padding:0.6rem; border-radius:0.5rem; background:#f8f9fa;">
-      <p style="margin:0 0 0.4rem 0; font-weight:bold;">📌 개인정보 수집·이용 동의</p>
-      <p style="margin:0 0 0.3rem 0; line-height:1.4;">
-        <strong>수집하는 개인정보 항목:</strong> 아이디, 비밀번호, 이메일, 이름, 학년, 반, 번호<br>
-        <strong>수집·이용 목적:</strong> EduBoard 회원 관리, 수업 자료 제공, 공지 전달 등 서비스 운영<br>
-        <strong>보유·이용 기간:</strong> 회원 탈퇴 시까지(단, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관)<br>
-        <strong>동의 거부권 및 불이익:</strong> 동의를 거부할 수 있으나, 이 경우 회원가입이 제한됩니다.
-      </p>
-      <label style="display:flex;align-items:center; font-weight:600;">
-        <input type="checkbox" id="privacy-agree" style="margin-right:0.4rem;">
-        위 개인정보 수집·이용에 동의합니다.
-      </label>
-    </div>
-    <button id="agree-next-btn" disabled>다음</button>
-  </div>
-
-  <!-- 2단계: 실제 정보 입력 (초기에는 숨김) -->
-  <div id="input-step" style="display:none;">
-    <input id="signupUsername" type="text" placeholder="아이디">
-    <input id="signupPassword" type="password" placeholder="비밀번호 (6자 이상)">
-    <input id="signupEmail" type="email" placeholder="이메일">
-    <input id="signupName" type="text" placeholder="이름">
-    <input id="signupGrade" type="number" placeholder="학년">
-    <input id="signupClass" type="number" placeholder="반">
-    <input id="signupNumber" type="number" placeholder="번호">
-
-    <button onclick="signup()">가입하기</button>
-    <p style="font-size:0.85rem;">
-      <a href="#" onclick="showLogin()">← 로그인으로 돌아가기</a>
+  <!-- 개인정보 수집·이용 동의 -->
+  <div style="
+    text-align:left;
+    font-size:0.8rem;
+    margin:0.5rem 0;
+    border:1px solid #ddd;
+    padding:0.6rem;
+    border-radius:0.5rem;
+    background:#f8f9fa;">
+    <p style="margin:0 0 0.4rem 0; font-weight:bold;">📌 개인정보 수집·이용 동의</p>
+    <p style="margin:0 0 0.3rem 0; line-height:1.4;">
+      수집 항목: 아이디, 비밀번호, 이름, 학년, 반, 번호<br>
+      이용 목적: EduBoard 회원 관리 및 수업 자료 제공<br>
+      보유 기간: 회원 탈퇴 시까지 (법령에 따라 보관 필요 시 해당 기간 보존)<br>
+      동의 거부 시 회원가입이 제한됩니다.
     </p>
-    <div id="signupStatus" style="font-size:0.85rem;color:red;"></div>
+    <label style="display:flex;align-items:center;font-weight:600;">
+      <input type="checkbox" id="privacy-agree" style="margin-right:0.4rem;">
+      위 개인정보 수집·이용에 동의합니다.
+    </label>
   </div>
+
+  <!-- 입력 폼 -->
+  <input id="signupUsername" type="text" placeholder="아이디">
+  <input id="signupPassword" type="password" placeholder="비밀번호 (6자 이상)">
+  <input id="signupEmail" type="email" placeholder="이메일">
+  <input id="signupName" type="text" placeholder="이름">
+  <input id="signupGrade" type="number" placeholder="학년">
+  <input id="signupClass" type="number" placeholder="반">
+  <input id="signupNumber" type="number" placeholder="번호">
+
+  <!-- 회원가입 버튼 (동의 시 보이도록) -->
+  <button id="signup-btn" onclick="signup()" style="display:none;">회원가입 완료</button>
+
+  <p style="font-size:0.85rem;">
+    <a href="#" onclick="showLogin()">← 로그인으로 돌아가기</a>
+  </p>
+  <div id="signupStatus" style="font-size:0.85rem;color:red;"></div>
 </div>
 
+<script>
+  // ✅ 약관 동의 시 버튼 보이기
+  document.addEventListener('DOMContentLoaded', () => {
+    const agree = document.getElementById('privacy-agree');
+    const btn = document.getElementById('signup-btn');
+    agree.addEventListener('change', () => {
+      btn.style.display = agree.checked ? 'block' : 'none';
+    });
+  });
+</script>
+
+  </div>
 
   <!-- 메인 앱 -->
   <div id="main-app" style="display:none;">
@@ -732,72 +749,55 @@
 
 
   async function signup() {
-    const username = document.getElementById('signupUsername').value.replace(/\s+/g, '');
-    const password = document.getElementById('signupPassword').value.replace(/\s+/g, '');
-    const email = document.getElementById('signupEmail').value.replace(/\s+/g, '');
+    const username = document.getElementById('signupUsername').value.trim();
+    const password = document.getElementById('signupPassword').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
     const name = document.getElementById('signupName').value.trim();
-    const grade = parseInt(document.getElementById('signupGrade').value.replace(/\s+/g, ''), 10);
-    const classNum = parseInt(document.getElementById('signupClass').value.replace(/\s+/g, ''), 10);
-    const studentNumber = parseInt(document.getElementById('signupNumber').value.replace(/\s+/g, ''), 10);
+    const grade = document.getElementById('signupGrade').value.trim();
+    const classNum = document.getElementById('signupClass').value.trim();
+    const number = document.getElementById('signupNumber').value.trim();
+    const agree = document.getElementById('privacy-agree').checked;
 
-    if (!username || !password || !email || !name || !grade || !classNum || !studentNumber) {
-    document.getElementById('signupStatus').innerText = '모든 항목을 입력해 주세요.';
-    return;
-  }
-
-  // ✅ 비밀번호 길이 확인
-  if (password.length < 6) {
-    document.getElementById('signupStatus').innerText = '비밀번호는 6자리 이상이어야 합니다.';
-    return;
-  }
-
-  // ✅ 이메일 형식 확인
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailPattern.test(email)) {
-    document.getElementById('signupStatus').innerText = '올바른 이메일 주소를 입력해 주세요.';
-    return;
-  }
-  
-    // 1. username 중복 체크
-    const { data: existing, error: checkError } = await supabaseClient
-      .from('users')
-      .select('username')
-      .eq('username', username)
-      .maybeSingle();
-
-    if (checkError) {
-      console.error('중복체크 오류:', checkError);
-      document.getElementById('signupStatus').innerText = '오류 발생: ' + checkError.message;
+    // ✅ 입력값 검증
+    if (!agree) {
+      document.getElementById('signupStatus').innerText = '개인정보 수집·이용에 동의해 주세요.';
+      return;
+    }
+    if (!username || !password || !email || !name || !grade || !classNum || !number) {
+      document.getElementById('signupStatus').innerText = '모든 항목을 입력해 주세요.';
+      return;
+    }
+    if (password.length < 6) {
+      document.getElementById('signupStatus').innerText = '비밀번호는 6자 이상이어야 합니다.';
+      return;
+    }
+    // 이메일 형식 검증 (간단)
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      document.getElementById('signupStatus').innerText = '올바른 이메일을 입력해 주세요.';
       return;
     }
 
-    if (existing) {
-      document.getElementById('signupStatus').innerText = '이미 사용 중인 아이디입니다.';
-      return;
+    // ✅ 여기에서 실제 DB로 전송 (Supabase 예시)
+    try {
+      const { error } = await supabaseClient.from('users').insert([{
+        username: username,
+        password: password,
+        email: email,
+        name: name,
+        grade: parseInt(grade, 10),
+        class_num: parseInt(classNum, 10),
+        student_number: parseInt(number, 10),
+        role: 'user'
+      }]);
+      if (error) {
+        document.getElementById('signupStatus').innerText = '회원가입 실패: ' + error.message;
+        return;
+      }
+      document.getElementById('signupStatus').style.color = 'green';
+      document.getElementById('signupStatus').innerText = '회원가입이 완료되었습니다. 로그인해 주세요.';
+    } catch (e) {
+      document.getElementById('signupStatus').innerText = '오류 발생: ' + e.message;
     }
-
-    // 2. insert
-    const { data, error } = await supabaseClient.from('users').insert([{
-      username: username,
-      password: password,
-      name: name,
-      grade: grade,
-      email: email,
-      class_num: classNum,
-      student_number: studentNumber,
-      coin_balance: 0,
-      role: 'user'
-    }]);
-
-    if (error) {
-      console.error('insert 오류:', error);
-      document.getElementById('signupStatus').innerText = '회원가입 실패: ' + error.message;
-      return;
-    }
-
-    console.log('회원가입 성공:', data);
-    document.getElementById('signupStatus').innerText = '회원가입 완료! 로그인 해주세요.';
-    showLogin();
   }
 
   function showMain() {
@@ -1105,6 +1105,7 @@ async function registerAnalyzedText() {
   docResult.addEventListener('input', autoResize);
 
     async function submitHomework() {
+      const scope = document.getElementById('homework-scope').value
     const name = document.getElementById('homework-name').value.trim();
     const title = document.getElementById('homework-title').value.trim();
     const comment = document.getElementById('homework-comment').value.trim();
@@ -1349,12 +1350,6 @@ async function registerAnalyzedText() {
   // 📂 자료실 목록 불러오기
 // 📂 자료실 목록 불러오기
 async function loadMaterials() {
-
-  query = query.or(`
-    share_scope.eq.school,
-    and(share_scope.eq.grade, grade.eq.${currentGrade}),
-    and(share_scope.eq.class, grade.eq.${currentGrade}, class_num.eq.${currentClassNum})
-  `);
   
   const { data, error } = await supabaseClient
     .from('homeworks')
@@ -1414,7 +1409,7 @@ async function loadMaterials() {
 }
 
 
-const scope = document.getElementById('homework-scope').value;
+
 async function submitHomework() {
   // ✅ 학번과 이름은 고정값 사용
   const name = currentUserName;
@@ -1482,23 +1477,6 @@ async function submitHomework() {
 }
 
 
-document.addEventListener('DOMContentLoaded', () => {
-  const privacyAgree = document.getElementById('privacy-agree');
-  const agreeNextBtn = document.getElementById('agree-next-btn');
-  const agreeStep = document.getElementById('agree-step');
-  const inputStep = document.getElementById('input-step');
-
-  // 체크 여부에 따라 '다음' 버튼 활성화
-  privacyAgree.addEventListener('change', () => {
-    agreeNextBtn.disabled = !privacyAgree.checked;
-  });
-
-  // 다음 버튼 클릭 시 정보 입력 단계로 전환
-  agreeNextBtn.addEventListener('click', () => {
-    agreeStep.style.display = 'none';
-    inputStep.style.display = 'block';
-  });
-});
 
   
 
