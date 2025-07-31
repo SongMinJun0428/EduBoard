@@ -475,10 +475,62 @@
   <div id="main-app" style="display:none;">
     <header>
       <h1>EduBoard</h1>
-      <div style="display:flex;align-items:center; gap:10px;">
-        <button onclick="logout()">로그아웃</button>
-        <span id="profile-icon">👤</span>
-      </div>
+      <!-- 기존 코드 -->
+<!-- <span id="profile-icon">👤</span> -->
+
+<!-- 변경된 코드 (👤 이름 ▼ + 드롭다운) -->
+<div id="profile-wrapper" style="position: relative;">
+  <button id="profile-button" style="
+    background: none;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;">
+    👤 <span id="profile-name-display">이름</span> ▼
+  </button>
+  <div id="profile-dropdown" style="
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 120%;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    z-index: 1000;
+    min-width: 140px;">
+    <button onclick="showPanel('profile-panel')" style="
+      width: 100%;
+      padding: 0.6rem 1rem;
+      background: none;
+      border: none;
+      text-align: left;
+      color: black;
+      cursor: pointer;
+      font-size: 0.95rem;">
+      내 정보 수정
+    </button>
+    <button onclick="logout()" style="
+      width: 100%;
+      padding: 0.6rem 1rem;
+      background: none;
+      border: none;
+      text-align: left;
+      color: black;
+      cursor: pointer;
+      font-size: 0.95rem;">
+      로그아웃
+    </button>
+    <!-- 헤더에 추가 -->
+  <div style="margin-left:10px;font-weight:bold;" id="coin-balance">💰 불러오는 중...</div>
+
+  </div>
+</div>
+
     </header>
 
     <input type="checkbox" id="menu-toggle">
@@ -493,8 +545,9 @@
       <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
       <!-- <a href="#" onclick="showPanel('student-panel')">학생 관리</a> -->
       <a href="#" onclick="showPanel('homework-panel')">파일 공유 & 자료실</a>
-      <!-- <a href="#" onclick="showPanel('chat-panel')">상담실</a> -->
+      <!-- <a href="#" onclick="showPanel('chat-panel')">대화실</a> -->
       <a href="#" onclick="showPanel('timetable-panel')">시간표</a>
+      <a href="#" onclick="showPanel('minigame-panel')">미니게임</a>
     </nav>
 
     <div class="content">
@@ -667,20 +720,32 @@
         </div>
       </div>
 
+      
+      <div id="minigame-panel" class="panel" style="display:none;">
+        <h2>🎮 미니게임</h2>
+        <!-- 4=10 게임 -->
+          <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+            <h3>🧮 4 = 10 퍼즐</h3>
+            <p>숫자 4개로 연산하여 10을 만들어보세요<br><strong>💰 5코인 필요</strong></p>
+            <button onclick="startGame('fourEqualsTen')">게임 시작</button>
+          </div>
 
-
-      <!-- ✅ 자료실 패널 -->
-      <div id="materials-panel" class="panel" style="display:none;">
-        <h2>📂 자료실</h2>
-        <input type="file" id="material-file">
-        <button onclick="uploadMaterial()">업로드</button>
-        <div id="material-status" style="margin-top:0.5rem;"></div>
-        <h3>자료 목록</h3>
-        <ul id="material-list"></ul>
-        <button onclick="loadMaterials()">목록 불러오기</button>
       </div>
+
+      <div id="fourEqualsTen-game" class="panel" style="display:none;">
+        <h2>🧮 4 = 10 게임</h2>
+        <p>아래 숫자를 사용해 사칙연산으로 10을 만들어보세요.</p>
+        <div id="game-numbers" style="font-size:1.5rem; margin-bottom:0.5rem;"></div>
+        <input id="game-input" placeholder="예: (1+3)×2+4" style="width:100%;padding:0.5rem;">
+        <button onclick="checkFourEqualsTen()">제출</button>
+        <p id="game-feedback" style="margin-top:0.5rem;font-weight:bold;"></p>
+        <button onclick="exitMiniGame()">❌ 나가기</button>
+      </div>
+
     </div>
   </div>
+
+  
 
 <script>
   const { createClient } = supabase;
@@ -693,6 +758,9 @@
 
   let currentUserName = '';
   let currentStudentNumber = '';
+
+  let currentGrade = null;
+let currentClassNum = null;
 
   async function loginDirect() {
     const username = document.getElementById('loginUsername').value.replace(/\s+/g, '');
@@ -845,10 +913,6 @@ function showPanel(panelId) {
   document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
   document.getElementById(panelId).style.display = 'block';
 }
-
-document.getElementById('profile-icon').addEventListener('click', () => {
-  showPanel('profile-panel');
-});
 
 supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
   if (session) {
@@ -1168,9 +1232,6 @@ async function registerAnalyzedText() {
   const SD_SCHUL_CODE = '7679111';  // ✅ 봉담중학교 코드로 수정
 
 
-  let currentGrade = null;
-  let currentClassNum = null;
-
     // 📌 시간표 불러오기
       async function loadTimetableWeek(grade, classNum) {
         currentGrade = grade;
@@ -1218,16 +1279,37 @@ async function registerAnalyzedText() {
             dayBox.style.marginBottom = '10px';
 
             const title = document.createElement('h4');
-            title.innerText = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+            const dateObj = new Date(
+              dateStr.slice(0, 4), // 연도
+              parseInt(dateStr.slice(4, 6)) - 1, // 월 (0부터 시작)
+              dateStr.slice(6, 8) // 일
+            );
+
+            // 요일 배열
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const dayName = days[dateObj.getDay()];
+
+            title.innerText = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)} (${dayName})`;
+
             dayBox.appendChild(title);
 
             if (data.misTimetable && data.misTimetable[1]) {
               const rows = data.misTimetable[1].row;
+              const unique = {};
               rows.forEach(row => {
+                const key = row.PERIO;
+                if (!unique[key]) {
+                  unique[key] = row.ITRT_CNTNT;
+                }
+              });
+
+              // PERIO 순서대로 정렬해서 출력
+              Object.keys(unique).sort((a, b) => parseInt(a) - parseInt(b)).forEach(perio => {
                 const item = document.createElement('div');
-                item.innerHTML = `<strong>${row.PERIO}교시</strong> : ${row.ITRT_CNTNT}`;
+                item.innerHTML = `<strong>${perio}교시</strong> : ${unique[perio]}`;
                 dayBox.appendChild(item);
               });
+
             } else {
               const none = document.createElement('p');
               none.innerText = '시간표 데이터 없음';
@@ -1459,9 +1541,9 @@ async function submitHomework() {
   }]);
 
   if (insertError) {
-    statusEl.style.color = 'red';
+    statusEl.style.color = 'red'; 
     statusEl.textContent = '제출 실패: ' + insertError.message;
-    return;
+    return; 
   }
 
   statusEl.style.color = 'green';
@@ -1477,11 +1559,127 @@ async function submitHomework() {
 }
 
 
+// 이름 표시 & 업데이트
+function setUserInfoInput() {
+  const inputEl = document.getElementById('homework-userinfo');
+  const nameEl = document.getElementById('profile-name-display');
+  if (inputEl) inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
+  if (nameEl) nameEl.textContent = currentUserName;
+}
 
-  
+// 드롭다운 토글 처리
+document.addEventListener('DOMContentLoaded', () => {
+  const profileButton = document.getElementById('profile-button');
+  const dropdown = document.getElementById('profile-dropdown');
+
+  if (profileButton && dropdown) {
+    profileButton.addEventListener('click', (e) => {
+      e.stopPropagation(); // 클릭 전파 방지
+      dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+
+      if (dropdown.style.display === 'block') {
+    displayCoinBalance();
+  }
+    });
+
+    document.addEventListener('click', () => {
+      dropdown.style.display = 'none';
+    });
+  }
+});
+
+async function displayCoinBalance() {
+  const username = localStorage.getItem('savedUsername');
+  const { data, error } = await supabaseClient
+    .from('users')
+    .select('coin_balance')
+    .eq('username', username)
+    .single();
+
+  if (error || !data) {
+    console.error('코인 조회 실패:', error);
+    return;
+  }
+
+  const balance = data.coin_balance || 0;
+  document.getElementById('coin-balance').innerText = `💰 ${balance} 코인`;
+}
 
 
+//4=10
+let currentFourNumbers = [];
 
+function generateFourNumbers() {
+  currentFourNumbers = [];
+  for (let i = 0; i < 4; i++) {
+    currentFourNumbers.push(Math.floor(Math.random() * 9) + 1);
+  }
+  document.getElementById('game-numbers').innerText = currentFourNumbers.join(' ');
+  document.getElementById('game-input').value = '';
+  document.getElementById('game-feedback').innerText = '';
+}
+
+function checkFourEqualsTen() {
+  const input = document.getElementById('game-input').value;
+  const numsUsed = input.match(/\d+/g)?.map(Number) || [];
+
+  // 유효성 검사: 입력 숫자가 현재 숫자와 일치하는지
+  const sortedInput = numsUsed.slice().sort((a, b) => a - b);
+  const sortedOriginal = currentFourNumbers.slice().sort((a, b) => a - b);
+
+  if (JSON.stringify(sortedInput) !== JSON.stringify(sortedOriginal)) {
+    document.getElementById('game-feedback').innerText = '❌ 주어진 숫자만 사용해야 해요!';
+    return;
+  }
+
+  try {
+    const result = eval(input);
+    if (result === 10) {
+      document.getElementById('game-feedback').innerText = '🎉 정답입니다!';
+    } else {
+      document.getElementById('game-feedback').innerText = `😅 오답! 결과는 ${result}입니다.`;
+    }
+  } catch (e) {
+    document.getElementById('game-feedback').innerText = '⚠️ 식을 정확히 입력해주세요.';
+  }
+}
+
+function exitMiniGame() {
+  document.getElementById('fourEqualsTen-game').style.display = 'none';
+  showPanel('minigame-panel');
+}
+
+
+async function startGame(gameType) {
+  const coinCost = 5;
+  const username = localStorage.getItem('savedUsername');
+
+  if (currentUserCoin < coinCost) {
+    alert('코인이 부족합니다.');
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from('users')
+    .update({ coin_balance: currentUserCoin - coinCost })
+    .eq('username', username);
+
+  if (error) {
+    alert('코인 차감 실패: ' + error.message);
+    return;
+  }
+
+  currentUserCoin -= coinCost;
+  displayCoinBalance();
+
+  if (gameType === 'fourEqualsTen') {
+    generateFourNumbers();
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    document.getElementById('fourEqualsTen-game').style.display = 'block';
+  } else {
+    alert(`[${gameType}] 게임 시작! (코인 차감됨)`);
+  }
+}
 
 </script>
 </body>
