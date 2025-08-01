@@ -379,7 +379,7 @@
     background:#f8f9fa;">
     <p style="margin:0 0 0.4rem 0; font-weight:bold;">📌 개인정보 수집·이용 동의</p>
     <p style="margin:0 0 0.3rem 0; line-height:1.4;">
-      수집 항목: 아이디, 비밀번호, 이름, 학년, 반, 번호<br>
+      수집 항목: 아이디, 비밀번호, 이메일, 이름, 학년, 반, 번호<br>
       이용 목적: EduBoard 회원 관리 및 수업 자료 제공<br>
       보유 기간: 회원 탈퇴 시까지 (법령에 따라 보관 필요 시 해당 기간 보존)<br>
       동의 거부 시 회원가입이 제한됩니다.
@@ -392,8 +392,23 @@
 
   <!-- 입력 폼 -->
   <input id="signupUsername" type="text" placeholder="아이디">
-  <input id="signupPassword" type="password" placeholder="비밀번호 (6자 이상)">
-  <input id="signupEmail" type="email" placeholder="이메일">
+  <div style="position:relative; margin-bottom: 0.8rem;">
+    <input id="signupPassword" type="password" placeholder="비밀번호 (6자 이상)" required />
+    <span onclick="togglePassword('signupPassword')" style="
+      position:absolute; right:10px; top:50%; transform:translateY(-50%);
+      cursor:pointer;">👁️</span>
+  </div>
+  <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem;">
+  <input id="signupEmailId" type="text" placeholder="이메일 아이디" style="flex:1;" />
+    <span>@</span>
+    <select id="signupEmailDomain" style="flex:1;">
+      <option value="gmail.com">gmail.com</option>
+      <option value="naver.com">naver.com</option>
+      <option value="daum.net">daum.net</option>
+      <option value="직접입력">직접입력</option>
+    </select>
+  </div>
+  <input id="signupEmailCustom" type="text" placeholder="도메인 입력" style="display:none; margin-bottom:0.8rem;" />
   <input id="signupName" type="text" placeholder="이름">
   <input id="signupGrade" type="number" placeholder="학년">
   <input id="signupClass" type="number" placeholder="반">
@@ -774,7 +789,10 @@ let currentClassNum = null;
   async function signup() {
     const username = document.getElementById('signupUsername').value.trim();
     const password = document.getElementById('signupPassword').value.trim();
-    const email = document.getElementById('signupEmail').value.trim();
+    const emailId = document.getElementById('signupEmailId').value.trim();
+    const domainValue = document.getElementById('signupEmailDomain').value;
+    const customDomain = document.getElementById('signupEmailCustom').value.trim();
+    const email = `${emailId}@${domainValue === '직접입력' ? customDomain : domainValue}`;
     const name = document.getElementById('signupName').value.trim();
     const grade = document.getElementById('signupGrade').value.trim();
     const classNum = document.getElementById('signupClass').value.trim();
@@ -1673,6 +1691,26 @@ function closeMobileMenu() {
     const target = document.getElementById(panelId);
     if (target) target.style.display = 'block';
   }
+
+  // 이메일 도메인 선택 시 동작
+document.addEventListener('DOMContentLoaded', () => {
+  const domainSelect = document.getElementById('signupEmailDomain');
+  const customInput = document.getElementById('signupEmailCustom');
+
+  domainSelect.addEventListener('change', () => {
+    if (domainSelect.value === '직접입력') {
+      customInput.style.display = 'block';
+    } else {
+      customInput.style.display = 'none';
+    }
+  });
+});
+
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    input.type = input.type === 'password' ? 'text' : 'password';
+  } 
+
 </script>
 </body>
 </html>
