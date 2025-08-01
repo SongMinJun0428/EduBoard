@@ -7,7 +7,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
   <style>
-    /* ===== 공통 ===== */
     body {
       margin: 0;
       font-family: 'Noto Sans KR', sans-serif;
@@ -22,6 +21,10 @@
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    #profile-wrapper {
+      position: relative;
+      margin-left: auto; /* ✅ 이 줄 추가 */
     }
     header h1 {
       margin: 0;
@@ -120,17 +123,14 @@
       margin-bottom: 1rem;
       color: #007bff;
     }
-    /* 문서 분석 패널 내부 전용 스타일 */
     #doc-panel h2 {
       margin-bottom: 1rem;
       font-size: 1.2rem;
       color: #343a40;
     }
-
     #doc-panel input[type="file"] {
       margin-bottom: 0.8rem;
     }
-
     #doc-panel h3 {
       margin-top: 1.5rem;
       margin-bottom: 0.5rem;
@@ -139,7 +139,6 @@
       border-top: 1px solid #dee2e6;
       padding-top: 0.8rem;
     }
-
     #doc-panel textarea {
       width: 100%;
       min-height: 150px;
@@ -153,19 +152,14 @@
       margin-bottom: 1rem;
       box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
     }
-
-    /* 버튼들을 나란히 두고 싶다면 flex */
     #doc-panel .button-group {
       display: flex;
       gap: 0.5rem;
       margin-top: 0.5rem;
     }
-
     #doc-panel .button-group button {
       flex: 1;
     }
-
-    /* 버튼 색상 개선 */
     #doc-panel button {
       background: #007bff;
       border: none;
@@ -176,16 +170,14 @@
       cursor: pointer;
       transition: background 0.3s;
     }
-
     #doc-panel button:hover {
       background: #0056b3;
     }
-
     #doc-result {
       width: 100%;
-      min-height: 100px;       /* 최소 높이 */
-      resize: none;            /* 수동 크기조절 비활성화 */
-      overflow: hidden;        /* 넘치는 스크롤 제거 */
+      min-height: 100px;      
+      resize: none;          
+      overflow: hidden;        
       font-size: 0.95rem;
       line-height: 1.4rem;
       padding: 0.8rem;
@@ -194,7 +186,6 @@
       background: #fdfdfd;
       box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
     }
-
     #homework-panel label {
       font-weight: 600;
       margin-top: 0.5rem;
@@ -202,7 +193,6 @@
       margin-bottom: 0.3rem;
       color: #495057;
     }
-
     #homework-panel input[type="text"],
     #homework-panel input[type="file"],
     #homework-panel textarea {
@@ -216,192 +206,131 @@
       background: #fff;
       box-sizing: border-box;
     }
-
     #homework-panel textarea {
       min-height: 80px;
       resize: vertical;
     }
 
-    /* 📱 태블릿 이하 (768px 이하) */
+  .mobile-only {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    header {
+      display: none !important;
+    }
+
+    .mobile-only {
+      display: block;
+    }
+
+    .mobile-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 56px;
+      background-color: #f8f8f8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 3000;
+    }
+
+    .menu-icon {
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .mobile-title {
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .mobile-user {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .mobile-side-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      transform: translateX(-100%);
+      width: 250px;
+      height: 100%;
+      background: white;
+      padding: 80px 20px 20px;
+      z-index: 2900;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      transition: left 0.3s ease;
+    }
+
+    .mobile-side-menu.open {
+      transform: translateX(0);;
+    }
+
+    .mobile-side-menu ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .mobile-side-menu li {
+      margin-bottom: 1rem;
+    }
+
+    .mobile-side-menu a {
+      text-decoration: none;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .mobile-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.3);
+      z-index: 2800;
+    }
+
+    .mobile-overlay.show {
+      display: block;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #ccc;
+      margin: 16px 0;
+    }
+    /* ✅ PC에서만 보이는 nav (가로 메뉴바) */
+    nav {
+      display: flex;
+      gap: 2rem;
+    }
+
+    /* ✅ 모바일에서는 완전히 숨기기 */
     @media (max-width: 768px) {
-      body {
-        background: #ffffff;
-        font-size: 15px;
-        line-height: 1.6;
+      nav {
+        visibility: hidden; 
+        height: 1.2rem;      
+        margin-top: 0.5rem;  
       }
+    }
+  }
+</style>
 
-      header {
-        flex-direction: column;
-        align-items: center;
-        padding: 16px;
-        background: #2563eb;
-      }
 
-      header h1 {
-        font-size: 24px;
-        color: #fff;
-        margin-bottom: 12px;
-      }
-
-      header .logout {
-        background: #ffffff;
-        color: #2563eb;
-        border: none;
-        padding: 10px 16px;
-        border-radius: 12px;
-        font-size: 16px;
-        width: 100%;
-      }
-
-      /* 메뉴를 세로 리스트처럼 */
-      .menu {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-        padding: 12px;
-        background: #f0f4ff;
-      }
-
-      .menu-item {
-        flex: 1 1 40%;
-        background: #ffffff;
-        border: 1px solid #ccc;
-        padding: 12px;
-        text-align: center;
-        font-size: 16px;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      }
-
-      /* 카드 스타일을 모바일 전용으로 큼직하게 */
-      .card {
-        max-width: none;
-        margin: 16px;
-        padding: 20px;
-        background: #ffffff;
-        border-radius: 20px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      }
-
-      .card h2 {
-        font-size: 20px;
-        margin-bottom: 12px;
-      }
-
-      .card p {
-        font-size: 15px;
-        margin-bottom: 16px;
-      }
-
-      .card button {
-        display: block;
-        width: 100%;
-        background: #2563eb;
-        color: #fff;
-        padding: 14px 0;
-        font-size: 16px;
-        border-radius: 12px;
-        margin-top: 12px;
-        border: none;
-      }
-
-      .card textarea {
-        width: 100%;
-        padding: 14px;
-        font-size: 15px;
-        border: 1px solid #ccc;
-        border-radius: 12px;
-        resize: vertical;
-        margin-bottom: 12px;
-      }
-      }
-      /* 햄버거 기본 숨김 체크박스 */
-        /* 햄버거 기본 숨김 */
-        #menu-toggle {
-          display: none;
-          }
-
-          /* 기본 PC 메뉴 */
-          #main-nav {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            padding: 0.75rem;
-          }
-
-          /* 햄버거 스타일 */
-          .hamburger {
-            display: none; /* PC에서는 안보이게 */
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-          }
-          .hamburger span {
-            width: 20px;
-            height: 3px;
-            background: #333;
-            border-radius: 2px;
-            transition: all 0.3s ease;
-          }
-
-          /* 📱 모바일에서 메뉴 숨기기 & 햄버거 보이기 */
-          @media (max-width: 768px) {
-            #main-nav {
-              display: none;
-              flex-direction: column;
-              position: absolute;
-              top: 70px;
-              right: 16px;
-              background: #fff;
-              width: 200px;
-              border-radius: 12px;
-              box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-              padding: 12px;
-              z-index: 1000;
-            }
-            #main-nav a {
-              padding: 12px;
-              color: #333;
-              text-decoration: none;
-              border-bottom: 1px solid #eee;
-            }
-            #main-nav a:last-child {
-              border-bottom: none;
-            }
-
-            .hamburger {
-              display: flex; /* 모바일에서만 보이기 */
-            }
-
-            /* 체크박스가 체크되면 메뉴 표시 */
-            #menu-toggle:checked ~ nav#main-nav {
-              display: flex;
-            }
-
-            /* 햄버거 X자 애니메이션 */
-            #menu-toggle:checked + .hamburger span:nth-child(1) {
-              transform: rotate(45deg) translate(5px, 5px);
-            }
-            #menu-toggle:checked + .hamburger span:nth-child(2) {
-              opacity: 0;
-            }
-            #menu-toggle:checked + .hamburger span:nth-child(3) {
-              transform: rotate(-45deg) translate(5px, -5px);
-            }
-          }
-  </style>
 </head>
 
 <body>
-  <!-- 로그인/회원가입 -->
+
+  <!-- 로그인, 회원가입 -->
   <div id="login-screen">
     <div class="auth-box" id="login-box">
       <h2>로그인</h2>
@@ -414,11 +343,11 @@
       <div id="loginStatus" style="font-size:0.85rem;color:red;"></div>
     </div>
 
-    <!-- 📌 회원가입 박스 -->
-<div class="auth-box" id="signup-box" style="display:none;">
-  <h2>회원가입</h2>
+    <!-- 회원가입 박스 -->
+    <div class="auth-box" id="signup-box" style="display:none;">
+    <h2>회원가입</h2>
 
-  <!-- 개인정보 수집·이용 동의 -->
+  <!-- 개인정보 수집, 이용 동의 -->
   <div style="
     text-align:left;
     font-size:0.8rem;
@@ -458,16 +387,6 @@
   <div id="signupStatus" style="font-size:0.85rem;color:red;"></div>
 </div>
 
-<script>
-  // ✅ 약관 동의 시 버튼 보이기
-  document.addEventListener('DOMContentLoaded', () => {
-    const agree = document.getElementById('privacy-agree');
-    const btn = document.getElementById('signup-btn');
-    agree.addEventListener('change', () => {
-      btn.style.display = agree.checked ? 'block' : 'none';
-    });
-  });
-</script>
 
   </div>
 
@@ -531,14 +450,18 @@
   </div>
 </div>
 
-    </header>
 
-    <input type="checkbox" id="menu-toggle">
-    <label for="menu-toggle" class="hamburger">
-      <span></span>
-      <span></span>
-      <span></span>
-    </label>
+<!-- ✅ 오버레이 -->
+<div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+
+
+    </header>
+    <!-- ✅ 모바일 전용 상단 헤더 -->
+    <div class="mobile-only mobile-header">
+      <div class="menu-icon" onclick="toggleMobileMenu()">☰</div>
+      <div class="mobile-title">EduBoard</div>
+      <div class="mobile-user" id="mobile-user-name">admin</div>
+    </div>
 
     <nav id="main-nav">
       <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
@@ -743,6 +666,27 @@
       </div>
 
     </div>
+    <!-- ✅ 모바일 사이드 메뉴 -->
+    <div id="mobile-side-menu" class="mobile-only mobile-side-menu">
+      <ul class="menu-section">
+        <li><a href="#" onclick="showPanel('notice-panel'); closeMobileMenu()">📢 공지사항</a></li>
+        <li><a href="#" onclick="showPanel('doc-panel'); closeMobileMenu()">📄 문서 분석</a></li>
+        <li><a href="#" onclick="showPanel('homework-panel'); closeMobileMenu()">📁 자료실</a></li>
+        <li><a href="#" onclick="showPanel('timetable-panel'); closeMobileMenu()">🕒 시간표</a></li>
+        <li><a href="#" onclick="showPanel('minigame-panel'); closeMobileMenu()">🎮 미니게임</a></li>
+      </ul>
+      <hr>
+      <ul class="user-section">
+        <li><a href="#">🙍‍♂️ 내 정보</a></li>
+        <li><a href="#">🔒 비밀번호 변경</a></li>
+        <li><a href="#">⚙️ 설정</a></li>
+        <li><a href="#">🚪 로그아웃</a></li>
+      </ul>
+    </div>
+
+    <!-- ✅ 오버레이 -->
+    <div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+
   </div>
 
   
@@ -1681,6 +1625,43 @@ async function startGame(gameType) {
   }
 }
 
+
+
+  // ✅ 약관 동의 시 버튼 보이기
+  document.addEventListener('DOMContentLoaded', () => {
+    const agree = document.getElementById('privacy-agree');
+    const btn = document.getElementById('signup-btn');
+    agree.addEventListener('change', () => {
+      btn.style.display = agree.checked ? 'block' : 'none';
+    });
+  });
+
+  function toggleMobileMenu() {
+  document.getElementById('mobile-side-menu').classList.toggle('open');
+  document.getElementById('mobile-overlay').classList.toggle('show');
+}
+
+function closeMobileMenu() {
+  document.getElementById('mobile-side-menu').classList.remove('open');
+  document.getElementById('mobile-overlay').classList.remove('show');
+}
+
+  function toggleMobileMenu() {
+    document.getElementById('mobile-side-menu').classList.toggle('open');
+    document.getElementById('mobile-overlay').classList.toggle('show');
+  }
+
+  function closeMobileMenu() {
+    document.getElementById('mobile-side-menu').classList.remove('open');
+    document.getElementById('mobile-overlay').classList.remove('show');
+  }
+
+  function showPanel(panelId) {
+    const panels = document.querySelectorAll('.panel');
+    panels.forEach(panel => panel.style.display = 'none');
+    const target = document.getElementById(panelId);
+    if (target) target.style.display = 'block';
+  }
 </script>
 </body>
 </html>
