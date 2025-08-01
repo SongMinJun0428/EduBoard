@@ -323,6 +323,22 @@
       }
     }
   }
+  .login-help {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+  }
+
+  .login-help a {
+    color: #007bff;
+    text-decoration: none;
+    margin: 0 0.5rem;
+  }
+
+  .login-help a:hover {
+    text-decoration: underline;
+  }
+
 </style>
 
 
@@ -338,7 +354,12 @@
       <input id="loginPassword" type="password" placeholder="비밀번호">
       <button onclick="loginDirect()">로그인</button>
       <p style="font-size:0.85rem;">
-        아이디가 없으신가요? <a href="#" onclick="showSignup()">회원가입</a>
+      아이디가 없으신가요? <a href="#" onclick="showSignup()">회원가입</a>
+      <div class="login-help">
+        <a href="find-id.html">아이디 찾기</a>
+        <span>|</span>
+        <a href="find-password.html">비밀번호 찾기</a>
+      </div>
       </p>
       <div id="loginStatus" style="font-size:0.85rem;color:red;"></div>
     </div>
@@ -516,9 +537,6 @@
               box-shadow:inset 0 1px 2px rgba(0,0,0,0.04);
             ">
           </textarea>
-
-
-
         
         <!-- 사진 미리보기 -->
         <img id="doc-preview" style="max-width:100%; margin-top:1rem; display:none; border-radius:0.5rem;" />
@@ -682,14 +700,7 @@
         <li><a href="#">⚙️ 설정</a></li>
         <li><a href="#">🚪 로그아웃</a></li>
       </ul>
-    </div>
-
-    <!-- ✅ 오버레이 -->
-    <div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
-
-  </div>
-
-  
+    </div>  
 
 <script>
   const { createClient } = supabase;
