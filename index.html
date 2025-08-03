@@ -24,7 +24,7 @@
     }
     #profile-wrapper {
       position: relative;
-      margin-left: auto; /* ✅ 이 줄 추가 */
+      margin-left: auto;
     }
     header h1 {
       margin: 0;
@@ -211,137 +211,312 @@
       resize: vertical;
     }
 
-  .mobile-only {
+    .mobile-only {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        display: none !important;
+      }
+
+      .mobile-only {
+        display: block;
+      }
+
+      .mobile-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 56px;
+        background-color: #f8f8f8;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 3000;
+      }
+
+      .menu-icon {
+        font-size: 24px;
+        cursor: pointer;
+      }
+
+      .mobile-title {
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .mobile-user {
+        font-size: 14px;
+        color: #333;
+        white-space: nowrap;    
+        overflow: visible;      
+        max-width: none; 
+      }
+
+      .mobile-side-menu {
+        position: fixed;
+        top: 0;
+        left: 0;
+        transform: translateX(-100%);
+        width: 250px;
+        height: 100%;
+        background: white;
+        padding: 80px 20px 20px;
+        z-index: 2900;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        transition: left 0.3s ease;
+      }
+
+      .mobile-side-menu.open {
+        transform: translateX(0);;
+      }
+
+      .mobile-side-menu ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .mobile-side-menu li {
+        margin-bottom: 1rem;
+      }
+
+      .mobile-side-menu a {
+        text-decoration: none;
+        font-size: 16px;
+        color: #333;
+      }
+
+      .mobile-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.3);
+        z-index: 2800;
+      }
+
+      .mobile-overlay.show {
+        display: block;
+      }
+
+      hr {
+        border: none;
+        border-top: 1px solid #ccc;
+        margin: 16px 0;
+      }
+
+      nav {
+        display: flex;
+        gap: 2rem;
+      }
+
+      @media (max-width: 768px) {
+        nav {
+          visibility: hidden; 
+          height: 1.2rem;      
+          margin-top: 0.5rem;  
+        }
+      }
+    }
+    .login-help {
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .login-help a {
+      color: #007bff;
+      text-decoration: none;
+      margin: 0 0.5rem;
+    }
+
+    .login-help a:hover {
+      text-decoration: underline;
+    }
+    
+    .mini-btn {
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .mini-btn:hover {
+      background: #0056b3;
+    }
+
+.week-nav {
+  display: flex;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  height: 44px; /* ✅ 전체 높이 고정 (필요 시 조정) */
+}
+
+.nav-btn {
+  flex: 1;
+  background-color: white;
+  color: #007bff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  border-right: 1px solid #007bff;
+  display: flex;                   /* ✅ 수직 가운데 정렬용 */
+  align-items: center;            /* ✅ 수직 중앙 */
+  justify-content: center;        /* ✅ 수평 중앙 */
+  height: 100%;                   /* ✅ 부모 높이만큼 채움 */
+  line-height: 1;                 /* ✅ 줄 높이 제거 */
+  padding: 0;                     /* ✅ 안쪽 여백 제거 또는 최소화 */
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.nav-btn:last-child {
+  border-right: none;
+}
+
+.nav-btn:hover {
+  background-color: #e6f0ff;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.dashboard-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  min-height: 180px;
+}
+.dashboard-card h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+}
+.dashboard-card small {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+#dashboard-container {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.dashboard-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 500px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#timetable-grade-class {
+  margin-bottom: 1rem;
+}
+
+#dashboard-timetable-list {
+  list-style: none;
+  padding-left: 1rem;
+}
+
+#dashboard-meal-info {
+  white-space: pre-line;
+}
+
+.preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 1rem;
+  }
+  .preview-container img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    cursor: pointer;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+  .modal {
     display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+  .modal img {
+    max-width: 90%;
+    max-height: 70%;
+    margin-bottom: 1rem;
+  }
+  .modal a {
+    color: #fff;
+    background: #007bff;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 6px;
+  }
+  .close {
+    position: absolute;
+    top: 20px; right: 30px;
+    font-size: 36px;
+    color: white;
+    cursor: pointer;
   }
 
   @media (max-width: 768px) {
-    header {
-      display: none !important;
-    }
-
-    .mobile-only {
-      display: block;
-    }
-
-    .mobile-header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 56px;
-      background-color: #f8f8f8;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 16px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      z-index: 3000;
-    }
-
-    .menu-icon {
-      font-size: 24px;
-      cursor: pointer;
-    }
-
-    .mobile-title {
-      font-weight: bold;
-      font-size: 18px;
-    }
-
-    .mobile-user {
-      font-size: 14px;
-      color: #333;
-    }
-
-    .mobile-side-menu {
-      position: fixed;
-      top: 0;
-      left: 0;
-      transform: translateX(-100%);
-      width: 250px;
-      height: 100%;
-      background: white;
-      padding: 80px 20px 20px;
-      z-index: 2900;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-      transition: left 0.3s ease;
-    }
-
-    .mobile-side-menu.open {
-      transform: translateX(0);;
-    }
-
-    .mobile-side-menu ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .mobile-side-menu li {
-      margin-bottom: 1rem;
-    }
-
-    .mobile-side-menu a {
-      text-decoration: none;
-      font-size: 16px;
-      color: #333;
-    }
-
-    .mobile-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.3);
-      z-index: 2800;
-    }
-
-    .mobile-overlay.show {
-      display: block;
-    }
-
-    hr {
-      border: none;
-      border-top: 1px solid #ccc;
-      margin: 16px 0;
-    }
-    /* ✅ PC에서만 보이는 nav (가로 메뉴바) */
-    nav {
-      display: flex;
-      gap: 2rem;
-    }
-
-    /* ✅ 모바일에서는 완전히 숨기기 */
-    @media (max-width: 768px) {
-      nav {
-        visibility: hidden; 
-        height: 1.2rem;      
-        margin-top: 0.5rem;  
-      }
+    .preview-container img {
+      width: 100px;
+      height: 100px;
     }
   }
-  .login-help {
-    margin-top: 1rem;
-    text-align: center;
-    font-size: 0.9rem;
-  }
 
-  .login-help a {
-    color: #007bff;
-    text-decoration: none;
-    margin: 0 0.5rem;
-  }
 
-  .login-help a:hover {
-    text-decoration: underline;
-  }
 
 </style>
 
-
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6240235196031094"
+     crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -500,6 +675,7 @@
     </div>
 
     <nav id="main-nav">
+      <a href="#" onclick="showPanel('dashboard')">대시보드</a>
       <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
       <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
       <!-- <a href="#" onclick="showPanel('student-panel')">학생 관리</a> -->
@@ -508,8 +684,19 @@
       <a href="#" onclick="showPanel('timetable-panel')">시간표</a>
       <a href="#" onclick="showPanel('minigame-panel')">미니게임</a>
     </nav>
+    
+    
+
 
     <div class="content">
+      <div id="dashboard" class="panel active">
+        <h2>🏠 대시보드</h2>
+        <p style="margin-bottom: 1.5rem; color: #495057;">
+          EduBoard에 오신 것을 환영합니다! 나의 활동을 한눈에 확인해보세요.(테스트)
+        </p>
+      </div>
+
+
       <div id="notice-panel" class="panel" style="display:none;">
         <h2>📢 공지사항</h2>
         <div id="notice-list"></div>
@@ -576,38 +763,51 @@
       </div>
 
       <div id="homework-panel" class="panel" style="display:none;">
-        <h2>📚 파일 공유 & 자료실</h2>
-        
-        <!-- 업로드 영역 -->
-        <label for="homework-scope">공유 범위</label>
-        <select id="homework-scope">
-          <option value="school">전교</option>
-          <option value="grade">같은 학년</option>
-          <option value="class">같은 반</option>
-        </select>
+  <h2>📚 파일 공유 & 자료실</h2>
 
-        <label for="homework-userinfo">학번 + 이름</label>
-        <input type="text" id="homework-userinfo" readonly style="background:#f1f3f5; font-weight:bold; margin-bottom:0.8rem;">
+  <!-- 업로드 영역 -->
+  <label for="homework-scope">공유 범위</label>
+  <select id="homework-scope">
+    <option value="school">전교</option>
+    <option value="grade">같은 학년</option>
+    <option value="class">같은 반</option>
+  </select>
 
-        <label for="homework-title">제목</label>
-        <input type="text" id="homework-title" placeholder="예: 체험학습 사진">
+  <label for="homework-userinfo">학번 + 이름</label>
+  <input type="text" id="homework-userinfo" readonly style="background:#f1f3f5; font-weight:bold; margin-bottom:0.8rem;">
 
-        <label for="homework-file">파일 업로드</label>
-        <input type="file" id="homework-file">
+  <label for="homework-title">제목</label>
+  <input type="text" id="homework-title" placeholder="예: 체험학습 사진">
 
-        <label for="homework-comment">코멘트 (선택)</label>
-        <textarea id="homework-comment" placeholder="코멘트를 입력해 주세요"></textarea>
+  <label for="homework-file">파일 업로드 (여러 개 가능)</label>
+  <input type="file" id="homework-file" multiple />
 
-        <button onclick="submitHomework()">업로드하기</button>
-        <div id="homework-status" style="margin-top:0.5rem;font-size:0.9rem;color:#007bff;"></div>
+  <label for="homework-comment">코멘트 (선택)</label>
+  <textarea id="homework-comment" placeholder="코멘트를 입력해 주세요"></textarea>
 
-        <hr style="margin:1.5rem 0;">
+  <button onclick="submitHomework()">업로드하기</button>
+  <div id="homework-status" style="margin-top:0.5rem;font-size:0.9rem;color:#007bff;"></div>
 
-        <!-- 자료 목록 영역 -->
-        <h3>📂 업로드된 자료</h3>
-        <button onclick="loadMaterials()">🔄 목록 새로고침</button>
-        <ul id="material-list" style="margin-top:1rem;"></ul>
-      </div>
+  <hr style="margin:1.5rem 0;">
+
+  <!-- 미리보기 섹션 -->
+  <h3>🖼️ 미리보기 (이미지 파일)</h3>
+  <div id="filePreviewContainer" class="preview-container"></div>
+
+  <!-- 자세히 보기 모달 -->
+  <div id="fileModal" class="modal">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <img id="modalImage" src="" alt="미리보기">
+    <a id="downloadLink" href="#" download>⬇️ 다운로드</a>
+  </div>
+
+  <hr style="margin:1.5rem 0;">
+
+  <!-- 자료 목록 영역 -->
+  <h3>📂 업로드된 자료</h3>
+  <button onclick="loadMaterials()">🔄 목록 새로고침</button>
+  <ul id="material-list" style="margin-top:1rem;"></ul>
+</div>
 
 
 
@@ -658,17 +858,19 @@
               font-size:0.9rem;
               color:#333;">
           <span id="timetable-grade-info">학년/반 정보 불러오는 중...</span>
-          <button onclick="reloadTimetable()" style="
-              background:#007bff;
-              border:none;
-              border-radius:0.5rem;
-              padding:0.4rem 0.8rem;
-              color:#fff;
-              font-weight:600;
-              cursor:pointer;">
-            🔄 새로고침
-          </button>
+          <!-- 🔄 새로고침 버튼 제거하고 이 부분에 삽입 -->
+          <div class="week-nav">
+            <button class="nav-btn" onclick="moveTimetable(-1)">⏪ 이전</button>
+            <button class="nav-btn" onclick="moveTimetable(0)">새로고침</button>
+            <button class="nav-btn" onclick="moveTimetable(1)">⏩ 다음</button>
+          </div>
+
+
+
         </div>
+
+
+
 
         <!-- ✅ 시간표 UI 컨테이너 -->
         <div id="timetable-container"
@@ -702,6 +904,7 @@
     <!-- ✅ 모바일 사이드 메뉴 -->
     <div id="mobile-side-menu" class="mobile-only mobile-side-menu">
       <ul class="menu-section">
+        <li><a href="#" onclick="showPanel('dashboard');closeMobileMenu()">🏠대시보드</a></li>
         <li><a href="#" onclick="showPanel('notice-panel'); closeMobileMenu()">📢 공지사항</a></li>
         <li><a href="#" onclick="showPanel('doc-panel'); closeMobileMenu()">📄 문서 분석</a></li>
         <li><a href="#" onclick="showPanel('homework-panel'); closeMobileMenu()">📁 자료실</a></li>
@@ -710,10 +913,10 @@
       </ul>
       <hr>
       <ul class="user-section">
-        <li><a href="#">🙍‍♂️ 내 정보</a></li>
-        <li><a href="#">🔒 비밀번호 변경</a></li>
-        <li><a href="#">⚙️ 설정</a></li>
-        <li><a href="#">🚪 로그아웃</a></li>
+        <li><a href="#" id="menu-profile">🙍‍♂️ 내 정보</a></li>
+        <li><a href="#" id="menu-password">🔒 비밀번호 변경</a></li>
+        <li><a href="#" id="menu-setting">⚙️ 설정</a></li>
+        <li><a href="#" id="menu-logout">🚪 로그아웃</a></li>
       </ul>
     </div>  
 
@@ -725,12 +928,14 @@
   );
 
   let currentUserRole = 'user';
-
   let currentUserName = '';
   let currentStudentNumber = '';
 
   let currentGrade = null;
-let currentClassNum = null;
+  let currentClassNum = null;
+
+  let timetableOffset = 0; // 현재 주로부터 몇 주 이동했는지를 저장 (0 = 이번 주)
+
 
   async function loginDirect() {
     const username = document.getElementById('loginUsername').value.replace(/\s+/g, '');
@@ -784,6 +989,7 @@ let currentClassNum = null;
       inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
     }
   }
+  
 
 
   async function signup() {
@@ -834,6 +1040,7 @@ let currentClassNum = null;
         document.getElementById('signupStatus').innerText = '회원가입 실패: ' + error.message;
         return;
       }
+      alert("회원가입이 완료되었습니다!");
       document.getElementById('signupStatus').style.color = 'green';
       document.getElementById('signupStatus').innerText = '회원가입이 완료되었습니다. 로그인해 주세요.';
     } catch (e) {
@@ -884,8 +1091,13 @@ let currentClassNum = null;
 
 function showPanel(panelId) {
   document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-  document.getElementById(panelId).style.display = 'block';
+  const target = document.getElementById(panelId);
+  if (target) {
+    target.style.display = 'block';
+  }
 }
+
+
 
 supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
   if (session) {
@@ -1204,11 +1416,11 @@ async function registerAnalyzedText() {
   const ATPT_OFCDC_SC_CODE = 'J10'; // 경기도교육청
   const SD_SCHUL_CODE = '7679111';  // ✅ 봉담중학교 코드로 수정
 
-
     // 📌 시간표 불러오기
       async function loadTimetableWeek(grade, classNum) {
         currentGrade = grade;
         currentClassNum = classNum;
+        
 
         document.getElementById('timetable-grade-info').innerText = `${grade}학년 ${classNum}반 (주간)`;
         const container = document.getElementById('timetable-container');
@@ -1217,7 +1429,7 @@ async function registerAnalyzedText() {
         const today = new Date();
         const day = today.getDay();
         const monday = new Date(today);
-        monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+        monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + timetableOffset * 7);
 
         const year = today.getFullYear();
         const month = today.getMonth() + 1;
@@ -1299,6 +1511,13 @@ async function registerAnalyzedText() {
         showPanel('timetable-panel');
       }
 
+      function moveTimetable(offset) {
+        timetableOffset += offset;  // ✅ 주간 이동 업데이트
+        loadTimetableWeek(currentGrade, currentClassNum, timetableOffset); // ✅ 갱신된 주 기준으로 다시 로드
+      }
+
+
+
       // 📌 페이지 로드시 자동 로그인 확인
       window.addEventListener('DOMContentLoaded', async () => {
         const savedUsername = localStorage.getItem('savedUsername');
@@ -1324,6 +1543,7 @@ async function registerAnalyzedText() {
             await loadTimetableWeek(user.grade, user.class_num);
             showMain();
             loadNotices();
+            localStorage.setItem("savedUsername", username);
             return;
           }
         }
@@ -1390,17 +1610,13 @@ async function registerAnalyzedText() {
 
   document.querySelectorAll('#main-nav a').forEach(link => {
     link.addEventListener('click', () => {
-      document.getElementById('menu-toggle').checked = false; // ✅ 체크 해제 → 메뉴 닫힘
+      const menuToggle = document.getElementById('menu-toggle');
+      if (menuToggle) {
+        menuToggle.checked = false;
+      }
+
     });
   });
-
-  function reloadTimetable() {
-    if (currentGrade && currentClassNum) {
-      loadTimetableWeek(currentGrade, currentClassNum);
-    } else {
-      alert('로그인 후 다시 시도해 주세요.');
-    }
-  }
 
   // 📂 자료실 목록 불러오기
 // 📂 자료실 목록 불러오기
@@ -1536,8 +1752,11 @@ async function submitHomework() {
 function setUserInfoInput() {
   const inputEl = document.getElementById('homework-userinfo');
   const nameEl = document.getElementById('profile-name-display');
+  const mobileNameEl = document.getElementById('mobile-user-name');
+
   if (inputEl) inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
   if (nameEl) nameEl.textContent = currentUserName;
+  if (mobileNameEl) mobileNameEl.textContent = currentUserName;
 }
 
 // 드롭다운 토글 처리
@@ -1666,16 +1885,6 @@ async function startGame(gameType) {
   });
 
   function toggleMobileMenu() {
-  document.getElementById('mobile-side-menu').classList.toggle('open');
-  document.getElementById('mobile-overlay').classList.toggle('show');
-}
-
-function closeMobileMenu() {
-  document.getElementById('mobile-side-menu').classList.remove('open');
-  document.getElementById('mobile-overlay').classList.remove('show');
-}
-
-  function toggleMobileMenu() {
     document.getElementById('mobile-side-menu').classList.toggle('open');
     document.getElementById('mobile-overlay').classList.toggle('show');
   }
@@ -1683,13 +1892,6 @@ function closeMobileMenu() {
   function closeMobileMenu() {
     document.getElementById('mobile-side-menu').classList.remove('open');
     document.getElementById('mobile-overlay').classList.remove('show');
-  }
-
-  function showPanel(panelId) {
-    const panels = document.querySelectorAll('.panel');
-    panels.forEach(panel => panel.style.display = 'none');
-    const target = document.getElementById(panelId);
-    if (target) target.style.display = 'block';
   }
 
   // 이메일 도메인 선택 시 동작
@@ -1710,6 +1912,100 @@ function togglePassword(inputId) {
     const input = document.getElementById(inputId);
     input.type = input.type === 'password' ? 'text' : 'password';
   } 
+
+  document.addEventListener('DOMContentLoaded', () => {
+  const menuProfile = document.getElementById('menu-profile');
+  const menuPassword = document.getElementById('menu-password');
+  const menuSetting = document.getElementById('menu-setting');
+  const menuLogout = document.getElementById('menu-logout');
+
+  if (menuProfile) {
+    menuProfile.addEventListener('click', (e) => {
+      e.preventDefault();
+      showPanel('profile-panel');
+      closeMobileMenu();
+    });
+  }
+
+  if (menuPassword) {
+    menuPassword.addEventListener('click', (e) => {
+      e.preventDefault();
+      alert('비밀번호 변경은 준비 중입니다.');
+      closeMobileMenu();
+      /*showPanel('profile-panel'); // 실제 비밀번호 패널 있으면 그걸로 바꾸세요
+      closeMobileMenu();*/
+    });
+  }
+
+  if (menuSetting) {
+    menuSetting.addEventListener('click', (e) => {
+      e.preventDefault();
+      alert('설정은 준비 중입니다.');
+      closeMobileMenu();
+    });
+  }
+
+  if (menuLogout) {
+    menuLogout.addEventListener('click', (e) => {
+      e.preventDefault();
+      logout();
+      closeMobileMenu();
+    });
+  }
+});
+
+let currentDate = new Date();
+
+function formatYMD(date) {
+  return date.toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+function updateDateLabels() {
+  const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
+  const dateStr = currentDate.toLocaleDateString('ko-KR', options);
+  document.getElementById('timetable-date-label').textContent = dateStr;
+  document.getElementById('meal-date-label').textContent = dateStr;
+}
+
+function changeDate(delta) {
+  currentDate.setDate(currentDate.getDate() + delta);
+  //updateDateLabels();
+  loadTimetable();
+  loadMeal();
+}
+
+const fileInput = document.getElementById('homework-file');
+  const previewContainer = document.getElementById('filePreviewContainer');
+  const modal = document.getElementById('fileModal');
+  const modalImage = document.getElementById('modalImage');
+  const downloadLink = document.getElementById('downloadLink');
+
+  fileInput.addEventListener('change', () => {
+    previewContainer.innerHTML = '';
+
+    Array.from(fileInput.files).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.alt = file.name;
+          img.onclick = () => {
+            modal.style.display = 'flex';
+            modalImage.src = e.target.result;
+            downloadLink.href = e.target.result;
+            downloadLink.download = file.name;
+          };
+          previewContainer.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  });
+
+  function closeModal() {
+    modal.style.display = 'none';
+  }
 
 </script>
 </body>
