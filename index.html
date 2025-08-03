@@ -511,6 +511,8 @@
     }
   }
 
+  
+
 
 
 </style>
@@ -691,9 +693,71 @@
     <div class="content">
       <div id="dashboard" class="panel active">
         <h2>🏠 대시보드</h2>
-        <p style="margin-bottom: 1.5rem; color: #495057;">
+        <!--<p style="margin-bottom: 1.5rem; color: #495057;">
           EduBoard에 오신 것을 환영합니다! 나의 활동을 한눈에 확인해보세요.(테스트)
-        </p>
+        </p> -->
+  <h3>📱 EduBoard 모바일 사용 설명서</h3>
+  <p>EduBoard는 <strong>학생과 선생님이 함께 사용하는 스마트 학교 플랫폼</strong>입니다.</p>
+
+  <h3>🔹 1. 로그인 화면</h3>
+  <ul>
+    <li>앱 실행 → 로그인 화면</li>
+    <li>아이디 + 비밀번호 → <strong>로그인</strong> 버튼</li>
+    <li>회원이 아니라면 <strong>회원가입</strong> 클릭!</li>
+  </ul>
+
+  <h4>✅ 회원가입 시 입력 항목</h4>
+  <ul>
+    <li>아이디, 비밀번호 (6자 이상)</li>
+    <li>이메일</li>
+    <li>이름, 학년, 반, 번호</li>
+    <li>개인정보 수집 동의 체크 ✅</li>
+  </ul>
+
+  <h3>🔹 2. 모바일 상단 헤더 구성</h3>
+  <table>
+    <tr><th>위치</th><th>기능</th></tr>
+    <tr><td>☰ 왼쪽 메뉴</td><td>전체 기능 메뉴 열기</td></tr>
+    <tr><td>가운데 EduBoard</td><td>홈 역할</td></tr>
+    <tr><td>👤 오른쪽 이름</td><td>로그인한 사용자 이름 표시</td></tr>
+  </table>
+
+  <h3>🔹 3. ☰ 메뉴 기능</h3>
+  <ul>
+    <li>🏠 대시보드: 활동 요약 보기</li>
+    <li>📢 공지사항: 공지 확인</li>
+    <li>📄 문서 분석: 사진에서 글자 추출</li>
+    <li>📁 자료실: 파일 업로드 및 공유</li>
+    <li>🕒 시간표: 주간 시간표 보기</li>
+    <li>🎮 미니게임: 숫자 4개로 10 만들기</li>
+  </ul>
+
+  <h3>🔹 4. 시간표, 공지, 자료실은?</h3>
+  <ul>
+    <li>⏪⏩ 버튼으로 주간 이동 가능</li>
+    <li>파일은 썸네일로 미리 보기 가능</li>
+    <li>이미지 클릭 시 확대, 다운로드 가능</li>
+  </ul>
+
+  <h3>🔹 5. 미니게임 안내(테스트)</h3>
+  <ul>
+    <li>게임 시작 시 5코인 차감</li>
+    <li>정답이면 🎉, 오답이면 😅 피드백 제공</li>
+  </ul>
+
+  <h3>🔹 6. 내 정보 확인(컴퓨터만 지원)</h3>
+  <ul>
+    <li>👤 이름 클릭 시 드롭다운 열림</li>
+    <li>이름 수정, 로그아웃, 코인 확인 가능</li>
+  </ul>
+
+  <p style="margin-top:1.5rem;background:#e7f3ff;padding:1rem;border-left:4px solid #007bff;">
+    💡 <strong>추가 팁:</strong><br>
+    - 자동 로그인 지원<br>
+    - PC에서도 동일한 기능 사용 가능
+  </p>
+</div>
+
       </div>
 
 
@@ -762,52 +826,40 @@
         <ul id="student-list"></ul>
       </div>
 
-      <div id="homework-panel" class="panel" style="display:none;">
-  <h2>📚 파일 공유 & 자료실</h2>
+    <div id="homework-panel" class="panel" style="display:none;">
+      <h2>📚 파일 공유 & 자료실</h2>
 
-  <!-- 업로드 영역 -->
-  <label for="homework-scope">공유 범위</label>
-  <select id="homework-scope">
-    <option value="school">전교</option>
-    <option value="grade">같은 학년</option>
-    <option value="class">같은 반</option>
-  </select>
+      <!-- 업로드 영역 -->
+      <label for="homework-scope">공유 범위</label>
+      <select id="homework-scope">
+        <option value="school">전교</option>
+        <option value="grade">같은 학년</option>
+        <option value="class">같은 반</option>
+      </select>
 
-  <label for="homework-userinfo">학번 + 이름</label>
-  <input type="text" id="homework-userinfo" readonly style="background:#f1f3f5; font-weight:bold; margin-bottom:0.8rem;">
+      <label for="homework-userinfo">학번 + 이름</label>
+      <input type="text" id="homework-userinfo" readonly style="background:#f1f3f5; font-weight:bold; margin-bottom:0.8rem;">
 
-  <label for="homework-title">제목</label>
-  <input type="text" id="homework-title" placeholder="예: 체험학습 사진">
+      <label for="homework-title">제목</label>
+      <input type="text" id="homework-title" placeholder="예: 체험학습 사진">
 
-  <label for="homework-file">파일 업로드 (여러 개 가능)</label>
-  <input type="file" id="homework-file" multiple />
+      <label for="homework-file">파일 업로드</label>
+      <input type="file" id="homework-file" multiple>
 
-  <label for="homework-comment">코멘트 (선택)</label>
-  <textarea id="homework-comment" placeholder="코멘트를 입력해 주세요"></textarea>
+      <label for="homework-comment">코멘트 (선택)</label>
+      <textarea id="homework-comment" placeholder="코멘트를 입력해 주세요"></textarea>
 
-  <button onclick="submitHomework()">업로드하기</button>
-  <div id="homework-status" style="margin-top:0.5rem;font-size:0.9rem;color:#007bff;"></div>
+      <button onclick="submitHomework()">업로드하기</button>
+      <div id="homework-status" style="margin-top:0.5rem;font-size:0.9rem;color:#007bff;"></div>
 
-  <hr style="margin:1.5rem 0;">
+      <hr style="margin:1.5rem 0;">
 
-  <!-- 미리보기 섹션 -->
-  <h3>🖼️ 미리보기 (이미지 파일)</h3>
-  <div id="filePreviewContainer" class="preview-container"></div>
+      <!-- 자료 목록 영역 -->
+      <h3>📂 업로드된 자료</h3>
+      <button onclick="loadMaterials()">🔄 목록 새로고침</button>
+      <ul id="material-list" style="margin-top:1rem;"></ul>
+    </div>
 
-  <!-- 자세히 보기 모달 -->
-  <div id="fileModal" class="modal">
-    <span class="close" onclick="closeModal()">&times;</span>
-    <img id="modalImage" src="" alt="미리보기">
-    <a id="downloadLink" href="#" download>⬇️ 다운로드</a>
-  </div>
-
-  <hr style="margin:1.5rem 0;">
-
-  <!-- 자료 목록 영역 -->
-  <h3>📂 업로드된 자료</h3>
-  <button onclick="loadMaterials()">🔄 목록 새로고침</button>
-  <ul id="material-list" style="margin-top:1rem;"></ul>
-</div>
 
 
 
@@ -920,12 +972,30 @@
       </ul>
     </div>  
 
+    <!-- 이미지 확대 모달 -->
+<div id="imageModal" class="modal" style="
+  display:none;
+  position:fixed;
+  top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.8);
+  justify-content:center;
+  align-items:center;
+  z-index:5000;
+  flex-direction:column;
+">
+  <span onclick="closeImageModal()" style="color:white;font-size:2rem;position:absolute;top:20px;right:30px;cursor:pointer;">&times;</span>
+  <img id="modalImage" src="" style="max-width:90%; max-height:80%; border-radius:8px;" />
+</div>
+
+
 <script>
   const { createClient } = supabase;
   const supabaseClient = createClient(
     'https://ucmzrkwrsezfdjnnwsww.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw'
   );
+
+  
 
   let currentUserRole = 'user';
   let currentUserName = '';
@@ -1052,6 +1122,7 @@
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'block';
     setupAdminNav();
+    showPanel('dashboard');
   }
 
   function showSignup() {
@@ -1353,64 +1424,7 @@ async function registerAnalyzedText() {
   // 사용자가 직접 입력할 때도 적용
   docResult.addEventListener('input', autoResize);
 
-    async function submitHomework() {
-      const scope = document.getElementById('homework-scope').value
-    const name = document.getElementById('homework-name').value.trim();
-    const title = document.getElementById('homework-title').value.trim();
-    const comment = document.getElementById('homework-comment').value.trim();
-    const fileInput = document.getElementById('homework-file');
-    const statusEl = document.getElementById('homework-status');
-
-    if (!name || !title || !fileInput.files.length) {
-      alert('이름, 과제명, 파일을 모두 입력해 주세요.');
-      return;
-    }
-
-    // Supabase 스토리지에 파일 업로드
-    const file = fileInput.files[0];
-    const fileName = Date.now() + '_' + file.name;
-
-    let { error: uploadError } = await supabaseClient.storage
-      .from('homework-files') // 스토리지 버킷 이름
-      .upload(fileName, file);
-
-    if (uploadError) {
-      statusEl.style.color = 'red';
-      statusEl.textContent = '파일 업로드 실패: ' + uploadError.message;
-      return;
-    }
-
-    const { data: publicURLData } = supabaseClient
-      .storage
-      .from('homework-files')
-      .getPublicUrl(fileName);
-
-    const fileURL = publicURLData.publicUrl;
-
-    // DB에 기록
-    const { error: insertError } = await supabaseClient.from('homeworks').insert([{
-      name: name,
-      title: title,
-      comment: comment,
-      file_url: fileURL
-    }]);
-
-    if (insertError) {
-      statusEl.style.color = 'red';
-      statusEl.textContent = '제출 실패: ' + insertError.message;
-      return;
-    }
-
-    statusEl.style.color = 'green';
-    statusEl.textContent = '✅ 제출이 완료되었습니다!';
     
-    loadMaterials();
-    // 입력 초기화
-    document.getElementById('homework-name').value = '';
-    document.getElementById('homework-title').value = '';
-    document.getElementById('homework-comment').value = '';
-    document.getElementById('homework-file').value = '';
-  }
 
   const NEIS_KEY = '1692c030b074479784fa252d2886f919';
   const ATPT_OFCDC_SC_CODE = 'J10'; // 경기도교육청
@@ -1508,7 +1522,6 @@ async function registerAnalyzedText() {
           container.innerHTML = '<p>시간표를 불러오는 중 오류가 발생했습니다.</p>';
         }
 
-        showPanel('timetable-panel');
       }
 
       function moveTimetable(offset) {
@@ -1618,20 +1631,109 @@ async function registerAnalyzedText() {
     });
   });
 
-  // 📂 자료실 목록 불러오기
-// 📂 자료실 목록 불러오기
-async function loadMaterials() {
-  
-  const { data, error } = await supabaseClient
-    .from('homeworks')
-    .select('*')
-    .order('id', { ascending: false });
 
+
+async function submitHomework() {
+  const name = currentUserName;
+  const studentNum = currentStudentNumber;
+  const grade = currentGrade;
+  const classNum = currentClassNum;
+  const scope = document.getElementById('homework-scope').value;
+  const title = document.getElementById('homework-title').value.trim();
+  const comment = document.getElementById('homework-comment').value.trim();
+  const fileInput = document.getElementById('homework-file');
+  const statusEl = document.getElementById('homework-status');
+
+  if (!name || !studentNum || !title || fileInput.files.length === 0) {
+    alert('과제명과 파일을 모두 입력해 주세요.');
+    return;
+  }
+
+  statusEl.style.color = '#007bff';
+  statusEl.textContent = '⏳ 업로드 중입니다...';
+
+  const insertRecords = [];
+
+  try {
+    for (let i = 0; i < fileInput.files.length; i++) {
+      const file = fileInput.files[i];
+      const timestamp = Date.now();
+
+      // ✅ 안전한 파일명 생성
+      const safeFileName = file.name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^\w.-]/g, '_');
+
+      const fileName = `${studentNum}_${timestamp}_${i}_${safeFileName}`;
+
+      // ✅ 파일 업로드
+      const { error: uploadError } = await supabaseClient
+        .storage
+        .from('homework-files')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw new Error(`❌ 파일 업로드 실패: ${safeFileName} - ${uploadError.message}`);
+      }
+
+      const { data: publicURLData } = supabaseClient
+        .storage
+        .from('homework-files')
+        .getPublicUrl(fileName);
+
+      const fileURL = publicURLData.publicUrl;
+
+      insertRecords.push({
+        name,
+        student_number: studentNum,
+        title,
+        grade,
+        class_num: classNum,
+        comment,
+        file_url: fileURL,
+        share_scope: scope
+      });
+    }
+
+    // ✅ DB에 한꺼번에 insert
+    const { error: insertError } = await supabaseClient
+      .from('homeworks')
+      .insert(insertRecords);
+
+    if (insertError) {
+      throw new Error(`❌ DB 저장 실패: ${insertError.message}`);
+    }
+
+    statusEl.style.color = 'green';
+    statusEl.textContent = `✅ 총 ${insertRecords.length}개 파일 업로드 완료!`;
+
+    // 입력 초기화
+    document.getElementById('homework-title').value = '';
+    document.getElementById('homework-comment').value = '';
+    document.getElementById('homework-file').value = '';
+
+    // 자료 목록 갱신
+    loadMaterials();
+
+  } catch (err) {
+    console.error(err);
+    statusEl.style.color = 'red';
+    statusEl.textContent = err.message || '업로드 중 오류 발생';
+  }
+}
+
+async function loadMaterials() {
   const listEl = document.getElementById('material-list');
   listEl.innerHTML = '';
 
+  const { data, error } = await supabaseClient
+    .from('homeworks')
+    .select('*')
+    .order('uploaded_at', { ascending: false });
+
   if (error) {
-    console.error('자료 불러오기 오류:', error);
+    console.error('❌ 자료 불러오기 오류:', error);
     listEl.innerHTML = '<li>자료를 불러오는 중 오류가 발생했습니다.</li>';
     return;
   }
@@ -1642,110 +1744,48 @@ async function loadMaterials() {
   }
 
   data.forEach(item => {
-    // 제목과 작성자(학번+이름)
-    const titleLine = `📌 ${item.title} (${item.grade}학년${item.class_num}반${item.student_number}번 ${item.name})`;
-
-    // 코멘트(있다면)
+    const titleLine = `📌 ${item.title} (${item.grade}학년 ${item.class_num}반 ${item.student_number}번 ${item.name})`;
     const commentHtml = item.comment
-      ? `<p style="margin:6px 0;">${item.comment}</p>`
+      ? `<p style="margin:6px 0;">💬 ${item.comment}</p>`
       : '';
 
-    // 파일 다운로드 링크
-    const fileHtml = `<a href="${item.file_url}" target="_blank"
-      style="display:inline-block;margin-top:6px;color:#007bff;text-decoration:none;">
-      📥 다운로드
-    </a>`;
+    const fileUrls = Array.isArray(item.file_url)
+      ? item.file_url
+      : (typeof item.file_url === 'string' && item.file_url.startsWith('['))
+        ? JSON.parse(item.file_url)
+        : [item.file_url];
 
-    // 이미지 파일이면 썸네일도 표시
-    let imageHtml = '';
-    if (item.file_url.match(/\.(jpg|jpeg|png|gif)$/i)) {
-      imageHtml = `<div style="margin-top:8px;">
-        <img src="${item.file_url}" style="max-width:200px;border-radius:8px;">
-      </div>`;
-    }
+    const fileHtmlArray = fileUrls.map(url => {
+      const filename = decodeURIComponent(url.split('/').pop());
+      const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
 
-    // li 요소 생성
+      // 이미지 확대 기능 포함
+      const imagePreview = isImage
+        ? `<img src="${url}" alt="${filename}" 
+               onclick="openImageModal('${url}')"
+               style="max-width:120px; max-height:120px; border-radius:6px; cursor:pointer; margin-bottom:6px;" />`
+        : '';
+
+      const downloadLink = `<a href="${url}" download="${filename}" target="_blank" style="color:#007bff;text-decoration:none;font-weight:500;">
+        📥 파일 다운로드
+      </a>`;
+
+      return `${imagePreview}<br>${downloadLink}`;
+    });
+
     const li = document.createElement('li');
     li.style.borderBottom = '1px solid #ddd';
-    li.style.padding = '10px 0';
+    li.style.padding = '12px 0';
     li.innerHTML = `
-      <div style="font-weight:bold;">${titleLine}</div>
+      <div style="font-weight:bold; margin-bottom:6px;">${titleLine}</div>
       ${commentHtml}
-      ${fileHtml}
-      ${imageHtml}
+      ${fileHtmlArray.join('<br><br>')}
     `;
-
     listEl.appendChild(li);
   });
 }
 
 
-
-async function submitHomework() {
-  // ✅ 학번과 이름은 고정값 사용
-  const name = currentUserName;
-  const studentNum = currentStudentNumber;
-  const title = document.getElementById('homework-title').value.trim();
-  const comment = document.getElementById('homework-comment').value.trim();
-  
-  const fileInput = document.getElementById('homework-file');
-  const statusEl = document.getElementById('homework-status');
-
-  if (!name || !studentNum || !title || !fileInput.files.length) {
-    alert('과제명과 파일을 모두 입력해 주세요.');
-    return;
-  }
-
-  // ✅ Supabase 스토리지 업로드
-  const file = fileInput.files[0];
-  const fileName = Date.now() + '_' + file.name;
-
-  let { error: uploadError } = await supabaseClient.storage
-    .from('homework-files') // 스토리지 버킷 이름
-    .upload(fileName, file);
-
-  if (uploadError) {
-    statusEl.style.color = 'red';
-    statusEl.textContent = '파일 업로드 실패: ' + uploadError.message;
-    return;
-  }
-
-  const { data: publicURLData } = supabaseClient
-    .storage
-    .from('homework-files')
-    .getPublicUrl(fileName);
-
-  const fileURL = publicURLData.publicUrl;
-
-  // ✅ DB에 기록 (학번과 이름 포함)
-  const { error: insertError } = await supabaseClient.from('homeworks').insert([{
-    name: name,
-    student_number: studentNum,
-    title: title,
-    grade: currentGrade,      
-    class_num: currentClassNum, 
-    comment: comment,
-    file_url: fileURL,
-    share_scope: scope 
-  }]);
-
-  if (insertError) {
-    statusEl.style.color = 'red'; 
-    statusEl.textContent = '제출 실패: ' + insertError.message;
-    return; 
-  }
-
-  statusEl.style.color = 'green';
-  statusEl.textContent = '✅ 제출이 완료되었습니다!';
-
-  // 입력 초기화
-  document.getElementById('homework-title').value = '';
-  document.getElementById('homework-comment').value = '';
-  document.getElementById('homework-file').value = '';
-
-  // 자료 목록 갱신
-  loadMaterials();
-}
 
 
 // 이름 표시 & 업데이트
@@ -2007,6 +2047,19 @@ const fileInput = document.getElementById('homework-file');
     modal.style.display = 'none';
   }
 
+  function openImageModal(url) {
+  const modal = document.getElementById('imageModal');
+  const img = document.getElementById('modalImage');
+  img.src = url;
+  modal.style.display = 'flex';
+}
+
+function closeImageModal() {
+  const modal = document.getElementById('imageModal');
+  modal.style.display = 'none';
+}
+
+
 </script>
-</body>
+</body> 
 </html>
