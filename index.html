@@ -13,6 +13,7 @@
       background: #f8f9fa;
       color: #333;
     }
+
     header {
       background: #fff;
       border-bottom: 1px solid #dee2e6;
@@ -22,20 +23,24 @@
       align-items: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
+
     #profile-wrapper {
       position: relative;
       margin-left: auto;
     }
+
     header h1 {
       margin: 0;
       font-size: 1.4rem;
       color: #007bff;
     }
+
     #profile-icon {
       cursor: pointer;
       font-size: 1.3rem;
       margin-left: 1rem;
     }
+
     nav {
       background: #fff;
       border-bottom: 1px solid #dee2e6;
@@ -44,6 +49,7 @@
       gap: 1rem;
       padding: 0.75rem;
     }
+
     nav a {
       text-decoration: none;
       color: #495057;
@@ -51,15 +57,18 @@
       border-radius: 0.5rem;
       font-weight: 500;
     }
+
     nav a:hover {
       background: #e9ecef;
       color: #007bff;
     }
+
     .content {
       padding: 2rem;
       max-width: 1000px;
       margin: auto;
     }
+
     .panel {
       background: #fff;
       border: 1px solid #dee2e6;
@@ -68,6 +77,7 @@
       margin-bottom: 1.5rem;
       box-shadow: 0 2px 4px rgba(0,0,0,0.04);
     }
+
     button {
       background: #007bff;
       border: none;
@@ -80,9 +90,11 @@
       width: 100%;
       margin-bottom: 0.5rem;
     }
+
     button:hover {
       background: #0056b3;
     }
+
     input[type=text],
     input[type=password],
     input[type=email],
@@ -99,10 +111,12 @@
       background: #fff;
       box-sizing: border-box;
     }
+
     textarea {
       height: 80px;
       padding: 0.6rem;
     }
+
     #login-screen {
       height: 100vh;
       display: flex;
@@ -110,6 +124,7 @@
       align-items: center;
       background: #ffffff;
     }
+
     .auth-box {
       background: #fff;
       padding: 2rem;
@@ -118,19 +133,23 @@
       width: 320px;
       text-align: center;
     }
+
     .auth-box h2 {
       margin-top: 0;
       margin-bottom: 1rem;
       color: #007bff;
     }
+
     #doc-panel h2 {
       margin-bottom: 1rem;
       font-size: 1.2rem;
       color: #343a40;
     }
+
     #doc-panel input[type="file"] {
       margin-bottom: 0.8rem;
     }
+
     #doc-panel h3 {
       margin-top: 1.5rem;
       margin-bottom: 0.5rem;
@@ -139,6 +158,7 @@
       border-top: 1px solid #dee2e6;
       padding-top: 0.8rem;
     }
+
     #doc-panel textarea {
       width: 100%;
       min-height: 150px;
@@ -152,14 +172,17 @@
       margin-bottom: 1rem;
       box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
     }
+
     #doc-panel .button-group {
       display: flex;
       gap: 0.5rem;
       margin-top: 0.5rem;
     }
+
     #doc-panel .button-group button {
       flex: 1;
     }
+
     #doc-panel button {
       background: #007bff;
       border: none;
@@ -170,9 +193,11 @@
       cursor: pointer;
       transition: background 0.3s;
     }
+
     #doc-panel button:hover {
       background: #0056b3;
     }
+
     #doc-result {
       width: 100%;
       min-height: 100px;      
@@ -186,6 +211,7 @@
       background: #fdfdfd;
       box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
     }
+    
     #homework-panel label {
       font-weight: 600;
       margin-top: 0.5rem;
@@ -193,6 +219,7 @@
       margin-bottom: 0.3rem;
       color: #495057;
     }
+
     #homework-panel input[type="text"],
     #homework-panel input[type="file"],
     #homework-panel textarea {
@@ -206,6 +233,7 @@
       background: #fff;
       box-sizing: border-box;
     }
+
     #homework-panel textarea {
       min-height: 80px;
       resize: vertical;
@@ -215,6 +243,7 @@
       display: none;
     }
 
+    
     @media (max-width: 768px) {
       header {
         display: none !important;
@@ -323,8 +352,14 @@
           height: 1.2rem;      
           margin-top: 0.5rem;  
         }
+
+        .preview-container img {
+          width: 100px;
+          height: 100px;
+        }
       }
     }
+
     .login-help {
       margin-top: 1rem;
       text-align: center;
@@ -352,431 +387,402 @@
       font-weight: 600;
       line-height: 1;
     }
+
     .mini-btn:hover {
       background: #0056b3;
     }
 
-.week-nav {
-  display: flex;
-  border: 2px solid #007bff;
-  border-radius: 8px;
-  overflow: hidden;
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
-  height: 44px; /* ✅ 전체 높이 고정 (필요 시 조정) */
-}
-
-.nav-btn {
-  flex: 1;
-  background-color: white;
-  color: #007bff;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: none;
-  border-right: 1px solid #007bff;
-  display: flex;                   /* ✅ 수직 가운데 정렬용 */
-  align-items: center;            /* ✅ 수직 중앙 */
-  justify-content: center;        /* ✅ 수평 중앙 */
-  height: 100%;                   /* ✅ 부모 높이만큼 채움 */
-  line-height: 1;                 /* ✅ 줄 높이 제거 */
-  padding: 0;                     /* ✅ 안쪽 여백 제거 또는 최소화 */
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.nav-btn:last-child {
-  border-right: none;
-}
-
-.nav-btn:hover {
-  background-color: #e6f0ff;
-}
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
-  padding: 1rem;
-}
-
-.dashboard-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1rem 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  min-height: 180px;
-}
-.dashboard-card h3 {
-  margin-bottom: 0.5rem;
-  font-size: 1.2rem;
-}
-.dashboard-card small {
-  color: #888;
-  font-size: 0.85rem;
-}
-
-#dashboard-container {
-  display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  padding: 2rem;
-}
-
-.dashboard-panel {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  width: 100%;
-  max-width: 500px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.nav-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-#timetable-grade-class {
-  margin-bottom: 1rem;
-}
-
-#dashboard-timetable-list {
-  list-style: none;
-  padding-left: 1rem;
-}
-
-#dashboard-meal-info {
-  white-space: pre-line;
-}
-
-.preview-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 1rem;
-  }
-  .preview-container img {
-    width: 120px;
-    height: 120px;
-    object-fit: cover;
-    cursor: pointer;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-  }
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0; top: 0;
-    width: 100%; height: 100%;
-    background-color: rgba(0,0,0,0.8);
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-  }
-  .modal img {
-    max-width: 90%;
-    max-height: 70%;
-    margin-bottom: 1rem;
-  }
-  .modal a {
-    color: #fff;
-    background: #007bff;
-    padding: 10px 20px;
-    text-decoration: none;
-    border-radius: 6px;
-  }
-  .close {
-    position: absolute;
-    top: 20px; right: 30px;
-    font-size: 36px;
-    color: white;
-    cursor: pointer;
-  }
-
-  @media (max-width: 768px) {
-    .preview-container img {
-      width: 100px;
-      height: 100px;
+    .week-nav {
+      display: flex;
+      border: 2px solid #007bff;
+      border-radius: 8px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+      height: 44px;
     }
-  }
 
-  
+    .nav-btn {
+      flex: 1;
+      background-color: white;
+      color: #007bff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: none;
+      border-right: 1px solid #007bff;
+      display: flex;                 
+      align-items: center;          
+      justify-content: center;      
+      height: 100%;                 
+      line-height: 1;                
+      padding: 0;                   
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
 
+    .nav-btn:last-child {
+      border-right: none;
+    }
 
+    .nav-btn:hover {
+      background-color: #e6f0ff;
+    }
 
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    .dashboard-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      min-height: 180px;
+    }
+    .dashboard-card h3 {
+      margin-bottom: 0.5rem;
+      font-size: 1.2rem;
+    }
+    .dashboard-card small {
+      color: #888;
+      font-size: 0.85rem;
+    }
+
+    #dashboard-container {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      padding: 2rem;
+    }
+
+    .dashboard-panel {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    #timetable-grade-class {
+      margin-bottom: 1rem;
+    }
+
+    #dashboard-timetable-list {
+      list-style: none;
+      padding-left: 1rem;
+    }
+
+    #dashboard-meal-info {
+      white-space: pre-line;
+    }
+
+    .preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 1rem;
+      }
+      .preview-container img {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        cursor: pointer;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.8);
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+      .modal img {
+        max-width: 90%;
+        max-height: 70%;
+        margin-bottom: 1rem;
+      }
+      .modal a {
+        color: #fff;
+        background: #007bff;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 6px;
+      }
+      .close {
+        position: absolute;
+        top: 20px; right: 30px;
+        font-size: 36px;
+        color: white;
+        cursor: pointer;
+      }
 </style>
-
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6240235196031094"
-     crossorigin="anonymous"></script>
 </head>
+  <body>
+    <!-- 로그인, 회원가입 -->
+    <div id="login-screen">
+      <div class="auth-box" id="login-box">
+        <h2>로그인</h2>
+        <input id="loginUsername" type="text" placeholder="아이디">
+        <input id="loginPassword" type="password" placeholder="비밀번호">
+        <button onclick="loginDirect()">로그인</button>
+        <p style="font-size:0.85rem;">
+        아이디가 없으신가요? <a href="#" onclick="showSignup()">회원가입</a>
+        <div class="login-help">
+          <a href="find-id.html">아이디 찾기</a>
+          <span>|</span>
+          <a href="find-password.html">비밀번호 찾기</a>
+        </div>
+        </p>
+        <div id="loginStatus" style="font-size:0.85rem;color:red;"></div>
+      </div>
 
-<body>
+      <!-- 회원가입 박스 -->
+      <div class="auth-box" id="signup-box" style="display:none;">
+      <h2>회원가입</h2>
 
-  <!-- 로그인, 회원가입 -->
-  <div id="login-screen">
-    <div class="auth-box" id="login-box">
-      <h2>로그인</h2>
-      <input id="loginUsername" type="text" placeholder="아이디">
-      <input id="loginPassword" type="password" placeholder="비밀번호">
-      <button onclick="loginDirect()">로그인</button>
+      <!-- 개인정보 수집, 이용 동의 -->
+      <div style="
+        text-align:left;
+        font-size:0.8rem;
+        margin:0.5rem 0;
+        border:1px solid #ddd;
+        padding:0.6rem;
+        border-radius:0.5rem;
+        background:#f8f9fa;">
+        <p style="margin:0 0 0.4rem 0; font-weight:bold;">📌 개인정보 수집·이용 동의</p>
+        <p style="margin:0 0 0.3rem 0; line-height:1.4;">
+          수집 항목: 아이디, 비밀번호, 이메일, 이름, 학년, 반, 번호<br>
+          이용 목적: EduBoard 회원 관리 및 수업 자료 제공<br>
+          보유 기간: 회원 탈퇴 시까지 (법령에 따라 보관 필요 시 해당 기간 보존)<br>
+          동의 거부 시 회원가입이 제한됩니다.
+        </p>
+        <label style="display:flex;align-items:center;font-weight:600;">
+          <input type="checkbox" id="privacy-agree" style="margin-right:0.4rem;">
+          위 개인정보 수집·이용에 동의합니다.
+        </label>
+      </div>
+
+      <!-- 입력 폼 -->
+      <input id="signupUsername" type="text" placeholder="아이디">
+      <div style="position:relative; margin-bottom: 0.8rem;">
+        <input id="signupPassword" type="password" placeholder="비밀번호 (6자 이상)" required />
+        <span onclick="togglePassword('signupPassword')" style="
+          position:absolute; right:10px; top:50%; transform:translateY(-50%);
+          cursor:pointer;">👁️</span>
+      </div>
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem;">
+      <input id="signupEmailId" type="text" placeholder="이메일 아이디" style="flex:1;" />
+        <span>@</span>
+        <select id="signupEmailDomain" style="flex:1;">
+          <option value="gmail.com">gmail.com</option>
+          <option value="naver.com">naver.com</option>
+          <option value="daum.net">daum.net</option>
+          <option value="직접입력">직접입력</option>
+        </select>
+      </div>
+      <input id="signupEmailCustom" type="text" placeholder="도메인 입력" style="display:none; margin-bottom:0.8rem;" />
+      <input id="signupName" type="text" placeholder="이름">
+      <input id="signupGrade" type="number" placeholder="학년">
+      <input id="signupClass" type="number" placeholder="반">
+      <input id="signupNumber" type="number" placeholder="번호">
+
+      <!-- 회원가입 버튼 (동의 시 보이도록) -->
+      <button id="signup-btn" onclick="signup()" style="display:none;">회원가입 완료</button>
+
       <p style="font-size:0.85rem;">
-      아이디가 없으신가요? <a href="#" onclick="showSignup()">회원가입</a>
-      <div class="login-help">
-        <a href="find-id.html">아이디 찾기</a>
-        <span>|</span>
-        <a href="find-password.html">비밀번호 찾기</a>
-      </div>
+        <a href="#" onclick="showLogin()">← 로그인으로 돌아가기</a>
       </p>
-      <div id="loginStatus" style="font-size:0.85rem;color:red;"></div>
-    </div>
-
-    <!-- 회원가입 박스 -->
-    <div class="auth-box" id="signup-box" style="display:none;">
-    <h2>회원가입</h2>
-
-  <!-- 개인정보 수집, 이용 동의 -->
-  <div style="
-    text-align:left;
-    font-size:0.8rem;
-    margin:0.5rem 0;
-    border:1px solid #ddd;
-    padding:0.6rem;
-    border-radius:0.5rem;
-    background:#f8f9fa;">
-    <p style="margin:0 0 0.4rem 0; font-weight:bold;">📌 개인정보 수집·이용 동의</p>
-    <p style="margin:0 0 0.3rem 0; line-height:1.4;">
-      수집 항목: 아이디, 비밀번호, 이메일, 이름, 학년, 반, 번호<br>
-      이용 목적: EduBoard 회원 관리 및 수업 자료 제공<br>
-      보유 기간: 회원 탈퇴 시까지 (법령에 따라 보관 필요 시 해당 기간 보존)<br>
-      동의 거부 시 회원가입이 제한됩니다.
-    </p>
-    <label style="display:flex;align-items:center;font-weight:600;">
-      <input type="checkbox" id="privacy-agree" style="margin-right:0.4rem;">
-      위 개인정보 수집·이용에 동의합니다.
-    </label>
-  </div>
-
-  <!-- 입력 폼 -->
-  <input id="signupUsername" type="text" placeholder="아이디">
-  <div style="position:relative; margin-bottom: 0.8rem;">
-    <input id="signupPassword" type="password" placeholder="비밀번호 (6자 이상)" required />
-    <span onclick="togglePassword('signupPassword')" style="
-      position:absolute; right:10px; top:50%; transform:translateY(-50%);
-      cursor:pointer;">👁️</span>
-  </div>
-  <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem;">
-  <input id="signupEmailId" type="text" placeholder="이메일 아이디" style="flex:1;" />
-    <span>@</span>
-    <select id="signupEmailDomain" style="flex:1;">
-      <option value="gmail.com">gmail.com</option>
-      <option value="naver.com">naver.com</option>
-      <option value="daum.net">daum.net</option>
-      <option value="직접입력">직접입력</option>
-    </select>
-  </div>
-  <input id="signupEmailCustom" type="text" placeholder="도메인 입력" style="display:none; margin-bottom:0.8rem;" />
-  <input id="signupName" type="text" placeholder="이름">
-  <input id="signupGrade" type="number" placeholder="학년">
-  <input id="signupClass" type="number" placeholder="반">
-  <input id="signupNumber" type="number" placeholder="번호">
-
-  <!-- 회원가입 버튼 (동의 시 보이도록) -->
-  <button id="signup-btn" onclick="signup()" style="display:none;">회원가입 완료</button>
-
-  <p style="font-size:0.85rem;">
-    <a href="#" onclick="showLogin()">← 로그인으로 돌아가기</a>
-  </p>
-  <div id="signupStatus" style="font-size:0.85rem;color:red;"></div>
-</div>
-
-
-  </div>
-
-  <!-- 메인 앱 -->
-  <div id="main-app" style="display:none;">
-    <header>
-      <h1>EduBoard</h1>
-      <!-- 기존 코드 -->
-<!-- <span id="profile-icon">👤</span> -->
-
-<!-- 변경된 코드 (👤 이름 ▼ + 드롭다운) -->
-<div id="profile-wrapper" style="position: relative;">
-  <button id="profile-button" style="
-    background: none;
-    border: none;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #333;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;">
-    👤 <span id="profile-name-display">이름</span> ▼
-  </button>
-  <div id="profile-dropdown" style="
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 120%;
-    background: #fff;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    z-index: 1000;
-    min-width: 140px;">
-    <button onclick="showPanel('profile-panel')" style="
-      width: 100%;
-      padding: 0.6rem 1rem;
-      background: none;
-      border: none;
-      text-align: left;
-      color: black;
-      cursor: pointer;
-      font-size: 0.95rem;">
-      내 정보 수정
-    </button>
-    <button onclick="logout()" style="
-      width: 100%;
-      padding: 0.6rem 1rem;
-      background: none;
-      border: none;
-      text-align: left;
-      color: black;
-      cursor: pointer;
-      font-size: 0.95rem;">
-      로그아웃
-    </button>
-    <!-- 헤더에 추가 -->
-  <div style="margin-left:10px;font-weight:bold;" id="coin-balance">💰 불러오는 중...</div>
-
-  </div>
-</div>
-
-
-<!-- ✅ 오버레이 -->
-<div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
-
-
-    </header>
-    <!-- ✅ 모바일 전용 상단 헤더 -->
-    <div class="mobile-only mobile-header">
-      <div class="menu-icon" onclick="toggleMobileMenu()">☰</div>
-      <div class="mobile-title">EduBoard</div>
-      <div class="mobile-user" id="mobile-user-name">admin</div>
-    </div>
-
-    <nav id="main-nav">
-      <a href="#" onclick="showPanel('dashboard')">대시보드</a>
-      <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
-      <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
-      <!-- <a href="#" onclick="showPanel('student-panel')">학생 관리</a> -->
-      <a href="#" onclick="showPanel('homework-panel')">파일 공유 & 자료실</a>
-      <!-- <a href="#" onclick="showPanel('chat-panel')">대화실</a> -->
-      <a href="#" onclick="showPanel('timetable-panel')">시간표</a>
-      <a href="#" onclick="showPanel('minigame-panel')">미니게임</a>
-    </nav>
-    
-    
-
-
-    <div class="content">
-      <div id="dashboard" class="panel active">
-        <h2>🏠 대시보드</h2>
-        <!--<p style="margin-bottom: 1.5rem; color: #495057;">
-          EduBoard에 오신 것을 환영합니다! 나의 활동을 한눈에 확인해보세요.(테스트)
-        </p> -->
-  <h3>📱 EduBoard 모바일 사용 설명서</h3>
-  <p>EduBoard는 <strong>학생과 선생님이 함께 사용하는 스마트 학교 플랫폼</strong>입니다.</p>
-
-  <h3>🔹 1. 로그인 화면</h3>
-  <ul>
-    <li>앱 실행 → 로그인 화면</li>
-    <li>아이디 + 비밀번호 → <strong>로그인</strong> 버튼</li>
-    <li>회원이 아니라면 <strong>회원가입</strong> 클릭!</li>
-  </ul>
-
-  <h4>✅ 회원가입 시 입력 항목</h4>
-  <ul>
-    <li>아이디, 비밀번호 (6자 이상)</li>
-    <li>이메일</li>
-    <li>이름, 학년, 반, 번호</li>
-    <li>개인정보 수집 동의 체크 ✅</li>
-  </ul>
-
-  <h3>🔹 2. 모바일 상단 헤더 구성</h3>
-  <table>
-    <tr><th>위치</th><th>기능</th></tr>
-    <tr><td>☰ 왼쪽 메뉴</td><td>전체 기능 메뉴 열기</td></tr>
-    <tr><td>가운데 EduBoard</td><td>홈 역할</td></tr>
-    <tr><td>👤 오른쪽 이름</td><td>로그인한 사용자 이름 표시</td></tr>
-  </table>
-
-  <h3>🔹 3. ☰ 메뉴 기능</h3>
-  <ul>
-    <li>🏠 대시보드: 활동 요약 보기</li>
-    <li>📢 공지사항: 공지 확인</li>
-    <li>📄 문서 분석: 사진에서 글자 추출</li>
-    <li>📁 자료실: 파일 업로드 및 공유</li>
-    <li>🕒 시간표: 주간 시간표 보기</li>
-    <li>🎮 미니게임: 숫자 4개로 10 만들기</li>
-  </ul>
-
-  <h3>🔹 4. 시간표, 공지, 자료실은?</h3>
-  <ul>
-    <li>⏪⏩ 버튼으로 주간 이동 가능</li>
-    <li>파일은 썸네일로 미리 보기 가능</li>
-    <li>이미지 클릭 시 확대, 다운로드 가능</li>
-  </ul>
-
-  <h3>🔹 5. 미니게임 안내(테스트)</h3>
-  <ul>
-    <li>게임 시작 시 5코인 차감</li>
-    <li>정답이면 🎉, 오답이면 😅 피드백 제공</li>
-  </ul>
-
-  <h3>🔹 6. 내 정보 확인(컴퓨터만 지원)</h3>
-  <ul>
-    <li>👤 이름 클릭 시 드롭다운 열림</li>
-    <li>이름 수정, 로그아웃, 코인 확인 가능</li>
-  </ul>
-
-  <p style="margin-top:1.5rem;background:#e7f3ff;padding:1rem;border-left:4px solid #007bff;">
-    💡 <strong>추가 팁:</strong><br>
-    - 자동 로그인 지원<br>
-    - PC에서도 동일한 기능 사용 가능
-  </p>
-</div>
-
+      <div id="signupStatus" style="font-size:0.85rem;color:red;"></div>
       </div>
+    </div>
+
+    <!-- 메인 웹 -->
+    <div id="main-app" style="display:none;">
+      <header>
+        <h1>EduBoard</h1>
+        <div id="profile-wrapper" style="position: relative;">
+          <button id="profile-button" style="
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;">
+            👤 <span id="profile-name-display">이름</span> ▼
+          </button>
+          <div id="profile-dropdown" style="
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 120%;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            z-index: 1000;
+            min-width: 140px;">
+            <button onclick="showPanel('profile-panel')" style="
+              width: 100%;
+              padding: 0.6rem 1rem;
+              background: none;
+              border: none;
+              text-align: left;
+              color: black;
+              cursor: pointer;
+              font-size: 0.95rem;">
+              내 정보 수정
+            </button>
+            <button onclick="logout()" style="
+              width: 100%;
+              padding: 0.6rem 1rem;
+              background: none;
+              border: none;
+              text-align: left;
+              color: black;
+              cursor: pointer;
+              font-size: 0.95rem;">
+              로그아웃
+            </button>
+            <!-- 헤더에 추가 -->
+          <div style="margin-left:10px;font-weight:bold;" id="coin-balance">💰 불러오는 중...</div>
+          </div>
+        </div>
+
+        <!-- ✅ 오버레이 -->
+        <div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+      </header>
+      <!-- ✅ 모바일 전용 상단 헤더 -->
+      <div class="mobile-only mobile-header">
+        <div class="menu-icon" onclick="toggleMobileMenu()">☰</div>
+        <div class="mobile-title">EduBoard</div>
+        <div class="mobile-user" id="mobile-user-name">admin</div>
+      </div>
+
+      <nav id="main-nav">
+        <a href="#" onclick="showPanel('dashboard')">대시보드</a>
+        <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
+        <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
+        <!-- <a href="#" onclick="showPanel('student-panel')">학생 관리</a> -->
+        <a href="#" onclick="showPanel('homework-panel')">파일 공유 & 자료실</a>
+        <!-- <a href="#" onclick="showPanel('chat-panel')">대화실</a> -->
+        <a href="#" onclick="showPanel('timetable-panel')">시간표</a>
+        <a href="#" onclick="showPanel('minigame-panel')">미니게임</a>
+      </nav>
+      
+      <div class="content">
+        <div id="dashboard" class="panel active">
+          <h2>🏠 대시보드</h2>
+          <!--<p style="margin-bottom: 1.5rem; color: #495057;">
+            EduBoard에 오신 것을 환영합니다! 나의 활동을 한눈에 확인해보세요.(테스트)
+          </p> -->
+            <!-- <h3>📱 EduBoard 모바일 사용 설명서</h3>
+            <p>EduBoard는 <strong>학생과 선생님이 함께 사용하는 스마트 학교 플랫폼</strong>입니다.</p>
+
+            <h3>🔹 1. 로그인 화면</h3>
+            <ul>
+              <li>앱 실행 → 로그인 화면</li>
+              <li>아이디 + 비밀번호 → <strong>로그인</strong> 버튼</li>
+              <li>회원이 아니라면 <strong>회원가입</strong> 클릭!</li>
+            </ul>
+
+            <h4>✅ 회원가입 시 입력 항목</h4>
+            <ul>
+              <li>아이디, 비밀번호 (6자 이상)</li>
+              <li>이메일</li>
+              <li>이름, 학년, 반, 번호</li>
+              <li>개인정보 수집 동의 체크 ✅</li>
+            </ul>
+
+            <h3>🔹 2. 모바일 상단 헤더 구성</h3>
+            <table>
+              <tr><th>위치</th><th>기능</th></tr>
+              <tr><td>☰ 왼쪽 메뉴</td><td>전체 기능 메뉴 열기</td></tr>
+              <tr><td>가운데 EduBoard</td><td>홈 역할</td></tr>
+              <tr><td>👤 오른쪽 이름</td><td>로그인한 사용자 이름 표시</td></tr>
+            </table>
+
+            <h3>🔹 3. ☰ 메뉴 기능</h3>
+            <ul>
+              <li>🏠 대시보드: 활동 요약 보기</li>
+              <li>📢 공지사항: 공지 확인</li>
+              <li>📄 문서 분석: 사진에서 글자 추출</li>
+              <li>📁 자료실: 파일 업로드 및 공유</li>
+              <li>🕒 시간표: 주간 시간표 보기</li>
+              <li>🎮 미니게임: 숫자 4개로 10 만들기</li>
+            </ul>
+
+            <h3>🔹 4. 시간표, 공지, 자료실은?</h3>
+            <ul>
+              <li>⏪⏩ 버튼으로 주간 이동 가능</li>
+              <li>파일은 썸네일로 미리 보기 가능</li>
+              <li>이미지 클릭 시 확대, 다운로드 가능</li>
+            </ul>
+
+            <h3>🔹 5. 미니게임 안내(테스트)</h3>
+            <ul>
+              <li>게임 시작 시 5코인 차감</li>
+              <li>정답이면 🎉, 오답이면 😅 피드백 제공</li>
+            </ul>
+
+            <h3>🔹 6. 내 정보 확인(컴퓨터만 지원)</h3>
+            <ul>
+              <li>👤 이름 클릭 시 드롭다운 열림</li>
+              <li>이름 수정, 로그아웃, 코인 확인 가능</li>
+            </ul>
+
+            <p style="margin-top:1.5rem;background:#e7f3ff;padding:1rem;border-left:4px solid #007bff;">
+              💡 <strong>추가 팁:</strong><br>
+              - 자동 로그인 지원<br>
+              - PC에서도 동일한 기능 사용 가능
+            </p> -->
+        </div>
 
 
       <div id="notice-panel" class="panel" style="display:none;">
         <h2>📢 공지사항</h2>
-        <div id="notice-list"></div>
-        <h3>새 공지 등록</h3>
-        <input type="text" id="notice-title" placeholder="제목"/>
-        <textarea id="notice-content" placeholder="내용"></textarea>
-        <!-- 사진 파일 선택 -->
-        <input type="file" id="notice-image" accept="image/*">
+          <div id="notice-list"></div>
+            <h3>새 공지 등록</h3>
+            <input type="text" id="notice-title" placeholder="제목"/>
+            <textarea id="notice-content" placeholder="내용"></textarea>
+            
+            <!-- 사진 파일 선택 -->
+            <input type="file" id="notice-image" accept="image/*">
 
-        <!-- 사진 업로드 여부 선택 -->
-        <label style="display:flex;align-items:center;margin-top:0.5rem;">
-          <input type="checkbox" id="notice-upload-check" style="margin-right:0.5rem;">
-          이 사진을 공지에 포함하기
-        </label>
-        <button onclick="addNotice()">공지 추가</button>
-      </div>
+            <!-- 사진 업로드 여부 선택 -->
+            <label style="display:flex;align-items:center;margin-top:0.5rem;">
+              <input type="checkbox" id="notice-upload-check" style="margin-right:0.5rem;">
+              이 사진을 공지에 포함하기
+            </label>
+
+            <button onclick="addNotice()">공지 추가</button>
+      </div>      
 
       <div id="doc-panel" class="panel">
         <h2>📄 문서 업로드</h2>
@@ -803,22 +809,20 @@
               box-shadow:inset 0 1px 2px rgba(0,0,0,0.04);
             ">
           </textarea>
-        
-        <!-- 사진 미리보기 -->
-        <img id="doc-preview" style="max-width:100%; margin-top:1rem; display:none; border-radius:0.5rem;" />
+          
+          <!-- 사진 미리보기 -->
+          <img id="doc-preview" style="max-width:100%; margin-top:1rem; display:none; border-radius:0.5rem;" />
 
-        <!-- 업로드 여부 선택 -->
-        <label style="display:flex;align-items:center;margin-top:0.5rem;">
-          <input type="checkbox" id="upload-image-check" style="margin-right:0.5rem;">
-          이 사진을 공지에 같이 올리기
-        </label>
+          <!-- 업로드 여부 선택 -->
+          <label style="display:flex;align-items:center;margin-top:0.5rem;">
+            <input type="checkbox" id="upload-image-check" style="margin-right:0.5rem;">
+            이 사진을 공지에 같이 올리기
+          </label>
 
-        <div class="button-group">
-          <button onclick="registerAnalyzedText()">분석된 글 등록하기</button>
-        </div>
-      </div>
-
-
+          <div class="button-group">
+            <button onclick="registerAnalyzedText()">분석된 글 등록하기</button>
+          </div>
+      </div>      
 
       <div id="student-panel" class="panel" style="display:none;">
         <h2>👩‍🎓 학생 관리</h2>
@@ -826,42 +830,39 @@
         <ul id="student-list"></ul>
       </div>
 
-    <div id="homework-panel" class="panel" style="display:none;">
-      <h2>📚 파일 공유 & 자료실</h2>
+      <div id="homework-panel" class="panel" style="display:none;">
+        <h2>📚 파일 공유 & 자료실</h2>
 
-      <!-- 업로드 영역 -->
-      <label for="homework-scope">공유 범위</label>
-      <select id="homework-scope">
-        <option value="school">전교</option>
-        <option value="grade">같은 학년</option>
-        <option value="class">같은 반</option>
-      </select>
+        <!-- 업로드 영역 -->
+        <label for="homework-scope">공유 범위</label>
+        <select id="homework-scope">
+          <option value="school">전교</option>
+          <option value="grade">같은 학년( 추가 예정 )</option>
+          <option value="class">같은 반( 추가 예정 )</option>
+        </select>
 
-      <label for="homework-userinfo">학번 + 이름</label>
-      <input type="text" id="homework-userinfo" readonly style="background:#f1f3f5; font-weight:bold; margin-bottom:0.8rem;">
+        <label for="homework-userinfo">학번 + 이름</label>
+        <input type="text" id="homework-userinfo" readonly style="background:#f1f3f5; font-weight:bold; margin-bottom:0.8rem;">
 
-      <label for="homework-title">제목</label>
-      <input type="text" id="homework-title" placeholder="예: 체험학습 사진">
+        <label for="homework-title">제목</label>
+        <input type="text" id="homework-title" placeholder="예: 체험학습 사진">
 
-      <label for="homework-file">파일 업로드</label>
-      <input type="file" id="homework-file" multiple>
+        <label for="homework-file">파일 업로드</label>
+        <input type="file" id="homework-file" multiple>
 
-      <label for="homework-comment">코멘트 (선택)</label>
-      <textarea id="homework-comment" placeholder="코멘트를 입력해 주세요"></textarea>
+        <label for="homework-comment">코멘트 (선택)</label>
+        <textarea id="homework-comment" placeholder="코멘트를 입력해 주세요"></textarea>
 
-      <button onclick="submitHomework()">업로드하기</button>
-      <div id="homework-status" style="margin-top:0.5rem;font-size:0.9rem;color:#007bff;"></div>
+        <button onclick="submitHomework()">업로드하기</button>
+        <div id="homework-status" style="margin-top:0.5rem;font-size:0.9rem;color:#007bff;"></div>
 
-      <hr style="margin:1.5rem 0;">
+        <hr style="margin:1.5rem 0;">
 
-      <!-- 자료 목록 영역 -->
-      <h3>📂 업로드된 자료</h3>
-      <button onclick="loadMaterials()">🔄 목록 새로고침</button>
-      <ul id="material-list" style="margin-top:1rem;"></ul>
-    </div>
-
-
-
+        <!-- 자료 목록 영역 -->
+        <h3>📂 업로드된 자료</h3>
+        <button onclick="loadMaterials()">🔄 목록 새로고침</button>
+        <ul id="material-list" style="margin-top:1rem;"></ul>
+      </div>
 
       <div id="chat-panel" class="panel" style="display:none;">
         <h2>💬 상담실</h2>
@@ -890,8 +891,7 @@
         <div id="admin-status" style="margin-top:0.5rem;"></div>
       </div>
 
-      <!-- ✅ 시간표 패널 -->
-      <!-- ✅ 시간표 패널 (EduBoard 스타일 맞춤) -->
+        <!-- 시간표 패널 -->
       <div id="timetable-panel" class="panel" style="display:none;">
         <h2>🗓️ 나의 시간표</h2>
         <p style="margin-bottom:1rem; color:#495057; font-size:0.95rem;">
@@ -909,28 +909,21 @@
               margin-bottom:1rem;
               font-size:0.9rem;
               color:#333;">
+
           <span id="timetable-grade-info">학년/반 정보 불러오는 중...</span>
-          <!-- 🔄 새로고침 버튼 제거하고 이 부분에 삽입 -->
+
           <div class="week-nav">
             <button class="nav-btn" onclick="moveTimetable(-1)">⏪ 이전</button>
             <button class="nav-btn" onclick="moveTimetable(0)">새로고침</button>
             <button class="nav-btn" onclick="moveTimetable(1)">⏩ 다음</button>
           </div>
-
-
-
         </div>
-
-
-
-
-        <!-- ✅ 시간표 UI 컨테이너 -->
         <div id="timetable-container"
             style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">
         </div>
       </div>
 
-      
+        
       <div id="minigame-panel" class="panel" style="display:none;">
         <h2>🎮 미니게임</h2>
         <!-- 4=10 게임 -->
@@ -939,7 +932,6 @@
             <p>숫자 4개로 연산하여 10을 만들어보세요<br><strong>💰 5코인 필요</strong></p>
             <button onclick="startGame('fourEqualsTen')">게임 시작</button>
           </div>
-
       </div>
 
       <div id="fourEqualsTen-game" class="panel" style="display:none;">
@@ -953,6 +945,8 @@
       </div>
 
     </div>
+          </div>
+
     <!-- ✅ 모바일 사이드 메뉴 -->
     <div id="mobile-side-menu" class="mobile-only mobile-side-menu">
       <ul class="menu-section">
@@ -973,927 +967,1065 @@
     </div>  
 
     <!-- 이미지 확대 모달 -->
-<div id="imageModal" class="modal" style="
-  display:none;
-  position:fixed;
-  top:0; left:0; width:100%; height:100%;
-  background: rgba(0,0,0,0.8);
-  justify-content:center;
-  align-items:center;
-  z-index:5000;
-  flex-direction:column;
-">
-  <span onclick="closeImageModal()" style="color:white;font-size:2rem;position:absolute;top:20px;right:30px;cursor:pointer;">&times;</span>
-  <img id="modalImage" src="" style="max-width:90%; max-height:80%; border-radius:8px;" />
-</div>
+    <div id="imageModal" class="modal" style="
+      display:none;
+      position:fixed;
+      top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.8);
+      justify-content:center;
+      align-items:center;
+      z-index:5000;
+      flex-direction:column;
+    ">
+      <span onclick="closeImageModal()" style="color:white;font-size:2rem;position:absolute;top:20px;right:30px;cursor:pointer;">&times;</span>
+      <img id="modalImage" src="" style="max-width:90%; max-height:80%; border-radius:8px;" />
+    </div>
+
+    <script>
+      const { createClient } = supabase;
+      const supabaseClient = createClient(
+        'https://ucmzrkwrsezfdjnnwsww.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw'
+      );
+
+      const CLOVER_API = 'https://YOUR_DOMAIN/functions/v1/ocr-classify'; 
+      const USE_TESSERACT_FALLBACK = true;
 
 
-<script>
-  const { createClient } = supabase;
-  const supabaseClient = createClient(
-    'https://ucmzrkwrsezfdjnnwsww.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw'
-  );
+      let currentUserRole = 'user';
+      let currentUserName = '';
+      let currentStudentNumber = '';
+      let currentGrade = null;
+      let currentClassNum = null;
+      let timetableOffset = 0;
 
-  
+      async function loginDirect() {
+        const username = document.getElementById('loginUsername').value.replace(/\s+/g, '');
+        const password = document.getElementById('loginPassword').value.replace(/\s+/g, '');
+        const { data: user } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('username', username)
+          .eq('password', password)
+          .single();
 
-  let currentUserRole = 'user';
-  let currentUserName = '';
-  let currentStudentNumber = '';
+        if (user) {
+          currentUserName = user.name;
+          currentStudentNumber = user.student_number;
 
-  let currentGrade = null;
-  let currentClassNum = null;
+          localStorage.setItem('savedUsername', username);
+          localStorage.setItem('savedName', currentUserName);
+          localStorage.setItem('savedStudentNum', currentStudentNumber);
 
-  let timetableOffset = 0; // 현재 주로부터 몇 주 이동했는지를 저장 (0 = 이번 주)
+          // 화면에 표시
+          setUserInfoInput();
 
+          currentUserRole = user.role || 'user';
+          currentGrade = user.grade;
+          currentClassNum = user.class_num;
 
-  async function loginDirect() {
-    const username = document.getElementById('loginUsername').value.replace(/\s+/g, '');
-    const password = document.getElementById('loginPassword').value.replace(/\s+/g, '');
-
-    const { data: user } = await supabaseClient
-      .from('users')
-      .select('*')
-      .eq('username', username)
-      .eq('password', password)
-      .single();
-
-    if (user) {
-      currentUserName = user.name;
-      currentStudentNumber = user.student_number;
-
-      // ✅ localStorage 에 저장
-      localStorage.setItem('savedUsername', username);
-      localStorage.setItem('savedName', currentUserName);
-      localStorage.setItem('savedStudentNum', currentStudentNumber);
-
-      // 화면에 표시
-      setUserInfoInput();
-
-      currentUserRole = user.role || 'user';
-      currentGrade = user.grade;
-      currentClassNum = user.class_num;
-
-      loadTimetableWeek(user.grade, user.class_num);
-      showMain();
-      loadNotices();
-    } else {
-      document.getElementById('loginStatus').innerText = '아이디 또는 비밀번호가 틀렸습니다.';
-    }
-  }
-
-  // ✅ 로그인 없이도 새로고침 시 저장된 이름/학번을 불러와서 표시
-  window.addEventListener('DOMContentLoaded', () => {
-    const savedName = localStorage.getItem('savedName');
-    const savedNum = localStorage.getItem('savedStudentNum');
-    if (savedName && savedNum) {
-      currentUserName = savedName;
-      currentStudentNumber = savedNum;
-      setUserInfoInput();
-    }
-  });
-
-  function setUserInfoInput() {
-    const inputEl = document.getElementById('homework-userinfo');
-    if (inputEl) {
-      inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
-    }
-  }
-  
-
-
-  async function signup() {
-    const username = document.getElementById('signupUsername').value.trim();
-    const password = document.getElementById('signupPassword').value.trim();
-    const emailId = document.getElementById('signupEmailId').value.trim();
-    const domainValue = document.getElementById('signupEmailDomain').value;
-    const customDomain = document.getElementById('signupEmailCustom').value.trim();
-    const email = `${emailId}@${domainValue === '직접입력' ? customDomain : domainValue}`;
-    const name = document.getElementById('signupName').value.trim();
-    const grade = document.getElementById('signupGrade').value.trim();
-    const classNum = document.getElementById('signupClass').value.trim();
-    const number = document.getElementById('signupNumber').value.trim();
-    const agree = document.getElementById('privacy-agree').checked;
-
-    // ✅ 입력값 검증
-    if (!agree) {
-      document.getElementById('signupStatus').innerText = '개인정보 수집·이용에 동의해 주세요.';
-      return;
-    }
-    if (!username || !password || !email || !name || !grade || !classNum || !number) {
-      document.getElementById('signupStatus').innerText = '모든 항목을 입력해 주세요.';
-      return;
-    }
-    if (password.length < 6) {
-      document.getElementById('signupStatus').innerText = '비밀번호는 6자 이상이어야 합니다.';
-      return;
-    }
-    // 이메일 형식 검증 (간단)
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      document.getElementById('signupStatus').innerText = '올바른 이메일을 입력해 주세요.';
-      return;
-    }
-
-    // ✅ 여기에서 실제 DB로 전송 (Supabase 예시)
-    try {
-      const { error } = await supabaseClient.from('users').insert([{
-        username: username,
-        password: password,
-        email: email,
-        name: name,
-        grade: parseInt(grade, 10),
-        class_num: parseInt(classNum, 10),
-        student_number: parseInt(number, 10),
-        role: 'user'
-      }]);
-      if (error) {
-        document.getElementById('signupStatus').innerText = '회원가입 실패: ' + error.message;
-        return;
-      }
-      alert("회원가입이 완료되었습니다!");
-      document.getElementById('signupStatus').style.color = 'green';
-      document.getElementById('signupStatus').innerText = '회원가입이 완료되었습니다. 로그인해 주세요.';
-    } catch (e) {
-      document.getElementById('signupStatus').innerText = '오류 발생: ' + e.message;
-    }
-  }
-
-  function showMain() {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('main-app').style.display = 'block';
-    setupAdminNav();
-    showPanel('dashboard');
-  }
-
-  function showSignup() {
-    document.getElementById('login-box').style.display = 'none';
-    document.getElementById('signup-box').style.display = 'block';
-  }
-
-  function showLogin() {
-    document.getElementById('login-box').style.display = 'block';
-    document.getElementById('signup-box').style.display = 'none';
-  }
-
-  async function logout() {
-    await supabaseClient.auth.signOut();
-    localStorage.removeItem('savedUsername'); // ✅ 로그아웃 시 저장된 아이디 삭제
-    document.getElementById('main-app').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
-  }
-
-  async function updateProfile() {
-    const newName = document.getElementById('update-name').value;
-    const newPass = document.getElementById('update-password').value;
-
-    if (newPass) {
-      const { error } = await supabaseClient.auth.updateUser({ password: newPass });
-      if (error) alert('비밀번호 수정 오류:' + error.message);
-      else alert('비밀번호 수정 완료!');
-    }
-    if (newName) {
-      const user = await supabaseClient.auth.getUser();
-      if (user && user.data.user) {
-        await supabaseClient.from('users').update({ name: newName }).eq('id', user.data.user.id);
-        alert('이름 수정 완료!');
-      }
-    }
-  }
-
-function showPanel(panelId) {
-  document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-  const target = document.getElementById(panelId);
-  if (target) {
-    target.style.display = 'block';
-  }
-}
-
-
-
-supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
-  if (session) {
-    const { data: user } = await supabaseClient
-      .from('users')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
-    if (user) currentUserRole = user.role;
-    showMain();
-  } else {
-    showLogin();
-  }
-});
-
-function setupAdminNav() {
-  if (currentUserRole === 'admin') {
-    if (!document.getElementById('admin-nav')) {
-      const nav = document.getElementById('main-nav');
-      const a = document.createElement('a');
-      a.href = '#';
-      a.id = 'admin-nav';
-      a.innerText = '관리자 설정';
-      a.onclick = () => { showPanel('admin-panel'); };
-      nav.appendChild(a);
-    }
-  }
-}
-
-// ===== 공지사항 등록 (이미지 업로드 추가) =====
-async function addNotice() {
-  const title = document.getElementById('notice-title').value.trim();
-  const content = document.getElementById('notice-content').value.trim();
-  const fileInput = document.getElementById('notice-image');
-  const uploadChecked = document.getElementById('notice-upload-check').checked;
-
-  if (!title || !content) {
-    alert('제목과 내용을 입력해 주세요.');
-    return;
-  }
-
-  let imageUrl = '';
-
-  if (uploadChecked && fileInput.files.length) {
-    const file = fileInput.files[0];
-    const uniqueName = Date.now() + '_' + file.name;
-    const filePath = `public/${uniqueName}`;
-
-    const { error: uploadErr } = await supabaseClient
-      .storage
-      .from('notice-images')
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadErr) {
-      alert('이미지 업로드 실패: ' + uploadErr.message);
-      return;
-    }
-
-    const { data: publicData } = supabaseClient
-      .storage
-      .from('notice-images')
-      .getPublicUrl(filePath);
-
-    imageUrl = publicData.publicUrl;
-  }
-
-  // ✅ 현재 로그인한 사용자 정보 가져오기
-  const { data: writerData, error: writerError } = await supabaseClient
-    .from('users')
-    .select('username,name,role,grade,class_num')
-    .eq('username', localStorage.getItem('savedUsername'))
-    .single();
-
-  if (writerError || !writerData) {
-    alert('사용자 정보 확인 중 오류가 발생했습니다.');
-    return;
-  }
-
-  // ✅ 테이블에 등록할 데이터
-  const newNotice = {
-    title: title,
-    content: content,
-    image_url: imageUrl,
-    writer: writerData.name,        // 작성자 이름
-    writer_role: writerData.role,   // 작성자 역할
-    grade: writerData.grade,        // 작성자 학년
-    class_num: writerData.class_num // 작성자 반
-  };
-
-  const { error } = await supabaseClient.from('notices').insert([ newNotice ]);
-    if (error) {
-      alert('공지 등록 실패: ' + error.message);
-      return;
-    }
-
-    alert('공지 등록 완료!');
-    document.getElementById('notice-title').value = '';
-    document.getElementById('notice-content').value = '';
-    document.getElementById('notice-image').value = '';
-    document.getElementById('notice-upload-check').checked = false;
-
-    loadNotices();
-  }
-
-  // ===== 공지사항 목록 불러오기 (중복 제거 + 이미지 표시) =====
-  async function loadNotices() {
-    let query = supabaseClient.from('notices').select('*').order('id', { ascending: false });
-
-    if (currentUserRole !== 'admin') {
-      // ✅ 학생이라면 같은 학년/반 & 어드민이 올린 글 제외
-      query = query
-        .eq('grade', currentGrade)
-        .eq('class_num', currentClassNum)
-        .neq('writer_role', 'admin');
-    }
-    // ✅ admin이면 모든 공지를 그대로 불러옴
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('공지 불러오기 실패:', error);
-      return;
-    }
-
-    const listEl = document.getElementById('notice-list');
-    listEl.innerHTML = '';
-
-    data.forEach(item => {
-      const formattedContent = item.content.replace(/\n/g, '<br>');
-      const div = document.createElement('div');
-      div.style.borderBottom = '1px solid #ddd';
-      div.style.padding = '0.5rem 0';
-      // 누가 올린 글인지 표시
-      div.innerHTML = `<strong>${item.title}</strong> <span style="font-size:0.8rem;color:#888;">(${item.writer})</span><br>${formattedContent}`;
-
-      if (item.image_url) {
-        div.innerHTML += `<br><img src="${item.image_url}" style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem;">`;
+          loadTimetableWeek(user.grade, user.class_num);
+          showMain();
+          loadNotices();
+        } else {
+          document.getElementById('loginStatus').innerText = '아이디 또는 비밀번호가 틀렸습니다.';
+        }
       }
 
-      listEl.appendChild(div);
-    });
-  }
-
-
-// ===== 문서 분석(OCR) =====
-async function analyzeDocument() {
-  const fileInput = document.getElementById('doc-file');
-  if (!fileInput.files.length) {
-    alert('파일을 선택해 주세요.');
-    return;
-  }
-
-  const file = fileInput.files[0];
-  lastAnalyzedFile = file; // 분석한 파일을 저장
-  document.getElementById('doc-preview').src = URL.createObjectURL(file);
-  document.getElementById('doc-preview').style.display = 'block';
-
-  document.getElementById('doc-result').value = '문서 분석 중... 잠시만 기다려 주세요.';
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    Tesseract.recognize(reader.result, 'kor', { logger: m => console.log(m) })
-      .then(({ data: { text } }) => {
-        document.getElementById('doc-result').value = text;
-        autoResize();
-        alert('문서 분석이 완료되었습니다. 아래 체크박스로 사진 업로드 여부를 선택 후 등록하세요.');
-      })
-      .catch(err => {
-        console.error('OCR 오류:', err);
-        document.getElementById('doc-result').value = '문서 분석 실패: ' + err.message;
+      // 새로고침 시 저장된 이름/학번 불러오기
+      window.addEventListener('DOMContentLoaded', () => {
+        const savedName = localStorage.getItem('savedName');
+        const savedNum = localStorage.getItem('savedStudentNum');
+        if (savedName && savedNum) {
+          currentUserName = savedName;
+          currentStudentNumber = savedNum;
+          setUserInfoInput();
+        }
       });
-  };
-  reader.readAsDataURL(file);
-}
 
+      function setUserInfoInput() {
+        const inputEl = document.getElementById('homework-userinfo');
+        if (inputEl) {
+          inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
+        }
+      }
+      
+      async function signup() {
+        const username = document.getElementById('signupUsername').value.trim();
+        const password = document.getElementById('signupPassword').value.trim();
+        const emailId = document.getElementById('signupEmailId').value.trim();
+        const domainValue = document.getElementById('signupEmailDomain').value;
+        const customDomain = document.getElementById('signupEmailCustom').value.trim();
+        const email = `${emailId}@${domainValue === '직접입력' ? customDomain : domainValue}`;
+        const name = document.getElementById('signupName').value.trim();
+        const grade = document.getElementById('signupGrade').value.trim();
+        const classNum = document.getElementById('signupClass').value.trim();
+        const number = document.getElementById('signupNumber').value.trim();
+        const agree = document.getElementById('privacy-agree').checked;
 
-async function registerAnalyzedText() {
-  const text = document.getElementById('doc-result').value.trim();
-  if (!text) {
-    alert('내용이 비어 있습니다.');
-    return;
-  }
+        if (!agree) {
+          document.getElementById('signupStatus').innerText = '개인정보 수집·이용에 동의해 주세요.';
+          return;
+        }
+        if (!username || !password || !email || !name || !grade || !classNum || !number) {
+          document.getElementById('signupStatus').innerText = '모든 항목을 입력해 주세요.';
+          return;
+        }
+        if (password.length < 6) {
+          document.getElementById('signupStatus').innerText = '비밀번호는 6자 이상이어야 합니다.';
+          return;
+        }
 
-  let imageUrl = '';
-  const shouldUploadImage = document.getElementById('upload-image-check').checked;
-
-  if (shouldUploadImage && lastAnalyzedFile) {
-    const fileName = Date.now() + '_' + lastAnalyzedFile.name;
-    const { error: uploadErr } = await supabaseClient
-      .storage
-      .from('notice-images')
-      .upload(fileName, lastAnalyzedFile);
-
-    if (uploadErr) {
-      alert('이미지 업로드 실패: ' + uploadErr.message);
-      return;
-    }
-    const { data: publicData } = supabaseClient
-      .storage
-      .from('notice-images')
-      .getPublicUrl(fileName);
-    imageUrl = publicData.publicUrl;
-  }
-
-  // ✅ 현재 로그인한 사용자 정보 가져오기
-  const { data: writerData, error: writerError } = await supabaseClient
-    .from('users')
-    .select('username,name,role,grade,class_num')
-    .eq('username', localStorage.getItem('savedUsername'))
-    .single();
-
-  if (writerError || !writerData) {
-    alert('사용자 정보 확인 중 오류가 발생했습니다.');
-    return;
-  }
-
-  // ✅ DB에 공지 등록 (문서 분석 결과)
-  const { error } = await supabaseClient.from('notices').insert([{
-    title: '문서 분석 등록',
-    content: text,
-    image_url: imageUrl,
-    writer: writerData.name,
-    writer_role: writerData.role,
-    grade: writerData.grade,
-    class_num: writerData.class_num
-  }]);
-
-  if (error) {
-    alert('공지 등록 실패: ' + error.message);
-    return;
-  }
-
-  alert('등록이 완료되었습니다!');
-  loadNotices();
-
-  // 초기화
-  lastAnalyzedFile = null;
-  document.getElementById('doc-file').value = '';
-  document.getElementById('doc-preview').style.display = 'none';
-  document.getElementById('upload-image-check').checked = false;
-  document.getElementById('doc-result').value = '';
-}
-
-
-  const docResult = document.getElementById('doc-result');
-
-  // 높이 자동 조정 함수
-  function autoResize() {
-    docResult.style.height = 'auto';  // 초기화
-    docResult.style.height = docResult.scrollHeight + 'px'; // 내용에 맞게 늘림
-  }
-
-  // 사용자가 직접 입력할 때도 적용
-  docResult.addEventListener('input', autoResize);
-
-    
-
-  const NEIS_KEY = '1692c030b074479784fa252d2886f919';
-  const ATPT_OFCDC_SC_CODE = 'J10'; // 경기도교육청
-  const SD_SCHUL_CODE = '7679111';  // ✅ 봉담중학교 코드로 수정
-
-    // 📌 시간표 불러오기
-      async function loadTimetableWeek(grade, classNum) {
-        currentGrade = grade;
-        currentClassNum = classNum;
-        
-
-        document.getElementById('timetable-grade-info').innerText = `${grade}학년 ${classNum}반 (주간)`;
-        const container = document.getElementById('timetable-container');
-        container.innerHTML = '<p>시간표 불러오는 중...</p>';
-
-        const today = new Date();
-        const day = today.getDay();
-        const monday = new Date(today);
-        monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + timetableOffset * 7);
-
-        const year = today.getFullYear();
-        const month = today.getMonth() + 1;
-        // ✅ 학기 구분: 7월까지는 1학기, 8월부터 2학기
-        const semester = (month <= 8) ? 1 : 2;
-
-        const dates = Array.from({ length: 5 }, (_, i) => {
-          const d = new Date(monday);
-          d.setDate(monday.getDate() + i);
-          return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-        });
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          document.getElementById('signupStatus').innerText = '올바른 이메일을 입력해 주세요.';
+          return;
+        }
 
         try {
-          const results = await Promise.all(
-            dates.map(async (dateStr) => {
-              const url = `https://open.neis.go.kr/hub/misTimetable?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&AY=${year}&SEM=${semester}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
-              console.log(url);
-              const res = await fetch(url);
-              const data = await res.json();
-              return { dateStr, data };
-            })
-          );
-
-          container.innerHTML = '';
-
-          for (const { dateStr, data } of results) {
-            const dayBox = document.createElement('div');
-            dayBox.style.border = '1px solid #ccc';
-            dayBox.style.borderRadius = '8px';
-            dayBox.style.padding = '8px';
-            dayBox.style.background = '#fdfdfd';
-            dayBox.style.marginBottom = '10px';
-
-            const title = document.createElement('h4');
-            const dateObj = new Date(
-              dateStr.slice(0, 4), // 연도
-              parseInt(dateStr.slice(4, 6)) - 1, // 월 (0부터 시작)
-              dateStr.slice(6, 8) // 일
-            );
-
-            // 요일 배열
-            const days = ['일', '월', '화', '수', '목', '금', '토'];
-            const dayName = days[dateObj.getDay()];
-
-            title.innerText = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)} (${dayName})`;
-
-            dayBox.appendChild(title);
-
-            if (data.misTimetable && data.misTimetable[1]) {
-              const rows = data.misTimetable[1].row;
-              const unique = {};
-              rows.forEach(row => {
-                const key = row.PERIO;
-                if (!unique[key]) {
-                  unique[key] = row.ITRT_CNTNT;
-                }
-              });
-
-              // PERIO 순서대로 정렬해서 출력
-              Object.keys(unique).sort((a, b) => parseInt(a) - parseInt(b)).forEach(perio => {
-                const item = document.createElement('div');
-                item.innerHTML = `<strong>${perio}교시</strong> : ${unique[perio]}`;
-                dayBox.appendChild(item);
-              });
-
-            } else {
-              const none = document.createElement('p');
-              none.innerText = '시간표 데이터 없음';
-              dayBox.appendChild(none);
-            }
-
-            container.appendChild(dayBox);
-          }
-        } catch (err) {
-          console.error('주간 시간표 오류:', err);
-          container.innerHTML = '<p>시간표를 불러오는 중 오류가 발생했습니다.</p>';
-        }
-
-      }
-
-      function moveTimetable(offset) {
-        timetableOffset += offset;  // ✅ 주간 이동 업데이트
-        loadTimetableWeek(currentGrade, currentClassNum, timetableOffset); // ✅ 갱신된 주 기준으로 다시 로드
-      }
-
-
-
-      // 📌 페이지 로드시 자동 로그인 확인
-      window.addEventListener('DOMContentLoaded', async () => {
-        const savedUsername = localStorage.getItem('savedUsername');
-
-        if (savedUsername) {
-          const { data: user, error } = await supabaseClient
-            .from('users')
-            .select('*')
-            .eq('username', savedUsername)
-            .maybeSingle();
-
+          const { error } = await supabaseClient.from('users').insert([{
+            username: username,
+            password: password,
+            email: email,
+            name: name,
+            grade: parseInt(grade, 10),
+            class_num: parseInt(classNum, 10),
+            student_number: parseInt(number, 10),
+            role: 'user'
+          }]);
           if (error) {
-            console.error('자동 로그인 조회 오류:', error);
-            showLogin();
+            document.getElementById('signupStatus').innerText = '회원가입 실패: ' + error.message;
             return;
           }
+          alert("회원가입이 완료되었습니다!");
+          document.getElementById('signupStatus').style.color = 'green';
+          document.getElementById('signupStatus').innerText = '회원가입이 완료되었습니다. 로그인해 주세요.';
+        } catch (e) {
+          document.getElementById('signupStatus').innerText = '오류 발생: ' + e.message;
+        }
+      }
 
-          if (user) {
-            currentUserRole = user.role || 'user';
-            currentGrade = user.grade;
-            currentClassNum = user.class_num;
+      function showMain() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        setupAdminNav();
+        showPanel('dashboard');
+      }
 
-            await loadTimetableWeek(user.grade, user.class_num);
-            showMain();
-            loadNotices();
-            localStorage.setItem("savedUsername", username);
-            return;
+      function showSignup() {
+        document.getElementById('login-box').style.display = 'none';
+        document.getElementById('signup-box').style.display = 'block';
+      }
+
+      function showLogin() {
+        document.getElementById('login-box').style.display = 'block';
+        document.getElementById('signup-box').style.display = 'none';
+      }
+
+      async function logout() {
+        await supabaseClient.auth.signOut();
+        localStorage.removeItem('savedUsername'); // ✅ 로그아웃 시 저장된 아이디 삭제
+        document.getElementById('main-app').style.display = 'none';
+        document.getElementById('login-screen').style.display = 'flex';
+      }
+
+      async function updateProfile() {
+        const newName = document.getElementById('update-name').value;
+        const newPass = document.getElementById('update-password').value;
+
+        if (newPass) {
+          const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+          if (error) alert('비밀번호 수정 오류:' + error.message);
+          else alert('비밀번호 수정 완료!');
+        }
+        if (newName) {
+          const user = await supabaseClient.auth.getUser();
+          if (user && user.data.user) {
+            await supabaseClient.from('users').update({ name: newName }).eq('id', user.data.user.id);
+            alert('이름 수정 완료!');
           }
         }
+      }
 
+    function showPanel(panelId) {
+      document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+      const target = document.getElementById(panelId);
+      if (target) {
+        target.style.display = 'block';
+      }
+    }
+
+    supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        const { data: user } = await supabaseClient
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        if (user) currentUserRole = user.role;
+        showMain();
+      } else {
         showLogin();
-      });
+      }
+    });
 
+    function setupAdminNav() {
+      if (currentUserRole === 'admin') {
+        if (!document.getElementById('admin-nav')) {
+          const nav = document.getElementById('main-nav');
+          const a = document.createElement('a');
+          a.href = '#';
+          a.id = 'admin-nav';
+          a.innerText = '관리자 설정';
+          a.onclick = () => { showPanel('admin-panel'); };
+          nav.appendChild(a);
+        }
+      }
+    }
 
+    async function addNotice() {
+      const title = document.getElementById('notice-title').value.trim();
+      const content = document.getElementById('notice-content').value.trim();
+      const fileInput = document.getElementById('notice-image');
+      const uploadChecked = document.getElementById('notice-upload-check').checked;
 
-
-  window.addEventListener('DOMContentLoaded', async () => {
-    // 👉 이전에 로그인한 아이디가 localStorage에 저장돼 있는지 확인
-    const savedUsername = localStorage.getItem('savedUsername');
-
-    if (savedUsername) {
-      // Supabase에서 해당 사용자 정보 불러오기
-      const { data: user, error } = await supabaseClient
-        .from('users')
-        .select('*')
-        .eq('username', savedUsername)
-        .maybeSingle();
-
-      if (error) {
-        console.error('자동 로그인 조회 오류:', error);
-        showLogin();
+      if (!title || !content) {
+        alert('제목과 내용을 입력해 주세요.');
         return;
       }
 
-      if (user) {
-        currentUserRole = user.role || 'user';
-        currentGrade = user.grade;
-        currentClassNum = user.class_num;
+      let imageUrl = '';
 
-        // 로그인 성공 시
-        loadTimetableWeek(user.grade, user.class_num);
-        showMain();
+      if (uploadChecked && fileInput.files.length) {
+        const file = fileInput.files[0];
+        const uniqueName = Date.now() + '_' + file.name;
+        const filePath = `public/${uniqueName}`;
+
+        const { error: uploadErr } = await supabaseClient
+          .storage
+          .from('notice-images')
+          .upload(filePath, file, { upsert: true });
+
+        if (uploadErr) {
+          alert('이미지 업로드 실패: ' + uploadErr.message);
+          return;
+        }
+
+        const { data: publicData } = supabaseClient
+          .storage
+          .from('notice-images')
+          .getPublicUrl(filePath);
+
+        imageUrl = publicData.publicUrl;
+      }
+
+      // ✅ 현재 로그인한 사용자 정보 가져오기
+      const { data: writerData, error: writerError } = await supabaseClient
+        .from('users')
+        .select('username,name,role,grade,class_num')
+        .eq('username', localStorage.getItem('savedUsername'))
+        .single();
+
+      if (writerError || !writerData) {
+        alert('사용자 정보 확인 중 오류가 발생했습니다.');
+        return;
+      }
+
+      // ✅ 테이블에 등록할 데이터
+      const newNotice = {
+        title: title,
+        content: content,
+        image_url: imageUrl,
+        writer: writerData.name,        // 작성자 이름
+        writer_role: writerData.role,   // 작성자 역할
+        grade: writerData.grade,        // 작성자 학년
+        class_num: writerData.class_num // 작성자 반
+      };
+
+      const { error } = await supabaseClient.from('notices').insert([ newNotice ]);
+        if (error) {
+          alert('공지 등록 실패: ' + error.message);
+          return;
+        }
+
+        alert('공지 등록 완료!');
+        document.getElementById('notice-title').value = '';
+        document.getElementById('notice-content').value = '';
+        document.getElementById('notice-image').value = '';
+        document.getElementById('notice-upload-check').checked = false;
+
         loadNotices();
-        return; // 자동 로그인 성공했으므로 종료
-      }
-    }
-
-    // 👉 저장된 아이디가 없거나 조회 실패 시 로그인 화면
-    showLogin();
-  });
-
-
-  function setupAdminNav() {
-    const existing = document.getElementById('admin-nav');
-
-    if (currentUserRole === 'admin') {
-      if (!existing) {
-        const nav = document.getElementById('main-nav');
-        const a = document.createElement('a');
-        a.href = '#';
-        a.id = 'admin-nav';
-        a.innerText = '관리자 설정';
-        a.onclick = () => { showPanel('admin-panel'); };
-        nav.appendChild(a);
-      }
-    } else {
-      if (existing) existing.remove();
-    }
-  }
-
-  document.querySelectorAll('#main-nav a').forEach(link => {
-    link.addEventListener('click', () => {
-      const menuToggle = document.getElementById('menu-toggle');
-      if (menuToggle) {
-        menuToggle.checked = false;
       }
 
-    });
-  });
+    async function loadNotices() {
+      let query = supabaseClient.from('notices').select('*').order('id', { ascending: false });
 
+      if (currentUserRole !== 'admin') {
+        // ✅ 학생이라면 같은 학년/반 & 어드민이 올린 글 제외
+        query = query
+          .eq('grade', currentGrade)
+          .eq('class_num', currentClassNum)
+          .neq('writer_role', 'admin');
+      }
+      // ✅ admin이면 모든 공지를 그대로 불러옴
 
+      const { data, error } = await query;
 
-async function submitHomework() {
-  const name = currentUserName;
-  const studentNum = currentStudentNumber;
-  const grade = currentGrade;
-  const classNum = currentClassNum;
-  const scope = document.getElementById('homework-scope').value;
-  const title = document.getElementById('homework-title').value.trim();
-  const comment = document.getElementById('homework-comment').value.trim();
-  const fileInput = document.getElementById('homework-file');
-  const statusEl = document.getElementById('homework-status');
-
-  if (!name || !studentNum || !title || fileInput.files.length === 0) {
-    alert('과제명과 파일을 모두 입력해 주세요.');
-    return;
-  }
-
-  statusEl.style.color = '#007bff';
-  statusEl.textContent = '⏳ 업로드 중입니다...';
-
-  const insertRecords = [];
-
-  try {
-    for (let i = 0; i < fileInput.files.length; i++) {
-      const file = fileInput.files[i];
-      const timestamp = Date.now();
-
-      // ✅ 안전한 파일명 생성
-      const safeFileName = file.name
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^\w.-]/g, '_');
-
-      const fileName = `${studentNum}_${timestamp}_${i}_${safeFileName}`;
-
-      // ✅ 파일 업로드
-      const { error: uploadError } = await supabaseClient
-        .storage
-        .from('homework-files')
-        .upload(fileName, file);
-
-      if (uploadError) {
-        throw new Error(`❌ 파일 업로드 실패: ${safeFileName} - ${uploadError.message}`);
+      if (error) {
+        console.error('공지 불러오기 실패:', error);
+        return;
       }
 
-      const { data: publicURLData } = supabaseClient
-        .storage
-        .from('homework-files')
-        .getPublicUrl(fileName);
+      const listEl = document.getElementById('notice-list');
+      listEl.innerHTML = '';
 
-      const fileURL = publicURLData.publicUrl;
+      data.forEach(item => {
+        const formattedContent = item.content.replace(/\n/g, '<br>');
+        const div = document.createElement('div');
+        div.style.borderBottom = '1px solid #ddd';
+        div.style.padding = '0.5rem 0';
+        // 누가 올린 글인지 표시
+        div.innerHTML = `<strong>${item.title}</strong> <span style="font-size:0.8rem;color:#888;">(${item.writer})</span><br>${formattedContent}`;
 
-      insertRecords.push({
-        name,
-        student_number: studentNum,
-        title,
-        grade,
-        class_num: classNum,
-        comment,
-        file_url: fileURL,
-        share_scope: scope
+        if (item.image_url) {
+          div.innerHTML += `<br><img src="${item.image_url}" style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem;">`;
+        }
+
+        listEl.appendChild(div);
       });
     }
 
-    // ✅ DB에 한꺼번에 insert
-    const { error: insertError } = await supabaseClient
-      .from('homeworks')
-      .insert(insertRecords);
-
-    if (insertError) {
-      throw new Error(`❌ DB 저장 실패: ${insertError.message}`);
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => {
+          const dataUrl = fr.result; // "data:...;base64,AAAA..."
+          const base64 = String(dataUrl).split(',')[1] || '';
+          resolve(base64);
+        };
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      });
     }
 
-    statusEl.style.color = 'green';
-    statusEl.textContent = `✅ 총 ${insertRecords.length}개 파일 업로드 완료!`;
+    async function analyzeDocument() {
+      const fileInput = document.getElementById('doc-file');
+      const previewEl = document.getElementById('doc-preview');
+      const resultEl = document.getElementById('doc-result');
 
-    // 입력 초기화
-    document.getElementById('homework-title').value = '';
-    document.getElementById('homework-comment').value = '';
-    document.getElementById('homework-file').value = '';
+      if (!fileInput.files.length) {
+        alert('파일을 선택해 주세요.');
+        return;
+      }
 
-    // 자료 목록 갱신
-    loadMaterials();
+      const file = fileInput.files[0];
+      lastAnalyzedFile = file; // 분석한 파일 저장 (공지 등록 시 이미지 업로드용)
 
-  } catch (err) {
-    console.error(err);
-    statusEl.style.color = 'red';
-    statusEl.textContent = err.message || '업로드 중 오류 발생';
-  }
-}
+      // 미리보기
+      previewEl.src = URL.createObjectURL(file);
+      previewEl.style.display = 'block';
 
-async function loadMaterials() {
-  const listEl = document.getElementById('material-list');
-  listEl.innerHTML = '';
+      resultEl.value = '📄 문서 분석 중... (CLOVA + Auto Classify)';
+      autoResize();
 
-  const { data, error } = await supabaseClient
-    .from('homeworks')
-    .select('*')
-    .order('uploaded_at', { ascending: false });
+      try {
+        // 1) 파일을 Base64로 변환하여 서버로 전송
+        const fileBase64 = await fileToBase64(file);
 
-  if (error) {
-    console.error('❌ 자료 불러오기 오류:', error);
-    listEl.innerHTML = '<li>자료를 불러오는 중 오류가 발생했습니다.</li>';
-    return;
-  }
+        const res = await fetch(CLOVER_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileBase64 })
+        });
 
-  if (!data || data.length === 0) {
-    listEl.innerHTML = '<li>등록된 자료가 없습니다.</li>';
-    return;
-  }
+        if (!res.ok) throw new Error(`CLOVA 서버 오류 (${res.status})`);
 
-  data.forEach(item => {
-    const titleLine = `📌 ${item.title} (${item.grade}학년 ${item.class_num}반 ${item.student_number}번 ${item.name})`;
-    const commentHtml = item.comment
-      ? `<p style="margin:6px 0;">💬 ${item.comment}</p>`
-      : '';
+        // 2) 서버 응답(JSON) 파싱
+        //    서버에서 아래 키를 내려주도록 구현:
+        //    { subject, date, time, topic, materials, raw }
+        const json = await res.json();
 
-    const fileUrls = Array.isArray(item.file_url)
-      ? item.file_url
-      : (typeof item.file_url === 'string' && item.file_url.startsWith('['))
-        ? JSON.parse(item.file_url)
-        : [item.file_url];
+        const subject   = json.subject   || '';
+        const date      = json.date      || '';
+        const time      = json.time      || '';
+        const topic     = json.topic     || '';
+        const materials = json.materials || '';
+        const raw       = json.raw       || '';
 
-    const fileHtmlArray = fileUrls.map(url => {
-      const filename = decodeURIComponent(url.split('/').pop());
-      const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+        // 3) 간결 포맷으로 자동 채우기 (수정 가능)
+        const pretty = [
+          `[과목] ${subject}`,
+          `[평가 날짜] ${date}`,
+          `[평가 시간] ${time}`,
+          `[평가 주제] ${topic}`,
+          `[준비물] ${materials}`,
+          `--------------------------------`,
+          `원문:`,
+          raw
+        ].join('\n');
 
-      // 이미지 확대 기능 포함
-      const imagePreview = isImage
-        ? `<img src="${url}" alt="${filename}" 
-               onclick="openImageModal('${url}')"
-               style="max-width:120px; max-height:120px; border-radius:6px; cursor:pointer; margin-bottom:6px;" />`
-        : '';
+        resultEl.value = pretty.trim();
+        autoResize();
 
-      const downloadLink = `<a href="${url}" download="${filename}" target="_blank" style="color:#007bff;text-decoration:none;font-weight:500;">
-        📥 파일 다운로드
-      </a>`;
+        alert('✅ CLOVA 분석 완료! 필요한 항목은 자유롭게 수정하세요.');
 
-      return `${imagePreview}<br>${downloadLink}`;
+      } catch (err) {
+        console.error('CLOVA 분석 실패:', err);
+        if (!USE_TESSERACT_FALLBACK) {
+          resultEl.value = `문서 분석 실패: ${err.message}`;
+          autoResize();
+          return;
+        }
+
+        // 🔁 백업: Tesseract로 원문이라도 뽑아 표시
+        resultEl.value = '⚠️ CLOVA 실패 → Tesseract로 백업 인식 중...';
+        autoResize();
+
+        try {
+          const reader = new FileReader();
+          reader.onload = () => {
+            Tesseract.recognize(reader.result, 'kor', { logger: m => console.log(m) })
+              .then(({ data: { text } }) => {
+                resultEl.value = [
+                  `[과목] `,
+                  `[평가 날짜] `,
+                  `[평가 시간] `,
+                  `[평가 주제] `,
+                  `[준비물] `,
+                  `--------------------------------`,
+                  `원문:`,
+                  text || ''
+                ].join('\n').trim();
+                autoResize();
+                alert('⚠️ CLOVA 실패. Tesseract 결과를 표시했어요. 항목을 직접 보완해 주세요.');
+              })
+              .catch(fallbackErr => {
+                console.error('Tesseract 오류:', fallbackErr);
+                resultEl.value = `문서 분석 실패(백업도 실패): ${fallbackErr.message}`;
+                autoResize();
+              });
+          };
+          reader.readAsDataURL(file);
+        } catch (fallbackWrapErr) {
+          console.error('백업 처리 오류:', fallbackWrapErr);
+          resultEl.value = `문서 분석 실패: ${fallbackWrapErr.message}`;
+          autoResize();
+        }
+      }
+    }
+
+    async function registerAnalyzedText() {
+      const text = document.getElementById('doc-result').value.trim();
+      if (!text) {
+        alert('내용이 비어 있습니다.');
+        return;
+      }
+
+      let imageUrl = '';
+      const shouldUploadImage = document.getElementById('upload-image-check').checked;
+
+      if (shouldUploadImage && lastAnalyzedFile) {
+        const fileName = Date.now() + '_' + lastAnalyzedFile.name;
+        const { error: uploadErr } = await supabaseClient
+          .storage
+          .from('notice-images')
+          .upload(fileName, lastAnalyzedFile);
+
+        if (uploadErr) {
+          alert('이미지 업로드 실패: ' + uploadErr.message);
+          return;
+        }
+        const { data: publicData } = supabaseClient
+          .storage
+          .from('notice-images')
+          .getPublicUrl(fileName);
+        imageUrl = publicData.publicUrl;
+      }
+
+      // ✅ 현재 로그인한 사용자 정보 가져오기
+      const { data: writerData, error: writerError } = await supabaseClient
+        .from('users')
+        .select('username,name,role,grade,class_num')
+        .eq('username', localStorage.getItem('savedUsername'))
+        .single();
+
+      if (writerError || !writerData) {
+        alert('사용자 정보 확인 중 오류가 발생했습니다.');
+        return;
+      }
+
+      // ✅ DB에 공지 등록 (문서 분석 결과)
+      const { error } = await supabaseClient.from('notices').insert([{
+        title: '문서 분석 등록',
+        content: text,
+        image_url: imageUrl,
+        writer: writerData.name,
+        writer_role: writerData.role,
+        grade: writerData.grade,
+        class_num: writerData.class_num
+      }]);
+
+      if (error) {
+        alert('공지 등록 실패: ' + error.message);
+        return;
+      }
+
+      alert('등록이 완료되었습니다!');
+      loadNotices();
+
+      // 초기화
+      lastAnalyzedFile = null;
+      document.getElementById('doc-file').value = '';
+      document.getElementById('doc-preview').style.display = 'none';
+      document.getElementById('upload-image-check').checked = false;
+      document.getElementById('doc-result').value = '';
+    }
+
+    const docResult = document.getElementById('doc-result');
+
+    function autoResize() {
+      docResult.style.height = 'auto';  // 초기화
+      docResult.style.height = docResult.scrollHeight + 'px'; // 내용에 맞게 늘림
+    }
+
+    docResult.addEventListener('input', autoResize);
+
+    const NEIS_KEY = '28ca0f05af184e8ba231d5a949d52db2';
+    const ATPT_OFCDC_SC_CODE = 'J10';
+    const SD_SCHUL_CODE = '7679111';
+
+    async function loadTimetableWeek(grade, classNum) {
+      currentGrade = grade;
+      currentClassNum = classNum;
+            
+
+      document.getElementById('timetable-grade-info').innerText = `${grade}학년 ${classNum}반 (주간)`;
+      const container = document.getElementById('timetable-container');
+      container.innerHTML = '<p>시간표 불러오는 중...</p>';
+
+      const today = new Date();
+      const day = today.getDay();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + timetableOffset * 7);
+
+      const year = today.getFullYear();
+      const month = today.getMonth() + 1;
+      const semester = (month <= 8) ? 1 : 2;
+
+      const dates = Array.from({ length: 5 }, (_, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      });
+
+      try {
+        const results = await Promise.all(
+          dates.map(async (dateStr) => {
+            const url = `https://open.neis.go.kr/hub/misTimetable?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&AY=${year}&SEM=${semester}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
+            console.log(url);
+            const res = await fetch(url);
+            const data = await res.json();
+            return { dateStr, data };
+          })
+        );
+
+              container.innerHTML = '';
+
+              for (const { dateStr, data } of results) {
+                const dayBox = document.createElement('div');
+                dayBox.style.border = '1px solid #ccc';
+                dayBox.style.borderRadius = '8px';
+                dayBox.style.padding = '8px';
+                dayBox.style.background = '#fdfdfd';
+                dayBox.style.marginBottom = '10px';
+
+                const title = document.createElement('h4');
+                const dateObj = new Date(
+                  dateStr.slice(0, 4), // 연도
+                  parseInt(dateStr.slice(4, 6)) - 1, // 월 (0부터 시작)
+                  dateStr.slice(6, 8) // 일
+                );
+
+                // 요일 배열
+                const days = ['일', '월', '화', '수', '목', '금', '토'];
+                const dayName = days[dateObj.getDay()];
+
+                title.innerText = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)} (${dayName})`;
+
+                dayBox.appendChild(title);
+
+                if (data.misTimetable && data.misTimetable[1]) {
+                  const rows = data.misTimetable[1].row;
+                  const unique = {};
+                  rows.forEach(row => {
+                    const key = row.PERIO;
+                    if (!unique[key]) {
+                      unique[key] = row.ITRT_CNTNT;
+                    }
+                  });
+
+                  // PERIO 순서대로 정렬해서 출력
+                  Object.keys(unique).sort((a, b) => parseInt(a) - parseInt(b)).forEach(perio => {
+                    const item = document.createElement('div');
+                    item.innerHTML = `<strong>${perio}교시</strong> : ${unique[perio]}`;
+                    dayBox.appendChild(item);
+                  });
+
+                } else {
+                  const none = document.createElement('p');
+                  none.innerText = '교육청 시간표 데이터 없음';
+                  dayBox.appendChild(none);
+                }
+
+                container.appendChild(dayBox);
+              }
+            } catch (err) {
+              console.error('주간 시간표 오류:', err);
+              container.innerHTML = '<p>시간표를 불러오는 중 오류가 발생했습니다.</p>';
+            }
+
+          }
+
+    function moveTimetable(offset) {
+      timetableOffset += offset;
+      loadTimetableWeek(currentGrade, currentClassNum, timetableOffset);
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const savedUsername = localStorage.getItem('savedUsername');
+
+      if (savedUsername) {
+        const { data: user, error } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('username', savedUsername)
+          .maybeSingle();
+
+        if (error) {
+          console.error('자동 로그인 조회 오류:', error);
+          showLogin();
+          return;
+        }
+
+        if (user) {
+          currentUserRole = user.role || 'user';
+          currentGrade = user.grade;
+          currentClassNum = user.class_num;
+
+          await loadTimetableWeek(user.grade, user.class_num);
+          showMain();
+          loadNotices();
+          localStorage.setItem("savedUsername", username);
+          return;
+        }
+      }
+      showLogin();
     });
 
-    const li = document.createElement('li');
-    li.style.borderBottom = '1px solid #ddd';
-    li.style.padding = '12px 0';
-    li.innerHTML = `
-      <div style="font-weight:bold; margin-bottom:6px;">${titleLine}</div>
-      ${commentHtml}
-      ${fileHtmlArray.join('<br><br>')}
-    `;
-    listEl.appendChild(li);
-  });
-}
+    window.addEventListener('DOMContentLoaded', async () => {
+      // 👉 이전에 로그인한 아이디가 localStorage에 저장돼 있는지 확인
+      const savedUsername = localStorage.getItem('savedUsername');
 
+      if (savedUsername) {
+        // Supabase에서 해당 사용자 정보 불러오기
+        const { data: user, error } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('username', savedUsername)
+          .maybeSingle();
 
+        if (error) {
+          console.error('자동 로그인 조회 오류:', error);
+          showLogin();
+          return;
+        }
 
+        if (user) {
+          currentUserRole = user.role || 'user';
+          currentGrade = user.grade;
+          currentClassNum = user.class_num;
 
-// 이름 표시 & 업데이트
-function setUserInfoInput() {
-  const inputEl = document.getElementById('homework-userinfo');
-  const nameEl = document.getElementById('profile-name-display');
-  const mobileNameEl = document.getElementById('mobile-user-name');
+          // 로그인 성공 시
+          loadTimetableWeek(user.grade, user.class_num);
+          showMain();
+          loadNotices();
+          return; // 자동 로그인 성공했으므로 종료
+        }
+      }
 
-  if (inputEl) inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
-  if (nameEl) nameEl.textContent = currentUserName;
-  if (mobileNameEl) mobileNameEl.textContent = currentUserName;
-}
-
-// 드롭다운 토글 처리
-document.addEventListener('DOMContentLoaded', () => {
-  const profileButton = document.getElementById('profile-button');
-  const dropdown = document.getElementById('profile-dropdown');
-
-  if (profileButton && dropdown) {
-    profileButton.addEventListener('click', (e) => {
-      e.stopPropagation(); // 클릭 전파 방지
-      dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
-
-      if (dropdown.style.display === 'block') {
-    displayCoinBalance();
-  }
+        // 👉 저장된 아이디가 없거나 조회 실패 시 로그인 화면
+      showLogin();
     });
 
-    document.addEventListener('click', () => {
-      dropdown.style.display = 'none';
-    });
-  }
-});
+    function setupAdminNav() {
+      const existing = document.getElementById('admin-nav');
 
-async function displayCoinBalance() {
+      if (currentUserRole === 'admin') {
+        if (!existing) {
+          const nav = document.getElementById('main-nav');
+          const a = document.createElement('a');
+          a.href = '#';
+          a.id = 'admin-nav';
+          a.innerText = '관리자 설정';
+          a.onclick = () => { showPanel('admin-panel'); };
+          nav.appendChild(a);
+        }
+      } else {
+        if (existing) existing.remove();
+      }
+    }
+
+    document.querySelectorAll('#main-nav a').forEach(link => {
+      link.addEventListener('click', () => {
+        const menuToggle = document.getElementById('menu-toggle');
+        if (menuToggle) {
+          menuToggle.checked = false;
+        }
+      });
+    });
+
+    async function submitHomework() {
+      const name = currentUserName;
+      const studentNum = currentStudentNumber;
+      const grade = currentGrade;
+      const classNum = currentClassNum;
+      const scope = document.getElementById('homework-scope').value;
+      const title = document.getElementById('homework-title').value.trim();
+      const comment = document.getElementById('homework-comment').value.trim();
+      const fileInput = document.getElementById('homework-file');
+      const statusEl = document.getElementById('homework-status');
+
+      if (!name || !studentNum || !title || fileInput.files.length === 0) {
+        alert('과제명과 파일을 모두 입력해 주세요.');
+        return;
+      }
+
+      statusEl.style.color = '#007bff';
+      statusEl.textContent = '⏳ 업로드 중입니다...';
+
+      const insertRecords = [];
+
+      try {
+        for (let i = 0; i < fileInput.files.length; i++) {
+          const file = fileInput.files[i];
+          const timestamp = Date.now();
+
+          // ✅ 안전한 파일명 생성
+          const safeFileName = file.name
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^\w.-]/g, '_');
+
+          const fileName = `${studentNum}_${timestamp}_${i}_${safeFileName}`;
+
+          // ✅ 파일 업로드
+          const { error: uploadError } = await supabaseClient
+            .storage
+            .from('homework-files')
+            .upload(fileName, file);
+
+          if (uploadError) {
+            throw new Error(`❌ 파일 업로드 실패: ${safeFileName} - ${uploadError.message}`);
+          }
+
+          const { data: publicURLData } = supabaseClient
+            .storage
+            .from('homework-files')
+            .getPublicUrl(fileName);
+
+          const fileURL = publicURLData.publicUrl;
+
+          insertRecords.push({
+            name,
+            student_number: studentNum,
+            title,
+            grade,
+            class_num: classNum,
+            comment,
+            file_url: fileURL,
+            share_scope: scope
+          });
+        }
+
+        // ✅ DB에 한꺼번에 insert
+        const { error: insertError } = await supabaseClient
+          .from('homeworks')
+          .insert(insertRecords);
+
+        if (insertError) {
+          throw new Error(`❌ DB 저장 실패: ${insertError.message}`);
+        }
+
+        statusEl.style.color = 'green';
+        statusEl.textContent = `✅ 총 ${insertRecords.length}개 파일 업로드 완료!`;
+
+        // 입력 초기화
+        document.getElementById('homework-title').value = '';
+        document.getElementById('homework-comment').value = '';
+        document.getElementById('homework-file').value = '';
+
+        // 자료 목록 갱신
+        loadMaterials();
+
+      } catch (err) {
+        console.error(err);
+        statusEl.style.color = 'red';
+        statusEl.textContent = err.message || '업로드 중 오류 발생';
+      }
+    }
+
+    async function loadMaterials() {
+      const listEl = document.getElementById('material-list');
+      listEl.innerHTML = '';
+
+      const { data, error } = await supabaseClient
+        .from('homeworks')
+        .select('*')
+        .order('uploaded_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ 자료 불러오기 오류:', error);
+        listEl.innerHTML = '<li>자료를 불러오는 중 오류가 발생했습니다.</li>';
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        listEl.innerHTML = '<li>등록된 자료가 없습니다.</li>';
+        return;
+      }
+
+      data.forEach(item => {
+        const titleLine = `📌 ${item.title} (${item.grade}학년 ${item.class_num}반 ${item.student_number}번 ${item.name})`;
+        const commentHtml = item.comment
+          ? `<p style="margin:6px 0;">💬 ${item.comment}</p>`
+          : '';
+
+        const fileUrls = Array.isArray(item.file_url)
+          ? item.file_url
+          : (typeof item.file_url === 'string' && item.file_url.startsWith('['))
+            ? JSON.parse(item.file_url)
+            : [item.file_url];
+
+        const fileHtmlArray = fileUrls.map(url => {
+          const filename = decodeURIComponent(url.split('/').pop());
+          const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+
+          // 이미지 확대 기능 포함
+          const imagePreview = isImage
+            ? `<img src="${url}" alt="${filename}" 
+                  onclick="openImageModal('${url}')"
+                  style="max-width:120px; max-height:120px; border-radius:6px; cursor:pointer; margin-bottom:6px;" />`
+            : '';
+
+          const downloadLink = `<a href="${url}" download="${filename}" target="_blank" style="color:#007bff;text-decoration:none;font-weight:500;">
+            📥 파일 다운로드
+          </a>`;
+
+          return `${imagePreview}<br>${downloadLink}`;
+        });
+
+        const li = document.createElement('li');
+        li.style.borderBottom = '1px solid #ddd';
+        li.style.padding = '12px 0';
+        li.innerHTML = `
+          <div style="font-weight:bold; margin-bottom:6px;">${titleLine}</div>
+          ${commentHtml}
+          ${fileHtmlArray.join('<br><br>')}
+        `;
+        listEl.appendChild(li);
+      });
+    }
+
+    function setUserInfoInput() {
+      const inputEl = document.getElementById('homework-userinfo');
+      const nameEl = document.getElementById('profile-name-display');
+      const mobileNameEl = document.getElementById('mobile-user-name');
+
+      if (inputEl) inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
+      if (nameEl) nameEl.textContent = currentUserName;
+      if (mobileNameEl) mobileNameEl.textContent = currentUserName;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const profileButton = document.getElementById('profile-button');
+      const dropdown = document.getElementById('profile-dropdown');
+
+      if (profileButton && dropdown) {
+        profileButton.addEventListener('click', (e) => {
+          e.stopPropagation(); // 클릭 전파 방지
+          dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+
+          if (dropdown.style.display === 'block') {
+        displayCoinBalance();
+      }
+        });
+
+        document.addEventListener('click', () => {
+          dropdown.style.display = 'none';
+        });
+      }
+    });
+
+    async function displayCoinBalance() {
+      const username = localStorage.getItem('savedUsername');
+      const { data, error } = await supabaseClient
+        .from('users')
+        .select('coin_balance')
+        .eq('username', username)
+        .single();
+
+      if (error || !data) {
+        console.error('코인 조회 실패:', error);
+        return;
+      }
+
+      const balance = data.coin_balance || 0;
+      document.getElementById('coin-balance').innerText = `💰 ${balance} 코인`;
+    }
+
+// ==== 4 = 10 미니게임 ====
+// 필요한 전역 상태
+let currentFourNumbers = [];
+let currentUserCoin = 0;
+
+// 로그인/화면 진입 시 코인 동기화 해두면 좋아요.
+// (원래 코드의 displayCoinBalance()를 재사용)
+async function syncCoinBalance() {
   const username = localStorage.getItem('savedUsername');
+  if (!username) return;
   const { data, error } = await supabaseClient
     .from('users')
     .select('coin_balance')
     .eq('username', username)
     .single();
-
-  if (error || !data) {
-    console.error('코인 조회 실패:', error);
-    return;
+  if (!error && data) {
+    currentUserCoin = data.coin_balance || 0;
   }
-
-  const balance = data.coin_balance || 0;
-  document.getElementById('coin-balance').innerText = `💰 ${balance} 코인`;
 }
 
-
-//4=10
-let currentFourNumbers = [];
-
+// 난수 4개(1~9) 생성 + 화면 표시
 function generateFourNumbers() {
-  currentFourNumbers = [];
-  for (let i = 0; i < 4; i++) {
-    currentFourNumbers.push(Math.floor(Math.random() * 9) + 1);
-  }
-  document.getElementById('game-numbers').innerText = currentFourNumbers.join(' ');
-  document.getElementById('game-input').value = '';
-  document.getElementById('game-feedback').innerText = '';
+  currentFourNumbers = Array.from({ length: 4 }, () => Math.floor(Math.random() * 9) + 1);
+  const box = document.getElementById('game-numbers');
+  if (box) box.textContent = currentFourNumbers.join('  ');
+  const input = document.getElementById('game-input');
+  if (input) input.value = '';
+  const fb = document.getElementById('game-feedback');
+  if (fb) fb.textContent = '';
 }
 
-function checkFourEqualsTen() {
-  const input = document.getElementById('game-input').value;
-  const numsUsed = input.match(/\d+/g)?.map(Number) || [];
+// 식 검증: 허용 문자만, 숫자 사용 일치
+function isValidExpression(expr, numbers) {
+  if (!expr) return false;
 
-  // 유효성 검사: 입력 숫자가 현재 숫자와 일치하는지
-  const sortedInput = numsUsed.slice().sort((a, b) => a - b);
-  const sortedOriginal = currentFourNumbers.slice().sort((a, b) => a - b);
+  // 보기 좋게 기호 치환
+  expr = expr.replace(/×/g, '*').replace(/÷/g, '/');
 
-  if (JSON.stringify(sortedInput) !== JSON.stringify(sortedOriginal)) {
-    document.getElementById('game-feedback').innerText = '❌ 주어진 숫자만 사용해야 해요!';
+  // 허용 문자만 검사(숫자, + - * /, (), 공백)
+  if (!/^[\d+\-*/()\s.]+$/.test(expr)) return false;
+
+  // 숫자 사용 검증 (각 숫자를 정확히 한 번씩)
+  const used = (expr.match(/\d+/g) || []).map(n => Number(n)).sort((a,b)=>a-b);
+  const need = [...numbers].sort((a,b)=>a-b);
+  if (JSON.stringify(used) !== JSON.stringify(need)) return false;
+
+  return true;
+}
+
+// 안전 평가: 허용 문자만 통과시켜 new Function으로 계산
+function safeEval(expr) {
+  expr = expr.replace(/×/g, '*').replace(/÷/g, '/');
+  // 마지막 방어선: 허용 문자만
+  if (!/^[\d+\-*/()\s.]+$/.test(expr)) throw new Error('invalid');
+  // 괄호 밸런스 간단 체크
+  let bal = 0;
+  for (const ch of expr) {
+    if (ch === '(') bal++;
+    if (ch === ')') bal--;
+    if (bal < 0) throw new Error('paren');
+  }
+  if (bal !== 0) throw new Error('paren');
+
+  const fn = new Function(`return (${expr});`);
+  return fn();
+}
+
+async function checkFourEqualsTen() {
+  const fb = document.getElementById('game-feedback');
+  const input = document.getElementById('game-input');
+  if (!input || !fb) return;
+  const expr = input.value.trim();
+
+  if (!isValidExpression(expr, currentFourNumbers)) {
+    fb.textContent = '❌ 주어진 4개 숫자를 각각 한 번씩만 사용하고, + - × ÷ () 만 사용하세요.';
+    exitMiniGame();   // 🚀 제출과 동시에 자동 나가기
     return;
   }
 
   try {
-    const result = eval(input);
-    if (result === 10) {
-      document.getElementById('game-feedback').innerText = '🎉 정답입니다!';
+    const result = safeEval(expr);
+    const ok = Math.abs(result - 10) < 1e-9;
+
+    if (ok) {
+      fb.textContent = '🎉 정답입니다! (+10코인 지급)';
+      const username = localStorage.getItem('savedUsername');
+      if (username) {
+        const { error } = await supabaseClient
+          .from('users')
+          .update({ coin_balance: currentUserCoin + 10 })
+          .eq('username', username);
+        if (!error) {
+          currentUserCoin += 10;
+          if (typeof displayCoinBalance === 'function') {
+            displayCoinBalance();
+          }
+        }
+      }
     } else {
-      document.getElementById('game-feedback').innerText = `😅 오답! 결과는 ${result}입니다.`;
+      fb.textContent = `😅 오답! 결과는 ${result} 입니다.`;
     }
+
+    // 🚀 정답이든 오답이든 제출 후 자동으로 나가기
+    exitMiniGame();
+
   } catch (e) {
-    document.getElementById('game-feedback').innerText = '⚠️ 식을 정확히 입력해주세요.';
+    fb.textContent = '⚠️ 식을 정확히 입력해 주세요.';
+    exitMiniGame();   // 🚀 오류여도 제출 후 나가기
   }
 }
 
+
+
+// 나가기 버튼
 function exitMiniGame() {
-  document.getElementById('fourEqualsTen-game').style.display = 'none';
-  showPanel('minigame-panel');
+  const game = document.getElementById('fourEqualsTen-game');
+  if (game) game.style.display = 'none';
+  const panel = document.getElementById('minigame-panel');
+  if (panel) panel.style.display = 'block';
 }
 
-
+// 게임 시작(코인 5 차감)
 async function startGame(gameType) {
-  const coinCost = 5;
-  const username = localStorage.getItem('savedUsername');
+  if (gameType !== 'fourEqualsTen') return;
 
-  if (currentUserCoin < coinCost) {
-    alert('코인이 부족합니다.');
+  const username = localStorage.getItem('savedUsername');
+  if (!username) {
+    alert('로그인이 필요합니다.');
     return;
   }
 
+  // 코인 최신화
+  await syncCoinBalance();
+
+  const cost = 5;
+  if (currentUserCoin < cost) {
+    alert('코인이 부족합니다. (필요: 5)');
+    return;
+  }
+
+  // DB 코인 차감
   const { error } = await supabaseClient
     .from('users')
-    .update({ coin_balance: currentUserCoin - coinCost })
+    .update({ coin_balance: currentUserCoin - cost })
     .eq('username', username);
 
   if (error) {
@@ -1901,165 +2033,176 @@ async function startGame(gameType) {
     return;
   }
 
-  currentUserCoin -= coinCost;
-  displayCoinBalance();
-
-  if (gameType === 'fourEqualsTen') {
-    generateFourNumbers();
-    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-    document.getElementById('fourEqualsTen-game').style.display = 'block';
-  } else {
-    alert(`[${gameType}] 게임 시작! (코인 차감됨)`);
+  // 로컬/화면 갱신
+  currentUserCoin -= cost;
+  if (typeof displayCoinBalance === 'function') {
+    displayCoinBalance();
   }
+
+  // 화면 전환 & 난수 생성
+  document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+  const game = document.getElementById('fourEqualsTen-game');
+  if (game) game.style.display = 'block';
+  generateFourNumbers();
 }
 
-
-
-  // ✅ 약관 동의 시 버튼 보이기
-  document.addEventListener('DOMContentLoaded', () => {
-    const agree = document.getElementById('privacy-agree');
-    const btn = document.getElementById('signup-btn');
-    agree.addEventListener('change', () => {
-      btn.style.display = agree.checked ? 'block' : 'none';
-    });
-  });
-
-  function toggleMobileMenu() {
-    document.getElementById('mobile-side-menu').classList.toggle('open');
-    document.getElementById('mobile-overlay').classList.toggle('show');
-  }
-
-  function closeMobileMenu() {
-    document.getElementById('mobile-side-menu').classList.remove('open');
-    document.getElementById('mobile-overlay').classList.remove('show');
-  }
-
-  // 이메일 도메인 선택 시 동작
+// 엔터키로 제출 가능
 document.addEventListener('DOMContentLoaded', () => {
-  const domainSelect = document.getElementById('signupEmailDomain');
-  const customInput = document.getElementById('signupEmailCustom');
-
-  domainSelect.addEventListener('change', () => {
-    if (domainSelect.value === '직접입력') {
-      customInput.style.display = 'block';
-    } else {
-      customInput.style.display = 'none';
-    }
-  });
-});
-
-function togglePassword(inputId) {
-    const input = document.getElementById(inputId);
-    input.type = input.type === 'password' ? 'text' : 'password';
-  } 
-
-  document.addEventListener('DOMContentLoaded', () => {
-  const menuProfile = document.getElementById('menu-profile');
-  const menuPassword = document.getElementById('menu-password');
-  const menuSetting = document.getElementById('menu-setting');
-  const menuLogout = document.getElementById('menu-logout');
-
-  if (menuProfile) {
-    menuProfile.addEventListener('click', (e) => {
-      e.preventDefault();
-      showPanel('profile-panel');
-      closeMobileMenu();
-    });
-  }
-
-  if (menuPassword) {
-    menuPassword.addEventListener('click', (e) => {
-      e.preventDefault();
-      alert('비밀번호 변경은 준비 중입니다.');
-      closeMobileMenu();
-      /*showPanel('profile-panel'); // 실제 비밀번호 패널 있으면 그걸로 바꾸세요
-      closeMobileMenu();*/
-    });
-  }
-
-  if (menuSetting) {
-    menuSetting.addEventListener('click', (e) => {
-      e.preventDefault();
-      alert('설정은 준비 중입니다.');
-      closeMobileMenu();
-    });
-  }
-
-  if (menuLogout) {
-    menuLogout.addEventListener('click', (e) => {
-      e.preventDefault();
-      logout();
-      closeMobileMenu();
-    });
-  }
-});
-
-let currentDate = new Date();
-
-function formatYMD(date) {
-  return date.toISOString().slice(0, 10).replace(/-/g, '');
-}
-
-function updateDateLabels() {
-  const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
-  const dateStr = currentDate.toLocaleDateString('ko-KR', options);
-  document.getElementById('timetable-date-label').textContent = dateStr;
-  document.getElementById('meal-date-label').textContent = dateStr;
-}
-
-function changeDate(delta) {
-  currentDate.setDate(currentDate.getDate() + delta);
-  //updateDateLabels();
-  loadTimetable();
-  loadMeal();
-}
-
-const fileInput = document.getElementById('homework-file');
-  const previewContainer = document.getElementById('filePreviewContainer');
-  const modal = document.getElementById('fileModal');
-  const modalImage = document.getElementById('modalImage');
-  const downloadLink = document.getElementById('downloadLink');
-
-  fileInput.addEventListener('change', () => {
-    previewContainer.innerHTML = '';
-
-    Array.from(fileInput.files).forEach(file => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = document.createElement('img');
-          img.src = e.target.result;
-          img.alt = file.name;
-          img.onclick = () => {
-            modal.style.display = 'flex';
-            modalImage.src = e.target.result;
-            downloadLink.href = e.target.result;
-            downloadLink.download = file.name;
-          };
-          previewContainer.appendChild(img);
-        };
-        reader.readAsDataURL(file);
+  const input = document.getElementById('game-input');
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        checkFourEqualsTen();
       }
     });
-  });
-
-  function closeModal() {
-    modal.style.display = 'none';
   }
-
-  function openImageModal(url) {
-  const modal = document.getElementById('imageModal');
-  const img = document.getElementById('modalImage');
-  img.src = url;
-  modal.style.display = 'flex';
-}
-
-function closeImageModal() {
-  const modal = document.getElementById('imageModal');
-  modal.style.display = 'none';
-}
+});
 
 
-</script>
-</body> 
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const agree = document.getElementById('privacy-agree');
+      const btn = document.getElementById('signup-btn');
+      agree.addEventListener('change', () => {
+        btn.style.display = agree.checked ? 'block' : 'none';
+      });
+    });
+
+    function toggleMobileMenu() {
+      document.getElementById('mobile-side-menu').classList.toggle('open');
+      document.getElementById('mobile-overlay').classList.toggle('show');
+    }
+
+    function closeMobileMenu() {
+      document.getElementById('mobile-side-menu').classList.remove('open');
+      document.getElementById('mobile-overlay').classList.remove('show');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const domainSelect = document.getElementById('signupEmailDomain');
+      const customInput = document.getElementById('signupEmailCustom');
+
+      domainSelect.addEventListener('change', () => {
+        if (domainSelect.value === '직접입력') {
+          customInput.style.display = 'block';
+        } else {
+          customInput.style.display = 'none';
+        }
+      });
+    });
+
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        input.type = input.type === 'password' ? 'text' : 'password';
+      } 
+
+    document.addEventListener('DOMContentLoaded', () => {
+    const menuProfile = document.getElementById('menu-profile');
+    const menuPassword = document.getElementById('menu-password');
+    const menuSetting = document.getElementById('menu-setting');
+    const menuLogout = document.getElementById('menu-logout');
+
+      if (menuProfile) {
+        menuProfile.addEventListener('click', (e) => {
+          e.preventDefault();
+          showPanel('profile-panel');
+          closeMobileMenu();
+        });
+      }
+
+        if (menuPassword) {
+          menuPassword.addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('비밀번호 변경은 준비 중입니다.');
+            closeMobileMenu();
+            /*showPanel('profile-panel'); // 실제 비밀번호 패널 있으면 그걸로 바꾸세요
+            closeMobileMenu();*/
+          });
+        }
+
+        if (menuSetting) {
+          menuSetting.addEventListener('click', (e) => {
+            e.preventDefault();
+            alert('설정은 준비 중입니다.');
+            closeMobileMenu();
+          });
+        }
+
+        if (menuLogout) {
+          menuLogout.addEventListener('click', (e) => {
+            e.preventDefault();
+            logout();
+            closeMobileMenu();
+          });
+        }
+    });
+
+    let currentDate = new Date();
+
+    function formatYMD(date) {
+      return date.toISOString().slice(0, 10).replace(/-/g, '');
+    }
+
+    function updateDateLabels() {
+      const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
+      const dateStr = currentDate.toLocaleDateString('ko-KR', options);
+      document.getElementById('timetable-date-label').textContent = dateStr;
+      document.getElementById('meal-date-label').textContent = dateStr;
+    }
+
+    function changeDate(delta) {
+      currentDate.setDate(currentDate.getDate() + delta);
+      //updateDateLabels();
+      loadTimetable();
+      loadMeal();
+    }
+
+    const fileInput = document.getElementById('homework-file');
+    const previewContainer = document.getElementById('filePreviewContainer');
+    const modal = document.getElementById('fileModal');
+    const modalImage = document.getElementById('modalImage');
+    const downloadLink = document.getElementById('downloadLink');
+
+    fileInput.addEventListener('change', () => {
+      previewContainer.innerHTML = '';
+
+      Array.from(fileInput.files).forEach(file => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = e => {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = file.name;
+            img.onclick = () => {
+              modal.style.display = 'flex';
+              modalImage.src = e.target.result;
+              downloadLink.href = e.target.result;
+              downloadLink.download = file.name;
+            };
+            previewContainer.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    });
+
+    function closeModal() {
+      modal.style.display = 'none';
+    }
+
+    function openImageModal(url) {
+      const modal = document.getElementById('imageModal');
+      const img = document.getElementById('modalImage');
+      img.src = url;
+      modal.style.display = 'flex';
+    }
+
+    function closeImageModal() {
+      const modal = document.getElementById('imageModal');
+      modal.style.display = 'none';
+    }
+
+    </script>
+  </body> 
 </html>
