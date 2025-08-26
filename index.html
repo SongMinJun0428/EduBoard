@@ -539,6 +539,43 @@
         color: white;
         cursor: pointer;
       }
+
+      /* ========== DASH: 상단 2열 ========== */
+.dash-top{display:grid;grid-template-columns:1fr 380px;gap:20px}
+@media (max-width:980px){.dash-top{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid #e9ecef;border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,.05)}
+.card-body{padding:18px 20px}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin:2px 0 12px}
+.section-head .mini{font-size:.85rem;color:#6c757d}
+.link-btn{background:#f6f7fb;border:1px solid #e9ecf3;border-radius:10px;padding:6px 10px;font-weight:600;color:#495057;cursor:pointer}
+.link-btn:hover{background:#eef1f8}
+
+/* 공지 리스트 */
+.notice-list{display:flex;flex-direction:column;gap:10px}
+.notice-item{padding:12px;border:1px solid #eef0f2;border-radius:12px}
+.notice-item .title{font-weight:700;margin-bottom:4px}
+.notice-item .meta{color:#6c757d;font-size:.85rem}
+
+/* 프로필 카드 */
+.profile-card{position:relative;display:flex;gap:14px;align-items:center}
+.profile-illust{width:120px;height:120px;border-radius:14px;background:radial-gradient(120px 120px at 70% 30%, #fffbcf 0%, #ffe889 60%, #ffe066 100%);display:flex;align-items:center;justify-content:center}
+.profile-avatar{width:92px;height:92px;border-radius:999px;background:#78e3e3;display:flex;align-items:center;justify-content:center;font-size:48px;border:6px solid #fff;box-shadow:0 8px 18px rgba(0,0,0,.08)}
+.lvl-badge{position:absolute;left:8px;top:-6px;background:#6c63ff;color:#fff;font-weight:800;border-radius:10px 10px 10px 0;padding:6px 10px;font-size:.9rem;box-shadow:0 6px 14px rgba(108,99,255,.25)}
+
+.profile-main{flex:1;min-width:0}
+.profile-name{font-weight:800;font-size:1.05rem}
+.profile-sub{color:#6c757d;font-size:.92rem;margin-top:2px}
+
+/* 포인트 칩 */
+.points-chip{font-size:.9rem;padding:6px 10px;border-radius:999px;border:1px solid #e9ecf3;background:#f8f9ff;font-weight:700;display:inline-flex;gap:6px;align-items:center}
+.points-chip .p-dot{width:8px;height:8px;border-radius:50%;background:#ffd43b;display:inline-block}
+
+/* 레벨 진행바 */
+.lvl-wrap{margin-top:10px}
+.lvl-head{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px;color:#6c757d}
+.lvl-bar{height:10px;background:#edf2ff;border-radius:999px;overflow:hidden;position:relative}
+.lvl-fill{height:100%;background:#6c63ff;width:0%}
+
 </style>
 </head>
   <body>
@@ -670,8 +707,6 @@
               font-size: 0.95rem;">
               로그아웃
             </button>
-            <!-- 헤더에 추가 -->
-          <div style="margin-left:10px;font-weight:bold;" id="coin-balance">💰 불러오는 중...</div>
           </div>
         </div>
 
@@ -699,6 +734,52 @@
       <div class="content">
         <div id="dashboard" class="panel active">
           <h2>🏠 대시보드</h2>
+          <div class="dash-top">
+
+  <!-- 좌: 최근 공지 3건 -->
+  <div class="card">
+    <div class="card-body">
+      <div class="section-head">
+        <h3>📢 최근 공지</h3>
+        <span class="mini" id="dash-notice-date"></span>
+      </div>
+      <div id="dash-notice-list" class="notice-list">
+        <!-- JS가 채움 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 우: 프로필 + 레벨/포인트 (레벨/포인트는 별개) -->
+  <div class="card">
+    <div class="card-body">
+      <div class="profile-card">
+        <span class="lvl-badge">Lv <span id="lv-num">1</span></span>
+        <div class="profile-illust">
+          <div class="profile-avatar" id="dash-avatar">🙂</div>
+        </div>
+        <div class="profile-main">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div class="profile-name"><span id="dash-name">학생</span><small style="margin-left:4px;color:#6c757d">학생</small></div>
+              <div class="profile-sub" id="dash-school">봉담중학교 · <span id="dash-grade">-</span>학년 <span id="dash-class">-</span>반 <span id="dash-num">-</span>번</div>
+            </div>
+            <div class="points-chip"><span class="p-dot"></span> P <span id="coin-balance" style="margin-left:4px"></span></div>
+          </div>
+
+          <!-- 레벨 바 (Lv/Exp 전용, 포인트와 무관) -->
+          <div class="lvl-wrap">
+            <div class="lvl-head">
+              <span>경험치</span>
+              <span><span id="exp-cur">0</span> / <span id="exp-need">20</span></span>
+            </div>
+            <div class="lvl-bar"><div id="lvl-fill" class="lvl-fill"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
           <!--<p style="margin-bottom: 1.5rem; color: #495057;">
             EduBoard에 오신 것을 환영합니다! 나의 활동을 한눈에 확인해보세요.(테스트)
           </p> -->
@@ -1016,6 +1097,10 @@
           localStorage.setItem('savedUsername', username);
           localStorage.setItem('savedName', currentUserName);
           localStorage.setItem('savedStudentNum', currentStudentNumber);
+          localStorage.setItem('savedGrade', user.grade);
+          localStorage.setItem('savedClassNum', user.class_num);
+
+
 
           // 화면에 표시
           setUserInfoInput();
@@ -1027,6 +1112,7 @@
           loadTimetableWeek(user.grade, user.class_num);
           showMain();
           loadNotices();
+          afterLoginRefreshDashboard();
         } else {
           document.getElementById('loginStatus').innerText = '아이디 또는 비밀번호가 틀렸습니다.';
         }
@@ -1162,7 +1248,6 @@
           .eq('id', session.user.id)
           .single();
         if (user) currentUserRole = user.role;
-        showMain();
       } else {
         showLogin();
       }
@@ -1591,70 +1676,43 @@
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
-      const savedUsername = localStorage.getItem('savedUsername');
+  const savedUsername = localStorage.getItem('savedUsername');
+  if (!savedUsername) { showLogin(); return; }
 
-      if (savedUsername) {
-        const { data: user, error } = await supabaseClient
-          .from('users')
-          .select('*')
-          .eq('username', savedUsername)
-          .maybeSingle();
+  const { data: user, error } = await supabaseClient
+    .from('users')
+    .select('*')
+    .eq('username', savedUsername)
+    .maybeSingle();
 
-        if (error) {
-          console.error('자동 로그인 조회 오류:', error);
-          showLogin();
-          return;
-        }
+  if (error || !user) { showLogin(); return; }
 
-        if (user) {
-          currentUserRole = user.role || 'user';
-          currentGrade = user.grade;
-          currentClassNum = user.class_num;
+  // ✅ 상태값 채우기
+  currentUserRole = user.role || 'user';
+  currentGrade = user.grade;
+  currentClassNum = user.class_num;
+  currentUserName = user.name;
+  currentStudentNumber = user.student_number;
 
-          await loadTimetableWeek(user.grade, user.class_num);
-          showMain();
-          loadNotices();
-          localStorage.setItem("savedUsername", username);
-          return;
-        }
-      }
-      showLogin();
-    });
+  // ✅ 로컬스토리지 저장 (대시보드 fallback이 이 값을 씁니다)
+  localStorage.setItem('savedName', user.name);
+  localStorage.setItem('savedStudentNum', user.student_number);
+  localStorage.setItem('savedGrade', user.grade);
+  localStorage.setItem('savedClassNum', user.class_num);
 
-    window.addEventListener('DOMContentLoaded', async () => {
-      // 👉 이전에 로그인한 아이디가 localStorage에 저장돼 있는지 확인
-      const savedUsername = localStorage.getItem('savedUsername');
+  // ✅ 헤더/모바일 이름 라벨 등 즉시 반영
+  setUserInfoInput();
 
-      if (savedUsername) {
-        // Supabase에서 해당 사용자 정보 불러오기
-        const { data: user, error } = await supabaseClient
-          .from('users')
-          .select('*')
-          .eq('username', savedUsername)
-          .maybeSingle();
+  // ✅ 메인 화면 열기 + 데이터 로드
+  await loadTimetableWeek(user.grade, user.class_num);
+  await loadCoinBalance();
+  showMain();
+  loadNotices();
 
-        if (error) {
-          console.error('자동 로그인 조회 오류:', error);
-          showLogin();
-          return;
-        }
+  // ✅ 대시보드 라벨/경험치/포인트 새로 그리기
+  afterLoginRefreshDashboard();
+});
 
-        if (user) {
-          currentUserRole = user.role || 'user';
-          currentGrade = user.grade;
-          currentClassNum = user.class_num;
-
-          // 로그인 성공 시
-          loadTimetableWeek(user.grade, user.class_num);
-          showMain();
-          loadNotices();
-          return; // 자동 로그인 성공했으므로 종료
-        }
-      }
-
-        // 👉 저장된 아이디가 없거나 조회 실패 시 로그인 화면
-      showLogin();
-    });
 
     function setupAdminNav() {
       const existing = document.getElementById('admin-nav');
@@ -1850,14 +1908,6 @@
       const dropdown = document.getElementById('profile-dropdown');
 
       if (profileButton && dropdown) {
-        profileButton.addEventListener('click', (e) => {
-          e.stopPropagation(); // 클릭 전파 방지
-          dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
-
-          if (dropdown.style.display === 'block') {
-        displayCoinBalance();
-      }
-        });
 
         document.addEventListener('click', () => {
           dropdown.style.display = 'none';
@@ -1865,22 +1915,6 @@
       }
     });
 
-    async function displayCoinBalance() {
-      const username = localStorage.getItem('savedUsername');
-      const { data, error } = await supabaseClient
-        .from('users')
-        .select('coin_balance')
-        .eq('username', username)
-        .single();
-
-      if (error || !data) {
-        console.error('코인 조회 실패:', error);
-        return;
-      }
-
-      const balance = data.coin_balance || 0;
-      document.getElementById('coin-balance').innerText = `💰 ${balance} 코인`;
-    }
 
 // ==== 4 = 10 미니게임 ====
 // 필요한 전역 상태
@@ -1991,9 +2025,7 @@ async function checkFourEqualsTen() {
     fb.textContent = '⚠️ 식을 정확히 입력해 주세요.';
     exitMiniGame();   // 🚀 오류여도 제출 후 나가기
   }
-}
-
-
+} 
 
 // 나가기 버튼
 function exitMiniGame() {
@@ -2202,6 +2234,136 @@ document.addEventListener('DOMContentLoaded', () => {
       const modal = document.getElementById('imageModal');
       modal.style.display = 'none';
     }
+
+    /* ===== DASHBOARD TOP ===== */
+function $id(id){return document.getElementById(id)}
+
+function initDashboardTop(){
+  // 날짜
+  const d=new Date(); const w=['일','월','화','수','목','금','토'][d.getDay()];
+  if($id('dash-notice-date')) $id('dash-notice-date').textContent =
+    `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${w})`;
+
+  // 사용자 라벨
+  const nm = currentUserName || localStorage.getItem('savedName') || '학생';
+  const num = currentStudentNumber || localStorage.getItem('savedStudentNum') || 0;
+const grd = (currentGrade ?? parseInt(localStorage.getItem('savedGrade') || '0', 10)) || '-';
+const cls = (currentClassNum ?? parseInt(localStorage.getItem('savedClassNum') || '0', 10)) || '-';
+  if($id('dash-name')) $id('dash-name').textContent = nm;
+  if($id('dash-num')) $id('dash-num').textContent = num;
+  if($id('dash-grade')) $id('dash-grade').textContent = grd;
+  if($id('dash-class')) $id('dash-class').textContent = cls;
+
+  // 공지 3건
+  loadRecentNotices3();
+  // 스탯(레벨/경험치/포인트)
+  syncStatsAndRender();
+}
+
+async function loadRecentNotices3(){
+  const box = $id('dash-notice-list');
+  if(!box) return;
+  box.innerHTML = `<div class="notice-item"><div class="meta">불러오는 중…</div></div>`;
+
+  let q = supabaseClient.from('notices').select('*').order('id',{ascending:false}).limit(3);
+  if(currentUserRole !== 'admin'){
+    q = q.eq('grade', currentGrade).eq('class_num', currentClassNum).neq('writer_role','admin');
+  }
+  const {data, error} = await q;
+  if(error){ box.innerHTML = `<div class="notice-item"><div class="meta">공지 불러오기 실패</div></div>`; return; }
+  if(!data || data.length===0){ box.innerHTML = `<div class="notice-item"><div class="meta">최근 공지가 없습니다.</div></div>`; return; }
+
+  box.innerHTML = '';
+  data.forEach(n=>{
+    const preview = (n.content||'').replace(/\n/g,' ').slice(0,90);
+    const el = document.createElement('div');
+    el.className='notice-item';
+    el.innerHTML = `
+      <div class="title">${n.title}</div>
+      <div class="meta">${n.writer} · ${n.grade}학년 ${n.class_num}반</div>
+      <div class="meta" style="margin-top:4px">${preview}${(n.content||'').length>90?'…':''}</div>`;
+    box.appendChild(el);
+  });
+}
+
+async function syncStatsAndRender(){
+  try{
+    const username = localStorage.getItem('savedUsername');
+    if(!username) { 
+      renderStats({ level:1, exp:0, need:20 }); 
+      return; 
+    }
+
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('level, exp, coin_balance')
+      .eq('username', username)
+      .single();
+
+    const level = (data && Number.isInteger(data.level)) ? data.level : 1;
+    const exp   = (data && Number.isInteger(data.exp))   ? data.exp   : 0;
+
+    // 필요 경험치는 고정 20 (기존 규칙 유지)
+    const need = 20;
+
+    // ⚠️ 여기서는 코인 넘기지 않음
+    renderStats({ level, exp, need });
+  }catch(e){
+    console.warn(e);
+    renderStats({ level:1, exp:0, need:20 }); // 코인 업데이트 금지
+  }
+}
+
+
+
+/* 로그인 직후/자동로그인 직후 반드시 호출 */
+async function afterLoginRefreshDashboard(){
+  initDashboardTop();
+}
+
+/* 페이지가 열려 있을 때도 1회 초기화 */
+document.addEventListener('DOMContentLoaded', initDashboardTop);
+
+
+function renderStats({ level, exp, need, point }) {
+  if ($id('lv-num')) $id('lv-num').textContent = level;
+
+  // point가 정의된 경우에만 코인 표시를 갱신 (loadCoinBalance가 진짜 소스)
+  if ($id('coin-balance') && point !== undefined) {
+    $id('coin-balance').textContent = point;
+  }
+
+  const cur = Math.max(0, Math.min(exp, need));
+  const pct = need > 0 ? Math.round((cur / need) * 100) : 0;
+
+  if ($id('exp-cur'))  $id('exp-cur').textContent = cur;
+  if ($id('exp-need')) $id('exp-need').textContent = need;
+  if ($id('lvl-fill')) $id('lvl-fill').style.width = pct + '%';
+}
+
+
+// 코인만 DB에서 읽어와 대시보드 칩에 반영
+async function loadCoinBalance() {
+  const username = localStorage.getItem('savedUsername');
+  if (!username) return;
+
+  const { data, error } = await supabaseClient
+    .from('users')
+    .select('coin_balance')
+    .eq('username', username)
+    .single();
+
+  // 실패/널 대비해서 0으로 처리
+  const coin = (!error && data && Number.isFinite(+data.coin_balance)) ? +data.coin_balance : 0;
+
+  // 화면 반영
+  const el = document.getElementById('coin-balance');
+  if (el) el.textContent = coin;
+
+  // (선택) 전역값 동기화
+  currentUserCoin = coin;
+}
+
 
     </script>
   </body> 
