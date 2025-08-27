@@ -556,25 +556,88 @@
 .notice-item .title{font-weight:700;margin-bottom:4px}
 .notice-item .meta{color:#6c757d;font-size:.85rem}
 
-/* 프로필 카드 */
-.profile-card{position:relative;display:flex;gap:14px;align-items:center}
-.profile-illust{width:120px;height:120px;border-radius:14px;background:radial-gradient(120px 120px at 70% 30%, #fffbcf 0%, #ffe889 60%, #ffe066 100%);display:flex;align-items:center;justify-content:center}
-.profile-avatar{width:92px;height:92px;border-radius:999px;background:#78e3e3;display:flex;align-items:center;justify-content:center;font-size:48px;border:6px solid #fff;box-shadow:0 8px 18px rgba(0,0,0,.08)}
-.lvl-badge{position:absolute;left:8px;top:-6px;background:#6c63ff;color:#fff;font-weight:800;border-radius:10px 10px 10px 0;padding:6px 10px;font-size:.9rem;box-shadow:0 6px 14px rgba(108,99,255,.25)}
+.profile-card{display:flex;gap:18px;align-items:flex-start;position:relative}
+.profile-illust{flex-shrink:0}
+.profile-avatar{
+  width:120px;height:120px;border-radius:20px;background:#f4f6ff;
+  display:grid;place-items:center;font-size:56px;box-shadow:0 6px 18px rgba(79,70,229,.15)
+}
+.profile-info{flex:1;display:flex;flex-direction:column}
+.info-top{display:flex;justify-content:space-between;align-items:center}
+.profile-name{font-size:20px;font-weight:800}
+.profile-sub{margin:8px 0 10px;font-size:14px;color:#555;line-height:1.5}
+.points-chip{display:inline-flex;gap:6px;align-items:center;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;background:#fff}
+.p-dot{width:8px;height:8px;border-radius:50%;background:#a78bfa}
+.lvl-wrap{margin-top:auto}
+.lvl-head{display:flex;justify-content:space-between;color:#6b7280;font-size:12px;margin-bottom:6px}
+.lvl-bar{height:10px;background:#eef2ff;border-radius:999px;overflow:hidden}
+.lvl-fill{height:100%;width:0%;background:linear-gradient(90deg,#4f46e5,#6366f1)}
+.lvl-badge{position:absolute;top:-10px;left:-10px;background:#7c3aed;color:#fff;padding:4px 8px;border-radius:10px;font-size:12px;font-weight:800;box-shadow:0 6px 14px rgba(124,58,237,.25)}
 
-.profile-main{flex:1;min-width:0}
-.profile-name{font-weight:800;font-size:1.05rem}
-.profile-sub{color:#6c757d;font-size:.92rem;margin-top:2px}
 
-/* 포인트 칩 */
-.points-chip{font-size:.9rem;padding:6px 10px;border-radius:999px;border:1px solid #e9ecf3;background:#f8f9ff;font-weight:700;display:inline-flex;gap:6px;align-items:center}
-.points-chip .p-dot{width:8px;height:8px;border-radius:50%;background:#ffd43b;display:inline-block}
 
-/* 레벨 진행바 */
-.lvl-wrap{margin-top:10px}
-.lvl-head{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px;color:#6c757d}
-.lvl-bar{height:10px;background:#edf2ff;border-radius:999px;overflow:hidden;position:relative}
-.lvl-fill{height:100%;background:#6c63ff;width:0%}
+
+/* 달력 셀 */
+/* 달력 래퍼에 고정 높이(카드 안에서 스크롤 없이 다 보이게) */
+.sched-grid{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);    /* 6줄 고정 */
+  gap: 6px;
+  height: 520px;                          /* 필요 시 460~600px로 조절 */
+}
+
+/* 셀을 줄여서 정보가 들어가도 행 높이 유지 */
+.sched-cell{
+  background:#fff; border:1px solid #e5e7eb; border-radius:10px;
+  padding:6px; display:flex; flex-direction:column; min-height:0;
+  overflow:hidden;                          /* 내용이 넘치면 감추기 */
+}
+.sched-day{font-weight:800; font-size:.9rem; line-height:1.1rem}
+.sched-items{display:flex; flex-direction:column; gap:2px; margin-top:2px; overflow:hidden}
+
+/* 아이템(과목 - 교시) 2줄까지만 보이고 나머지는 숨김 */
+.sched-item{
+  font-size:.74rem; line-height:1.05rem; color:#374151;
+  background:#f6f7fb; border:1px solid #e9ecf3; border-radius:6px; padding:1px 5px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.sched-items{max-height: 2.3rem;}          /* 대략 2줄 */
+.sched-more{font-size:.7rem; color:#6b7280}
+
+/* 상태 강조 */
+.sched-cell.out{opacity:.45}
+.sched-cell.today{outline:2px solid #7c3aed; outline-offset:2px}
+.sched-cell.has{border-color:#c7d2fe; background:#fafbff}
+
+/* 반응형: 좁은 화면에선 높이를 조금 줄여서 6줄 유지 */
+@media (max-width: 768px){
+  .sched-grid{height: 460px;}
+  .sched-day{font-size:.85rem}
+  .sched-item{font-size:.7rem}
+}
+
+.sched-week-row{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:6px;
+  margin:.5rem 0 .25rem;
+  color:#6b7280;
+  font-size:.9rem;
+  text-align:center;
+}
+.sched-week-row span{padding:2px 0}
+
+/* 기존 .sched-grid 규칙은 유지하되, id 우선으로 한 번 더 강제 */
+#sched-grid{
+  display:grid !important;
+  grid-template-columns:repeat(7,1fr);
+  grid-template-rows:repeat(6,1fr); /* 6주 고정 */
+  gap:6px;
+  height:520px;                      /* 필요시 460~600px로 조절 */
+}
+
+
 
 </style>
 </head>
@@ -736,50 +799,122 @@
           <h2>🏠 대시보드</h2>
           <div class="dash-top">
 
-  <!-- 좌: 최근 공지 3건 -->
-  <div class="card">
-    <div class="card-body">
-      <div class="section-head">
-        <h3>📢 최근 공지</h3>
-        <span class="mini" id="dash-notice-date"></span>
+            <!-- 좌: 최근 공지 3건 -->
+            <div class="card">
+                <div class="card-body">
+                <div class="section-head">
+                    <h3>📢 최근 공지</h3>
+                    <span class="mini" id="dash-notice-date"></span>
+                </div>
+                <div id="dash-notice-list" class="notice-list">
+                    <!-- JS가 채움 -->
+                </div>
+                </div>
+            </div>
+
+            <!-- 우: 프로필 + 레벨/포인트 (레벨/포인트는 별개) -->
+            <div class="card">
+  <div class="card-body">
+    <div class="profile-card">
+      <span class="lvl-badge">Lv <span id="lv-num">1</span></span>
+
+      <!-- 왼쪽 큰 아바타 -->
+      <div class="profile-illust">
+        <div class="profile-avatar" id="dash-avatar">🙂</div>
       </div>
-      <div id="dash-notice-list" class="notice-list">
-        <!-- JS가 채움 -->
+
+      <!-- 오른쪽 정보 -->
+      <div class="profile-info">
+        <div class="info-top">
+          <div class="profile-name">
+            <span id="dash-name">admin</span>
+            <small style="margin-left:4px;color:#6c757d">학생</small>
+          </div>
+          <div class="points-chip">
+            <span class="p-dot"></span> P <span id="coin-balance" style="margin-left:4px">99999999</span>
+          </div>
+        </div>
+
+        <div class="profile-sub">
+          <div id="dash-school">봉담중학교</div>
+          <div><span id="dash-grade">-</span>학년 <span id="dash-class">-</span>반 <span id="dash-num">0</span>번</div>
+        </div>
+
+        <!-- 레벨바 -->
+        <div class="lvl-wrap">
+          <div class="lvl-head">
+            <span>경험치</span>
+            <span><span id="exp-cur">0</span> / <span id="exp-need">20</span></span>
+          </div>
+          <div class="lvl-bar"><div id="lvl-fill" class="lvl-fill"></div></div>
+        </div>
+
+        <div class="todo-section">
+      <h4>빈칸(아래 여백) 추천 받아요</h4>
+    </div>
       </div>
     </div>
   </div>
-
-  <!-- 우: 프로필 + 레벨/포인트 (레벨/포인트는 별개) -->
-  <div class="card">
-    <div class="card-body">
-      <div class="profile-card">
-        <span class="lvl-badge">Lv <span id="lv-num">1</span></span>
-        <div class="profile-illust">
-          <div class="profile-avatar" id="dash-avatar">🙂</div>
-        </div>
-        <div class="profile-main">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div class="profile-name"><span id="dash-name">학생</span><small style="margin-left:4px;color:#6c757d">학생</small></div>
-              <div class="profile-sub" id="dash-school">봉담중학교 · <span id="dash-grade">-</span>학년 <span id="dash-class">-</span>반 <span id="dash-num">-</span>번</div>
-            </div>
-            <div class="points-chip"><span class="p-dot"></span> P <span id="coin-balance" style="margin-left:4px"></span></div>
-          </div>
-
-          <!-- 레벨 바 (Lv/Exp 전용, 포인트와 무관) -->
-          <div class="lvl-wrap">
-            <div class="lvl-head">
-              <span>경험치</span>
-              <span><span id="exp-cur">0</span> / <span id="exp-need">20</span></span>
-            </div>
-            <div class="lvl-bar"><div id="lvl-fill" class="lvl-fill"></div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </div>
+
+            <div class="card">
+  <div class="card-body">
+    <div class="section-head">
+      <h3>📄 수행 일정</h3>
+    </div>
+
+    <!-- 상단 툴바: 월 네비게이션 -->
+    <div class="sched-toolbar">
+      <button id="sched-prev" class="mini-btn">⏪</button>
+      <div id="sched-month-label" class="sched-month"></div>
+      <button id="sched-next" class="mini-btn">⏩</button>
+    </div>
+
+    <!-- 요일 헤더 -->
+    <div class="sched-week-row">
+      <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+    </div>
+
+    <!-- 달력 그리드(여기에 JS로 셀 채움) -->
+    <div id="sched-grid" class="sched-grid"></div>
+
+    <!-- (선택) 날짜 클릭 상세 -->
+    <div class="sched-detail">
+      <h4 id="sched-detail-title">날짜를 선택하세요</h4>
+      <ul id="sched-detail-list"></ul>
+    </div>
+  </div>
+</div>
+
+
+            <div class="card">
+                <div class="card-body">
+                <div class="section-head">
+                    <h3>🕒 시간표</h3>
+
+                </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                <div class="section-head">
+                    <h3>💬 대화방</h3>
+
+                </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                <div class="section-head">
+                    <h3>🍽️ 급식</h3>
+
+                </div>
+                </div>
+            </div>
+
+            </div>
           <!--<p style="margin-bottom: 1.5rem; color: #495057;">
             EduBoard에 오신 것을 환영합니다! 나의 활동을 한눈에 확인해보세요.(테스트)
           </p> -->
@@ -2360,7 +2495,130 @@ async function loadCoinBalance() {
 }
 
 
+/* ====== [달력/수행일정 전용 함수 모음: 그대로 붙여 넣기] ====== */
+
+// 날짜 유틸
+const ymd = d => d.toISOString().slice(0,10);
+const startOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
+const endOfMonth   = d => new Date(d.getFullYear(), d.getMonth()+1, 0);
+const addDays = (d,n)=>{ const t=new Date(d); t.setDate(t.getDate()+n); return t; };
+
+// 달력 기준 월
+let schedRefDate = new Date();
+
+// 6주(42칸) 달력 셀 생성
+function buildMonthMatrix(ref){
+  const first = startOfMonth(ref);
+  const start = addDays(first, -((first.getDay()+7)%7)); // 그 주의 일요일
+  const days = [];
+  for(let i=0;i<42;i++) days.push(addDays(start,i));
+  return days;
+}
+
+// 월간 수행 조회 (학년/반 기준) — assessments(date, period, subject, grade, class_num)
+async function fetchAssessmentsMonth(ref){
+  const first = ymd(startOfMonth(ref));
+  const last  = ymd(endOfMonth(ref));
+  const { data, error } = await supabaseClient
+    .from('assessments')
+    .select('date, period, subject')
+    .gte('date', first).lte('date', last)
+    .eq('grade', currentGrade).eq('class_num', currentClassNum)
+    .order('date, period');
+  if(error){ console.warn('assessments error', error); return []; }
+  return data || [];
+}
+
+// 상세 패널 렌더 (클릭 시)
+function renderSchedDetail(dateStr, items){
+  const t = document.getElementById('sched-detail-title');
+  const ul= document.getElementById('sched-detail-list');
+  t.textContent = `${dateStr.replace(/-/g,'.')} 일정`;
+  ul.innerHTML = (items && items.length)
+    ? items.map(x=>`<li><b>${x.period}교시</b> · ${x.subject || '수행'}</li>`).join('')
+    : '<li>일정 없음</li>';
+}
+
+// 달력 렌더
+async function renderScheduleCalendar(){
+  // 월 라벨
+  const label = document.getElementById('sched-month-label');
+  label.textContent = `${schedRefDate.getFullYear()}.${String(schedRefDate.getMonth()+1).padStart(2,'0')}`;
+
+  // 데이터
+  const rows = await fetchAssessmentsMonth(schedRefDate);
+  const byDate = rows.reduce((m,r)=>{ (m[r.date]??=[]).push(r); return m; }, {});
+  const grid = document.getElementById('sched-grid');
+  grid.innerHTML = '';
+
+  const cells = buildMonthMatrix(schedRefDate);
+  const todayStr = ymd(new Date());
+  let firstSelectedDone = false;
+
+  cells.forEach(d=>{
+    const dStr = ymd(d);
+    const inMonth = (d.getMonth()===schedRefDate.getMonth());
+    const items = byDate[dStr] || [];
+
+    const cell = document.createElement('div');
+    cell.className = 'sched-cell' + (inMonth ? '' : ' out');
+    if(dStr === todayStr) cell.classList.add('today');
+    if(items.length) cell.classList.add('has');
+
+    cell.innerHTML = `
+      <div class="sched-day">${d.getDate()}</div>
+      <div class="sched-items">
+        ${items.slice(0,3).map(x=>`<div class="sched-item">${(x.subject||'수행')} - <b>${x.period}</b>교시</div>`).join('')}
+        ${items.length>3 ? `<div class="sched-more">+${items.length-3}개 더</div>` : ''}
+      </div>
+    `;
+
+    // 클릭 시 상세 표시
+    cell.addEventListener('click', ()=> renderSchedDetail(dStr, items));
+
+    grid.appendChild(cell);
+
+    // 최초 자동 선택: 오늘(같은 달) 또는 첫 일정일
+    if(!firstSelectedDone && dStr===todayStr && inMonth){
+      renderSchedDetail(dStr, items);
+      firstSelectedDone = true;
+    }
+  });
+
+  if(!firstSelectedDone){
+    const firstKey = Object.keys(byDate).sort()[0];
+    if(firstKey) renderSchedDetail(firstKey, byDate[firstKey]);
+    else renderSchedDetail(
+      `${schedRefDate.getFullYear()}-${String(schedRefDate.getMonth()+1).padStart(2,'0')}-01`, []
+    );
+  }
+}
+
+// 월 전환 버튼 바인딩 (한 번만)
+let scheduleBound = false;
+function bindScheduleUI(){
+  if(scheduleBound) return;
+  scheduleBound = true;
+
+  const prev = document.getElementById('sched-prev');
+  const next = document.getElementById('sched-next');
+  if(prev) prev.onclick = () => {
+    schedRefDate = new Date(schedRefDate.getFullYear(), schedRefDate.getMonth()-1, 1);
+    renderScheduleCalendar();
+  };
+  if(next) next.onclick = () => {
+    schedRefDate = new Date(schedRefDate.getFullYear(), schedRefDate.getMonth()+1, 1);
+    renderScheduleCalendar();
+  };
+}
+
+/* (선택) 기존 afterLoginRefreshDashboard를 이 버전으로 교체 */
+async function afterLoginRefreshDashboard(){
+  initDashboardTop();      // 기존 대시보드 상단 초기화
+  bindScheduleUI();        // ⏪⏩ 바인딩
+  await renderScheduleCalendar(); // 달력 첫 렌더
+}
+
     </script>
   </body> 
 </html>
-
