@@ -723,7 +723,7 @@
       <nav id="main-nav">
         <a href="#" onclick="showPanel('dashboard')">대시보드</a>
         <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
-        <a href="#" onclick="showPanel('doc-panel')">문서 분석</a>
+        <a href="#" onclick="showPanel('doc-panel')">수행 등록</a>
         <!-- <a href="#" onclick="showPanel('student-panel')">학생 관리</a> -->
         <a href="#" onclick="showPanel('homework-panel')">파일 공유 & 자료실</a>
         <!-- <a href="#" onclick="showPanel('chat-panel')">대화실</a> -->
@@ -866,7 +866,7 @@
       </div>      
 
       <div id="doc-panel" class="panel">
-        <h2>📄 문서 업로드</h2>
+        <h2>📄 수행 평가 업로드</h2>
         <input type="file" id="doc-file" accept=".pdf,.jpg,.png"/>
         <div class="button-group">
           <button onclick="analyzeDocument()">문서 분석하기</button>
@@ -1444,7 +1444,7 @@
           `[평가 주제] ${topic}`,
           `[준비물] ${materials}`,
           `--------------------------------`,
-        ].join('\n');
+        ];
 
         resultEl.value = pretty.trim();
         autoResize();
@@ -1473,10 +1473,7 @@
                   `[평가 날짜] `,
                   `[평가 시간] `,
                   `[평가 주제] `,
-                  `[준비물] `,
-                  `--------------------------------`,
-                  `원문:`,
-                  text || ''
+                  `[준비물] `
                 ].join('\n').trim();
                 autoResize();
                 alert('⚠️ CLOVA 실패. Tesseract 결과를 표시했어요. 항목을 직접 보완해 주세요.');
@@ -2366,5 +2363,4 @@ async function loadCoinBalance() {
     </script>
   </body> 
 </html>
-
 
