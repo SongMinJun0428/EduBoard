@@ -1,1 +1,1 @@
-# EduNote
+# EduBoard
