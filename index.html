@@ -607,12 +607,22 @@
 
 /* 상태 강조 */
 .sched-cell.out{opacity:.45}
-.sched-cell.today{outline:2px solid #7c3aed; outline-offset:2px}
-.sched-cell.has{border-color:#c7d2fe; background:#fafbff}
+.sched-cell.today{
+  outline: none;
+  border-color:#c7d2fe;
+  background:#fafbff;
+}
+
+/* 기존 .sched-cell.has 스타일에서 배경 제거 */
+.sched-cell.has {
+  border-color:#c7d2fe;
+  background:#fff;   /* ✅ 흰색으로 고정 */
+}
+
 
 /* 반응형: 좁은 화면에선 높이를 조금 줄여서 6줄 유지 */
-@media (max-width: 768px){
-  .sched-grid{height: 460px;}
+@media (max-width: 750px){
+  .sched-grid{height:460px;}
   .sched-day{font-size:.85rem}
   .sched-item{font-size:.7rem}
 }
@@ -637,7 +647,29 @@
   height:520px;                      /* 필요시 460~600px로 조절 */
 }
 
+/* ===== 학사일정 뱃지 ===== */
+.sched-evts{display:flex;flex-direction:column;gap:2px;margin-top:4px;overflow:hidden}
+.sched-evt{
+  font-size:.72rem; line-height:1.05rem; 
+  border-radius:999px; padding:1px 6px; 
+  border:1px solid #e9ecf3; background:#f6f7fb; 
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.sched-evt.exam{background:#fff7ed;border-color:#fed7aa}     /* 시험 */
+.sched-evt.holiday{background:#fef2f2;border-color:#fecaca}  /* 공휴일/휴업 */
+.sched-evt.event{background:#f0f9ff;border-color:#bae6fd}    /* 행사 일반 */
 
+.sched-legend{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:.85rem;color:#555}
+.sched-chip{display:inline-flex;align-items:center;gap:6px}
+.sched-chip .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
+.dot.exam{background:#fb923c}
+.dot.holiday{background:#f87171}
+.dot.event{background:#60a5fa}
+
+.sched-cell.selected {
+  border: 2px solid #7c3aed;   /* 보라색 */
+  border-radius: 6px;
+}
 
 </style>
 </head>
@@ -860,7 +892,7 @@
             <div class="card">
   <div class="card-body">
     <div class="section-head">
-      <h3>📄 수행 일정</h3>
+      <h3>📄 일정</h3>
     </div>
 
     <!-- 상단 툴바: 월 네비게이션 -->
@@ -889,95 +921,55 @@
 
             <div class="card">
                 <div class="card-body">
-                <div class="section-head">
-                    <h3>🕒 시간표</h3>
+                  <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;">
+                    <h3>🕒 시간표 <span id="badge-day" class="badge" style="margin-left:6px;"></span></h3>
+                    <div class="controls" style="display:flex;gap:8px;align-items:center;">
+                      <input type="date" id="datePicker" />
+                      <select id="classSelect" style="display:none"></select>
+                    </div>
+                  </div>
 
+                  <ul id="timetable" style="list-style:none;margin:12px 0 0;padding:0;"></ul>
+                  <div id="notice" style="display:none;color:#6c757d;padding:12px 0;"></div>
                 </div>
+            </div>
+
+            <div class="card" id="rank-card">
+                <div class="card-body">
+                  <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;">
+                    <h3>🏆 랭킹</h3>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                      <!-- 정렬 기준 -->
+                      <select id="rank-metric" style="border:1px solid #e9ecef;border-radius:10px;padding:6px 8px;">
+                        <option value="coin">코인</option>
+                        <option value="level">레벨</option>
+                      </select>
+                      <!-- 범위 (학생은 자동 고정) -->
+                      <select id="rank-scope" style="border:1px solid #e9ecef;border-radius:10px;padding:6px 8px;">
+                        <option value="class">같은 반</option>
+                        <!-- <option value="grade">같은 학년</option>
+                        <option value="school">전교</option> -->
+                      </select>
+                      <button class="mini-btn" id="rank-refresh">새로고침</button>
+                    </div>
+                  </div>
+
+                  <ul id="rank-list" style="list-style:none;margin:10px 0 0;padding:0;"></ul>
+                  <div id="rank-me" style="margin-top:12px;padding:10px;border:1px dashed #e9ecef;border-radius:10px;background:#fafafa;display:none"></div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-body">
+              <div class="card-body">
                 <div class="section-head">
-                    <h3>💬 대화방</h3>
-
+                  <h3>🍽️ 급식</h3>
                 </div>
-                </div>
+                <div id="meal-box"></div>
+              </div>
             </div>
 
-            <div class="card">
-                <div class="card-body">
-                <div class="section-head">
-                    <h3>🍽️ 급식</h3>
-
-                </div>
-                </div>
-            </div>
 
             </div>
-          <!--<p style="margin-bottom: 1.5rem; color: #495057;">
-            EduBoard에 오신 것을 환영합니다! 나의 활동을 한눈에 확인해보세요.(테스트)
-          </p> -->
-            <!-- <h3>📱 EduBoard 모바일 사용 설명서</h3>
-            <p>EduBoard는 <strong>학생과 선생님이 함께 사용하는 스마트 학교 플랫폼</strong>입니다.</p>
-
-            <h3>🔹 1. 로그인 화면</h3>
-            <ul>
-              <li>앱 실행 → 로그인 화면</li>
-              <li>아이디 + 비밀번호 → <strong>로그인</strong> 버튼</li>
-              <li>회원이 아니라면 <strong>회원가입</strong> 클릭!</li>
-            </ul>
-
-            <h4>✅ 회원가입 시 입력 항목</h4>
-            <ul>
-              <li>아이디, 비밀번호 (6자 이상)</li>
-              <li>이메일</li>
-              <li>이름, 학년, 반, 번호</li>
-              <li>개인정보 수집 동의 체크 ✅</li>
-            </ul>
-
-            <h3>🔹 2. 모바일 상단 헤더 구성</h3>
-            <table>
-              <tr><th>위치</th><th>기능</th></tr>
-              <tr><td>☰ 왼쪽 메뉴</td><td>전체 기능 메뉴 열기</td></tr>
-              <tr><td>가운데 EduBoard</td><td>홈 역할</td></tr>
-              <tr><td>👤 오른쪽 이름</td><td>로그인한 사용자 이름 표시</td></tr>
-            </table>
-
-            <h3>🔹 3. ☰ 메뉴 기능</h3>
-            <ul>
-              <li>🏠 대시보드: 활동 요약 보기</li>
-              <li>📢 공지사항: 공지 확인</li>
-              <li>📄 문서 분석: 사진에서 글자 추출</li>
-              <li>📁 자료실: 파일 업로드 및 공유</li>
-              <li>🕒 시간표: 주간 시간표 보기</li>
-              <li>🎮 미니게임: 숫자 4개로 10 만들기</li>
-            </ul>
-
-            <h3>🔹 4. 시간표, 공지, 자료실은?</h3>
-            <ul>
-              <li>⏪⏩ 버튼으로 주간 이동 가능</li>
-              <li>파일은 썸네일로 미리 보기 가능</li>
-              <li>이미지 클릭 시 확대, 다운로드 가능</li>
-            </ul>
-
-            <h3>🔹 5. 미니게임 안내(테스트)</h3>
-            <ul>
-              <li>게임 시작 시 5코인 차감</li>
-              <li>정답이면 🎉, 오답이면 😅 피드백 제공</li>
-            </ul>
-
-            <h3>🔹 6. 내 정보 확인(컴퓨터만 지원)</h3>
-            <ul>
-              <li>👤 이름 클릭 시 드롭다운 열림</li>
-              <li>이름 수정, 로그아웃, 코인 확인 가능</li>
-            </ul>
-
-            <p style="margin-top:1.5rem;background:#e7f3ff;padding:1rem;border-left:4px solid #007bff;">
-              💡 <strong>추가 팁:</strong><br>
-              - 자동 로그인 지원<br>
-              - PC에서도 동일한 기능 사용 가능
-            </p> -->
         </div>
 
 
@@ -1206,6 +1198,11 @@
 
       const CLOVER_API = 'https://YOUR_DOMAIN/functions/v1/ocr-classify'; 
       const USE_TESSERACT_FALLBACK = true;
+
+      
+      const NEIS_KEY = '28ca0f05af184e8ba231d5a949d52db2';
+      const ATPT_OFCDC_SC_CODE = 'J10';
+      const SD_SCHUL_CODE = '7679111';
 
 
       let currentUserRole = 'user';
@@ -1703,10 +1700,6 @@
     }
 
     docResult.addEventListener('input', autoResize);
-
-    const NEIS_KEY = '28ca0f05af184e8ba231d5a949d52db2';
-    const ATPT_OFCDC_SC_CODE = 'J10';
-    const SD_SCHUL_CODE = '7679111';
 
     async function loadTimetableWeek(grade, classNum) {
       currentGrade = grade;
@@ -2498,7 +2491,16 @@ async function loadCoinBalance() {
 /* ====== [달력/수행일정 전용 함수 모음: 그대로 붙여 넣기] ====== */
 
 // 날짜 유틸
-const ymd = d => d.toISOString().slice(0,10);
+// 로컬 기준 YYYY-MM-DD
+const ymd = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+// 로컬 기준 YYYYMMDD (NEIS 쿼리용)
+const ymdCompact = (d) => ymd(d).replace(/-/g, '');
+
 const startOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
 const endOfMonth   = d => new Date(d.getFullYear(), d.getMonth()+1, 0);
 const addDays = (d,n)=>{ const t=new Date(d); t.setDate(t.getDate()+n); return t; };
@@ -2529,70 +2531,174 @@ async function fetchAssessmentsMonth(ref){
   return data || [];
 }
 
-// 상세 패널 렌더 (클릭 시)
-function renderSchedDetail(dateStr, items){
-  const t = document.getElementById('sched-detail-title');
-  const ul= document.getElementById('sched-detail-list');
+// 상세 패널 렌더 (클릭 시) — 수행(itemsA) + 학사(itemsE)
+function renderSchedDetail(dateStr, itemsA, itemsE){
+  const t  = document.getElementById('sched-detail-title');
+  const ul = document.getElementById('sched-detail-list');
   t.textContent = `${dateStr.replace(/-/g,'.')} 일정`;
-  ul.innerHTML = (items && items.length)
-    ? items.map(x=>`<li><b>${x.period}교시</b> · ${x.subject || '수행'}</li>`).join('')
-    : '<li>일정 없음</li>';
+
+  const aPart = (itemsA && itemsA.length)
+    ? itemsA.map(x=>`<li>📝 <b>${x.period}교시</b> · ${x.subject || '수행'}</li>`).join('')
+    : '<li>📝 수행 일정 없음</li>';
+
+  const ePart = (itemsE && itemsE.length)
+    ? itemsE.map(e=>{
+        const tag = e.kind==='holiday'?'🏖️':
+                    e.kind==='exam'?'🧪':'📌';
+        return `<li>${tag} ${e.title}</li>`;
+      }).join('')
+    : '<li>📌 학사일정 없음</li>';
+
+  ul.innerHTML = `
+    <div style="margin-bottom:.4rem;color:#6b7280;font-weight:700;">수행</div>
+    ${aPart}
+    <div style="margin:.6rem 0 .4rem;color:#6b7280;font-weight:700;">학사</div>
+    ${ePart}
+  `;
 }
 
-// 달력 렌더
+
+// ✅ 수행+학사 통합 달력 렌더러 (완성본 + 토요휴업일 제외)
 async function renderScheduleCalendar(){
   // 월 라벨
   const label = document.getElementById('sched-month-label');
   label.textContent = `${schedRefDate.getFullYear()}.${String(schedRefDate.getMonth()+1).padStart(2,'0')}`;
 
-  // 데이터
-  const rows = await fetchAssessmentsMonth(schedRefDate);
-  const byDate = rows.reduce((m,r)=>{ (m[r.date]??=[]).push(r); return m; }, {});
   const grid = document.getElementById('sched-grid');
-  grid.innerHTML = '';
+  const detailTitle = document.getElementById('sched-detail-title');
+  const detailList  = document.getElementById('sched-detail-list');
+  if (!grid) return;
 
-  const cells = buildMonthMatrix(schedRefDate);
-  const todayStr = ymd(new Date());
-  let firstSelectedDone = false;
+  grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 8px; color:#6b7280;">불러오는 중…</div>';
 
-  cells.forEach(d=>{
-    const dStr = ymd(d);
-    const inMonth = (d.getMonth()===schedRefDate.getMonth());
-    const items = byDate[dStr] || [];
+  try {
+    // 1) 데이터 동시 로드
+    const [assessRows, schoolRowsRaw] = await Promise.all([
+      fetchAssessmentsMonth(schedRefDate),   // {date:'YYYY-MM-DD', period, subject}
+      fetchSchoolEventsMonth(schedRefDate)   // {date:'YYYY-MM-DD', title, kind:'exam|holiday|event'}
+    ]);
 
-    const cell = document.createElement('div');
-    cell.className = 'sched-cell' + (inMonth ? '' : ' out');
-    if(dStr === todayStr) cell.classList.add('today');
-    if(items.length) cell.classList.add('has');
-
-    cell.innerHTML = `
-      <div class="sched-day">${d.getDate()}</div>
-      <div class="sched-items">
-        ${items.slice(0,3).map(x=>`<div class="sched-item">${(x.subject||'수행')} - <b>${x.period}</b>교시</div>`).join('')}
-        ${items.length>3 ? `<div class="sched-more">+${items.length-3}개 더</div>` : ''}
-      </div>
-    `;
-
-    // 클릭 시 상세 표시
-    cell.addEventListener('click', ()=> renderSchedDetail(dStr, items));
-
-    grid.appendChild(cell);
-
-    // 최초 자동 선택: 오늘(같은 달) 또는 첫 일정일
-    if(!firstSelectedDone && dStr===todayStr && inMonth){
-      renderSchedDetail(dStr, items);
-      firstSelectedDone = true;
-    }
-  });
-
-  if(!firstSelectedDone){
-    const firstKey = Object.keys(byDate).sort()[0];
-    if(firstKey) renderSchedDetail(firstKey, byDate[firstKey]);
-    else renderSchedDetail(
-      `${schedRefDate.getFullYear()}-${String(schedRefDate.getMonth()+1).padStart(2,'0')}-01`, []
+    // 🔹 (추가) 토요휴업일 제외
+    const schoolRows = (schoolRowsRaw || []).filter(ev =>
+      !/(토요\s*휴업일)/.test(ev.title || '')
     );
+
+    // 2) 날짜별로 묶기
+    const assessByDate = assessRows.reduce((m,r)=>{
+      (m[r.date] ??= []).push({ type:'assess', period:r.period, title:r.subject || '수행' });
+      return m;
+    }, {});
+    const schoolByDate = schoolRows.reduce((m,r)=>{
+      (m[r.date] ??= []).push({ type:'school', title:r.title, kind:r.kind });
+      return m;
+    }, {});
+
+    // 3) 6주(42칸) 달력 그리드
+    const cells = buildMonthMatrix(schedRefDate);
+    const todayStr = ymd(new Date());
+
+    grid.innerHTML = '';
+    let firstSelectedDone = false;
+
+    cells.forEach(d=>{
+      const dStr = ymd(d);
+      const inMonth = (d.getMonth() === schedRefDate.getMonth());
+
+      // 해당 날짜의 모든 아이템(수행 + 학사)
+      const itemsA = assessByDate[dStr] || [];
+      const itemsE = schoolByDate[dStr] || [];
+      const items  = [...itemsA, ...itemsE];
+
+      // 셀 생성
+      const cell = document.createElement('div');
+      cell.className = 'sched-cell' + (inMonth ? '' : ' out');
+      if (dStr === todayStr) cell.classList.add('today');
+      if (items.length)      cell.classList.add('has');
+
+      // 상단 날짜
+      const dayEl = `<div class="sched-day">${d.getDate()}</div>`;
+
+      const top3 = items.slice(0,3).map(it=>{
+  if (it.type === 'assess') {
+    // 수행: 과목 - n교시
+    return `<div class="sched-item">
+              📘 ${escapeHtml(it.title)} - <b>${it.period}</b>교시
+            </div>`;
+  } else {
+    // 학사: 아이콘 + 카테고리 라벨
+    return `<div class="sched-item">
+              ${eventLabel(it.kind, escapeHtml(it.title))}
+            </div>`;
+  }
+}).join('');
+
+
+      const more = items.length > 3
+        ? `<div class="sched-more">+${items.length - 3}개 더</div>`
+        : '';
+
+      cell.innerHTML = `${dayEl}<div class="sched-items">${top3}${more}</div>`;
+
+      // 클릭: 선택 테두리 단 하나 + 상세 패널 갱신
+      cell.addEventListener('click', ()=>{
+        document.querySelectorAll('.sched-cell.selected').forEach(el=>el.classList.remove('selected'));
+        cell.classList.add('selected');
+        renderSchedDetail(dStr, itemsA, itemsE);
+      });
+
+      grid.appendChild(cell);
+
+      // 처음 진입 시: 같은 달의 오늘 자동 선택/표시
+      if (!firstSelectedDone && dStr === todayStr && inMonth) {
+        cell.classList.add('selected');
+        renderSchedDetail(dStr, itemsA, itemsE);
+        firstSelectedDone = true;
+      }
+    });
+
+    // 오늘이 달 밖/데이터 없음 → 첫 일정 있는 날 or 그 달 1일 선택
+    if (!firstSelectedDone) {
+      const allDates = [...new Set([
+        ...Object.keys(assessByDate),
+        ...Object.keys(schoolByDate)
+      ])].sort();
+
+      const pick = allDates[0] || `${schedRefDate.getFullYear()}-${String(schedRefDate.getMonth()+1).padStart(2,'0')}-01`;
+      renderSchedDetail(pick, assessByDate[pick] || [], schoolByDate[pick] || []);
+
+      // UI상 선택 테두리도 동기화
+      const day = Number(pick.slice(-2));
+      const cellToSelect = [...grid.children].find(div => {
+        const numEl = div.querySelector('.sched-day');
+        return numEl && Number(numEl.textContent) === day && !div.classList.contains('out');
+      });
+      if (cellToSelect) {
+        document.querySelectorAll('.sched-cell.selected').forEach(el=>el.classList.remove('selected'));
+        cellToSelect.classList.add('selected');
+      }
+    }
+
+  } catch (e) {
+    console.warn('달력 렌더 오류:', e);
+    grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 8px; color:#ef4444;">달력 데이터를 불러오지 못했습니다.</div>';
+    if (detailTitle) detailTitle.textContent = '날짜를 선택하세요';
+    if (detailList)  detailList.innerHTML = '';
   }
 }
+
+
+
+// 작은 XSS 방지용
+function escapeHtml(s=''){
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+
 
 // 월 전환 버튼 바인딩 (한 번만)
 let scheduleBound = false;
@@ -2619,6 +2725,468 @@ async function afterLoginRefreshDashboard(){
   await renderScheduleCalendar(); // 달력 첫 렌더
 }
 
+
+// 월간 학사일정 조회 (NEIS SchoolSchedule)
+async function fetchSchoolEventsMonth(ref){
+  // 달 범위(YYYYMMDD)
+const firstDate = startOfMonth(ref);
+const lastDate  = endOfMonth(ref);
+const AA_FROM_YMD = ymdCompact(firstDate);
+const AA_TO_YMD   = ymdCompact(lastDate);
+
+
+  // 학년도/학기 (네가 시간표에서 쓰던 규칙과 동일)
+  const AY  = ref.getFullYear();
+  const mm  = ref.getMonth() + 1;
+  const SEM = (mm <= 8) ? 1 : 2;
+
+  const url = `https://open.neis.go.kr/hub/SchoolSchedule` +
+              `?KEY=${NEIS_KEY}` +
+              `&Type=json` +
+              `&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}` +
+              `&SD_SCHUL_CODE=${SD_SCHUL_CODE}` +
+              `&AY=${AY}&SEM=${SEM}` +
+              `&AA_FROM_YMD=${AA_FROM_YMD}` +
+              `&AA_TO_YMD=${AA_TO_YMD}`;
+
+  try{
+    const res = await fetch(url);
+    const data = await res.json();
+
+    // NEIS 응답 파싱
+    if(!(data.SchoolSchedule && data.SchoolSchedule[1])) return [];
+
+    const rows = data.SchoolSchedule[1].row || [];
+    // 너의 달력 렌더러가 쓰는 형태로 변환
+    return rows.map(r=>{
+      const ymd = String(r.AA_YMD || '');
+      const date = `${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`;
+      const title = r.EVENT_NM || r.EVENT_CNTNT || '';
+      const kind = classifyNeisEvent(title, r.EVENT_CNTNT || '');
+      return { date, title, kind };
+    });
+
+  }catch(e){
+    console.warn('NEIS 학사일정 오류:', e);
+    return [];
+  }
+}
+
+// ✅ NEIS 학사일정 분류기: 제목/내용으로 exam | holiday | event 판별
+function classifyNeisEvent(title = '', detail = '') {
+  const s = `${title} ${detail}`.toLowerCase();
+
+  // 시험/평가
+  const examKw = [
+    '시험','지필','중간','기말','평가','고사','모의','퀴즈','수행평가'
+  ];
+  // 휴업/공휴일/방학
+  const holidayKw = [
+    '휴업','방학','공휴일','대체공휴일','개교기념일','재량휴업','휴교',
+    '설날','설 연휴','추석','추석 연휴','성탄','크리스마스','현충일','어린이날',
+    '광복절','개천절','한글날','석가탄신일','신정'
+  ];
+
+  if (examKw.some(k => s.includes(k)))   return 'exam';
+  if (holidayKw.some(k => s.includes(k))) return 'holiday';
+
+  // 그 외(행사, 입학식/졸업식/소풍/축제/체험학습 등)
+  return 'event';
+}
+
+// 학사일정 표시용 라벨: 아이콘 + 제목
+function eventLabel(kind, title){
+  // title 보정 (빈값/… 방지)
+  const t = (title && title.trim()) ? title : '학사 일정';
+  if (kind === 'holiday') return `🏖️ ${t}`;
+  if (kind === 'exam')    return `📝 ${t}`;
+  return `📌 ${t}`; // 일반 행사
+}
+
+
+function renderSchedDetail(dateStr, itemsA, itemsE){
+  const t  = document.getElementById('sched-detail-title');
+  const ul = document.getElementById('sched-detail-list');
+  t.textContent = `${dateStr.replace(/-/g,'.')} 일정`;
+
+  const aPart = (itemsA && itemsA.length)
+    ? itemsA.map(x=>`<li>📘 <b>${x.period}교시</b> · ${escapeHtml(x.title)}</li>`).join('')
+    : '<li>📝 수행 일정 없음</li>';
+
+  const ePart = (itemsE && itemsE.length)
+    ? itemsE.map(e=>`<li>${eventLabel(e.kind, escapeHtml(e.title))}</li>`).join('')
+    : '<li>📌 학사일정 없음</li>';
+
+  ul.innerHTML = `
+    <div style="margin-bottom:.4rem;color:#6b7280;font-weight:700;">수행</div>
+    ${aPart}
+    <div style="margin:.6rem 0 .4rem;color:#6b7280;font-weight:700;">학사</div>
+    ${ePart}
+  `;
+}
+
+
+(() => {
+  // 이미 상단에서 설정된 값 재사용: NEIS_KEY, ATPT_OFCDC_SC_CODE, SD_SCHUL_CODE
+  // 사용자 상태 재사용: currentGrade, currentClassNum (없으면 localStorage로 보강)
+
+  // DOM
+  const elBadge   = document.getElementById('badge-day');
+  const elList    = document.getElementById('timetable');
+  const elNotice  = document.getElementById('notice');
+  const elPicker  = document.getElementById('datePicker');
+
+  const DOW = ['일','월','화','수','목','금','토'];
+
+  // 날짜 유틸 (서울 기준)
+  const seoulNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  const toInput = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const toNeisYmd = d => toInput(d).replace(/-/g,'');
+  const semesterOf = (d) => (d.getMonth()+1) <= 8 ? 1 : 2;
+
+  function getGradeClass() {
+    const g = (typeof currentGrade === 'number' ? currentGrade : parseInt(localStorage.getItem('savedGrade'), 10)) || null;
+    const c = (typeof currentClassNum === 'number' ? currentClassNum : parseInt(localStorage.getItem('savedClassNum'), 10)) || null;
+    return { grade: g, classNum: c };
+  }
+
+  function setBadge(d) {
+    if (!elBadge) return;
+    elBadge.textContent = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${DOW[d.getDay()]})`;
+  }
+
+  function showNotice(msg) {
+    if (!elNotice) return;
+    elList.innerHTML = '';
+    elNotice.style.display = 'block';
+    elNotice.textContent = msg;
+  }
+
+  function hideNotice() {
+    if (!elNotice) return;
+    elNotice.style.display = 'none';
+    elNotice.textContent = '';
+  }
+
+  function renderRows(rows) {
+    if (!rows || rows.length === 0) {
+      elList.innerHTML = '';
+      showNotice('교육청 시간표 데이터가 없습니다.');
+      return;
+    }
+    hideNotice();
+
+    // 같은 교시 중복 제거 (가끔 같은 PERIO가 여러 행으로 옴)
+    const byPeriod = {};
+    for (const r of rows) {
+      const p = String(r.PERIO ?? '').trim();
+      if (!p) continue;
+      if (!byPeriod[p]) byPeriod[p] = r.ITRT_CNTNT || '';
+    }
+    const sorted = Object.keys(byPeriod).map(Number).sort((a,b)=>a-b);
+
+    elList.innerHTML = sorted.map(p => `
+      <li style="display:flex;align-items:center;gap:10px;padding:10px 6px;border-top:1px dashed #e9ecef;">
+        <span style="width:58px;min-width:58px;text-align:center;font-weight:700;">${p}교시</span>
+        <span style="font-weight:600;">${byPeriod[p] || ''}</span>
+      </li>
+    `).join('');
+
+    const first = elList.querySelector('li');
+    if (first) first.style.borderTop = '0';
+  }
+
+  async function fetchNeisDay({ grade, classNum }, dateObj) {
+    const AY   = dateObj.getFullYear();
+    const SEM  = semesterOf(dateObj);
+    const YMD  = toNeisYmd(dateObj);
+
+    const url =
+      `https://open.neis.go.kr/hub/misTimetable` +
+      `?KEY=${encodeURIComponent(NEIS_KEY)}` +
+      `&Type=json` +
+      `&ATPT_OFCDC_SC_CODE=${encodeURIComponent(ATPT_OFCDC_SC_CODE)}` +
+      `&SD_SCHUL_CODE=${encodeURIComponent(SD_SCHUL_CODE)}` +
+      `&AY=${AY}&SEM=${SEM}` +
+      `&ALL_TI_YMD=${YMD}` +
+      `&GRADE=${encodeURIComponent(grade)}` +
+      `&CLASS_NM=${encodeURIComponent(classNum)}`;
+
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error(`NEIS 응답 오류 ${res.status}`);
+    const json = await res.json();
+    // 정상 데이터: json.misTimetable[1].row
+    const block = json && json.misTimetable && json.misTimetable[1];
+    return block ? (block.row || []) : [];
+  }
+
+  async function loadTimetableDay(dateStr) {
+    const dateObj = dateStr ? new Date(dateStr) : seoulNow();
+    setBadge(dateObj);
+
+    const { grade, classNum } = getGradeClass();
+    if (!grade || !classNum) {
+      renderRows([]);
+      showNotice('학년/반 정보를 찾을 수 없습니다. 로그인 후 다시 시도하세요.');
+      return;
+    }
+
+    try {
+      const rows = await fetchNeisDay({ grade, classNum }, dateObj);
+      renderRows(rows);
+    } catch (e) {
+      console.warn(e);
+      renderRows([]);
+      showNotice('시간표를 불러오는 중 오류가 발생했습니다.');
+    }
+  }
+
+  // 초기화
+  document.addEventListener('DOMContentLoaded', () => {
+    if (elPicker) {
+      // 기본값 = 오늘(서울)
+      elPicker.value = toInput(seoulNow());
+      elPicker.addEventListener('change', (e) => loadTimetableDay(e.target.value));
+    }
+    loadTimetableDay(elPicker?.value);
+  });
+
+  // 다른 곳에서 재호출하고 싶을 때 사용
+  window.reloadTimetableCard = () => loadTimetableDay(elPicker?.value || undefined);
+})();
+
+
+(function(){
+  const ul        = document.getElementById('rank-list');
+  const meEl      = document.getElementById('rank-me');
+  const selMetric = document.getElementById('rank-metric');
+  const selScope  = document.getElementById('rank-scope');
+  const btnRefresh= document.getElementById('rank-refresh');
+
+  // 학생은 범위 고정(같은 반), 관리자만 변경 가능
+  if (typeof currentUserRole === 'string' && currentUserRole !== 'admin') {
+    selScope.value = 'class';
+    selScope.disabled = true;
+  }
+
+  // --- helpers ---
+  const escapeHtml = (s='') => String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+  function medal(n){
+    if (n===1) return '🥇';
+    if (n===2) return '🥈';
+    if (n===3) return '🥉';
+    return `<span style="display:inline-block;width:22px;text-align:right;font-weight:700;color:#6b7280">${n}</span>`;
+  }
+
+  function rowHtml(rank, u, metric){
+    const right =
+      metric==='coin'
+        ? `💰 ${Number(u.coin_balance||0)}`
+        : `Lv ${Number(u.level||1)} (XP ${Number(u.xp||0)})`;
+    const sub = `${u.grade??'-'}학년 ${u.class_num??'-'}반 · ${u.student_number??''}번`;
+    return `
+      <li style="display:flex;align-items:center;gap:10px;padding:10px;border-top:1px dashed #e9ecef;">
+        <div style="width:32px;text-align:center">${medal(rank)}</div>
+        <div style="flex:1 1 auto;">
+          <div style="font-weight:700">${escapeHtml(u.name||u.username||'학생')}</div>
+          <div style="font-size:.85rem;color:#6b7280">${sub}</div>
+        </div>
+        <div style="font-weight:700">${right}</div>
+      </li>`;
+  }
+
+  function meHtml(rank, total, u, metric){
+    const right =
+      metric==='coin'
+        ? `💰 ${Number(u.coin_balance||0)}`
+        : `Lv ${Number(u.level||1)} (XP ${Number(u.xp||0)})`;
+    return `
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-weight:800">내 순위</div>
+        <div style="margin-left:auto;font-size:.9rem;color:#6b7280">${rank}/${total}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+        <div style="width:32px;text-align:center">${medal(rank)}</div>
+        <div style="flex:1 1 auto;">
+          <div style="font-weight:700">${escapeHtml(u.name||'나')}</div>
+          <div style="font-size:.85rem;color:#6b7280">${u.grade??'-'}학년 ${u.class_num??'-'}반 · ${u.student_number??''}번</div>
+        </div>
+        <div style="font-weight:700">${right}</div>
+      </div>`;
+  }
+
+  function sortUsers(users, metric){
+    if (metric === 'coin') {
+      // 코인 내림차순, 동점자 이름순
+      return users.sort(
+        (a,b)=>(b.coin_balance||0)-(a.coin_balance||0) || (a.name||'').localeCompare(b.name||'')
+      );
+    } else {
+      // 레벨 → XP 내림차순, 동점자 이름순
+      return users.sort(
+        (a,b)=>(b.level||0)-(a.level||0) || (b.xp||0)-(a.xp||0) || (a.name||'').localeCompare(b.name||'')
+      );
+    }
+  }
+
+  async function loadRanking(){
+    const metric = selMetric.value;           // 'coin' | 'level'
+    const scope  = selScope.value;            // 'class' | 'grade' | 'school'
+
+    // 내 정보 (정렬 후 '내 순위' 표시에 사용)
+    const myUsername = localStorage.getItem('savedUsername') || '';
+    const g = (typeof currentGrade === 'number'
+                ? currentGrade
+                : parseInt(localStorage.getItem('savedGrade')||'0',10)) || null;
+    const c = (typeof currentClassNum === 'number'
+                ? currentClassNum
+                : parseInt(localStorage.getItem('savedClassNum')||'0',10)) || null;
+
+    // 로딩 표시
+    ul.innerHTML = `<li style="padding:10px;color:#6b7280">불러오는 중…</li>`;
+    meEl.style.display = 'none';
+
+    // 기본 쿼리 (관리자 제외)
+    let q = supabaseClient.from('users')
+      .select('username,name,grade,class_num,student_number,coin_balance,level,xp,role', { count: 'exact' })
+      .neq('role','admin');
+
+    // 범위 제한: 학생은 강제 '같은 반', 관리자는 선택값 반영
+    if (typeof currentUserRole === 'string' && currentUserRole !== 'admin') {
+      if (g!=null) q = q.eq('grade', g);
+      if (c!=null) q = q.eq('class_num', c);
+    } else {
+      if (scope === 'class') { if (g!=null) q = q.eq('grade', g); if (c!=null) q = q.eq('class_num', c); }
+      else if (scope === 'grade') { if (g!=null) q = q.eq('grade', g); }
+      // 'school' = 전교 (제한 없음)
+    }
+
+    const { data, error } = await q;
+
+    if (error) {
+      ul.innerHTML = `<li style="padding:10px;color:#ef4444">랭킹 로드 오류: ${escapeHtml(error.message)}</li>`;
+      return;
+    }
+
+    const users = Array.isArray(data) ? data.slice() : [];
+    if (users.length === 0) {
+      ul.innerHTML = `<li style="padding:10px;color:#6b7280">표시할 데이터가 없습니다.</li>`;
+      return;
+    }
+
+    const sorted = sortUsers(users, metric);
+
+    // Top N 렌더
+    const N = 10;
+    ul.innerHTML = '';
+    sorted.slice(0, N).forEach((u, i) => {
+      ul.insertAdjacentHTML('beforeend', rowHtml(i+1, u, metric));
+    });
+
+    // 내 순위 박스
+    const myIndex = sorted.findIndex(u => (u.username||'') === myUsername);
+    if (myIndex >= 0) {
+      meEl.innerHTML = meHtml(myIndex+1, sorted.length, sorted[myIndex], metric);
+      meEl.style.display = 'block';
+    } else {
+      meEl.style.display = 'none';
+    }
+  }
+
+  // 이벤트 바인딩
+  selMetric.addEventListener('change', loadRanking);
+  selScope.addEventListener('change', loadRanking);
+  btnRefresh.addEventListener('click', loadRanking);
+  document.addEventListener('DOMContentLoaded', loadRanking);
+
+  // 외부에서 강제 새로고침 가능
+  window.reloadRankingCard = loadRanking;
+})();
+
+
+(() => {
+  // 서울 기준 오늘 날짜
+  const seoulNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+  const toYMD = d => {
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), dd = String(d.getDate()).padStart(2,"0");
+    return `${y}${m}${dd}`;
+  };
+  const labelYMD = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+
+  // 메뉴 문자열 정리
+  function parseDishList(ddish="") {
+    return String(ddish)
+      .replace(/<br\s*\/?>/gi, "\n")
+      .split(/\n+/)
+      .map(s => s.replace(/\((?:\s*\d+\s*\.)+\s*\)/g,"").trim())
+      .filter(Boolean);
+  }
+
+  function renderMeal(dateObj, rows) {
+    const box = document.getElementById("meal-box");
+    const dayLabel = labelYMD(dateObj);
+
+    if (!rows || rows.length===0) {
+      box.innerHTML = `<div style="color:#6b7280">🍽️ ${dayLabel} 급식 정보 없음</div>`;
+      return;
+    }
+
+    // 조식/중식/석식별로 묶기
+    const byType = rows.reduce((m,r)=>{
+      (m[r.MMEAL_SC_NM] ??= []).push(...parseDishList(r.DDISH_NM));
+      return m;
+    },{});
+    const order = ["조식","중식","석식"];
+    const types = Object.keys(byType).sort((a,b)=>{
+      const ia=order.indexOf(a), ib=order.indexOf(b);
+      return (ia===-1?99:ia) - (ib===-1?99:ib);
+    });
+
+    box.innerHTML = `
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <strong>오늘 급식</strong>
+        <span style="color:#6b7280;font-size:.9rem">${dayLabel}</span>
+      </div>
+      ${types.map(type=>`
+        <div style="margin-bottom:8px;">
+          <div style="font-weight:600;margin-bottom:4px;">${type}</div>
+          <ul style="margin:0;padding-left:18px;color:#374151;">
+            ${byType[type].map(d=>`<li>${d}</li>`).join("")}
+          </ul>
+        </div>
+      `).join("")}
+    `;
+  }
+
+  // 🍽️ 급식 불러오기 (NEIS 상수 그대로 사용)
+  async function loadMeal(forDate) {
+    const d = forDate ? new Date(forDate) : seoulNow();
+    const url = `https://open.neis.go.kr/hub/mealServiceDietInfo`
+      + `?KEY=${encodeURIComponent(NEIS_KEY)}&Type=json`
+      + `&ATPT_OFCDC_SC_CODE=${encodeURIComponent(ATPT_OFCDC_SC_CODE)}`
+      + `&SD_SCHUL_CODE=${encodeURIComponent(SD_SCHUL_CODE)}`
+      + `&MLSV_YMD=${toYMD(d)}`;
+
+    try {
+      const res = await fetch(url);
+      const json = await res.json();
+      const block = json && json.mealServiceDietInfo && json.mealServiceDietInfo[1];
+      renderMeal(d, block ? block.row : []);
+    } catch(e) {
+      document.getElementById("meal-box").innerHTML =
+        `<div style="color:#ef4444">급식 로딩 오류</div>`;
+      console.error(e);
+    }
+  }
+
+  // 페이지 로드 시 오늘 급식
+  document.addEventListener("DOMContentLoaded", ()=> loadMeal());
+  // 필요 시 외부에서 다시 호출 가능
+  window.reloadMealCard = loadMeal;
+})();
     </script>
   </body> 
 </html>
