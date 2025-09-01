@@ -6,6 +6,14 @@
   <title>EduBoard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
+  <!-- PDF.js (PDF → Canvas 렌더링용) -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script>
+    // PDF.js 워커 경로 설정
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+  </script>
+
   <style>
     body {
       margin: 0;
@@ -541,140 +549,249 @@
       }
 
       /* ========== DASH: 상단 2열 ========== */
-.dash-top{display:grid;grid-template-columns:1fr 380px;gap:20px}
-@media (max-width:980px){.dash-top{grid-template-columns:1fr}}
-.card{background:#fff;border:1px solid #e9ecef;border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,.05)}
-.card-body{padding:18px 20px}
-.section-head{display:flex;justify-content:space-between;align-items:center;margin:2px 0 12px}
-.section-head .mini{font-size:.85rem;color:#6c757d}
-.link-btn{background:#f6f7fb;border:1px solid #e9ecf3;border-radius:10px;padding:6px 10px;font-weight:600;color:#495057;cursor:pointer}
-.link-btn:hover{background:#eef1f8}
+      .dash-top{
+        display:grid;
+        grid-template-columns:1fr 380px;
+        gap:20px
+      }
 
-/* 공지 리스트 */
-.notice-list{display:flex;flex-direction:column;gap:10px}
-.notice-item{padding:12px;border:1px solid #eef0f2;border-radius:12px}
-.notice-item .title{font-weight:700;margin-bottom:4px}
-.notice-item .meta{color:#6c757d;font-size:.85rem}
+      @media (max-width:768px){
+        .dash-top{
+          grid-template-columns:1fr
+        }
+      }
+      .card{
+        background:#fff;
+        border:1px solid #e9ecef;
+        border-radius:16px;
+        box-shadow:0 4px 14px rgba(0,0,0,.05)
+      }
+      .card-body{
+        padding:18px 20px
+      }
+      .section-head{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin:2px 0 12px
+      }
+      .section-head .mini{
+        font-size:.85rem;
+        color:#6c757d
+      }
+      .link-btn{
+        background:#f6f7fb;
+        border:1px solid #e9ecf3;
+        border-radius:10px;padding:6px 10px;
+        font-weight:600;
+        color:#495057;
+        cursor:pointer
+      }
+      .link-btn:hover{
+        background:#eef1f8
+      }
 
-.profile-card{display:flex;gap:18px;align-items:flex-start;position:relative}
-.profile-illust{flex-shrink:0}
-.profile-avatar{
-  width:120px;height:120px;border-radius:20px;background:#f4f6ff;
-  display:grid;place-items:center;font-size:56px;box-shadow:0 6px 18px rgba(79,70,229,.15)
-}
-.profile-info{flex:1;display:flex;flex-direction:column}
-.info-top{display:flex;justify-content:space-between;align-items:center}
-.profile-name{font-size:20px;font-weight:800}
-.profile-sub{margin:8px 0 10px;font-size:14px;color:#555;line-height:1.5}
-.points-chip{display:inline-flex;gap:6px;align-items:center;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;background:#fff}
-.p-dot{width:8px;height:8px;border-radius:50%;background:#a78bfa}
-.lvl-wrap{margin-top:auto}
-.lvl-head{display:flex;justify-content:space-between;color:#6b7280;font-size:12px;margin-bottom:6px}
-.lvl-bar{height:10px;background:#eef2ff;border-radius:999px;overflow:hidden}
-.lvl-fill{height:100%;width:0%;background:linear-gradient(90deg,#4f46e5,#6366f1)}
-.lvl-badge{position:absolute;top:-10px;left:-10px;background:#7c3aed;color:#fff;padding:4px 8px;border-radius:10px;font-size:12px;font-weight:800;box-shadow:0 6px 14px rgba(124,58,237,.25)}
+      /* 공지 리스트 */
+      .notice-list{
+        display:flex;
+        flex-direction:column;
+        gap:10px
+      }
+      .notice-item{
+        padding:12px;
+        border:1px solid #eef0f2;
+        border-radius:12px
+      }
+      .notice-item .title{
+        font-weight:700;
+        margin-bottom:4px
+      }
+      .notice-item .meta{
+        color:#6c757d;
+        font-size:.85rem
+      }
+
+      .profile-card{
+        display:flex;
+        gap:18px;
+        align-items:flex-start;
+        position:relative
+      }
+      .profile-illust{
+        flex-shrink:0
+      }
+      .profile-avatar{
+        width:120px;
+        height:120px;
+        border-radius:20px;
+        background:#f4f6ff;
+        display:grid;
+        place-items:center;
+        font-size:56px;
+        box-shadow:0 6px 18px rgba(79,70,229,.15)
+      }
+      .profile-info{
+        flex:1;
+        display:flex;
+        flex-direction:column
+      }
+      .info-top{
+        display:flex;
+        justify-content:space-between;
+        align-items:center
+      }
+      .profile-name{
+        font-size:20px;
+        font-weight:800}
+      .profile-sub{
+        margin:8px 0 10px;
+        font-size:14px;
+        color:#555;
+        line-height:1.5}
+      .points-chip{
+        display:inline-flex;
+        gap:6px;
+        align-items:center;
+        border:1px solid #e5e7eb;
+        border-radius:999px;
+        padding:6px 10px;
+        background:#fff
+      }
+      .p-dot{
+        width:8px;
+        height:8px;
+        border-radius:50%;
+        background:#a78bfa}
+      .lvl-wrap{
+        margin-top:auto
+      }
+      .lvl-head{
+        display:flex;
+        justify-content:space-between;
+        color:#6b7280;
+        font-size:12px;
+        margin-bottom:6px
+      }
+      .lvl-bar{
+        height:10px;
+        background:#eef2ff;
+        border-radius:999px;
+        overflow:hidden
+      }
+      .lvl-fill{
+        height:100%;
+        width:0%;
+        background:linear-gradient(90deg,#4f46e5,#6366f1)
+      }
+      .lvl-badge{
+        position:absolute;
+        top:-10px;
+        left:-10px;
+        background:#7c3aed;
+        color:#fff;
+        padding:4px 8px;
+        border-radius:10px;
+        font-size:12px;
+        font-weight:800;
+        box-shadow:0 6px 14px rgba(124,58,237,.25)
+      }
+
+      .sched-grid{
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-template-rows: repeat(6, 1fr);  
+        gap: 6px;
+        height: 520px;                   
+      }
+
+      /* 셀을 줄여서 정보가 들어가도 행 높이 유지 */
+      .sched-cell{
+        background:#fff; border:1px solid #e5e7eb; border-radius:10px;
+        padding:6px; display:flex; flex-direction:column; min-height:0;
+        overflow:hidden;                          /* 내용이 넘치면 감추기 */
+      }
+      .sched-day{font-weight:800; font-size:.9rem; line-height:1.1rem}
+      .sched-items{display:flex; flex-direction:column; gap:2px; margin-top:2px; overflow:hidden}
+
+      /* 아이템(과목 - 교시) 2줄까지만 보이고 나머지는 숨김 */
+      .sched-item{
+        font-size:.74rem; line-height:1.05rem; color:#374151;
+        background:#f6f7fb; border:1px solid #e9ecf3; border-radius:6px; padding:1px 5px;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      }
+      .sched-items{max-height: 2.3rem;}          /* 대략 2줄 */
+      .sched-more{font-size:.7rem; color:#6b7280}
+
+      /* 상태 강조 */
+      .sched-cell.out{opacity:.45}
+      .sched-cell.today{
+        outline: none;
+        border-color:#c7d2fe;
+        background:#fafbff;
+      }
+
+      /* 기존 .sched-cell.has 스타일에서 배경 제거 */
+      .sched-cell.has {
+        border-color:#c7d2fe;
+        background:#fff;   /* ✅ 흰색으로 고정 */
+      }
 
 
+      /* 반응형: 좁은 화면에선 높이를 조금 줄여서 6줄 유지 */
+      @media (max-width: 750px){
+        .sched-grid{height:460px;}
+        .sched-day{font-size:.85rem}
+        .sched-item{font-size:.7rem}
+      }
 
+      .sched-week-row{
+        display:grid;
+        grid-template-columns:repeat(7,1fr);
+        gap:6px;
+        margin:.5rem 0 .25rem;
+        color:#6b7280;
+        font-size:.9rem;
+        text-align:center;
+      }
+      .sched-week-row span{padding:2px 0}
 
-/* 달력 셀 */
-/* 달력 래퍼에 고정 높이(카드 안에서 스크롤 없이 다 보이게) */
-.sched-grid{
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(6, 1fr);    /* 6줄 고정 */
-  gap: 6px;
-  height: 520px;                          /* 필요 시 460~600px로 조절 */
-}
+      /* 기존 .sched-grid 규칙은 유지하되, id 우선으로 한 번 더 강제 */
+      #sched-grid{
+        display:grid !important;
+        grid-template-columns:repeat(7,1fr);
+        grid-template-rows:repeat(6,1fr); /* 6주 고정 */
+        gap:6px;
+        height:520px;                      /* 필요시 460~600px로 조절 */
+      }
 
-/* 셀을 줄여서 정보가 들어가도 행 높이 유지 */
-.sched-cell{
-  background:#fff; border:1px solid #e5e7eb; border-radius:10px;
-  padding:6px; display:flex; flex-direction:column; min-height:0;
-  overflow:hidden;                          /* 내용이 넘치면 감추기 */
-}
-.sched-day{font-weight:800; font-size:.9rem; line-height:1.1rem}
-.sched-items{display:flex; flex-direction:column; gap:2px; margin-top:2px; overflow:hidden}
+      /* ===== 학사일정 뱃지 ===== */
+      .sched-evts{display:flex;flex-direction:column;gap:2px;margin-top:4px;overflow:hidden}
+      .sched-evt{
+        font-size:.72rem; line-height:1.05rem; 
+        border-radius:999px; padding:1px 6px; 
+        border:1px solid #e9ecf3; background:#f6f7fb; 
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      }
+      .sched-evt.exam{background:#fff7ed;border-color:#fed7aa}     /* 시험 */
+      .sched-evt.holiday{background:#fef2f2;border-color:#fecaca}  /* 공휴일/휴업 */
+      .sched-evt.event{background:#f0f9ff;border-color:#bae6fd}    /* 행사 일반 */
 
-/* 아이템(과목 - 교시) 2줄까지만 보이고 나머지는 숨김 */
-.sched-item{
-  font-size:.74rem; line-height:1.05rem; color:#374151;
-  background:#f6f7fb; border:1px solid #e9ecf3; border-radius:6px; padding:1px 5px;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.sched-items{max-height: 2.3rem;}          /* 대략 2줄 */
-.sched-more{font-size:.7rem; color:#6b7280}
+      .sched-legend{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:.85rem;color:#555}
+      .sched-chip{display:inline-flex;align-items:center;gap:6px}
+      .sched-chip .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
+      .dot.exam{background:#fb923c}
+      .dot.holiday{background:#f87171}
+      .dot.event{background:#60a5fa}
 
-/* 상태 강조 */
-.sched-cell.out{opacity:.45}
-.sched-cell.today{
-  outline: none;
-  border-color:#c7d2fe;
-  background:#fafbff;
-}
+      .sched-cell.selected {
+        border: 2px solid #7c3aed;   /* 보라색 */
+        border-radius: 6px;
+      }
 
-/* 기존 .sched-cell.has 스타일에서 배경 제거 */
-.sched-cell.has {
-  border-color:#c7d2fe;
-  background:#fff;   /* ✅ 흰색으로 고정 */
-}
-
-
-/* 반응형: 좁은 화면에선 높이를 조금 줄여서 6줄 유지 */
-@media (max-width: 750px){
-  .sched-grid{height:460px;}
-  .sched-day{font-size:.85rem}
-  .sched-item{font-size:.7rem}
-}
-
-.sched-week-row{
-  display:grid;
-  grid-template-columns:repeat(7,1fr);
-  gap:6px;
-  margin:.5rem 0 .25rem;
-  color:#6b7280;
-  font-size:.9rem;
-  text-align:center;
-}
-.sched-week-row span{padding:2px 0}
-
-/* 기존 .sched-grid 규칙은 유지하되, id 우선으로 한 번 더 강제 */
-#sched-grid{
-  display:grid !important;
-  grid-template-columns:repeat(7,1fr);
-  grid-template-rows:repeat(6,1fr); /* 6주 고정 */
-  gap:6px;
-  height:520px;                      /* 필요시 460~600px로 조절 */
-}
-
-/* ===== 학사일정 뱃지 ===== */
-.sched-evts{display:flex;flex-direction:column;gap:2px;margin-top:4px;overflow:hidden}
-.sched-evt{
-  font-size:.72rem; line-height:1.05rem; 
-  border-radius:999px; padding:1px 6px; 
-  border:1px solid #e9ecf3; background:#f6f7fb; 
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.sched-evt.exam{background:#fff7ed;border-color:#fed7aa}     /* 시험 */
-.sched-evt.holiday{background:#fef2f2;border-color:#fecaca}  /* 공휴일/휴업 */
-.sched-evt.event{background:#f0f9ff;border-color:#bae6fd}    /* 행사 일반 */
-
-.sched-legend{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:.85rem;color:#555}
-.sched-chip{display:inline-flex;align-items:center;gap:6px}
-.sched-chip .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
-.dot.exam{background:#fb923c}
-.dot.holiday{background:#f87171}
-.dot.event{background:#60a5fa}
-
-.sched-cell.selected {
-  border: 2px solid #7c3aed;   /* 보라색 */
-  border-radius: 6px;
-}
-
-</style>
+  </style>
 </head>
   <body>
-    <!-- 로그인, 회원가입 -->
+
     <div id="login-screen">
       <div class="auth-box" id="login-box">
         <h2>로그인</h2>
@@ -752,7 +869,6 @@
       </div>
     </div>
 
-    <!-- 메인 웹 -->
     <div id="main-app" style="display:none;">
       <header>
         <h1>EduBoard</h1>
@@ -808,7 +924,7 @@
         <!-- ✅ 오버레이 -->
         <div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
       </header>
-      <!-- ✅ 모바일 전용 상단 헤더 -->
+
       <div class="mobile-only mobile-header">
         <div class="menu-icon" onclick="toggleMobileMenu()">☰</div>
         <div class="mobile-title">EduBoard</div>
@@ -829,199 +945,182 @@
       <div class="content">
         <div id="dashboard" class="panel active">
           <h2>🏠 대시보드</h2>
-          <div class="dash-top">
+            <div class="dash-top">
 
-            <!-- 좌: 최근 공지 3건 -->
-            <div class="card">
+              <div class="card">
                 <div class="card-body">
-                <div class="section-head">
+                  <div class="section-head">
                     <h3>📢 최근 공지</h3>
                     <span class="mini" id="dash-notice-date"></span>
+                  </div>
+                  <div id="dash-notice-list" class="notice-list"></div>
                 </div>
-                <div id="dash-notice-list" class="notice-list">
-                    <!-- JS가 채움 -->
-                </div>
-                </div>
-            </div>
+              </div>
 
-            <!-- 우: 프로필 + 레벨/포인트 (레벨/포인트는 별개) -->
-            <div class="card">
-  <div class="card-body">
-    <div class="profile-card">
-      <span class="lvl-badge">Lv <span id="lv-num">1</span></span>
-
-      <!-- 왼쪽 큰 아바타 -->
-      <div class="profile-illust">
-        <div class="profile-avatar" id="dash-avatar">🙂</div>
-      </div>
-
-      <!-- 오른쪽 정보 -->
-      <div class="profile-info">
-        <div class="info-top">
-          <div class="profile-name">
-            <span id="dash-name">admin</span>
-            <small style="margin-left:4px;color:#6c757d">학생</small>
-          </div>
-          <div class="points-chip">
-            <span class="p-dot"></span> P <span id="coin-balance" style="margin-left:4px">99999999</span>
-          </div>
-        </div>
-
-        <div class="profile-sub">
-          <div id="dash-school">봉담중학교</div>
-          <div><span id="dash-grade">-</span>학년 <span id="dash-class">-</span>반 <span id="dash-num">0</span>번</div>
-        </div>
-
-        <!-- 레벨바 -->
-        <div class="lvl-wrap">
-          <div class="lvl-head">
-            <span>경험치</span>
-            <span><span id="exp-cur">0</span> / <span id="exp-need">20</span></span>
-          </div>
-          <div class="lvl-bar"><div id="lvl-fill" class="lvl-fill"></div></div>
-        </div>
-
-        <div class="todo-section">
-      <h4>빈칸(아래 여백) 추천 받아요</h4>
-    </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-            <div class="card">
-  <div class="card-body">
-    <div class="section-head">
-      <h3>📄 일정</h3>
-    </div>
-
-    <!-- 상단 툴바: 월 네비게이션 -->
-    <div class="sched-toolbar">
-      <button id="sched-prev" class="mini-btn">⏪</button>
-      <div id="sched-month-label" class="sched-month"></div>
-      <button id="sched-next" class="mini-btn">⏩</button>
-    </div>
-
-    <!-- 요일 헤더 -->
-    <div class="sched-week-row">
-      <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
-    </div>
-
-    <!-- 달력 그리드(여기에 JS로 셀 채움) -->
-    <div id="sched-grid" class="sched-grid"></div>
-
-    <!-- (선택) 날짜 클릭 상세 -->
-    <div class="sched-detail">
-      <h4 id="sched-detail-title">날짜를 선택하세요</h4>
-      <ul id="sched-detail-list"></ul>
-    </div>
-  </div>
-</div>
-
-
-            <div class="card">
+              <div class="card">
                 <div class="card-body">
-                  <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;">
-                    <h3>🕒 시간표 <span id="badge-day" class="badge" style="margin-left:6px;"></span></h3>
-                    <div class="controls" style="display:flex;gap:8px;align-items:center;">
-                      <input type="date" id="datePicker" />
-                      <select id="classSelect" style="display:none"></select>
+                  <div class="profile-card">
+                    <span class="lvl-badge">Lv <span id="lv-num">1</span></span>
+
+                    <div class="profile-illust">
+                      <div class="profile-avatar" id="dash-avatar">🙂</div>
+                    </div>
+
+                    <div class="profile-info">
+                      <div class="info-top">
+                        <div class="profile-name">
+                          <span id="dash-name">admin</span>
+                          <small style="margin-left:4px;color:#6c757d">학생</small>
+                        </div>
+                        <div class="points-chip">
+                          <span class="p-dot"></span> P <span id="coin-balance" style="margin-left:4px">99999999</span>
+                        </div>
+                      </div>
+
+                      <div class="profile-sub">
+                        <div id="dash-school">봉담중학교</div>
+                        <div><span id="dash-grade">-</span>학년 <span id="dash-class">-</span>반 <span id="dash-num">0</span>번</div>
+                      </div>
+
+                      <div class="lvl-wrap">
+                        <div class="lvl-head">
+                          <span>경험치</span>
+                          <span><span id="exp-cur">0</span> / <span id="exp-need">20</span></span>
+                        </div>
+                        <div class="lvl-bar"><div id="lvl-fill" class="lvl-fill"></div></div>
+                      </div>
+
+                      <div class="todo-section">
+                    <h4>빈칸(아래 여백) 추천 받아요</h4>
+                  </div>
                     </div>
                   </div>
-
-                  <ul id="timetable" style="list-style:none;margin:12px 0 0;padding:0;"></ul>
-                  <div id="notice" style="display:none;color:#6c757d;padding:12px 0;"></div>
                 </div>
-            </div>
+              </div>
 
-            <div class="card" id="rank-card">
+              <div class="card">
                 <div class="card-body">
-                  <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;">
-                    <h3>🏆 랭킹</h3>
-                    <div style="display:flex;gap:6px;align-items:center;">
-                      <!-- 정렬 기준 -->
-                      <select id="rank-metric" style="border:1px solid #e9ecef;border-radius:10px;padding:6px 8px;">
-                        <option value="coin">코인</option>
-                        <option value="level">레벨</option>
-                      </select>
-                      <!-- 범위 (학생은 자동 고정) -->
-                      <select id="rank-scope" style="border:1px solid #e9ecef;border-radius:10px;padding:6px 8px;">
-                        <option value="class">같은 반</option>
-                        <!-- <option value="grade">같은 학년</option>
-                        <option value="school">전교</option> -->
-                      </select>
-                      <button class="mini-btn" id="rank-refresh">새로고침</button>
-                    </div>
+                  <div class="section-head">
+                    <h3>📄 일정</h3>
                   </div>
 
-                  <ul id="rank-list" style="list-style:none;margin:10px 0 0;padding:0;"></ul>
-                  <div id="rank-me" style="margin-top:12px;padding:10px;border:1px dashed #e9ecef;border-radius:10px;background:#fafafa;display:none"></div>
-                </div>
-            </div>
+                  <div class="sched-toolbar">
+                    <button id="sched-prev" class="mini-btn">⏪</button>
+                    <div id="sched-month-label" class="sched-month"></div>
+                    <button id="sched-next" class="mini-btn">⏩</button>
+                  </div>
 
-            <div class="card">
-              <div class="card-body">
-                <div class="section-head">
-                  <h3>🍽️ 급식</h3>
+                  <div class="sched-week-row">
+                    <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+                  </div>
+
+                  <div id="sched-grid" class="sched-grid"></div>
+
+                  <div class="sched-detail">
+                    <h4 id="sched-detail-title">날짜를 선택하세요</h4>
+                    <ul id="sched-detail-list"></ul>
+                  </div>
                 </div>
-                <div id="meal-box"></div>
+              </div>
+
+              <div class="card">
+                  <div class="card-body">
+                    <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;">
+                      <h3>🕒 시간표 <span id="badge-day" class="badge" style="margin-left:6px;"></span></h3>
+                      <div class="controls" style="display:flex;gap:8px;align-items:center;">
+                        <input type="date" id="datePicker" />
+                        <select id="classSelect" style="display:none"></select>
+                      </div>
+                    </div>
+
+                    <ul id="timetable" style="list-style:none;margin:12px 0 0;padding:0;"></ul>
+                    <div id="notice" style="display:none;color:#6c757d;padding:12px 0;"></div>
+                  </div>
+              </div>
+
+              <div class="card" id="rank-card">
+                  <div class="card-body">
+                    <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;">
+                      <h3>🏆 랭킹</h3>
+                      <div style="display:flex;gap:6px;align-items:center;">
+
+                        <select id="rank-metric" style="border:1px solid #e9ecef;border-radius:10px;padding:6px 8px;">
+                          <option value="coin">코인</option>
+                          <option value="level">레벨</option>
+                        </select>
+
+                        <select id="rank-scope" style="border:1px solid #e9ecef;border-radius:10px;padding:6px 8px;">
+                          <option value="class">같은 반</option>
+                          <!-- <option value="grade">같은 학년</option>
+                          <option value="school">전교</option> -->
+                        </select>
+                        <button class="mini-btn" id="rank-refresh">새로고침</button>
+                      </div>
+                    </div>
+
+                    <ul id="rank-list" style="list-style:none;margin:10px 0 0;padding:0;"></ul>
+                    <div id="rank-me" style="margin-top:12px;padding:10px;border:1px dashed #e9ecef;border-radius:10px;background:#fafafa;display:none"></div>
+                  </div>
+              </div>
+
+              <div class="card">
+                <div class="card-body">
+                  <div class="section-head">
+                    <h3>🍽️ 급식</h3>
+                  </div>
+                  <div id="meal-box"></div>
+                </div>
               </div>
             </div>
-
-
-            </div>
         </div>
 
 
-      <div id="notice-panel" class="panel" style="display:none;">
-        <h2>📢 공지사항</h2>
-          <div id="notice-list"></div>
-            <h3>새 공지 등록</h3>
-            <input type="text" id="notice-title" placeholder="제목"/>
-            <textarea id="notice-content" placeholder="내용"></textarea>
-            
-            <!-- 사진 파일 선택 -->
-            <input type="file" id="notice-image" accept="image/*">
+        <div id="notice-panel" class="panel" style="display:none;">
+          <h2>📢 공지사항</h2>
+            <div id="notice-list"></div>
+              <h3>새 공지 등록</h3>
+              <input type="text" id="notice-title" placeholder="제목"/>
+              <textarea id="notice-content" placeholder="내용"></textarea>
+              
+              <input type="file" id="notice-image" accept="image/*">
+              <div id="filePreviewContainer" class="preview-container"></div>
 
-            <!-- 사진 업로드 여부 선택 -->
-            <label style="display:flex;align-items:center;margin-top:0.5rem;">
-              <input type="checkbox" id="notice-upload-check" style="margin-right:0.5rem;">
-              이 사진을 공지에 포함하기
-            </label>
 
-            <button onclick="addNotice()">공지 추가</button>
-      </div>      
+              <label style="display:flex;align-items:center;margin-top:0.5rem;">
+                <input type="checkbox" id="notice-upload-check" style="margin-right:0.5rem;">
+                이 사진을 공지에 포함하기
+              </label>
 
-      <div id="doc-panel" class="panel">
-        <h2>📄 수행 평가 업로드</h2>
-        <input type="file" id="doc-file" accept=".pdf,.jpg,.png"/>
-        <div class="button-group">
-          <button onclick="analyzeDocument()">문서 분석하기</button>
-        </div>
+              <button onclick="addNotice()">공지 추가</button>
+        </div>      
 
-        <h3>분석 결과 (수정 가능)</h3>
-          <textarea 
-            id="doc-result"
-            placeholder="분석된 내용이 여기에 표시됩니다. 필요하면 수정 후 등록하세요."
-            style="
-              min-height:100px;
-              resize:none;
-              overflow:hidden;
-              width:100%;
-              padding:0.8rem;
-              font-size:0.95rem;
-              line-height:1.4rem;
-              border:1px solid #ced4da;
-              border-radius:0.5rem;
-              background:#fdfdfd;
-              box-shadow:inset 0 1px 2px rgba(0,0,0,0.04);
-            ">
-          </textarea>
+        <div id="doc-panel" class="panel">
+          <h2>📄 수행 평가 업로드</h2>
+          <input type="file" id="doc-file" accept=".pdf,.jpg,.png"/>
+          <div class="button-group">
+            <button onclick="analyzeDocument()">문서 분석하기</button>
+          </div>
+
+          <h3>분석 결과</h3>
+
+          <div id="doc-form">
+            <label>과목</label>
+            <input id="af-subject" type="text" placeholder="예: 수학">
+
+            <label>요일</label>
+            <input id="af-yoil" type="text" readonly placeholder="자동 계산">
+
+            <label>교시</label>
+            <input id="af-period" type="number" min="1" max="12" placeholder="예: 3">
+
+            <label>평가 주제</label>
+            <input id="af-topic" type="text" placeholder="예: 일차방정식 활용">
+
+          </div>
+
           
-          <!-- 사진 미리보기 -->
           <img id="doc-preview" style="max-width:100%; margin-top:1rem; display:none; border-radius:0.5rem;" />
 
-          <!-- 업로드 여부 선택 -->
           <label style="display:flex;align-items:center;margin-top:0.5rem;">
             <input type="checkbox" id="upload-image-check" style="margin-right:0.5rem;">
             이 사진을 공지에 같이 올리기
@@ -1030,132 +1129,112 @@
           <div class="button-group">
             <button onclick="registerAnalyzedText()">분석된 글 등록하기</button>
           </div>
-      </div>      
+        </div>      
 
-      <div id="student-panel" class="panel" style="display:none;">
-        <h2>👩‍🎓 학생 관리</h2>
-        <button onclick="loadStudents()">학생 목록 불러오기</button>
-        <ul id="student-list"></ul>
-      </div>
+        <div id="homework-panel" class="panel" style="display:none;">
+          <h2>📚 파일 공유 & 자료실</h2>
 
-      <div id="homework-panel" class="panel" style="display:none;">
-        <h2>📚 파일 공유 & 자료실</h2>
+          <label for="homework-scope">공유 범위</label>
+          <select id="homework-scope">
+            <option value="school">전교</option>
+            <option value="grade">같은 학년</option>
+            <option value="class">같은 반</option>
+          </select>
 
-        <!-- 업로드 영역 -->
-        <label for="homework-scope">공유 범위</label>
-        <select id="homework-scope">
-          <option value="school">전교</option>
-          <option value="grade">같은 학년( 추가 예정 )</option>
-          <option value="class">같은 반( 추가 예정 )</option>
-        </select>
+          <label for="homework-userinfo">학번 + 이름</label>
+          <input type="text" id="homework-userinfo" readonly style="background:#f1f3f5; font-weight:bold; margin-bottom:0.8rem;">
 
-        <label for="homework-userinfo">학번 + 이름</label>
-        <input type="text" id="homework-userinfo" readonly style="background:#f1f3f5; font-weight:bold; margin-bottom:0.8rem;">
+          <label for="homework-title">제목</label>
+          <input type="text" id="homework-title" placeholder="예: 체험학습 사진">
 
-        <label for="homework-title">제목</label>
-        <input type="text" id="homework-title" placeholder="예: 체험학습 사진">
+          <label for="homework-file">파일 업로드</label>
+          <input type="file" id="homework-file" multiple>
 
-        <label for="homework-file">파일 업로드</label>
-        <input type="file" id="homework-file" multiple>
+          <label for="homework-comment">코멘트 (선택)</label>
+          <textarea id="homework-comment" placeholder="코멘트를 입력해 주세요"></textarea>
 
-        <label for="homework-comment">코멘트 (선택)</label>
-        <textarea id="homework-comment" placeholder="코멘트를 입력해 주세요"></textarea>
+          <button onclick="submitHomework()">업로드하기</button>
+          <div id="homework-status" style="margin-top:0.5rem;font-size:0.9rem;color:#007bff;"></div>
 
-        <button onclick="submitHomework()">업로드하기</button>
-        <div id="homework-status" style="margin-top:0.5rem;font-size:0.9rem;color:#007bff;"></div>
+          <hr style="margin:1.5rem 0;">
 
-        <hr style="margin:1.5rem 0;">
+          <h3>📂 업로드된 자료</h3>
+          <button onclick="loadMaterials()">🔄 목록 새로고침</button>
+          <ul id="material-list" style="margin-top:1rem;"></ul>
+        </div>
 
-        <!-- 자료 목록 영역 -->
-        <h3>📂 업로드된 자료</h3>
-        <button onclick="loadMaterials()">🔄 목록 새로고침</button>
-        <ul id="material-list" style="margin-top:1rem;"></ul>
-      </div>
+        <div id="profile-panel" class="panel" style="display:none;">
+          <h2>내 정보 수정</h2>
+          <input type="text" id="update-name" placeholder="이름 수정">
+          <input type="password" id="update-password" placeholder="비밀번호 수정">
+          <button onclick="updateProfile()">수정하기</button>
+          <button onclick="showPanel('doc-panel')">← 돌아가기</button>
+        </div>
 
-      <div id="chat-panel" class="panel" style="display:none;">
-        <h2>💬 상담실</h2>
-        <div id="chat-box" style="border:1px solid #ccc; height:200px; overflow-y:auto; padding:0.5rem; margin-bottom:0.5rem;"></div>
-        <input type="text" id="chat-input" placeholder="메시지를 입력하세요"/>
-        <button onclick="sendChat()">보내기</button>
-      </div>
+        <div id="admin-panel" class="panel" style="display:none;">
+          <h2>⚙️ 관리자 설정</h2>
+          <input type="text" id="admin-user-id" placeholder="사용자 ID"/>
+          <select id="admin-role">
+            <option value="user">user</option>
+            <option value="admin">admin</option>
+          </select>
+          <button onclick="changeRole()">권한 변경</button>
+          <button onclick="deleteUser()">사용자 삭제</button>
+          <div id="admin-status" style="margin-top:0.5rem;"></div>
+        </div>
 
-      <div id="profile-panel" class="panel" style="display:none;">
-        <h2>내 정보 수정</h2>
-        <input type="text" id="update-name" placeholder="이름 수정">
-        <input type="password" id="update-password" placeholder="비밀번호 수정">
-        <button onclick="updateProfile()">수정하기</button>
-        <button onclick="showPanel('doc-panel')">← 돌아가기</button>
-      </div>
+        <div id="timetable-panel" class="panel" style="display:none;">
+          <h2>🗓️ 나의 시간표</h2>
+          <p style="margin-bottom:1rem; color:#495057; font-size:0.95rem;">
+            봉담중학교 / 로그인한 학년·반 기준 시간표를 아래에서 확인하세요.
+          </p>
 
-      <div id="admin-panel" class="panel" style="display:none;">
-        <h2>⚙️ 관리자 설정</h2>
-        <input type="text" id="admin-user-id" placeholder="사용자 ID"/>
-        <select id="admin-role">
-          <option value="user">user</option>
-          <option value="admin">admin</option>
-        </select>
-        <button onclick="changeRole()">권한 변경</button>
-        <button onclick="deleteUser()">사용자 삭제</button>
-        <div id="admin-status" style="margin-top:0.5rem;"></div>
-      </div>
+          <div id="timetable-info" style="
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+                background:#f1f3f5;
+                padding:0.75rem 1rem;
+                border-radius:0.5rem;
+                margin-bottom:1rem;
+                font-size:0.9rem;
+                color:#333;">
 
-        <!-- 시간표 패널 -->
-      <div id="timetable-panel" class="panel" style="display:none;">
-        <h2>🗓️ 나의 시간표</h2>
-        <p style="margin-bottom:1rem; color:#495057; font-size:0.95rem;">
-          봉담중학교 / 로그인한 학년·반 기준 시간표를 아래에서 확인하세요.
-        </p>
+            <span id="timetable-grade-info">학년/반 정보 불러오는 중...</span>
 
-        <!-- 상단 정보 영역 -->
-        <div id="timetable-info" style="
-              display:flex;
-              justify-content:space-between;
-              align-items:center;
-              background:#f1f3f5;
-              padding:0.75rem 1rem;
-              border-radius:0.5rem;
-              margin-bottom:1rem;
-              font-size:0.9rem;
-              color:#333;">
-
-          <span id="timetable-grade-info">학년/반 정보 불러오는 중...</span>
-
-          <div class="week-nav">
-            <button class="nav-btn" onclick="moveTimetable(-1)">⏪ 이전</button>
-            <button class="nav-btn" onclick="moveTimetable(0)">새로고침</button>
-            <button class="nav-btn" onclick="moveTimetable(1)">⏩ 다음</button>
+            <div class="week-nav">
+              <button class="nav-btn" onclick="moveTimetable(-1)">⏪ 이전</button>
+              <button class="nav-btn" onclick="moveTimetable(0)">새로고침</button>
+              <button class="nav-btn" onclick="moveTimetable(1)">⏩ 다음</button>
+            </div>
+          </div>
+          <div id="timetable-container"
+              style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">
           </div>
         </div>
-        <div id="timetable-container"
-            style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">
+
+        <div id="minigame-panel" class="panel" style="display:none;">
+          <h2>🎮 미니게임</h2>
+          <!-- 4=10 게임 -->
+            <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+              <h3>🧮 4 = 10 퍼즐</h3>
+              <p>숫자 4개로 연산하여 10을 만들어보세요<br><strong>💰 5코인 필요</strong></p>
+              <button onclick="startGame('fourEqualsTen')">게임 시작</button>
+            </div>
+        </div>
+
+        <div id="fourEqualsTen-game" class="panel" style="display:none;">
+          <h2>🧮 4 = 10 게임</h2>
+          <p>아래 숫자를 사용해 사칙연산으로 10을 만들어보세요.</p>
+          <div id="game-numbers" style="font-size:1.5rem; margin-bottom:0.5rem;"></div>
+          <input id="game-input" placeholder="예: (1+3)×2+4" style="width:100%;padding:0.5rem;">
+          <button onclick="checkFourEqualsTen()">제출</button>
+          <p id="game-feedback" style="margin-top:0.5rem;font-weight:bold;"></p>
+          <button onclick="exitMiniGame()">❌ 나가기</button>
         </div>
       </div>
-
-        
-      <div id="minigame-panel" class="panel" style="display:none;">
-        <h2>🎮 미니게임</h2>
-        <!-- 4=10 게임 -->
-          <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
-            <h3>🧮 4 = 10 퍼즐</h3>
-            <p>숫자 4개로 연산하여 10을 만들어보세요<br><strong>💰 5코인 필요</strong></p>
-            <button onclick="startGame('fourEqualsTen')">게임 시작</button>
-          </div>
-      </div>
-
-      <div id="fourEqualsTen-game" class="panel" style="display:none;">
-        <h2>🧮 4 = 10 게임</h2>
-        <p>아래 숫자를 사용해 사칙연산으로 10을 만들어보세요.</p>
-        <div id="game-numbers" style="font-size:1.5rem; margin-bottom:0.5rem;"></div>
-        <input id="game-input" placeholder="예: (1+3)×2+4" style="width:100%;padding:0.5rem;">
-        <button onclick="checkFourEqualsTen()">제출</button>
-        <p id="game-feedback" style="margin-top:0.5rem;font-weight:bold;"></p>
-        <button onclick="exitMiniGame()">❌ 나가기</button>
-      </div>
-
     </div>
-          </div>
 
-    <!-- ✅ 모바일 사이드 메뉴 -->
     <div id="mobile-side-menu" class="mobile-only mobile-side-menu">
       <ul class="menu-section">
         <li><a href="#" onclick="showPanel('dashboard');closeMobileMenu()">🏠대시보드</a></li>
@@ -1174,7 +1253,6 @@
       </ul>
     </div>  
 
-    <!-- 이미지 확대 모달 -->
     <div id="imageModal" class="modal" style="
       display:none;
       position:fixed;
@@ -1195,15 +1273,50 @@
         'https://ucmzrkwrsezfdjnnwsww.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw'
       );
-
-      const CLOVER_API = 'https://YOUR_DOMAIN/functions/v1/ocr-classify'; 
-      const USE_TESSERACT_FALLBACK = true;
-
       
       const NEIS_KEY = '28ca0f05af184e8ba231d5a949d52db2';
       const ATPT_OFCDC_SC_CODE = 'J10';
       const SD_SCHUL_CODE = '7679111';
 
+      const KOR_SUBJECTS = [
+        '국어','수학','영어','과학','사회','역사','도덕','기술','가정','정보','음악','미술','체육',
+        '통합','자율','창체','자율활동','동아리','진로','한문','스포츠'
+      ];
+
+      const docResult = document.getElementById('doc-result');
+
+      
+const SUBJECT_CANON = [
+  '국어','수학','영어','과학','사회','역사','지리','도덕','기술·가정','정보',
+  '음악','미술','체육','통합사회','통합과학','창체','자율','동아리','진로','한문',
+  '중국어','일본어','스포츠'
+];
+
+const SUBJECT_SYNONYMS = {
+  '국어': ['국어','국어과','문학','독서','작문'],
+  '수학': ['수학','수 학','수(학)','수학Ⅰ','수학I','수학A','수학B'],
+  '영어': ['영어','영 어','회화','독해','문법','영어A','영어B'],
+  '과학': ['과학','과 학','과탐','과학탐구','물리','화학','생명과학','지구과학','통합과학'],
+  '사회': ['사회','사회과','통합사회','법과정치','경제','윤리'],
+  '역사': ['역사','한국사','세계사'],
+  '지리': ['지리'],
+  '도덕': ['도덕','윤리'],
+  '기술·가정': ['기술·가정','기술가정','기술 가정','기가','기 술','가 정','기술','가정'],
+  '정보': ['정보','컴퓨터','프로그래밍','코딩','SW','소프트웨어'],
+  '음악': ['음악','합창','합주','실기(음악)'],
+  '미술': ['미술','디자인','드로잉','실기(미술)'],
+  '체육': ['체육','체육활동','체 육','스포츠','스포츠클럽'],
+  '통합사회': ['통합사회'],
+  '통합과학': ['통합과학'],
+  '창체': ['창체','창의적체험활동','창의적 체험활동'],
+  '자율': ['자율','자율활동'],
+  '동아리': ['동아리'],
+  '진로': ['진로','진로활동'],
+  '한문': ['한문','한자'],
+  '중국어': ['중국어','중국어회화','중국어Ⅰ','중국어 I','중국어1'],
+  '일본어': ['일본어','일본어회화','일본어Ⅰ','일본어 I','일본어1'],
+  '스포츠': ['스포츠','스포츠클럽']
+};
 
       let currentUserRole = 'user';
       let currentUserName = '';
@@ -1211,6 +1324,9 @@
       let currentGrade = null;
       let currentClassNum = null;
       let timetableOffset = 0;
+
+      let currentFourNumbers = [];
+      let currentUserCoin = 0;
 
       async function loginDirect() {
         const username = document.getElementById('loginUsername').value.replace(/\s+/g, '');
@@ -1232,9 +1348,6 @@
           localStorage.setItem('savedGrade', user.grade);
           localStorage.setItem('savedClassNum', user.class_num);
 
-
-
-          // 화면에 표시
           setUserInfoInput();
 
           currentUserRole = user.role || 'user';
@@ -1250,24 +1363,6 @@
         }
       }
 
-      // 새로고침 시 저장된 이름/학번 불러오기
-      window.addEventListener('DOMContentLoaded', () => {
-        const savedName = localStorage.getItem('savedName');
-        const savedNum = localStorage.getItem('savedStudentNum');
-        if (savedName && savedNum) {
-          currentUserName = savedName;
-          currentStudentNumber = savedNum;
-          setUserInfoInput();
-        }
-      });
-
-      function setUserInfoInput() {
-        const inputEl = document.getElementById('homework-userinfo');
-        if (inputEl) {
-          inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
-        }
-      }
-      
       async function signup() {
         const username = document.getElementById('signupUsername').value.trim();
         const password = document.getElementById('signupPassword').value.trim();
@@ -1321,27 +1416,10 @@
           document.getElementById('signupStatus').innerText = '오류 발생: ' + e.message;
         }
       }
-
-      function showMain() {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('main-app').style.display = 'block';
-        setupAdminNav();
-        showPanel('dashboard');
-      }
-
-      function showSignup() {
-        document.getElementById('login-box').style.display = 'none';
-        document.getElementById('signup-box').style.display = 'block';
-      }
-
-      function showLogin() {
-        document.getElementById('login-box').style.display = 'block';
-        document.getElementById('signup-box').style.display = 'none';
-      }
-
+      
       async function logout() {
         await supabaseClient.auth.signOut();
-        localStorage.removeItem('savedUsername'); // ✅ 로그아웃 시 저장된 아이디 삭제
+        localStorage.removeItem('savedUsername');
         document.getElementById('main-app').style.display = 'none';
         document.getElementById('login-screen').style.display = 'flex';
       }
@@ -1364,42 +1442,7 @@
         }
       }
 
-    function showPanel(panelId) {
-      document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-      const target = document.getElementById(panelId);
-      if (target) {
-        target.style.display = 'block';
-      }
-    }
-
-    supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        const { data: user } = await supabaseClient
-          .from('users')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        if (user) currentUserRole = user.role;
-      } else {
-        showLogin();
-      }
-    });
-
-    function setupAdminNav() {
-      if (currentUserRole === 'admin') {
-        if (!document.getElementById('admin-nav')) {
-          const nav = document.getElementById('main-nav');
-          const a = document.createElement('a');
-          a.href = '#';
-          a.id = 'admin-nav';
-          a.innerText = '관리자 설정';
-          a.onclick = () => { showPanel('admin-panel'); };
-          nav.appendChild(a);
-        }
-      }
-    }
-
-    async function addNotice() {
+      async function addNotice() {
       const title = document.getElementById('notice-title').value.trim();
       const content = document.getElementById('notice-content').value.trim();
       const fileInput = document.getElementById('notice-image');
@@ -1435,7 +1478,6 @@
         imageUrl = publicData.publicUrl;
       }
 
-      // ✅ 현재 로그인한 사용자 정보 가져오기
       const { data: writerData, error: writerError } = await supabaseClient
         .from('users')
         .select('username,name,role,grade,class_num')
@@ -1447,15 +1489,14 @@
         return;
       }
 
-      // ✅ 테이블에 등록할 데이터
       const newNotice = {
         title: title,
         content: content,
         image_url: imageUrl,
-        writer: writerData.name,        // 작성자 이름
-        writer_role: writerData.role,   // 작성자 역할
-        grade: writerData.grade,        // 작성자 학년
-        class_num: writerData.class_num // 작성자 반
+        writer: writerData.name,     
+        writer_role: writerData.role,   
+        grade: writerData.grade,        
+        class_num: writerData.class_num 
       };
 
       const { error } = await supabaseClient.from('notices').insert([ newNotice ]);
@@ -1473,1164 +1514,1220 @@
         loadNotices();
       }
 
-    async function loadNotices() {
-      let query = supabaseClient.from('notices').select('*').order('id', { ascending: false });
+      async function loadNotices() {
+        let query = supabaseClient.from('notices').select('*').order('id', { ascending: false });
 
-      if (currentUserRole !== 'admin') {
-        // ✅ 학생이라면 같은 학년/반 & 어드민이 올린 글 제외
-        query = query
-          .eq('grade', currentGrade)
-          .eq('class_num', currentClassNum)
-          .neq('writer_role', 'admin');
-      }
-      // ✅ admin이면 모든 공지를 그대로 불러옴
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('공지 불러오기 실패:', error);
-        return;
-      }
-
-      const listEl = document.getElementById('notice-list');
-      listEl.innerHTML = '';
-
-      data.forEach(item => {
-        const formattedContent = item.content.replace(/\n/g, '<br>');
-        const div = document.createElement('div');
-        div.style.borderBottom = '1px solid #ddd';
-        div.style.padding = '0.5rem 0';
-        // 누가 올린 글인지 표시
-        div.innerHTML = `<strong>${item.title}</strong> <span style="font-size:0.8rem;color:#888;">(${item.writer})</span><br>${formattedContent}`;
-
-        if (item.image_url) {
-          div.innerHTML += `<br><img src="${item.image_url}" style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem;">`;
+        if (currentUserRole !== 'admin') {
+          query = query
+            .eq('grade', currentGrade)
+            .eq('class_num', currentClassNum)
+            .neq('writer_role', 'admin');
         }
 
-        listEl.appendChild(div);
-      });
-    }
+        const { data, error } = await query;
 
-    function fileToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload = () => {
-          const dataUrl = fr.result; // "data:...;base64,AAAA..."
-          const base64 = String(dataUrl).split(',')[1] || '';
-          resolve(base64);
-        };
-        fr.onerror = reject;
-        fr.readAsDataURL(file);
-      });
-    }
-
-    async function analyzeDocument() {
-      const fileInput = document.getElementById('doc-file');
-      const previewEl = document.getElementById('doc-preview');
-      const resultEl = document.getElementById('doc-result');
-
-      if (!fileInput.files.length) {
-        alert('파일을 선택해 주세요.');
-        return;
-      }
-
-      const file = fileInput.files[0];
-      lastAnalyzedFile = file; // 분석한 파일 저장 (공지 등록 시 이미지 업로드용)
-
-      // 미리보기
-      previewEl.src = URL.createObjectURL(file);
-      previewEl.style.display = 'block';
-
-      resultEl.value = '📄 문서 분석 중... (CLOVA + Auto Classify)';
-      autoResize();
-
-      try {
-        // 1) 파일을 Base64로 변환하여 서버로 전송
-        const fileBase64 = await fileToBase64(file);
-
-        const res = await fetch(CLOVER_API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileBase64 })
-        });
-
-        if (!res.ok) throw new Error(`CLOVA 서버 오류 (${res.status})`);
-
-        // 2) 서버 응답(JSON) 파싱
-        //    서버에서 아래 키를 내려주도록 구현:
-        //    { subject, date, time, topic, materials, raw }
-        const json = await res.json();
-
-        const subject   = json.subject   || '';
-        const date      = json.date      || '';
-        const time      = json.time      || '';
-        const topic     = json.topic     || '';
-        const materials = json.materials || '';
-        const raw       = json.raw       || '';
-
-        // 3) 간결 포맷으로 자동 채우기 (수정 가능)
-        const pretty = [
-          `[과목] ${subject}`,
-          `[평가 날짜] ${date}`,
-          `[평가 시간] ${time}`,
-          `[평가 주제] ${topic}`,
-          `[준비물] ${materials}`,
-          `--------------------------------`,
-        ];
-
-        resultEl.value = pretty.trim();
-        autoResize();
-
-        alert('✅ CLOVA 분석 완료! 필요한 항목은 자유롭게 수정하세요.');
-
-      } catch (err) {
-        console.error('CLOVA 분석 실패:', err);
-        if (!USE_TESSERACT_FALLBACK) {
-          resultEl.value = `문서 분석 실패: ${err.message}`;
-          autoResize();
+        if (error) {
+          console.error('공지 불러오기 실패:', error);
           return;
         }
 
-        // 🔁 백업: Tesseract로 원문이라도 뽑아 표시
-        resultEl.value = '⚠️ CLOVA 실패 → Tesseract로 백업 인식 중...';
-        autoResize();
+        const listEl = document.getElementById('notice-list');
+        listEl.innerHTML = '';
+
+        data.forEach(item => {
+          const formattedContent = item.content.replace(/\n/g, '<br>');
+          const div = document.createElement('div');
+          div.style.borderBottom = '1px solid #ddd';
+          div.style.padding = '0.5rem 0';
+          // 누가 올린 글인지 표시
+          div.innerHTML = `<strong>${item.title}</strong> <span style="font-size:0.8rem;color:#888;">(${item.writer})</span><br>${formattedContent}`;
+
+          if (item.image_url) {
+            div.innerHTML += `<br><img src="${item.image_url}" style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem;">`;
+          }
+
+          listEl.appendChild(div);
+        });
+      }
+
+      async function loadTimetableWeek(grade, classNum) {
+        currentGrade = grade;
+        currentClassNum = classNum;
+              
+
+        document.getElementById('timetable-grade-info').innerText = `${grade}학년 ${classNum}반 (주간)`;
+        const container = document.getElementById('timetable-container');
+        container.innerHTML = '<p>시간표 불러오는 중...</p>';
+
+        const today = new Date();
+        const day = today.getDay();
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + timetableOffset * 7);
+
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        const semester = (month <= 8) ? 1 : 2;
+
+        const dates = Array.from({ length: 5 }, (_, i) => {
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + i);
+          return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+        });
 
         try {
-          const reader = new FileReader();
-          reader.onload = () => {
-            Tesseract.recognize(reader.result, 'kor', { logger: m => console.log(m) })
-              .then(({ data: { text } }) => {
-                resultEl.value = [
-                  `[과목] `,
-                  `[평가 날짜] `,
-                  `[평가 시간] `,
-                  `[평가 주제] `,
-                  `[준비물] `
-                ].join('\n').trim();
-                autoResize();
-                alert('⚠️ CLOVA 실패. Tesseract 결과를 표시했어요. 항목을 직접 보완해 주세요.');
-              })
-              .catch(fallbackErr => {
-                console.error('Tesseract 오류:', fallbackErr);
-                resultEl.value = `문서 분석 실패(백업도 실패): ${fallbackErr.message}`;
-                autoResize();
-              });
-          };
-          reader.readAsDataURL(file);
-        } catch (fallbackWrapErr) {
-          console.error('백업 처리 오류:', fallbackWrapErr);
-          resultEl.value = `문서 분석 실패: ${fallbackWrapErr.message}`;
-          autoResize();
+          const results = await Promise.all(
+            dates.map(async (dateStr) => {
+              const url = `https://open.neis.go.kr/hub/misTimetable?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&AY=${year}&SEM=${semester}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
+              console.log(url);
+              const res = await fetch(url);
+              const data = await res.json();
+              return { dateStr, data };
+            })
+          );
+
+        container.innerHTML = '';
+
+        for (const { dateStr, data } of results) {
+          const dayBox = document.createElement('div');
+          dayBox.style.border = '1px solid #ccc';
+          dayBox.style.borderRadius = '8px';
+          dayBox.style.padding = '8px';
+          dayBox.style.background = '#fdfdfd';
+          dayBox.style.marginBottom = '10px';
+
+          const title = document.createElement('h4');
+          const dateObj = new Date(
+          dateStr.slice(0, 4),
+          parseInt(dateStr.slice(4, 6)) - 1, 
+            dateStr.slice(6, 8) 
+          );
+
+          const days = ['일', '월', '화', '수', '목', '금', '토'];
+          const dayName = days[dateObj.getDay()];
+
+          title.innerText = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)} (${dayName})`;
+
+          dayBox.appendChild(title);
+
+          if (data.misTimetable && data.misTimetable[1]) {
+            const rows = data.misTimetable[1].row;
+            const unique = {};
+            rows.forEach(row => {
+               const key = row.PERIO;
+              if (!unique[key]) {
+               unique[key] = row.ITRT_CNTNT;
+              }
+          });
+
+            Object.keys(unique).sort((a, b) => parseInt(a) - parseInt(b)).forEach(perio => {
+              const item = document.createElement('div');
+              item.innerHTML = `<strong>${perio}교시</strong> : ${unique[perio]}`;
+              dayBox.appendChild(item);
+            });
+
+          } 
+
+          else {
+            const none = document.createElement('p');
+             none.innerText = '교육청 시간표 데이터 없음';
+             dayBox.appendChild(none);
+          }
+
+          container.appendChild(dayBox);
         }
+        } catch (err) {
+          console.error('주간 시간표 오류:', err);
+        container.innerHTML = '<p>시간표를 불러오는 중 오류가 발생했습니다.</p>';
       }
     }
 
-    async function registerAnalyzedText() {
-      const text = document.getElementById('doc-result').value.trim();
-      if (!text) {
-        alert('내용이 비어 있습니다.');
-        return;
-      }
+      async function submitHomework() {
+        const name = currentUserName;
+        const studentNum = currentStudentNumber;
+        const grade = currentGrade;
+        const classNum = currentClassNum;
+        const scope = document.getElementById('homework-scope').value;
+        const title = document.getElementById('homework-title').value.trim();
+        const comment = document.getElementById('homework-comment').value.trim();
+        const fileInput = document.getElementById('homework-file');
+        const statusEl = document.getElementById('homework-status');
 
-      let imageUrl = '';
-      const shouldUploadImage = document.getElementById('upload-image-check').checked;
-
-      if (shouldUploadImage && lastAnalyzedFile) {
-        const fileName = Date.now() + '_' + lastAnalyzedFile.name;
-        const { error: uploadErr } = await supabaseClient
-          .storage
-          .from('notice-images')
-          .upload(fileName, lastAnalyzedFile);
-
-        if (uploadErr) {
-          alert('이미지 업로드 실패: ' + uploadErr.message);
+        if (!name || !studentNum || !title || fileInput.files.length === 0) {
+          alert('과제명과 파일을 모두 입력해 주세요.');
           return;
         }
-        const { data: publicData } = supabaseClient
-          .storage
-          .from('notice-images')
-          .getPublicUrl(fileName);
-        imageUrl = publicData.publicUrl;
-      }
 
-      // ✅ 현재 로그인한 사용자 정보 가져오기
-      const { data: writerData, error: writerError } = await supabaseClient
-        .from('users')
-        .select('username,name,role,grade,class_num')
-        .eq('username', localStorage.getItem('savedUsername'))
-        .single();
+        statusEl.style.color = '#007bff';
+        statusEl.textContent = '⏳ 업로드 중입니다...';
 
-      if (writerError || !writerData) {
-        alert('사용자 정보 확인 중 오류가 발생했습니다.');
-        return;
-      }
+        const insertRecords = [];
 
-      // ✅ DB에 공지 등록 (문서 분석 결과)
-      const { error } = await supabaseClient.from('notices').insert([{
-        title: 'ㅇㅇ 수행',
-        content: text,
-        image_url: imageUrl,
-        writer: writerData.name,
-        writer_role: writerData.role,
-        grade: writerData.grade,
-        class_num: writerData.class_num
-      }]);
+        try {
+          for (let i = 0; i < fileInput.files.length; i++) {
+            const file = fileInput.files[i];
+            const timestamp = Date.now();
 
-      if (error) {
-        alert('공지 등록 실패: ' + error.message);
-        return;
-      }
+            const safeFileName = file.name
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/[^\w.-]/g, '_');
 
-      alert('등록이 완료되었습니다!');
-      loadNotices();
+            const fileName = `${studentNum}_${timestamp}_${i}_${safeFileName}`;
 
-      // 초기화
-      lastAnalyzedFile = null;
-      document.getElementById('doc-file').value = '';
-      document.getElementById('doc-preview').style.display = 'none';
-      document.getElementById('upload-image-check').checked = false;
-      document.getElementById('doc-result').value = '';
-    }
+            const { error: uploadError } = await supabaseClient
+              .storage
+              .from('homework-files')
+              .upload(fileName, file);
 
-    const docResult = document.getElementById('doc-result');
-
-    function autoResize() {
-      docResult.style.height = 'auto';  // 초기화
-      docResult.style.height = docResult.scrollHeight + 'px'; // 내용에 맞게 늘림
-    }
-
-    docResult.addEventListener('input', autoResize);
-
-    async function loadTimetableWeek(grade, classNum) {
-      currentGrade = grade;
-      currentClassNum = classNum;
-            
-
-      document.getElementById('timetable-grade-info').innerText = `${grade}학년 ${classNum}반 (주간)`;
-      const container = document.getElementById('timetable-container');
-      container.innerHTML = '<p>시간표 불러오는 중...</p>';
-
-      const today = new Date();
-      const day = today.getDay();
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + timetableOffset * 7);
-
-      const year = today.getFullYear();
-      const month = today.getMonth() + 1;
-      const semester = (month <= 8) ? 1 : 2;
-
-      const dates = Array.from({ length: 5 }, (_, i) => {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-      });
-
-      try {
-        const results = await Promise.all(
-          dates.map(async (dateStr) => {
-            const url = `https://open.neis.go.kr/hub/misTimetable?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&AY=${year}&SEM=${semester}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
-            console.log(url);
-            const res = await fetch(url);
-            const data = await res.json();
-            return { dateStr, data };
-          })
-        );
-
-              container.innerHTML = '';
-
-              for (const { dateStr, data } of results) {
-                const dayBox = document.createElement('div');
-                dayBox.style.border = '1px solid #ccc';
-                dayBox.style.borderRadius = '8px';
-                dayBox.style.padding = '8px';
-                dayBox.style.background = '#fdfdfd';
-                dayBox.style.marginBottom = '10px';
-
-                const title = document.createElement('h4');
-                const dateObj = new Date(
-                  dateStr.slice(0, 4), // 연도
-                  parseInt(dateStr.slice(4, 6)) - 1, // 월 (0부터 시작)
-                  dateStr.slice(6, 8) // 일
-                );
-
-                // 요일 배열
-                const days = ['일', '월', '화', '수', '목', '금', '토'];
-                const dayName = days[dateObj.getDay()];
-
-                title.innerText = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)} (${dayName})`;
-
-                dayBox.appendChild(title);
-
-                if (data.misTimetable && data.misTimetable[1]) {
-                  const rows = data.misTimetable[1].row;
-                  const unique = {};
-                  rows.forEach(row => {
-                    const key = row.PERIO;
-                    if (!unique[key]) {
-                      unique[key] = row.ITRT_CNTNT;
-                    }
-                  });
-
-                  // PERIO 순서대로 정렬해서 출력
-                  Object.keys(unique).sort((a, b) => parseInt(a) - parseInt(b)).forEach(perio => {
-                    const item = document.createElement('div');
-                    item.innerHTML = `<strong>${perio}교시</strong> : ${unique[perio]}`;
-                    dayBox.appendChild(item);
-                  });
-
-                } else {
-                  const none = document.createElement('p');
-                  none.innerText = '교육청 시간표 데이터 없음';
-                  dayBox.appendChild(none);
-                }
-
-                container.appendChild(dayBox);
-              }
-            } catch (err) {
-              console.error('주간 시간표 오류:', err);
-              container.innerHTML = '<p>시간표를 불러오는 중 오류가 발생했습니다.</p>';
+            if (uploadError) {
+              throw new Error(`❌ 파일 업로드 실패: ${safeFileName} - ${uploadError.message}`);
             }
 
+            const { data: publicURLData } = supabaseClient
+              .storage
+              .from('homework-files')
+              .getPublicUrl(fileName);
+
+            const fileURL = publicURLData.publicUrl;
+
+            insertRecords.push({
+              name,
+              student_number: studentNum,
+              title,
+              grade,
+              class_num: classNum,
+              comment,
+              file_url: fileURL,
+              share_scope: scope
+            });
           }
 
-    function moveTimetable(offset) {
-      timetableOffset += offset;
-      loadTimetableWeek(currentGrade, currentClassNum, timetableOffset);
-    }
+          const { error: insertError } = await supabaseClient
+            .from('homeworks')
+            .insert(insertRecords);
 
-    window.addEventListener('DOMContentLoaded', async () => {
-  const savedUsername = localStorage.getItem('savedUsername');
-  if (!savedUsername) { showLogin(); return; }
-
-  const { data: user, error } = await supabaseClient
-    .from('users')
-    .select('*')
-    .eq('username', savedUsername)
-    .maybeSingle();
-
-  if (error || !user) { showLogin(); return; }
-
-  // ✅ 상태값 채우기
-  currentUserRole = user.role || 'user';
-  currentGrade = user.grade;
-  currentClassNum = user.class_num;
-  currentUserName = user.name;
-  currentStudentNumber = user.student_number;
-
-  // ✅ 로컬스토리지 저장 (대시보드 fallback이 이 값을 씁니다)
-  localStorage.setItem('savedName', user.name);
-  localStorage.setItem('savedStudentNum', user.student_number);
-  localStorage.setItem('savedGrade', user.grade);
-  localStorage.setItem('savedClassNum', user.class_num);
-
-  // ✅ 헤더/모바일 이름 라벨 등 즉시 반영
-  setUserInfoInput();
-
-  // ✅ 메인 화면 열기 + 데이터 로드
-  await loadTimetableWeek(user.grade, user.class_num);
-  await loadCoinBalance();
-  showMain();
-  loadNotices();
-
-  // ✅ 대시보드 라벨/경험치/포인트 새로 그리기
-  afterLoginRefreshDashboard();
-});
-
-
-    function setupAdminNav() {
-      const existing = document.getElementById('admin-nav');
-
-      if (currentUserRole === 'admin') {
-        if (!existing) {
-          const nav = document.getElementById('main-nav');
-          const a = document.createElement('a');
-          a.href = '#';
-          a.id = 'admin-nav';
-          a.innerText = '관리자 설정';
-          a.onclick = () => { showPanel('admin-panel'); };
-          nav.appendChild(a);
-        }
-      } else {
-        if (existing) existing.remove();
-      }
-    }
-
-    document.querySelectorAll('#main-nav a').forEach(link => {
-      link.addEventListener('click', () => {
-        const menuToggle = document.getElementById('menu-toggle');
-        if (menuToggle) {
-          menuToggle.checked = false;
-        }
-      });
-    });
-
-    async function submitHomework() {
-      const name = currentUserName;
-      const studentNum = currentStudentNumber;
-      const grade = currentGrade;
-      const classNum = currentClassNum;
-      const scope = document.getElementById('homework-scope').value;
-      const title = document.getElementById('homework-title').value.trim();
-      const comment = document.getElementById('homework-comment').value.trim();
-      const fileInput = document.getElementById('homework-file');
-      const statusEl = document.getElementById('homework-status');
-
-      if (!name || !studentNum || !title || fileInput.files.length === 0) {
-        alert('과제명과 파일을 모두 입력해 주세요.');
-        return;
-      }
-
-      statusEl.style.color = '#007bff';
-      statusEl.textContent = '⏳ 업로드 중입니다...';
-
-      const insertRecords = [];
-
-      try {
-        for (let i = 0; i < fileInput.files.length; i++) {
-          const file = fileInput.files[i];
-          const timestamp = Date.now();
-
-          // ✅ 안전한 파일명 생성
-          const safeFileName = file.name
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^\w.-]/g, '_');
-
-          const fileName = `${studentNum}_${timestamp}_${i}_${safeFileName}`;
-
-          // ✅ 파일 업로드
-          const { error: uploadError } = await supabaseClient
-            .storage
-            .from('homework-files')
-            .upload(fileName, file);
-
-          if (uploadError) {
-            throw new Error(`❌ 파일 업로드 실패: ${safeFileName} - ${uploadError.message}`);
+          if (insertError) {
+            throw new Error(`❌ DB 저장 실패: ${insertError.message}`);
           }
 
-          const { data: publicURLData } = supabaseClient
-            .storage
-            .from('homework-files')
-            .getPublicUrl(fileName);
+          statusEl.style.color = 'green';
+          statusEl.textContent = `✅ 총 ${insertRecords.length}개 파일 업로드 완료!`;
 
-          const fileURL = publicURLData.publicUrl;
+          document.getElementById('homework-title').value = '';
+          document.getElementById('homework-comment').value = '';
+          document.getElementById('homework-file').value = '';
 
-          insertRecords.push({
-            name,
-            student_number: studentNum,
-            title,
-            grade,
-            class_num: classNum,
-            comment,
-            file_url: fileURL,
-            share_scope: scope
-          });
+          loadMaterials();
+
+        } catch (err) {
+          console.error(err);
+          statusEl.style.color = 'red';
+          statusEl.textContent = err.message || '업로드 중 오류 발생';
         }
+      }
 
-        // ✅ DB에 한꺼번에 insert
-        const { error: insertError } = await supabaseClient
+      async function loadMaterials() {
+        const listEl = document.getElementById('material-list');
+        listEl.innerHTML = '';
+
+        const { data, error } = await supabaseClient
           .from('homeworks')
-          .insert(insertRecords);
+          .select('*')
+          .order('uploaded_at', { ascending: false });
 
-        if (insertError) {
-          throw new Error(`❌ DB 저장 실패: ${insertError.message}`);
+        if (error) {
+          console.error('❌ 자료 불러오기 오류:', error);
+          listEl.innerHTML = '<li>자료를 불러오는 중 오류가 발생했습니다.</li>';
+          return;
         }
 
-        statusEl.style.color = 'green';
-        statusEl.textContent = `✅ 총 ${insertRecords.length}개 파일 업로드 완료!`;
+        const visible = (data || []).filter(canUserSeeMaterial);
 
-        // 입력 초기화
-        document.getElementById('homework-title').value = '';
-        document.getElementById('homework-comment').value = '';
-        document.getElementById('homework-file').value = '';
+        if (!visible || visible.length === 0) {
+          listEl.innerHTML = '<li>내 공유 범위에 해당하는 자료가 없습니다.</li>';
+          return;
+        }
 
-        // 자료 목록 갱신
-        loadMaterials();
+        visible.forEach(item => {
+          const titleLine = `📌 ${item.title} (${item.grade}학년 ${item.class_num}반 ${item.student_number}번 ${item.name})` +
+                            ` <span style="font-size:.8rem;color:#6b7280;">· 범위: ${
+                              item.share_scope === 'class' ? '같은 반' :
+                              item.share_scope === 'grade' ? '같은 학년' : '전교'
+                            }</span>`;
 
-      } catch (err) {
-        console.error(err);
-        statusEl.style.color = 'red';
-        statusEl.textContent = err.message || '업로드 중 오류 발생';
-      }
-    }
-
-    async function loadMaterials() {
-      const listEl = document.getElementById('material-list');
-      listEl.innerHTML = '';
-
-      const { data, error } = await supabaseClient
-        .from('homeworks')
-        .select('*')
-        .order('uploaded_at', { ascending: false });
-
-      if (error) {
-        console.error('❌ 자료 불러오기 오류:', error);
-        listEl.innerHTML = '<li>자료를 불러오는 중 오류가 발생했습니다.</li>';
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        listEl.innerHTML = '<li>등록된 자료가 없습니다.</li>';
-        return;
-      }
-
-      data.forEach(item => {
-        const titleLine = `📌 ${item.title} (${item.grade}학년 ${item.class_num}반 ${item.student_number}번 ${item.name})`;
-        const commentHtml = item.comment
-          ? `<p style="margin:6px 0;">💬 ${item.comment}</p>`
-          : '';
-
-        const fileUrls = Array.isArray(item.file_url)
-          ? item.file_url
-          : (typeof item.file_url === 'string' && item.file_url.startsWith('['))
-            ? JSON.parse(item.file_url)
-            : [item.file_url];
-
-        const fileHtmlArray = fileUrls.map(url => {
-          const filename = decodeURIComponent(url.split('/').pop());
-          const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-
-          // 이미지 확대 기능 포함
-          const imagePreview = isImage
-            ? `<img src="${url}" alt="${filename}" 
-                  onclick="openImageModal('${url}')"
-                  style="max-width:120px; max-height:120px; border-radius:6px; cursor:pointer; margin-bottom:6px;" />`
+          const commentHtml = item.comment
+            ? `<p style="margin:6px 0;">💬 ${item.comment}</p>`
             : '';
 
-          const downloadLink = `<a href="${url}" download="${filename}" target="_blank" style="color:#007bff;text-decoration:none;font-weight:500;">
-            📥 파일 다운로드
-          </a>`;
+          const fileUrls = Array.isArray(item.file_url)
+            ? item.file_url
+            : (typeof item.file_url === 'string' && item.file_url.startsWith('['))
+              ? JSON.parse(item.file_url)
+              : [item.file_url];
 
-          return `${imagePreview}<br>${downloadLink}`;
-        });
+          const fileHtmlArray = fileUrls.map(url => {
+            const filename = decodeURIComponent((url || '').split('/').pop() || '');
+            const isImage = (url || '').match(/\.(jpg|jpeg|png|gif|webp)$/i);
+            const imagePreview = isImage
+              ? `<img src="${url}" alt="${filename}"
+                  onclick="openImageModal('${url}')"
+                  style="max-width:120px; max-height:120px; border-radius:6px; cursor:pointer; margin-bottom:6px;" />`
+              : '';
+            const downloadLink = `<a href="${url}" download="${filename}" target="_blank"
+                                    style="color:#007bff;text-decoration:none;font-weight:500;">
+                                    📥 파일 다운로드
+                                  </a>`;
+            return `${imagePreview}<br>${downloadLink}`;
+          });
 
-        const li = document.createElement('li');
-        li.style.borderBottom = '1px solid #ddd';
-        li.style.padding = '12px 0';
-        li.innerHTML = `
-          <div style="font-weight:bold; margin-bottom:6px;">${titleLine}</div>
-          ${commentHtml}
-          ${fileHtmlArray.join('<br><br>')}
-        `;
-        listEl.appendChild(li);
-      });
-    }
-
-    function setUserInfoInput() {
-      const inputEl = document.getElementById('homework-userinfo');
-      const nameEl = document.getElementById('profile-name-display');
-      const mobileNameEl = document.getElementById('mobile-user-name');
-
-      if (inputEl) inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
-      if (nameEl) nameEl.textContent = currentUserName;
-      if (mobileNameEl) mobileNameEl.textContent = currentUserName;
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const profileButton = document.getElementById('profile-button');
-      const dropdown = document.getElementById('profile-dropdown');
-
-      if (profileButton && dropdown) {
-
-        document.addEventListener('click', () => {
-          dropdown.style.display = 'none';
+          const li = document.createElement('li');
+          li.style.borderBottom = '1px solid #ddd';
+          li.style.padding = '12px 0';
+          li.innerHTML = `
+            <div style="font-weight:bold; margin-bottom:6px;">${titleLine}</div>
+            ${commentHtml}
+            ${fileHtmlArray.join('<br><br>')}
+          `;
+          listEl.appendChild(li);
         });
       }
-    });
-
-
-// ==== 4 = 10 미니게임 ====
-// 필요한 전역 상태
-let currentFourNumbers = [];
-let currentUserCoin = 0;
-
-// 로그인/화면 진입 시 코인 동기화 해두면 좋아요.
-// (원래 코드의 displayCoinBalance()를 재사용)
-async function syncCoinBalance() {
-  const username = localStorage.getItem('savedUsername');
-  if (!username) return;
-  const { data, error } = await supabaseClient
-    .from('users')
-    .select('coin_balance')
-    .eq('username', username)
-    .single();
-  if (!error && data) {
-    currentUserCoin = data.coin_balance || 0;
-  }
-}
-
-// 난수 4개(1~9) 생성 + 화면 표시
-function generateFourNumbers() {
-  currentFourNumbers = Array.from({ length: 4 }, () => Math.floor(Math.random() * 9) + 1);
-  const box = document.getElementById('game-numbers');
-  if (box) box.textContent = currentFourNumbers.join('  ');
-  const input = document.getElementById('game-input');
-  if (input) input.value = '';
-  const fb = document.getElementById('game-feedback');
-  if (fb) fb.textContent = '';
-}
-
-// 식 검증: 허용 문자만, 숫자 사용 일치
-function isValidExpression(expr, numbers) {
-  if (!expr) return false;
-
-  // 보기 좋게 기호 치환
-  expr = expr.replace(/×/g, '*').replace(/÷/g, '/');
-
-  // 허용 문자만 검사(숫자, + - * /, (), 공백)
-  if (!/^[\d+\-*/()\s.]+$/.test(expr)) return false;
-
-  // 숫자 사용 검증 (각 숫자를 정확히 한 번씩)
-  const used = (expr.match(/\d+/g) || []).map(n => Number(n)).sort((a,b)=>a-b);
-  const need = [...numbers].sort((a,b)=>a-b);
-  if (JSON.stringify(used) !== JSON.stringify(need)) return false;
-
-  return true;
-}
-
-// 안전 평가: 허용 문자만 통과시켜 new Function으로 계산
-function safeEval(expr) {
-  expr = expr.replace(/×/g, '*').replace(/÷/g, '/');
-  // 마지막 방어선: 허용 문자만
-  if (!/^[\d+\-*/()\s.]+$/.test(expr)) throw new Error('invalid');
-  // 괄호 밸런스 간단 체크
-  let bal = 0;
-  for (const ch of expr) {
-    if (ch === '(') bal++;
-    if (ch === ')') bal--;
-    if (bal < 0) throw new Error('paren');
-  }
-  if (bal !== 0) throw new Error('paren');
-
-  const fn = new Function(`return (${expr});`);
-  return fn();
-}
-
-async function checkFourEqualsTen() {
-  const fb = document.getElementById('game-feedback');
-  const input = document.getElementById('game-input');
-  if (!input || !fb) return;
-  const expr = input.value.trim();
-
-  if (!isValidExpression(expr, currentFourNumbers)) {
-    fb.textContent = '❌ 주어진 4개 숫자를 각각 한 번씩만 사용하고, + - × ÷ () 만 사용하세요.';
-    exitMiniGame();   // 🚀 제출과 동시에 자동 나가기
-    return;
-  }
-
-  try {
-    const result = safeEval(expr);
-    const ok = Math.abs(result - 10) < 1e-9;
-
-    if (ok) {
-      fb.textContent = '🎉 정답입니다! (+10코인 지급)';
+      
+      async function syncCoinBalance() {
       const username = localStorage.getItem('savedUsername');
-      if (username) {
-        const { error } = await supabaseClient
-          .from('users')
-          .update({ coin_balance: currentUserCoin + 10 })
-          .eq('username', username);
-        if (!error) {
-          currentUserCoin += 10;
-          if (typeof displayCoinBalance === 'function') {
-            displayCoinBalance();
+      if (!username) return;
+      const { data, error } = await supabaseClient
+        .from('users')
+        .select('coin_balance')
+        .eq('username', username)
+        .single();
+      if (!error && data) {
+        currentUserCoin = data.coin_balance || 0;
+      }
+}
+
+      async function checkFourEqualsTen() {
+        const fb = document.getElementById('game-feedback');
+        const input = document.getElementById('game-input');
+        if (!input || !fb) return;
+        const expr = input.value.trim();
+
+        if (!isValidExpression(expr, currentFourNumbers)) {
+          fb.textContent = '❌ 주어진 4개 숫자를 각각 한 번씩만 사용하고, + - × ÷ () 만 사용하세요.';
+          exitMiniGame();
+          return;
+        }
+
+        try {
+          const result = safeEval(expr);
+          const ok = Math.abs(result - 10) < 1e-9;
+
+          if (ok) {
+            fb.textContent = '🎉 정답입니다! (+10코인 지급)';
+            const username = localStorage.getItem('savedUsername');
+            if (username) {
+              const { error } = await supabaseClient
+                .from('users')
+                .update({ coin_balance: currentUserCoin + 10 })
+                .eq('username', username);
+              if (!error) {
+                currentUserCoin += 10;
+                if (typeof displayCoinBalance === 'function') {
+                  displayCoinBalance();
+                }
+              }
+            }
+          } else {
+            fb.textContent = `😅 오답! 결과는 ${result} 입니다.`;
+          }
+
+          exitMiniGame();
+
+        } catch (e) {
+          fb.textContent = '⚠️ 식을 정확히 입력해 주세요.';
+          exitMiniGame();
+        }
+      } 
+
+      function setUserInfoInput() {
+        const inputEl = document.getElementById('homework-userinfo');
+        if (inputEl) {
+          inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
+        }
+      }
+      
+      function showMain() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        setupAdminNav();
+        showPanel('dashboard');
+      }
+
+      function showSignup() {
+        document.getElementById('login-box').style.display = 'none';
+        document.getElementById('signup-box').style.display = 'block';
+      }
+
+      function showLogin() {
+        document.getElementById('login-box').style.display = 'block';
+        document.getElementById('signup-box').style.display = 'none';
+      }
+
+      function showPanel(panelId) {
+        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+        const target = document.getElementById(panelId);
+        if (target) {
+          target.style.display = 'block';
+        }
+      }
+
+      supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
+        if (session) {
+          const { data: user } = await supabaseClient
+            .from('users')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          if (user) currentUserRole = user.role;
+        } else {
+          showLogin();
+        }
+      });
+
+      function setupAdminNav() {
+        if (currentUserRole === 'admin') {
+          if (!document.getElementById('admin-nav')) {
+            const nav = document.getElementById('main-nav');
+            const a = document.createElement('a');
+            a.href = '#';
+            a.id = 'admin-nav';
+            a.innerText = '관리자 설정';
+            a.onclick = () => { showPanel('admin-panel'); };
+            nav.appendChild(a);
           }
         }
       }
-    } else {
-      fb.textContent = `😅 오답! 결과는 ${result} 입니다.`;
-    }
 
-    // 🚀 정답이든 오답이든 제출 후 자동으로 나가기
-    exitMiniGame();
-
-  } catch (e) {
-    fb.textContent = '⚠️ 식을 정확히 입력해 주세요.';
-    exitMiniGame();   // 🚀 오류여도 제출 후 나가기
-  }
-} 
-
-// 나가기 버튼
-function exitMiniGame() {
-  const game = document.getElementById('fourEqualsTen-game');
-  if (game) game.style.display = 'none';
-  const panel = document.getElementById('minigame-panel');
-  if (panel) panel.style.display = 'block';
-}
-
-// 게임 시작(코인 5 차감)
-async function startGame(gameType) {
-  if (gameType !== 'fourEqualsTen') return;
-
-  const username = localStorage.getItem('savedUsername');
-  if (!username) {
-    alert('로그인이 필요합니다.');
-    return;
-  }
-
-  // 코인 최신화
-  await syncCoinBalance();
-
-  const cost = 5;
-  if (currentUserCoin < cost) {
-    alert('코인이 부족합니다. (필요: 5)');
-    return;
-  }
-
-  // DB 코인 차감
-  const { error } = await supabaseClient
-    .from('users')
-    .update({ coin_balance: currentUserCoin - cost })
-    .eq('username', username);
-
-  if (error) {
-    alert('코인 차감 실패: ' + error.message);
-    return;
-  }
-
-  // 로컬/화면 갱신
-  currentUserCoin -= cost;
-  if (typeof displayCoinBalance === 'function') {
-    displayCoinBalance();
-  }
-
-  // 화면 전환 & 난수 생성
-  document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-  const game = document.getElementById('fourEqualsTen-game');
-  if (game) game.style.display = 'block';
-  generateFourNumbers();
-}
-
-// 엔터키로 제출 가능
-document.addEventListener('DOMContentLoaded', () => {
-  const input = document.getElementById('game-input');
-  if (input) {
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        checkFourEqualsTen();
+      function norm(s='') {
+        return String(s)
+          .replace(/\r/g,'')
+          .replace(/[ \t]+/g,' ')
+          .replace(/[‐-‒–—―]/g,'-')
+          .trim();
       }
-    });
-  }
-});
 
+      function toYMD(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth()+1).padStart(2,'0');
+        const d = String(dateObj.getDate()).padStart(2,'0');
+        return `${y}-${m}-${d}`;
+      }
 
+      function weekdayKo(dateObj){
+        return ['일','월','화','수','목','금','토'][dateObj.getDay()];
+      }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const agree = document.getElementById('privacy-agree');
-      const btn = document.getElementById('signup-btn');
-      agree.addEventListener('change', () => {
-        btn.style.display = agree.checked ? 'block' : 'none';
-      });
-    });
+      function extractDate(text) {
+        text = norm(text);
+        const now = new Date();
+        const year = now.getFullYear();
 
-    function toggleMobileMenu() {
-      document.getElementById('mobile-side-menu').classList.toggle('open');
-      document.getElementById('mobile-overlay').classList.toggle('show');
-    }
+        let m = text.match(/(20\d{2})[.\-/년\s]*([01]?\d)[.\-/월\s]*([0-3]?\d)\s*(?:일)?/);
+        if (m) {
+          const y = parseInt(m[1],10);
+          const mn = Math.max(1, Math.min(12, parseInt(m[2],10)));
+          const d = Math.max(1, Math.min(31, parseInt(m[3],10)));
+          const dt = new Date(y, mn-1, d);
+          return { dateObj: dt, ymd: toYMD(dt), yoil: weekdayKo(dt) };
+        }
 
-    function closeMobileMenu() {
-      document.getElementById('mobile-side-menu').classList.remove('open');
-      document.getElementById('mobile-overlay').classList.remove('show');
-    }
+        m = text.match(/([01]?\d)\s*[.\-/월]\s*([0-3]?\d)\s*(?:일)?/);
+        if (m) {
+          const mn = Math.max(1, Math.min(12, parseInt(m[1],10)));
+          const d = Math.max(1, Math.min(31, parseInt(m[2],10)));
+          const dt = new Date(year, mn-1, d);
+          return { dateObj: dt, ymd: toYMD(dt), yoil: weekdayKo(dt) };
+        }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const domainSelect = document.getElementById('signupEmailDomain');
-      const customInput = document.getElementById('signupEmailCustom');
+        return { dateObj: null, ymd: '', yoil: '' };
+      }
 
-      domainSelect.addEventListener('change', () => {
-        if (domainSelect.value === '직접입력') {
-          customInput.style.display = 'block';
+      function extractTimePeriod(text) {
+        text = norm(text);
+
+        const p = text.match(/([1-9]|1[0-2])\s*교시/);
+        const period = p ? parseInt(p[1],10) : '';
+
+        let m = text.match(/(오전|오후)\s*([0-1]?\d)\s*시\s*([0-5]?\d)?\s*분?/);
+        if (m) {
+          let h = parseInt(m[2],10);
+          const mm = m[3] ? String(parseInt(m[3],10)).padStart(2,'0') : '00';
+          if (m[1] === '오후' && h !== 12) h += 12;
+          if (m[1] === '오전' && h === 12) h = 0;
+          return { time: `${String(h).padStart(2,'0')}:${mm}`, period };
+        }
+
+        m = text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+        if (m) {
+          return { time: `${m[1].padStart(2,'0')}:${m[2]}`, period };
+        }
+
+        return { time: '', period };
+      }
+
+      function extractSubject(text) {
+        text = norm(text);
+
+        let m = text.match(/(?:과목|교과)\s*[:\-]\s*([가-힣A-Za-z0-9 ]{1,20})/);
+        if (m) return m[1].trim();
+
+        for (const sub of KOR_SUBJECTS) {
+          const re = new RegExp(`\\b${sub}\\b`);
+          if (re.test(text)) return sub;
+        }
+        return '';
+      }
+
+      function extractTopic(text) {
+        text = norm(text);
+        let m = text.match(/(?:주제|내용|단원)\s*[:\-]\s*([^\n]+)/);
+        if (m) return m[1].trim();
+
+        m = text.match(/수행\s*평가[^\n]*\n([^\n]+)/i);
+        if (m) return m[1].trim();
+        return '';
+      }
+
+      function extractMaterials(text) {
+        text = norm(text);
+        let m = text.match(/(?:준비물|챙길것|지참|필수 지참)\s*[:\-]\s*([^\n]+)/);
+        if (m) return m[1].trim();
+
+        m = text.match(/(필기구|자|연필|지우개|계산기|태블릿|크롬북|색연필|사인펜|노트|공책)(?:[ ,·와및]|$)/);
+        if (m) return m[0].trim();
+        return '';
+      }
+
+      function formatAnalyzeResult({subject,date,yoil,time,period,topic,materials}) {
+        return [
+          `[과목] ${subject||''}`,
+          `[평가 날짜] ${date||''}`,
+          `[요일] ${yoil||''}`,
+          `[평가 시간] ${time||''}`,
+          `[교시] ${period||''}`,
+          `[평가 주제] ${topic||''}`,
+          `[준비물] ${materials||''}`,
+          `--------------------------------`
+        ].join('\n');
+      }
+
+      function updateYoilFromDate(){
+        const v = document.getElementById('af-date').value;
+        document.getElementById('af-yoil').value = v ? weekdayKo(new Date(v)) : '';
+      }
+
+      function setAnalyzeForm(f){
+        const byId = id => document.getElementById(id);
+        byId('af-subject').value   = f.subject || '';
+        byId('af-date').value      = f.date || '';
+        byId('af-yoil').value      = f.date ? weekdayKo(new Date(f.date)) : (f.yoil || '');
+        byId('af-time').value      = f.time || '';
+        byId('af-period').value    = f.period || '';
+        byId('af-topic').value     = f.topic || '';
+        byId('af-materials').value = f.materials || '';
+
+        const txt = formatAnalyzeResult(f);
+        const r = document.getElementById('doc-result');
+        if (r) { r.value = txt; if (typeof autoResize==='function') autoResize(); }
+      }
+
+      function getAnalyzeForm(){
+        const g = id => (document.getElementById(id).value || '').trim();
+        const fields = {
+          subject:   g('af-subject'),
+          date:      g('af-date'),
+          time:      g('af-time'),
+          period:    g('af-period'),
+          topic:     g('af-topic'),
+          materials: g('af-materials')
+        };
+        fields.yoil = fields.date ? weekdayKo(new Date(fields.date)) : (document.getElementById('af-yoil').value || '');
+        return fields;
+      }
+      if (typeof mergeMissing !== 'function') {
+        // base(현재값)에서 빈 칸만 add(후보값)으로 보강
+        function mergeMissing(base = {}, add = {}) {
+          const out = { ...base };
+          const keys = ['subject','date','yoil','time','period','topic','materials'];
+          for (const k of keys) {
+            const cur = (out[k] ?? '').toString().trim();
+            const nxt = (add[k] ?? '').toString().trim();
+            if (!cur && nxt) out[k] = nxt;
+          }
+          // 날짜가 있는데 요일이 비었으면 자동 계산
+          try {
+            if (out.date && (!out.yoil || !String(out.yoil).trim())) {
+              const _weekdayKo = (typeof weekdayKo === 'function')
+                ? weekdayKo
+                : (d)=>['일','월','화','수','목','금','토'][d.getDay()];
+              out.yoil = _weekdayKo(new Date(out.date));
+            }
+          } catch {}
+          return out;
+        }
+      }
+
+      if (typeof parseTextToFields !== 'function') {
+        function parseTextToFields(text = '', seed = {}) {
+          // 내부 유틸(전역에 없을 때만 사용)
+          const _norm = (s='') => String(s)
+            .replace(/\r/g,'')
+            .replace(/[ \t]+/g,' ')
+            .replace(/[‐-‒–—―]/g,'-')
+            .trim();
+          const _weekdayKo = (d)=>['일','월','화','수','목','금','토'][d.getDay()];
+          const _toYMD = (d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+          // 날짜 추출 (전역 extractDate가 있으면 그걸 우선)
+          const _extractDate = (typeof extractDate === 'function') ? extractDate : (txt)=>{
+            txt = _norm(txt);
+            const year = new Date().getFullYear();
+            let m = txt.match(/(20\d{2})[.\-/년\s]*([01]?\d)[.\-/월\s]*([0-3]?\d)\s*일?/);
+            if (m) {
+              const dt = new Date(parseInt(m[1],10), parseInt(m[2],10)-1, parseInt(m[3],10));
+              return { dateObj: dt, ymd: _toYMD(dt), yoil: _weekdayKo(dt) };
+            }
+            m = txt.match(/([01]?\d)[.\-/월\s]*([0-3]?\d)\s*일?/);
+            if (m) {
+              const dt = new Date(year, parseInt(m[1],10)-1, parseInt(m[2],10));
+              return { dateObj: dt, ymd: _toYMD(dt), yoil: _weekdayKo(dt) };
+            }
+            return { dateObj: null, ymd: '', yoil: '' };
+          };
+
+          // 시간/교시 추출
+          const _extractTimePeriod = (typeof extractTimePeriod === 'function') ? extractTimePeriod : (txt)=>{
+            txt = _norm(txt);
+            const p = txt.match(/([1-9]|1[0-2])\s*교시/);
+            const period = p ? parseInt(p[1],10) : '';
+            let m = txt.match(/(오전|오후)\s*([0-1]?\d)\s*시\s*([0-5]?\d)?\s*분?/);
+            if (m) {
+              let h = parseInt(m[2],10);
+              const mm = m[3] ? String(parseInt(m[3],10)).padStart(2,'0') : '00';
+              if (m[1] === '오후' && h !== 12) h += 12;
+              if (m[1] === '오전' && h === 12) h = 0;
+              return { time: `${String(h).padStart(2,'0')}:${mm}`, period };
+            }
+            m = txt.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+            if (m) return { time: `${String(m[1]).padStart(2,'0')}:${m[2]}`, period };
+            return { time: '', period };
+          };
+
+          // 과목/주제/준비물 추출
+          const KOR_SUBJECTS = (typeof window !== 'undefined' && Array.isArray(window.KOR_SUBJECTS) && window.KOR_SUBJECTS.length)
+            ? window.KOR_SUBJECTS
+            : ['국어','수학','영어','과학','사회','역사','도덕','기술','가정','정보','음악','미술','체육','통합','자율','창체','동아리','진로','한문','스포츠'];
+
+          const _extractSubject = (typeof extractSubject === 'function') ? extractSubject : (txt)=>{
+            txt = _norm(txt);
+            let m = txt.match(/(?:과목|교과)\s*[:\-]\s*([가-힣A-Za-z0-9 ]{1,20})/);
+            if (m) return m[1].trim();
+            for (const sub of KOR_SUBJECTS) {
+              if (new RegExp(`\\b${sub}\\b`).test(txt)) return sub;
+            }
+            return '';
+          };
+
+          const _extractTopic = (typeof extractTopic === 'function') ? extractTopic : (txt)=>{
+            txt = _norm(txt);
+            let m = txt.match(/(?:주제|내용|단원|제목)\s*[:\-]\s*([^\n]+)/);
+            if (m) return m[1].trim();
+            m = txt.match(/수행\s*평가[^\n]*\n([^\n]+)/i);
+            return m ? m[1].trim() : '';
+          };
+
+          const _extractMaterials = (typeof extractMaterials === 'function') ? extractMaterials : (txt)=>{
+            txt = _norm(txt);
+            let m = txt.match(/(?:준비물|지참|필수\s*지참|챙길것)\s*[:\-]\s*([^\n]+)/);
+            if (m) return m[1].trim();
+            m = txt.match(/(필기구|자|연필|지우개|계산기|태블릿|크롬북|색연필|사인펜|노트|공책)/);
+            return m ? m[1] : '';
+          };
+
+          // 실제 파싱
+          const subject = (seed.subject || _extractSubject(text) || '').trim();
+          const topic   = (seed.topic   || _extractTopic(text)   || '').trim();
+          const mats    = (seed.materials || _extractMaterials(text) || '').trim();
+
+          const d = _extractDate(seed.date || text);
+          const t = _extractTimePeriod(seed.time || text);
+
+          return {
+            subject,
+            date: d.ymd || (seed.date || ''),
+            yoil: d.yoil || '',
+            time: t.time || (seed.time || ''),
+            period: String(seed.period || '') || (t.period ? String(t.period) : ''),
+            topic: topic,
+            materials: mats
+          };
+        }
+      }
+      
+      function fillFromText(text = '', seed = {}) {
+        const parsed = parseTextToFields(text, seed);
+        const merged = mergeMissing(parsed, seed); // 빈칸 보강
+        // 폼 채우기 (이미 프로젝트에 있음)
+        if (typeof setAnalyzeForm === 'function') {
+          setAnalyzeForm(merged);
+        }
+        // doc-result에 들어갈 예쁜 텍스트 반환 (이미 프로젝트에 있는 포맷터)
+        return (typeof formatAnalyzeResult === 'function')
+          ? formatAnalyzeResult(merged)
+          : JSON.stringify(merged, null, 2);
+      }
+      
+      function autoResize() {
+        docResult.style.height = 'auto'; 
+        docResult.style.height = docResult.scrollHeight + 'px'; 
+      }
+
+      function moveTimetable(offset) {
+        timetableOffset += offset;
+        loadTimetableWeek(currentGrade, currentClassNum, timetableOffset);
+      }
+
+      function setupAdminNav() {
+        const existing = document.getElementById('admin-nav');
+
+        if (currentUserRole === 'admin') {
+          if (!existing) {
+            const nav = document.getElementById('main-nav');
+            const a = document.createElement('a');
+            a.href = '#';
+            a.id = 'admin-nav';
+            a.innerText = '관리자 설정';
+            a.onclick = () => { showPanel('admin-panel'); };
+            nav.appendChild(a);
+          }
         } else {
-          customInput.style.display = 'none';
+          if (existing) existing.remove();
+        }
+      }
+
+      document.querySelectorAll('#main-nav a').forEach(link => {
+        link.addEventListener('click', () => {
+          const menuToggle = document.getElementById('menu-toggle');
+          if (menuToggle) {
+            menuToggle.checked = false;
+          }
+        });
+      });
+
+      function canUserSeeMaterial(item) {
+        if (currentUserRole === 'admin') return true;
+        const myGrade = currentGrade ?? parseInt(localStorage.getItem('savedGrade') || '0', 10);
+        const myClass = currentClassNum ?? parseInt(localStorage.getItem('savedClassNum') || '0', 10);
+
+        const scope = (item.share_scope || 'school').toLowerCase();
+        if (scope === 'school') return true;
+        if (scope === 'grade')  return Number(item.grade) === Number(myGrade);
+        if (scope === 'class')  return Number(item.grade) === Number(myGrade) &&
+                                  Number(item.class_num) === Number(myClass);
+        return false;
+      }
+
+      function setUserInfoInput() {
+        const inputEl = document.getElementById('homework-userinfo');
+        const nameEl = document.getElementById('profile-name-display');
+        const mobileNameEl = document.getElementById('mobile-user-name');
+
+        if (inputEl) inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
+        if (nameEl) nameEl.textContent = currentUserName;
+        if (mobileNameEl) mobileNameEl.textContent = currentUserName;
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const profileButton = document.getElementById('profile-button');
+        const dropdown = document.getElementById('profile-dropdown');
+
+        if (profileButton && dropdown) {
+
+          document.addEventListener('click', () => {
+            dropdown.style.display = 'none';
+          });
         }
       });
-    });
 
-    function togglePassword(inputId) {
-        const input = document.getElementById(inputId);
-        input.type = input.type === 'password' ? 'text' : 'password';
-      } 
+      function generateFourNumbers() {
+        currentFourNumbers = Array.from({ length: 4 }, () => Math.floor(Math.random() * 9) + 1);
+        const box = document.getElementById('game-numbers');
+        if (box) box.textContent = currentFourNumbers.join('  ');
+        const input = document.getElementById('game-input');
+        if (input) input.value = '';
+        const fb = document.getElementById('game-feedback');
+        if (fb) fb.textContent = '';
+      }
 
-    document.addEventListener('DOMContentLoaded', () => {
-    const menuProfile = document.getElementById('menu-profile');
-    const menuPassword = document.getElementById('menu-password');
-    const menuSetting = document.getElementById('menu-setting');
-    const menuLogout = document.getElementById('menu-logout');
+      function isValidExpression(expr, numbers) {
+        if (!expr) return false;
 
-      if (menuProfile) {
-        menuProfile.addEventListener('click', (e) => {
-          e.preventDefault();
-          showPanel('profile-panel');
-          closeMobileMenu();
+        expr = expr.replace(/×/g, '*').replace(/÷/g, '/');
+
+        if (!/^[\d+\-*/()\s.]+$/.test(expr)) return false;
+
+        const used = (expr.match(/\d+/g) || []).map(n => Number(n)).sort((a,b)=>a-b);
+        const need = [...numbers].sort((a,b)=>a-b);
+        if (JSON.stringify(used) !== JSON.stringify(need)) return false;
+
+        return true;
+      }
+
+      function safeEval(expr) {
+        expr = expr.replace(/×/g, '*').replace(/÷/g, '/');
+        if (!/^[\d+\-*/()\s.]+$/.test(expr)) throw new Error('invalid');
+        let bal = 0;
+        for (const ch of expr) {
+          if (ch === '(') bal++;
+          if (ch === ')') bal--;
+          if (bal < 0) throw new Error('paren');
+        }
+        if (bal !== 0) throw new Error('paren');
+
+        const fn = new Function(`return (${expr});`);
+        return fn();
+      }
+
+      function exitMiniGame() {
+        const game = document.getElementById('fourEqualsTen-game');
+        if (game) game.style.display = 'none';
+        const panel = document.getElementById('minigame-panel');
+        if (panel) panel.style.display = 'block';
+      }
+
+      async function startGame(gameType) {
+        if (gameType !== 'fourEqualsTen') return;
+
+        const username = localStorage.getItem('savedUsername');
+        if (!username) {
+          alert('로그인이 필요합니다.');
+          return;
+        }
+
+        await syncCoinBalance();
+
+        const cost = 5;
+        if (currentUserCoin < cost) {
+          alert('코인이 부족합니다. (필요: 5)');
+          return;
+        }
+
+        const { error } = await supabaseClient
+          .from('users')
+          .update({ coin_balance: currentUserCoin - cost })
+          .eq('username', username);
+
+        if (error) {
+          alert('코인 차감 실패: ' + error.message);
+          return;
+        }
+
+        currentUserCoin -= cost;
+        if (typeof displayCoinBalance === 'function') {
+          displayCoinBalance();
+        }
+
+        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+        const game = document.getElementById('fourEqualsTen-game');
+        if (game) game.style.display = 'block';
+        generateFourNumbers();
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('game-input');
+        if (input) {
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              checkFourEqualsTen();
+            }
+          });
+        }
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const agree = document.getElementById('privacy-agree');
+        const btn = document.getElementById('signup-btn');
+        agree.addEventListener('change', () => {
+          btn.style.display = agree.checked ? 'block' : 'none';
+        });
+      });
+
+      function toggleMobileMenu() {
+        document.getElementById('mobile-side-menu').classList.toggle('open');
+        document.getElementById('mobile-overlay').classList.toggle('show');
+      }
+
+      function closeMobileMenu() {
+        document.getElementById('mobile-side-menu').classList.remove('open');
+        document.getElementById('mobile-overlay').classList.remove('show');
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const domainSelect = document.getElementById('signupEmailDomain');
+        const customInput = document.getElementById('signupEmailCustom');
+
+        domainSelect.addEventListener('change', () => {
+          if (domainSelect.value === '직접입력') {
+            customInput.style.display = 'block';
+          } else {
+            customInput.style.display = 'none';
+          }
+        });
+      });
+
+      function togglePassword(inputId) {
+          const input = document.getElementById(inputId);
+          input.type = input.type === 'password' ? 'text' : 'password';
+        } 
+
+      document.addEventListener('DOMContentLoaded', () => {
+      const menuProfile = document.getElementById('menu-profile');
+      const menuPassword = document.getElementById('menu-password');
+      const menuSetting = document.getElementById('menu-setting');
+      const menuLogout = document.getElementById('menu-logout');
+
+        if (menuProfile) {
+          menuProfile.addEventListener('click', (e) => {
+            e.preventDefault();
+            showPanel('profile-panel');
+            closeMobileMenu();
+          });
+        }
+
+          if (menuPassword) {
+            menuPassword.addEventListener('click', (e) => {
+              e.preventDefault();
+              alert('비밀번호 변경은 준비 중입니다.');
+              closeMobileMenu();
+              /*showPanel('profile-panel'); //비번 설정 패널로 바꾸기
+              closeMobileMenu();*/
+            });
+          }
+
+          if (menuSetting) {
+            menuSetting.addEventListener('click', (e) => {
+              e.preventDefault();
+              alert('설정은 준비 중입니다.');
+              closeMobileMenu();
+            });
+          }
+
+          if (menuLogout) {
+            menuLogout.addEventListener('click', (e) => {
+              e.preventDefault();
+              logout();
+              closeMobileMenu();
+            });
+          }
+      });
+
+      let currentDate = new Date();
+
+      function formatYMD(date) {
+        return date.toISOString().slice(0, 10).replace(/-/g, '');
+      }
+
+      function updateDateLabels() {
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
+        const dateStr = currentDate.toLocaleDateString('ko-KR', options);
+        document.getElementById('timetable-date-label').textContent = dateStr;
+        document.getElementById('meal-date-label').textContent = dateStr;
+      }
+
+      function changeDate(delta) {
+        currentDate.setDate(currentDate.getDate() + delta);
+        loadTimetable();
+        loadMeal();
+      }
+
+      const fileInput = document.getElementById('homework-file');
+      const previewContainer = document.getElementById('filePreviewContainer');
+      const modal = document.getElementById('fileModal');
+      const modalImage = document.getElementById('modalImage');
+      const downloadLink = document.getElementById('downloadLink');
+
+      fileInput.addEventListener('change', () => {
+        previewContainer.innerHTML = '';
+
+        Array.from(fileInput.files).forEach(file => {
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = e => {
+              const img = document.createElement('img');
+              img.src = e.target.result;
+              img.alt = file.name;
+              img.onclick = () => {
+                modal.style.display = 'flex';
+                modalImage.src = e.target.result;
+                downloadLink.href = e.target.result;
+                downloadLink.download = file.name;
+              };
+              previewContainer.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      });
+
+      function closeModal() {
+        modal.style.display = 'none';
+      }
+
+      function openImageModal(url) {
+        const modal = document.getElementById('imageModal');
+        const img = document.getElementById('modalImage');
+        img.src = url;
+        modal.style.display = 'flex';
+      }
+
+      function closeImageModal() {
+        const modal = document.getElementById('imageModal');
+        modal.style.display = 'none';
+      }
+
+      function $id(id){return document.getElementById(id)}
+
+      function initDashboardTop(){
+        const d=new Date(); const w=['일','월','화','수','목','금','토'][d.getDay()];
+        if($id('dash-notice-date')) $id('dash-notice-date').textContent =
+          `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${w})`;
+
+        const nm = currentUserName || localStorage.getItem('savedName') || '학생';
+        const num = currentStudentNumber || localStorage.getItem('savedStudentNum') || 0;
+        const grd = (currentGrade ?? parseInt(localStorage.getItem('savedGrade') || '0', 10)) || '-';
+        const cls = (currentClassNum ?? parseInt(localStorage.getItem('savedClassNum') || '0', 10)) || '-';
+        if($id('dash-name')) $id('dash-name').textContent = nm;
+        if($id('dash-num')) $id('dash-num').textContent = num;
+        if($id('dash-grade')) $id('dash-grade').textContent = grd;
+        if($id('dash-class')) $id('dash-class').textContent = cls;
+
+        loadRecentNotices3();
+        syncStatsAndRender();
+      }
+
+      async function loadRecentNotices3(){
+        const box = $id('dash-notice-list');
+        if(!box) return;
+        box.innerHTML = `<div class="notice-item"><div class="meta">불러오는 중…</div></div>`;
+
+        let q = supabaseClient.from('notices').select('*').order('id',{ascending:false}).limit(3);
+        if(currentUserRole !== 'admin'){
+          q = q.eq('grade', currentGrade).eq('class_num', currentClassNum).neq('writer_role','admin');
+        }
+        const {data, error} = await q;
+        if(error){ box.innerHTML = `<div class="notice-item"><div class="meta">공지 불러오기 실패</div></div>`; return; }
+        if(!data || data.length===0){ box.innerHTML = `<div class="notice-item"><div class="meta">최근 공지가 없습니다.</div></div>`; return; }
+
+        box.innerHTML = '';
+        data.forEach(n=>{
+          const preview = (n.content||'').replace(/\n/g,' ').slice(0,90);
+          const el = document.createElement('div');
+          el.className='notice-item';
+          el.innerHTML = `
+            <div class="title">${n.title}</div>
+            <div class="meta">${n.writer} · ${n.grade}학년 ${n.class_num}반</div>
+            <div class="meta" style="margin-top:4px">${preview}${(n.content||'').length>90?'…':''}</div>`;
+          box.appendChild(el);
         });
       }
 
-        if (menuPassword) {
-          menuPassword.addEventListener('click', (e) => {
-            e.preventDefault();
-            alert('비밀번호 변경은 준비 중입니다.');
-            closeMobileMenu();
-            /*showPanel('profile-panel'); // 실제 비밀번호 패널 있으면 그걸로 바꾸세요
-            closeMobileMenu();*/
-          });
+      async function syncStatsAndRender(){
+        try{
+          const username = localStorage.getItem('savedUsername');
+          if(!username) { 
+            renderStats({ level:1, exp:0, need:20 }); 
+            return; 
+          }
+
+          const { data, error } = await supabaseClient
+            .from('users')
+            .select('level, exp, coin_balance')
+            .eq('username', username)
+            .single();
+
+          const level = (data && Number.isInteger(data.level)) ? data.level : 1;
+          const exp   = (data && Number.isInteger(data.exp))   ? data.exp   : 0;
+          const need = 20;
+
+          renderStats({ level, exp, need });
+        }catch(e){
+          console.warn(e);
+          renderStats({ level:1, exp:0, need:20 });
+        }
+      }
+
+      async function afterLoginRefreshDashboard(){
+        initDashboardTop();
+      }
+
+      document.addEventListener('DOMContentLoaded', initDashboardTop);
+
+      function renderStats({ level, exp, need, point }) {
+        if ($id('lv-num')) $id('lv-num').textContent = level;
+
+        if ($id('coin-balance') && point !== undefined) {
+          $id('coin-balance').textContent = point;
         }
 
-        if (menuSetting) {
-          menuSetting.addEventListener('click', (e) => {
-            e.preventDefault();
-            alert('설정은 준비 중입니다.');
-            closeMobileMenu();
-          });
+        const cur = Math.max(0, Math.min(exp, need));
+        const pct = need > 0 ? Math.round((cur / need) * 100) : 0;
+
+        if ($id('exp-cur'))  $id('exp-cur').textContent = cur;
+        if ($id('exp-need')) $id('exp-need').textContent = need;
+        if ($id('lvl-fill')) $id('lvl-fill').style.width = pct + '%';
+      }
+
+
+      async function loadCoinBalance() {
+        const username = localStorage.getItem('savedUsername');
+        if (!username) return;
+
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('coin_balance')
+          .eq('username', username)
+          .single();
+
+        const coin = (!error && data && Number.isFinite(+data.coin_balance)) ? +data.coin_balance : 0;
+
+        const el = document.getElementById('coin-balance');
+        if (el) el.textContent = coin;
+
+        currentUserCoin = coin;
+      }
+
+      const ymd = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+
+      const ymdCompact = (d) => ymd(d).replace(/-/g, '');
+
+      const startOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
+      const endOfMonth   = d => new Date(d.getFullYear(), d.getMonth()+1, 0);
+      const addDays = (d,n)=>{ const t=new Date(d); t.setDate(t.getDate()+n); return t; };
+
+      let schedRefDate = new Date();
+
+      function buildMonthMatrix(ref){
+        const first = startOfMonth(ref);
+        const start = addDays(first, -((first.getDay()+7)%7));
+        const days = [];
+        for(let i=0;i<42;i++) days.push(addDays(start,i));
+        return days;
+      }
+
+      async function fetchAssessmentsMonth(ref){
+        const first = ymd(startOfMonth(ref));
+        const last  = ymd(endOfMonth(ref));
+        const { data, error } = await supabaseClient
+          .from('assessments')
+          .select('date, period, subject')
+          .gte('date', first).lte('date', last)
+          .eq('grade', currentGrade).eq('class_num', currentClassNum)
+          .order('date, period');
+        if(error){ console.warn('assessments error', error); return []; }
+        return data || [];
+      }
+
+      function renderSchedDetail(dateStr, itemsA, itemsE){
+        const t  = document.getElementById('sched-detail-title');
+        const ul = document.getElementById('sched-detail-list');
+        t.textContent = `${dateStr.replace(/-/g,'.')} 일정`;
+
+        const aPart = (itemsA && itemsA.length)
+          ? itemsA.map(x=>`<li>📝 <b>${x.period}교시</b> · ${x.subject || '수행'}</li>`).join('')
+          : '<li>📝 수행 일정 없음</li>';
+
+        const ePart = (itemsE && itemsE.length)
+          ? itemsE.map(e=>{
+              const tag = e.kind==='holiday'?'🏖️':
+                          e.kind==='exam'?'🧪':'📌';
+              return `<li>${tag} ${e.title}</li>`;
+            }).join('')
+          : '<li>📌 학사일정 없음</li>';
+
+        ul.innerHTML = `
+          <div style="margin-bottom:.4rem;color:#6b7280;font-weight:700;">수행</div>
+          ${aPart}
+          <div style="margin:.6rem 0 .4rem;color:#6b7280;font-weight:700;">학사</div>
+          ${ePart}
+        `;
+      }
+
+      async function renderScheduleCalendar(){
+        const label = document.getElementById('sched-month-label');
+        label.textContent = `${schedRefDate.getFullYear()}.${String(schedRefDate.getMonth()+1).padStart(2,'0')}`;
+
+        const grid = document.getElementById('sched-grid');
+        const detailTitle = document.getElementById('sched-detail-title');
+        const detailList  = document.getElementById('sched-detail-list');
+        if (!grid) return;
+
+        grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 8px; color:#6b7280;">불러오는 중…</div>';
+
+        try {
+          const [assessRows, schoolRowsRaw] = await Promise.all([
+            fetchAssessmentsMonth(schedRefDate),  
+            fetchSchoolEventsMonth(schedRefDate)  
+          ]);
+
+          const schoolRows = (schoolRowsRaw || []).filter(ev =>
+            !/(토요\s*휴업일)/.test(ev.title || '')
+          );
+
+          const assessByDate = assessRows.reduce((m,r)=>{
+            (m[r.date] ??= []).push({ type:'assess', period:r.period, title:r.subject || '수행' });
+            return m;
+          }, {});
+          const schoolByDate = schoolRows.reduce((m,r)=>{
+            (m[r.date] ??= []).push({ type:'school', title:r.title, kind:r.kind });
+            return m;
+          }, {});
+
+          const cells = buildMonthMatrix(schedRefDate);
+          const todayStr = ymd(new Date());
+
+          grid.innerHTML = '';
+          let firstSelectedDone = false;
+
+          cells.forEach(d=>{
+            const dStr = ymd(d);
+            const inMonth = (d.getMonth() === schedRefDate.getMonth());
+
+            const itemsA = assessByDate[dStr] || [];
+            const itemsE = schoolByDate[dStr] || [];
+            const items  = [...itemsA, ...itemsE];
+
+            const cell = document.createElement('div');
+            cell.className = 'sched-cell' + (inMonth ? '' : ' out');
+            if (dStr === todayStr) cell.classList.add('today');
+            if (items.length)      cell.classList.add('has');
+            const dayEl = `<div class="sched-day">${d.getDate()}</div>`;
+
+            const top3 = items.slice(0,3).map(it=>{
+        if (it.type === 'assess') {
+          return `<div class="sched-item">
+                    📘 ${escapeHtml(it.title)} - <b>${it.period}</b>교시
+                  </div>`;
+        } else {
+          return `<div class="sched-item">
+                    ${eventLabel(it.kind, escapeHtml(it.title))}
+                  </div>`;
         }
-
-        if (menuLogout) {
-          menuLogout.addEventListener('click', (e) => {
-            e.preventDefault();
-            logout();
-            closeMobileMenu();
-          });
-        }
-    });
-
-    let currentDate = new Date();
-
-    function formatYMD(date) {
-      return date.toISOString().slice(0, 10).replace(/-/g, '');
-    }
-
-    function updateDateLabels() {
-      const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
-      const dateStr = currentDate.toLocaleDateString('ko-KR', options);
-      document.getElementById('timetable-date-label').textContent = dateStr;
-      document.getElementById('meal-date-label').textContent = dateStr;
-    }
-
-    function changeDate(delta) {
-      currentDate.setDate(currentDate.getDate() + delta);
-      //updateDateLabels();
-      loadTimetable();
-      loadMeal();
-    }
-
-    const fileInput = document.getElementById('homework-file');
-    const previewContainer = document.getElementById('filePreviewContainer');
-    const modal = document.getElementById('fileModal');
-    const modalImage = document.getElementById('modalImage');
-    const downloadLink = document.getElementById('downloadLink');
-
-    fileInput.addEventListener('change', () => {
-      previewContainer.innerHTML = '';
-
-      Array.from(fileInput.files).forEach(file => {
-        if (file.type.startsWith('image/')) {
-          const reader = new FileReader();
-          reader.onload = e => {
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            img.alt = file.name;
-            img.onclick = () => {
-              modal.style.display = 'flex';
-              modalImage.src = e.target.result;
-              downloadLink.href = e.target.result;
-              downloadLink.download = file.name;
-            };
-            previewContainer.appendChild(img);
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-    });
-
-    function closeModal() {
-      modal.style.display = 'none';
-    }
-
-    function openImageModal(url) {
-      const modal = document.getElementById('imageModal');
-      const img = document.getElementById('modalImage');
-      img.src = url;
-      modal.style.display = 'flex';
-    }
-
-    function closeImageModal() {
-      const modal = document.getElementById('imageModal');
-      modal.style.display = 'none';
-    }
-
-    /* ===== DASHBOARD TOP ===== */
-function $id(id){return document.getElementById(id)}
-
-function initDashboardTop(){
-  // 날짜
-  const d=new Date(); const w=['일','월','화','수','목','금','토'][d.getDay()];
-  if($id('dash-notice-date')) $id('dash-notice-date').textContent =
-    `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${w})`;
-
-  // 사용자 라벨
-  const nm = currentUserName || localStorage.getItem('savedName') || '학생';
-  const num = currentStudentNumber || localStorage.getItem('savedStudentNum') || 0;
-const grd = (currentGrade ?? parseInt(localStorage.getItem('savedGrade') || '0', 10)) || '-';
-const cls = (currentClassNum ?? parseInt(localStorage.getItem('savedClassNum') || '0', 10)) || '-';
-  if($id('dash-name')) $id('dash-name').textContent = nm;
-  if($id('dash-num')) $id('dash-num').textContent = num;
-  if($id('dash-grade')) $id('dash-grade').textContent = grd;
-  if($id('dash-class')) $id('dash-class').textContent = cls;
-
-  // 공지 3건
-  loadRecentNotices3();
-  // 스탯(레벨/경험치/포인트)
-  syncStatsAndRender();
-}
-
-async function loadRecentNotices3(){
-  const box = $id('dash-notice-list');
-  if(!box) return;
-  box.innerHTML = `<div class="notice-item"><div class="meta">불러오는 중…</div></div>`;
-
-  let q = supabaseClient.from('notices').select('*').order('id',{ascending:false}).limit(3);
-  if(currentUserRole !== 'admin'){
-    q = q.eq('grade', currentGrade).eq('class_num', currentClassNum).neq('writer_role','admin');
-  }
-  const {data, error} = await q;
-  if(error){ box.innerHTML = `<div class="notice-item"><div class="meta">공지 불러오기 실패</div></div>`; return; }
-  if(!data || data.length===0){ box.innerHTML = `<div class="notice-item"><div class="meta">최근 공지가 없습니다.</div></div>`; return; }
-
-  box.innerHTML = '';
-  data.forEach(n=>{
-    const preview = (n.content||'').replace(/\n/g,' ').slice(0,90);
-    const el = document.createElement('div');
-    el.className='notice-item';
-    el.innerHTML = `
-      <div class="title">${n.title}</div>
-      <div class="meta">${n.writer} · ${n.grade}학년 ${n.class_num}반</div>
-      <div class="meta" style="margin-top:4px">${preview}${(n.content||'').length>90?'…':''}</div>`;
-    box.appendChild(el);
-  });
-}
-
-async function syncStatsAndRender(){
-  try{
-    const username = localStorage.getItem('savedUsername');
-    if(!username) { 
-      renderStats({ level:1, exp:0, need:20 }); 
-      return; 
-    }
-
-    const { data, error } = await supabaseClient
-      .from('users')
-      .select('level, exp, coin_balance')
-      .eq('username', username)
-      .single();
-
-    const level = (data && Number.isInteger(data.level)) ? data.level : 1;
-    const exp   = (data && Number.isInteger(data.exp))   ? data.exp   : 0;
-
-    // 필요 경험치는 고정 20 (기존 규칙 유지)
-    const need = 20;
-
-    // ⚠️ 여기서는 코인 넘기지 않음
-    renderStats({ level, exp, need });
-  }catch(e){
-    console.warn(e);
-    renderStats({ level:1, exp:0, need:20 }); // 코인 업데이트 금지
-  }
-}
-
-
-
-/* 로그인 직후/자동로그인 직후 반드시 호출 */
-async function afterLoginRefreshDashboard(){
-  initDashboardTop();
-}
-
-/* 페이지가 열려 있을 때도 1회 초기화 */
-document.addEventListener('DOMContentLoaded', initDashboardTop);
-
-
-function renderStats({ level, exp, need, point }) {
-  if ($id('lv-num')) $id('lv-num').textContent = level;
-
-  // point가 정의된 경우에만 코인 표시를 갱신 (loadCoinBalance가 진짜 소스)
-  if ($id('coin-balance') && point !== undefined) {
-    $id('coin-balance').textContent = point;
-  }
-
-  const cur = Math.max(0, Math.min(exp, need));
-  const pct = need > 0 ? Math.round((cur / need) * 100) : 0;
-
-  if ($id('exp-cur'))  $id('exp-cur').textContent = cur;
-  if ($id('exp-need')) $id('exp-need').textContent = need;
-  if ($id('lvl-fill')) $id('lvl-fill').style.width = pct + '%';
-}
-
-
-// 코인만 DB에서 읽어와 대시보드 칩에 반영
-async function loadCoinBalance() {
-  const username = localStorage.getItem('savedUsername');
-  if (!username) return;
-
-  const { data, error } = await supabaseClient
-    .from('users')
-    .select('coin_balance')
-    .eq('username', username)
-    .single();
-
-  // 실패/널 대비해서 0으로 처리
-  const coin = (!error && data && Number.isFinite(+data.coin_balance)) ? +data.coin_balance : 0;
-
-  // 화면 반영
-  const el = document.getElementById('coin-balance');
-  if (el) el.textContent = coin;
-
-  // (선택) 전역값 동기화
-  currentUserCoin = coin;
-}
-
-
-/* ====== [달력/수행일정 전용 함수 모음: 그대로 붙여 넣기] ====== */
-
-// 날짜 유틸
-// 로컬 기준 YYYY-MM-DD
-const ymd = (d) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
-// 로컬 기준 YYYYMMDD (NEIS 쿼리용)
-const ymdCompact = (d) => ymd(d).replace(/-/g, '');
-
-const startOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
-const endOfMonth   = d => new Date(d.getFullYear(), d.getMonth()+1, 0);
-const addDays = (d,n)=>{ const t=new Date(d); t.setDate(t.getDate()+n); return t; };
-
-// 달력 기준 월
-let schedRefDate = new Date();
-
-// 6주(42칸) 달력 셀 생성
-function buildMonthMatrix(ref){
-  const first = startOfMonth(ref);
-  const start = addDays(first, -((first.getDay()+7)%7)); // 그 주의 일요일
-  const days = [];
-  for(let i=0;i<42;i++) days.push(addDays(start,i));
-  return days;
-}
-
-// 월간 수행 조회 (학년/반 기준) — assessments(date, period, subject, grade, class_num)
-async function fetchAssessmentsMonth(ref){
-  const first = ymd(startOfMonth(ref));
-  const last  = ymd(endOfMonth(ref));
-  const { data, error } = await supabaseClient
-    .from('assessments')
-    .select('date, period, subject')
-    .gte('date', first).lte('date', last)
-    .eq('grade', currentGrade).eq('class_num', currentClassNum)
-    .order('date, period');
-  if(error){ console.warn('assessments error', error); return []; }
-  return data || [];
-}
-
-// 상세 패널 렌더 (클릭 시) — 수행(itemsA) + 학사(itemsE)
-function renderSchedDetail(dateStr, itemsA, itemsE){
-  const t  = document.getElementById('sched-detail-title');
-  const ul = document.getElementById('sched-detail-list');
-  t.textContent = `${dateStr.replace(/-/g,'.')} 일정`;
-
-  const aPart = (itemsA && itemsA.length)
-    ? itemsA.map(x=>`<li>📝 <b>${x.period}교시</b> · ${x.subject || '수행'}</li>`).join('')
-    : '<li>📝 수행 일정 없음</li>';
-
-  const ePart = (itemsE && itemsE.length)
-    ? itemsE.map(e=>{
-        const tag = e.kind==='holiday'?'🏖️':
-                    e.kind==='exam'?'🧪':'📌';
-        return `<li>${tag} ${e.title}</li>`;
-      }).join('')
-    : '<li>📌 학사일정 없음</li>';
-
-  ul.innerHTML = `
-    <div style="margin-bottom:.4rem;color:#6b7280;font-weight:700;">수행</div>
-    ${aPart}
-    <div style="margin:.6rem 0 .4rem;color:#6b7280;font-weight:700;">학사</div>
-    ${ePart}
-  `;
-}
-
-
-// ✅ 수행+학사 통합 달력 렌더러 (완성본 + 토요휴업일 제외)
-async function renderScheduleCalendar(){
-  // 월 라벨
-  const label = document.getElementById('sched-month-label');
-  label.textContent = `${schedRefDate.getFullYear()}.${String(schedRefDate.getMonth()+1).padStart(2,'0')}`;
-
-  const grid = document.getElementById('sched-grid');
-  const detailTitle = document.getElementById('sched-detail-title');
-  const detailList  = document.getElementById('sched-detail-list');
-  if (!grid) return;
-
-  grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 8px; color:#6b7280;">불러오는 중…</div>';
-
-  try {
-    // 1) 데이터 동시 로드
-    const [assessRows, schoolRowsRaw] = await Promise.all([
-      fetchAssessmentsMonth(schedRefDate),   // {date:'YYYY-MM-DD', period, subject}
-      fetchSchoolEventsMonth(schedRefDate)   // {date:'YYYY-MM-DD', title, kind:'exam|holiday|event'}
-    ]);
-
-    // 🔹 (추가) 토요휴업일 제외
-    const schoolRows = (schoolRowsRaw || []).filter(ev =>
-      !/(토요\s*휴업일)/.test(ev.title || '')
-    );
-
-    // 2) 날짜별로 묶기
-    const assessByDate = assessRows.reduce((m,r)=>{
-      (m[r.date] ??= []).push({ type:'assess', period:r.period, title:r.subject || '수행' });
-      return m;
-    }, {});
-    const schoolByDate = schoolRows.reduce((m,r)=>{
-      (m[r.date] ??= []).push({ type:'school', title:r.title, kind:r.kind });
-      return m;
-    }, {});
-
-    // 3) 6주(42칸) 달력 그리드
-    const cells = buildMonthMatrix(schedRefDate);
-    const todayStr = ymd(new Date());
-
-    grid.innerHTML = '';
-    let firstSelectedDone = false;
-
-    cells.forEach(d=>{
-      const dStr = ymd(d);
-      const inMonth = (d.getMonth() === schedRefDate.getMonth());
-
-      // 해당 날짜의 모든 아이템(수행 + 학사)
-      const itemsA = assessByDate[dStr] || [];
-      const itemsE = schoolByDate[dStr] || [];
-      const items  = [...itemsA, ...itemsE];
-
-      // 셀 생성
-      const cell = document.createElement('div');
-      cell.className = 'sched-cell' + (inMonth ? '' : ' out');
-      if (dStr === todayStr) cell.classList.add('today');
-      if (items.length)      cell.classList.add('has');
-
-      // 상단 날짜
-      const dayEl = `<div class="sched-day">${d.getDate()}</div>`;
-
-      const top3 = items.slice(0,3).map(it=>{
-  if (it.type === 'assess') {
-    // 수행: 과목 - n교시
-    return `<div class="sched-item">
-              📘 ${escapeHtml(it.title)} - <b>${it.period}</b>교시
-            </div>`;
-  } else {
-    // 학사: 아이콘 + 카테고리 라벨
-    return `<div class="sched-item">
-              ${eventLabel(it.kind, escapeHtml(it.title))}
-            </div>`;
-  }
-}).join('');
+      }).join('');
 
 
       const more = items.length > 3
@@ -2686,482 +2783,435 @@ async function renderScheduleCalendar(){
   }
 }
 
+      function escapeHtml(s=''){
+        return String(s)
+          .replace(/&/g,'&amp;')
+          .replace(/</g,'&lt;')
+          .replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;')
+          .replace(/'/g,'&#39;');
+      }
+
+      let scheduleBound = false;
+      function bindScheduleUI(){
+        if(scheduleBound) return;
+        scheduleBound = true;
+
+        const prev = document.getElementById('sched-prev');
+        const next = document.getElementById('sched-next');
+        if(prev) prev.onclick = () => {
+          schedRefDate = new Date(schedRefDate.getFullYear(), schedRefDate.getMonth()-1, 1);
+          renderScheduleCalendar();
+        };
+        if(next) next.onclick = () => {
+          schedRefDate = new Date(schedRefDate.getFullYear(), schedRefDate.getMonth()+1, 1);
+          renderScheduleCalendar();
+        };
+      }
+
+      async function afterLoginRefreshDashboard(){
+        initDashboardTop();     
+        bindScheduleUI();       
+        await renderScheduleCalendar(); 
+      }
+
+      async function fetchSchoolEventsMonth(ref){
+
+      const firstDate = startOfMonth(ref);
+      const lastDate  = endOfMonth(ref);
+      const AA_FROM_YMD = ymdCompact(firstDate);
+      const AA_TO_YMD   = ymdCompact(lastDate);
+
+        const AY  = ref.getFullYear();
+        const mm  = ref.getMonth() + 1;
+        const SEM = (mm <= 8) ? 1 : 2;
+
+        const url = `https://open.neis.go.kr/hub/SchoolSchedule` +
+                    `?KEY=${NEIS_KEY}` +
+                    `&Type=json` +
+                    `&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}` +
+                    `&SD_SCHUL_CODE=${SD_SCHUL_CODE}` +
+                    `&AY=${AY}&SEM=${SEM}` +
+                    `&AA_FROM_YMD=${AA_FROM_YMD}` +
+                    `&AA_TO_YMD=${AA_TO_YMD}`;
+
+        try{
+          const res = await fetch(url);
+          const data = await res.json();
+
+          if(!(data.SchoolSchedule && data.SchoolSchedule[1])) return [];
+
+          const rows = data.SchoolSchedule[1].row || [];
+          return rows.map(r=>{
+            const ymd = String(r.AA_YMD || '');
+            const date = `${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`;
+            const title = r.EVENT_NM || r.EVENT_CNTNT || '';
+            const kind = classifyNeisEvent(title, r.EVENT_CNTNT || '');
+            return { date, title, kind };
+          });
+
+        }catch(e){
+          console.warn('NEIS 학사일정 오류:', e);
+          return [];
+        }
+      }
+
+      function classifyNeisEvent(title = '', detail = '') {
+        const s = `${title} ${detail}`.toLowerCase();
+
+        const examKw = [
+          '시험','지필','중간','기말','평가','고사','모의','퀴즈','수행평가'
+        ];
+
+        const holidayKw = [
+          '휴업','방학','공휴일','대체공휴일','개교기념일','재량휴업','휴교',
+          '설날','설 연휴','추석','추석 연휴','성탄','크리스마스','현충일','어린이날',
+          '광복절','개천절','한글날','석가탄신일','신정'
+        ];
+
+        if (examKw.some(k => s.includes(k)))   return 'exam';
+        if (holidayKw.some(k => s.includes(k))) return 'holiday';
+
+        return 'event';
+      }
+
+      function eventLabel(kind, title){
+        const t = (title && title.trim()) ? title : '학사 일정';
+        if (kind === 'holiday') return `🏖️ ${t}`;
+        if (kind === 'exam')    return `📝 ${t}`;
+        return `📌 ${t}`;
+      }
+
+      function renderSchedDetail(dateStr, itemsA, itemsE){
+        const t  = document.getElementById('sched-detail-title');
+        const ul = document.getElementById('sched-detail-list');
+        t.textContent = `${dateStr.replace(/-/g,'.')} 일정`;
+
+        const aPart = (itemsA && itemsA.length)
+          ? itemsA.map(x=>`<li>📘 <b>${x.period}교시</b> · ${escapeHtml(x.title)}</li>`).join('')
+          : '<li>📝 수행 일정 없음</li>';
+
+        const ePart = (itemsE && itemsE.length)
+          ? itemsE.map(e=>`<li>${eventLabel(e.kind, escapeHtml(e.title))}</li>`).join('')
+          : '<li>📌 학사일정 없음</li>';
+
+        ul.innerHTML = `
+          <div style="margin-bottom:.4rem;color:#6b7280;font-weight:700;">수행</div>
+          ${aPart}
+          <div style="margin:.6rem 0 .4rem;color:#6b7280;font-weight:700;">학사</div>
+          ${ePart}
+        `;
+      }
+
+      (() => {
+
+        const elBadge   = document.getElementById('badge-day');
+        const elList    = document.getElementById('timetable');
+        const elNotice  = document.getElementById('notice');
+        const elPicker  = document.getElementById('datePicker');
+
+        const DOW = ['일','월','화','수','목','금','토'];
+
+        const seoulNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+        const toInput = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const toNeisYmd = d => toInput(d).replace(/-/g,'');
+        const semesterOf = (d) => (d.getMonth()+1) <= 8 ? 1 : 2;
+
+        function getGradeClass() {
+          const g = (typeof currentGrade === 'number' ? currentGrade : parseInt(localStorage.getItem('savedGrade'), 10)) || null;
+          const c = (typeof currentClassNum === 'number' ? currentClassNum : parseInt(localStorage.getItem('savedClassNum'), 10)) || null;
+          return { grade: g, classNum: c };
+        }
+
+        function setBadge(d) {
+          if (!elBadge) return;
+          elBadge.textContent = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${DOW[d.getDay()]})`;
+        }
+
+        function showNotice(msg) {
+          if (!elNotice) return;
+          elList.innerHTML = '';
+          elNotice.style.display = 'block';
+          elNotice.textContent = msg;
+        }
+
+        function hideNotice() {
+          if (!elNotice) return;
+          elNotice.style.display = 'none';
+          elNotice.textContent = '';
+        }
+
+        function renderRows(rows) {
+          if (!rows || rows.length === 0) {
+            elList.innerHTML = '';
+            showNotice('교육청 시간표 데이터가 없습니다.');
+            return;
+          }
+          hideNotice();
+
+          const byPeriod = {};
+          for (const r of rows) {
+            const p = String(r.PERIO ?? '').trim();
+            if (!p) continue;
+            if (!byPeriod[p]) byPeriod[p] = r.ITRT_CNTNT || '';
+          }
+          const sorted = Object.keys(byPeriod).map(Number).sort((a,b)=>a-b);
+
+          elList.innerHTML = sorted.map(p => `
+            <li style="display:flex;align-items:center;gap:10px;padding:10px 6px;border-top:1px dashed #e9ecef;">
+              <span style="width:58px;min-width:58px;text-align:center;font-weight:700;">${p}교시</span>
+              <span style="font-weight:600;">${byPeriod[p] || ''}</span>
+            </li>
+          `).join('');
+
+          const first = elList.querySelector('li');
+          if (first) first.style.borderTop = '0';
+        }
+
+        async function fetchNeisDay({ grade, classNum }, dateObj) {
+          const AY   = dateObj.getFullYear();
+          const SEM  = semesterOf(dateObj);
+          const YMD  = toNeisYmd(dateObj);
+
+          const url =
+            `https://open.neis.go.kr/hub/misTimetable` +
+            `?KEY=${encodeURIComponent(NEIS_KEY)}` +
+            `&Type=json` +
+            `&ATPT_OFCDC_SC_CODE=${encodeURIComponent(ATPT_OFCDC_SC_CODE)}` +
+            `&SD_SCHUL_CODE=${encodeURIComponent(SD_SCHUL_CODE)}` +
+            `&AY=${AY}&SEM=${SEM}` +
+            `&ALL_TI_YMD=${YMD}` +
+            `&GRADE=${encodeURIComponent(grade)}` +
+            `&CLASS_NM=${encodeURIComponent(classNum)}`;
+
+          const res  = await fetch(url);
+          if (!res.ok) throw new Error(`NEIS 응답 오류 ${res.status}`);
+          const json = await res.json();
+          const block = json && json.misTimetable && json.misTimetable[1];
+          return block ? (block.row || []) : [];
+        }
+
+        async function loadTimetableDay(dateStr) {
+          const dateObj = dateStr ? new Date(dateStr) : seoulNow();
+          setBadge(dateObj);
+
+          const { grade, classNum } = getGradeClass();
+          if (!grade || !classNum) {
+            renderRows([]);
+            showNotice('학년/반 정보를 찾을 수 없습니다. 로그인 후 다시 시도하세요.');
+            return;
+          }
+
+          try {
+            const rows = await fetchNeisDay({ grade, classNum }, dateObj);
+            renderRows(rows);
+          } catch (e) {
+            console.warn(e);
+            renderRows([]);
+            showNotice('시간표를 불러오는 중 오류가 발생했습니다.');
+          }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+          if (elPicker) {
+            elPicker.value = toInput(seoulNow());
+            elPicker.addEventListener('change', (e) => loadTimetableDay(e.target.value));
+          }
+          loadTimetableDay(elPicker?.value);
+        });
+
+        window.reloadTimetableCard = () => loadTimetableDay(elPicker?.value || undefined);
+      })();
+
+      (function(){
+        const ul        = document.getElementById('rank-list');
+        const meEl      = document.getElementById('rank-me');
+        const selMetric = document.getElementById('rank-metric');
+        const selScope  = document.getElementById('rank-scope');
+        const btnRefresh= document.getElementById('rank-refresh');
+
+        if (typeof currentUserRole === 'string' && currentUserRole !== 'admin') {
+          selScope.value = 'class';
+          selScope.disabled = true;
+        }
+
+        const escapeHtml = (s='') => String(s)
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+          .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+        function medal(n){
+          if (n===1) return '🥇';
+          if (n===2) return '🥈';
+          if (n===3) return '🥉';
+          return `<span style="display:inline-block;width:22px;text-align:right;font-weight:700;color:#6b7280">${n}</span>`;
+        }
+
+        function rowHtml(rank, u, metric){
+          const right =
+            metric==='coin'
+              ? `💰 ${Number(u.coin_balance||0)}`
+              : `Lv ${Number(u.level||1)} (XP ${Number(u.xp||0)})`;
+          const sub = `${u.grade??'-'}학년 ${u.class_num??'-'}반 · ${u.student_number??''}번`;
+          return `
+            <li style="display:flex;align-items:center;gap:10px;padding:10px;border-top:1px dashed #e9ecef;">
+              <div style="width:32px;text-align:center">${medal(rank)}</div>
+              <div style="flex:1 1 auto;">
+                <div style="font-weight:700">${escapeHtml(u.name||u.username||'학생')}</div>
+                <div style="font-size:.85rem;color:#6b7280">${sub}</div>
+              </div>
+              <div style="font-weight:700">${right}</div>
+            </li>`;
+        }
+
+        function meHtml(rank, total, u, metric){
+          const right =
+            metric==='coin'
+              ? `💰 ${Number(u.coin_balance||0)}`
+              : `Lv ${Number(u.level||1)} (XP ${Number(u.xp||0)})`;
+          return `
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="font-weight:800">내 순위</div>
+              <div style="margin-left:auto;font-size:.9rem;color:#6b7280">${rank}/${total}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+              <div style="width:32px;text-align:center">${medal(rank)}</div>
+              <div style="flex:1 1 auto;">
+                <div style="font-weight:700">${escapeHtml(u.name||'나')}</div>
+                <div style="font-size:.85rem;color:#6b7280">${u.grade??'-'}학년 ${u.class_num??'-'}반 · ${u.student_number??''}번</div>
+              </div>
+              <div style="font-weight:700">${right}</div>
+            </div>`;
+        }
+
+        function sortUsers(users, metric){
+          if (metric === 'coin') {
+            return users.sort(
+              (a,b)=>(b.coin_balance||0)-(a.coin_balance||0) || (a.name||'').localeCompare(b.name||'')
+            );
+          } else {
+            return users.sort(
+              (a,b)=>(b.level||0)-(a.level||0) || (b.xp||0)-(a.xp||0) || (a.name||'').localeCompare(b.name||'')
+            );
+          }
+        }
+
+        async function loadRanking(){
+          const metric = selMetric.value;         
+          const scope  = selScope.value;    
+
+          const myUsername = localStorage.getItem('savedUsername') || '';
+          const g = (typeof currentGrade === 'number'
+                      ? currentGrade
+                      : parseInt(localStorage.getItem('savedGrade')||'0',10)) || null;
+          const c = (typeof currentClassNum === 'number'
+                      ? currentClassNum
+                      : parseInt(localStorage.getItem('savedClassNum')||'0',10)) || null;
+
+          ul.innerHTML = `<li style="padding:10px;color:#6b7280">불러오는 중…</li>`;
+          meEl.style.display = 'none';
+
+          let q = supabaseClient.from('users')
+            .select('username,name,grade,class_num,student_number,coin_balance,level,xp,role', { count: 'exact' })
+            .neq('role','admin');
+
+          if (typeof currentUserRole === 'string' && currentUserRole !== 'admin') {
+            if (g!=null) q = q.eq('grade', g);
+            if (c!=null) q = q.eq('class_num', c);
+          } else {
+            if (scope === 'class') { if (g!=null) q = q.eq('grade', g); if (c!=null) q = q.eq('class_num', c); }
+            else if (scope === 'grade') { if (g!=null) q = q.eq('grade', g); }
+          }
+
+          const { data, error } = await q;
+
+          if (error) {
+            ul.innerHTML = `<li style="padding:10px;color:#ef4444">랭킹 로드 오류: ${escapeHtml(error.message)}</li>`;
+            return;
+          }
+
+          const users = Array.isArray(data) ? data.slice() : [];
+          if (users.length === 0) {
+            ul.innerHTML = `<li style="padding:10px;color:#6b7280">표시할 데이터가 없습니다.</li>`;
+            return;
+          }
+
+          const sorted = sortUsers(users, metric);
+
+          const N = 10;
+          ul.innerHTML = '';
+          sorted.slice(0, N).forEach((u, i) => {
+            ul.insertAdjacentHTML('beforeend', rowHtml(i+1, u, metric));
+          });
+
+          const myIndex = sorted.findIndex(u => (u.username||'') === myUsername);
+          if (myIndex >= 0) {
+            meEl.innerHTML = meHtml(myIndex+1, sorted.length, sorted[myIndex], metric);
+            meEl.style.display = 'block';
+          } else {
+            meEl.style.display = 'none';
+          }
+        }
+
+
+        selMetric.addEventListener('change', loadRanking);
+        selScope.addEventListener('change', loadRanking);
+        btnRefresh.addEventListener('click', loadRanking);
+        document.addEventListener('DOMContentLoaded', loadRanking);
+
+        window.reloadRankingCard = loadRanking;
+      })();
+
+      (() => {
+        const seoulNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+        const toYMD = d => {
+          const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), dd = String(d.getDate()).padStart(2,"0");
+          return `${y}${m}${dd}`;
+        };
+        const labelYMD = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+
+        function parseDishList(ddish="") {
+          return String(ddish)
+            .replace(/<br\s*\/?>/gi, "\n")
+            .split(/\n+/)
+            .map(s => s.replace(/\((?:\s*\d+\s*\.)+\s*\)/g,"").trim())
+            .filter(Boolean);
+        }
+
+        function renderMeal(dateObj, rows) {
+          const box = document.getElementById("meal-box");
+          const dayLabel = labelYMD(dateObj);
+
+          if (!rows || rows.length===0) {
+            box.innerHTML = `<div style="color:#6b7280">🍽️ ${dayLabel} 급식 정보 없음</div>`;
+            return;
+          }
+
+          const byType = rows.reduce((m,r)=>{
+            (m[r.MMEAL_SC_NM] ??= []).push(...parseDishList(r.DDISH_NM));
+            return m;
+          },{});
+          const order = ["조식","중식","석식"];
+          const types = Object.keys(byType).sort((a,b)=>{
+            const ia=order.indexOf(a), ib=order.indexOf(b);
+            return (ia===-1?99:ia) - (ib===-1?99:ib);
+          });
+
+          box.innerHTML = `
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+              <strong>오늘 급식</strong>
+              <span style="color:#6b7280;font-size:.9rem">${dayLabel}</span>
+            </div>
+            ${types.map(type=>`
+              <div style="margin-bottom:8px;">
+                <div style="font-weight:600;margin-bottom:4px;">${type}</div>
+                <ul style="margin:0;padding-left:18px;color:#374151;">
+                  ${byType[type].map(d=>`<li>${d}</li>`).join("")}
+                </ul>
+              </div>
+            `).join("")}
+          `;
+        }
 
-
-// 작은 XSS 방지용
-function escapeHtml(s=''){
-  return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
-}
-
-
-
-// 월 전환 버튼 바인딩 (한 번만)
-let scheduleBound = false;
-function bindScheduleUI(){
-  if(scheduleBound) return;
-  scheduleBound = true;
-
-  const prev = document.getElementById('sched-prev');
-  const next = document.getElementById('sched-next');
-  if(prev) prev.onclick = () => {
-    schedRefDate = new Date(schedRefDate.getFullYear(), schedRefDate.getMonth()-1, 1);
-    renderScheduleCalendar();
-  };
-  if(next) next.onclick = () => {
-    schedRefDate = new Date(schedRefDate.getFullYear(), schedRefDate.getMonth()+1, 1);
-    renderScheduleCalendar();
-  };
-}
-
-/* (선택) 기존 afterLoginRefreshDashboard를 이 버전으로 교체 */
-async function afterLoginRefreshDashboard(){
-  initDashboardTop();      // 기존 대시보드 상단 초기화
-  bindScheduleUI();        // ⏪⏩ 바인딩
-  await renderScheduleCalendar(); // 달력 첫 렌더
-}
-
-
-// 월간 학사일정 조회 (NEIS SchoolSchedule)
-async function fetchSchoolEventsMonth(ref){
-  // 달 범위(YYYYMMDD)
-const firstDate = startOfMonth(ref);
-const lastDate  = endOfMonth(ref);
-const AA_FROM_YMD = ymdCompact(firstDate);
-const AA_TO_YMD   = ymdCompact(lastDate);
-
-
-  // 학년도/학기 (네가 시간표에서 쓰던 규칙과 동일)
-  const AY  = ref.getFullYear();
-  const mm  = ref.getMonth() + 1;
-  const SEM = (mm <= 8) ? 1 : 2;
-
-  const url = `https://open.neis.go.kr/hub/SchoolSchedule` +
-              `?KEY=${NEIS_KEY}` +
-              `&Type=json` +
-              `&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}` +
-              `&SD_SCHUL_CODE=${SD_SCHUL_CODE}` +
-              `&AY=${AY}&SEM=${SEM}` +
-              `&AA_FROM_YMD=${AA_FROM_YMD}` +
-              `&AA_TO_YMD=${AA_TO_YMD}`;
-
-  try{
-    const res = await fetch(url);
-    const data = await res.json();
-
-    // NEIS 응답 파싱
-    if(!(data.SchoolSchedule && data.SchoolSchedule[1])) return [];
-
-    const rows = data.SchoolSchedule[1].row || [];
-    // 너의 달력 렌더러가 쓰는 형태로 변환
-    return rows.map(r=>{
-      const ymd = String(r.AA_YMD || '');
-      const date = `${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`;
-      const title = r.EVENT_NM || r.EVENT_CNTNT || '';
-      const kind = classifyNeisEvent(title, r.EVENT_CNTNT || '');
-      return { date, title, kind };
-    });
-
-  }catch(e){
-    console.warn('NEIS 학사일정 오류:', e);
-    return [];
-  }
-}
-
-// ✅ NEIS 학사일정 분류기: 제목/내용으로 exam | holiday | event 판별
-function classifyNeisEvent(title = '', detail = '') {
-  const s = `${title} ${detail}`.toLowerCase();
-
-  // 시험/평가
-  const examKw = [
-    '시험','지필','중간','기말','평가','고사','모의','퀴즈','수행평가'
-  ];
-  // 휴업/공휴일/방학
-  const holidayKw = [
-    '휴업','방학','공휴일','대체공휴일','개교기념일','재량휴업','휴교',
-    '설날','설 연휴','추석','추석 연휴','성탄','크리스마스','현충일','어린이날',
-    '광복절','개천절','한글날','석가탄신일','신정'
-  ];
-
-  if (examKw.some(k => s.includes(k)))   return 'exam';
-  if (holidayKw.some(k => s.includes(k))) return 'holiday';
-
-  // 그 외(행사, 입학식/졸업식/소풍/축제/체험학습 등)
-  return 'event';
-}
-
-// 학사일정 표시용 라벨: 아이콘 + 제목
-function eventLabel(kind, title){
-  // title 보정 (빈값/… 방지)
-  const t = (title && title.trim()) ? title : '학사 일정';
-  if (kind === 'holiday') return `🏖️ ${t}`;
-  if (kind === 'exam')    return `📝 ${t}`;
-  return `📌 ${t}`; // 일반 행사
-}
-
-
-function renderSchedDetail(dateStr, itemsA, itemsE){
-  const t  = document.getElementById('sched-detail-title');
-  const ul = document.getElementById('sched-detail-list');
-  t.textContent = `${dateStr.replace(/-/g,'.')} 일정`;
-
-  const aPart = (itemsA && itemsA.length)
-    ? itemsA.map(x=>`<li>📘 <b>${x.period}교시</b> · ${escapeHtml(x.title)}</li>`).join('')
-    : '<li>📝 수행 일정 없음</li>';
-
-  const ePart = (itemsE && itemsE.length)
-    ? itemsE.map(e=>`<li>${eventLabel(e.kind, escapeHtml(e.title))}</li>`).join('')
-    : '<li>📌 학사일정 없음</li>';
-
-  ul.innerHTML = `
-    <div style="margin-bottom:.4rem;color:#6b7280;font-weight:700;">수행</div>
-    ${aPart}
-    <div style="margin:.6rem 0 .4rem;color:#6b7280;font-weight:700;">학사</div>
-    ${ePart}
-  `;
-}
-
-
-(() => {
-  // 이미 상단에서 설정된 값 재사용: NEIS_KEY, ATPT_OFCDC_SC_CODE, SD_SCHUL_CODE
-  // 사용자 상태 재사용: currentGrade, currentClassNum (없으면 localStorage로 보강)
-
-  // DOM
-  const elBadge   = document.getElementById('badge-day');
-  const elList    = document.getElementById('timetable');
-  const elNotice  = document.getElementById('notice');
-  const elPicker  = document.getElementById('datePicker');
-
-  const DOW = ['일','월','화','수','목','금','토'];
-
-  // 날짜 유틸 (서울 기준)
-  const seoulNow = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-  const toInput = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const toNeisYmd = d => toInput(d).replace(/-/g,'');
-  const semesterOf = (d) => (d.getMonth()+1) <= 8 ? 1 : 2;
-
-  function getGradeClass() {
-    const g = (typeof currentGrade === 'number' ? currentGrade : parseInt(localStorage.getItem('savedGrade'), 10)) || null;
-    const c = (typeof currentClassNum === 'number' ? currentClassNum : parseInt(localStorage.getItem('savedClassNum'), 10)) || null;
-    return { grade: g, classNum: c };
-  }
-
-  function setBadge(d) {
-    if (!elBadge) return;
-    elBadge.textContent = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${DOW[d.getDay()]})`;
-  }
-
-  function showNotice(msg) {
-    if (!elNotice) return;
-    elList.innerHTML = '';
-    elNotice.style.display = 'block';
-    elNotice.textContent = msg;
-  }
-
-  function hideNotice() {
-    if (!elNotice) return;
-    elNotice.style.display = 'none';
-    elNotice.textContent = '';
-  }
-
-  function renderRows(rows) {
-    if (!rows || rows.length === 0) {
-      elList.innerHTML = '';
-      showNotice('교육청 시간표 데이터가 없습니다.');
-      return;
-    }
-    hideNotice();
-
-    // 같은 교시 중복 제거 (가끔 같은 PERIO가 여러 행으로 옴)
-    const byPeriod = {};
-    for (const r of rows) {
-      const p = String(r.PERIO ?? '').trim();
-      if (!p) continue;
-      if (!byPeriod[p]) byPeriod[p] = r.ITRT_CNTNT || '';
-    }
-    const sorted = Object.keys(byPeriod).map(Number).sort((a,b)=>a-b);
-
-    elList.innerHTML = sorted.map(p => `
-      <li style="display:flex;align-items:center;gap:10px;padding:10px 6px;border-top:1px dashed #e9ecef;">
-        <span style="width:58px;min-width:58px;text-align:center;font-weight:700;">${p}교시</span>
-        <span style="font-weight:600;">${byPeriod[p] || ''}</span>
-      </li>
-    `).join('');
-
-    const first = elList.querySelector('li');
-    if (first) first.style.borderTop = '0';
-  }
-
-  async function fetchNeisDay({ grade, classNum }, dateObj) {
-    const AY   = dateObj.getFullYear();
-    const SEM  = semesterOf(dateObj);
-    const YMD  = toNeisYmd(dateObj);
-
-    const url =
-      `https://open.neis.go.kr/hub/misTimetable` +
-      `?KEY=${encodeURIComponent(NEIS_KEY)}` +
-      `&Type=json` +
-      `&ATPT_OFCDC_SC_CODE=${encodeURIComponent(ATPT_OFCDC_SC_CODE)}` +
-      `&SD_SCHUL_CODE=${encodeURIComponent(SD_SCHUL_CODE)}` +
-      `&AY=${AY}&SEM=${SEM}` +
-      `&ALL_TI_YMD=${YMD}` +
-      `&GRADE=${encodeURIComponent(grade)}` +
-      `&CLASS_NM=${encodeURIComponent(classNum)}`;
-
-    const res  = await fetch(url);
-    if (!res.ok) throw new Error(`NEIS 응답 오류 ${res.status}`);
-    const json = await res.json();
-    // 정상 데이터: json.misTimetable[1].row
-    const block = json && json.misTimetable && json.misTimetable[1];
-    return block ? (block.row || []) : [];
-  }
-
-  async function loadTimetableDay(dateStr) {
-    const dateObj = dateStr ? new Date(dateStr) : seoulNow();
-    setBadge(dateObj);
-
-    const { grade, classNum } = getGradeClass();
-    if (!grade || !classNum) {
-      renderRows([]);
-      showNotice('학년/반 정보를 찾을 수 없습니다. 로그인 후 다시 시도하세요.');
-      return;
-    }
-
-    try {
-      const rows = await fetchNeisDay({ grade, classNum }, dateObj);
-      renderRows(rows);
-    } catch (e) {
-      console.warn(e);
-      renderRows([]);
-      showNotice('시간표를 불러오는 중 오류가 발생했습니다.');
-    }
-  }
-
-  // 초기화
-  document.addEventListener('DOMContentLoaded', () => {
-    if (elPicker) {
-      // 기본값 = 오늘(서울)
-      elPicker.value = toInput(seoulNow());
-      elPicker.addEventListener('change', (e) => loadTimetableDay(e.target.value));
-    }
-    loadTimetableDay(elPicker?.value);
-  });
-
-  // 다른 곳에서 재호출하고 싶을 때 사용
-  window.reloadTimetableCard = () => loadTimetableDay(elPicker?.value || undefined);
-})();
-
-
-(function(){
-  const ul        = document.getElementById('rank-list');
-  const meEl      = document.getElementById('rank-me');
-  const selMetric = document.getElementById('rank-metric');
-  const selScope  = document.getElementById('rank-scope');
-  const btnRefresh= document.getElementById('rank-refresh');
-
-  // 학생은 범위 고정(같은 반), 관리자만 변경 가능
-  if (typeof currentUserRole === 'string' && currentUserRole !== 'admin') {
-    selScope.value = 'class';
-    selScope.disabled = true;
-  }
-
-  // --- helpers ---
-  const escapeHtml = (s='') => String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-
-  function medal(n){
-    if (n===1) return '🥇';
-    if (n===2) return '🥈';
-    if (n===3) return '🥉';
-    return `<span style="display:inline-block;width:22px;text-align:right;font-weight:700;color:#6b7280">${n}</span>`;
-  }
-
-  function rowHtml(rank, u, metric){
-    const right =
-      metric==='coin'
-        ? `💰 ${Number(u.coin_balance||0)}`
-        : `Lv ${Number(u.level||1)} (XP ${Number(u.xp||0)})`;
-    const sub = `${u.grade??'-'}학년 ${u.class_num??'-'}반 · ${u.student_number??''}번`;
-    return `
-      <li style="display:flex;align-items:center;gap:10px;padding:10px;border-top:1px dashed #e9ecef;">
-        <div style="width:32px;text-align:center">${medal(rank)}</div>
-        <div style="flex:1 1 auto;">
-          <div style="font-weight:700">${escapeHtml(u.name||u.username||'학생')}</div>
-          <div style="font-size:.85rem;color:#6b7280">${sub}</div>
-        </div>
-        <div style="font-weight:700">${right}</div>
-      </li>`;
-  }
-
-  function meHtml(rank, total, u, metric){
-    const right =
-      metric==='coin'
-        ? `💰 ${Number(u.coin_balance||0)}`
-        : `Lv ${Number(u.level||1)} (XP ${Number(u.xp||0)})`;
-    return `
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="font-weight:800">내 순위</div>
-        <div style="margin-left:auto;font-size:.9rem;color:#6b7280">${rank}/${total}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
-        <div style="width:32px;text-align:center">${medal(rank)}</div>
-        <div style="flex:1 1 auto;">
-          <div style="font-weight:700">${escapeHtml(u.name||'나')}</div>
-          <div style="font-size:.85rem;color:#6b7280">${u.grade??'-'}학년 ${u.class_num??'-'}반 · ${u.student_number??''}번</div>
-        </div>
-        <div style="font-weight:700">${right}</div>
-      </div>`;
-  }
-
-  function sortUsers(users, metric){
-    if (metric === 'coin') {
-      // 코인 내림차순, 동점자 이름순
-      return users.sort(
-        (a,b)=>(b.coin_balance||0)-(a.coin_balance||0) || (a.name||'').localeCompare(b.name||'')
-      );
-    } else {
-      // 레벨 → XP 내림차순, 동점자 이름순
-      return users.sort(
-        (a,b)=>(b.level||0)-(a.level||0) || (b.xp||0)-(a.xp||0) || (a.name||'').localeCompare(b.name||'')
-      );
-    }
-  }
-
-  async function loadRanking(){
-    const metric = selMetric.value;           // 'coin' | 'level'
-    const scope  = selScope.value;            // 'class' | 'grade' | 'school'
-
-    // 내 정보 (정렬 후 '내 순위' 표시에 사용)
-    const myUsername = localStorage.getItem('savedUsername') || '';
-    const g = (typeof currentGrade === 'number'
-                ? currentGrade
-                : parseInt(localStorage.getItem('savedGrade')||'0',10)) || null;
-    const c = (typeof currentClassNum === 'number'
-                ? currentClassNum
-                : parseInt(localStorage.getItem('savedClassNum')||'0',10)) || null;
-
-    // 로딩 표시
-    ul.innerHTML = `<li style="padding:10px;color:#6b7280">불러오는 중…</li>`;
-    meEl.style.display = 'none';
-
-    // 기본 쿼리 (관리자 제외)
-    let q = supabaseClient.from('users')
-      .select('username,name,grade,class_num,student_number,coin_balance,level,xp,role', { count: 'exact' })
-      .neq('role','admin');
-
-    // 범위 제한: 학생은 강제 '같은 반', 관리자는 선택값 반영
-    if (typeof currentUserRole === 'string' && currentUserRole !== 'admin') {
-      if (g!=null) q = q.eq('grade', g);
-      if (c!=null) q = q.eq('class_num', c);
-    } else {
-      if (scope === 'class') { if (g!=null) q = q.eq('grade', g); if (c!=null) q = q.eq('class_num', c); }
-      else if (scope === 'grade') { if (g!=null) q = q.eq('grade', g); }
-      // 'school' = 전교 (제한 없음)
-    }
-
-    const { data, error } = await q;
-
-    if (error) {
-      ul.innerHTML = `<li style="padding:10px;color:#ef4444">랭킹 로드 오류: ${escapeHtml(error.message)}</li>`;
-      return;
-    }
-
-    const users = Array.isArray(data) ? data.slice() : [];
-    if (users.length === 0) {
-      ul.innerHTML = `<li style="padding:10px;color:#6b7280">표시할 데이터가 없습니다.</li>`;
-      return;
-    }
-
-    const sorted = sortUsers(users, metric);
-
-    // Top N 렌더
-    const N = 10;
-    ul.innerHTML = '';
-    sorted.slice(0, N).forEach((u, i) => {
-      ul.insertAdjacentHTML('beforeend', rowHtml(i+1, u, metric));
-    });
-
-    // 내 순위 박스
-    const myIndex = sorted.findIndex(u => (u.username||'') === myUsername);
-    if (myIndex >= 0) {
-      meEl.innerHTML = meHtml(myIndex+1, sorted.length, sorted[myIndex], metric);
-      meEl.style.display = 'block';
-    } else {
-      meEl.style.display = 'none';
-    }
-  }
-
-  // 이벤트 바인딩
-  selMetric.addEventListener('change', loadRanking);
-  selScope.addEventListener('change', loadRanking);
-  btnRefresh.addEventListener('click', loadRanking);
-  document.addEventListener('DOMContentLoaded', loadRanking);
-
-  // 외부에서 강제 새로고침 가능
-  window.reloadRankingCard = loadRanking;
-})();
-
-
-(() => {
-  // 서울 기준 오늘 날짜
-  const seoulNow = () => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
-  const toYMD = d => {
-    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), dd = String(d.getDate()).padStart(2,"0");
-    return `${y}${m}${dd}`;
-  };
-  const labelYMD = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
-
-  // 메뉴 문자열 정리
-  function parseDishList(ddish="") {
-    return String(ddish)
-      .replace(/<br\s*\/?>/gi, "\n")
-      .split(/\n+/)
-      .map(s => s.replace(/\((?:\s*\d+\s*\.)+\s*\)/g,"").trim())
-      .filter(Boolean);
-  }
-
-  function renderMeal(dateObj, rows) {
-    const box = document.getElementById("meal-box");
-    const dayLabel = labelYMD(dateObj);
-
-    if (!rows || rows.length===0) {
-      box.innerHTML = `<div style="color:#6b7280">🍽️ ${dayLabel} 급식 정보 없음</div>`;
-      return;
-    }
-
-    // 조식/중식/석식별로 묶기
-    const byType = rows.reduce((m,r)=>{
-      (m[r.MMEAL_SC_NM] ??= []).push(...parseDishList(r.DDISH_NM));
-      return m;
-    },{});
-    const order = ["조식","중식","석식"];
-    const types = Object.keys(byType).sort((a,b)=>{
-      const ia=order.indexOf(a), ib=order.indexOf(b);
-      return (ia===-1?99:ia) - (ib===-1?99:ib);
-    });
-
-    box.innerHTML = `
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-        <strong>오늘 급식</strong>
-        <span style="color:#6b7280;font-size:.9rem">${dayLabel}</span>
-      </div>
-      ${types.map(type=>`
-        <div style="margin-bottom:8px;">
-          <div style="font-weight:600;margin-bottom:4px;">${type}</div>
-          <ul style="margin:0;padding-left:18px;color:#374151;">
-            ${byType[type].map(d=>`<li>${d}</li>`).join("")}
-          </ul>
-        </div>
-      `).join("")}
-    `;
-  }
-
-  // 🍽️ 급식 불러오기 (NEIS 상수 그대로 사용)
   async function loadMeal(forDate) {
     const d = forDate ? new Date(forDate) : seoulNow();
     const url = `https://open.neis.go.kr/hub/mealServiceDietInfo`
@@ -3182,11 +3232,620 @@ function renderSchedDetail(dateStr, itemsA, itemsE){
     }
   }
 
-  // 페이지 로드 시 오늘 급식
   document.addEventListener("DOMContentLoaded", ()=> loadMeal());
-  // 필요 시 외부에서 다시 호출 가능
   window.reloadMealCard = loadMeal;
 })();
+
+      function renderStats({ level, exp, coin, need }) {
+        const levelBadge = document.getElementById('lv-num');
+        const expCur     = document.getElementById('exp-cur');
+        const expNeed    = document.getElementById('exp-need');
+        const fillBar    = document.getElementById('lvl-fill');
+        const coinEl     = document.getElementById('coin-balance');
+
+        if (levelBadge) levelBadge.textContent = level;
+        if (expCur)     expCur.textContent = exp;
+        if (expNeed)    expNeed.textContent = need;
+        if (coinEl && typeof coin === 'number') coinEl.textContent = coin;
+
+        const pct = Math.max(0, Math.min(100, Math.round((exp / need) * 100)));
+        if (fillBar) fillBar.style.width = pct + '%';
+      }
+
+      async function syncStatsAndRender() {
+        try {
+          const username = localStorage.getItem('savedUsername');
+          const NEED = 20;
+
+          if (!username) {
+            renderStats({ level: 1, exp: 0, coin: 0, need: NEED });
+            return;
+          }
+
+          const { data, error } = await supabaseClient
+            .from('users')
+            .select('level, xp, coin_balance')   
+            .eq('username', username)
+            .single();
+
+          if (error) throw error;
+
+          const level = Number.isFinite(+data?.level) ? +data.level : 1;
+          const exp   = Number.isFinite(+data?.xp)    ? +data.xp    : 0; 
+          const coin  = Number.isFinite(+data?.coin_balance) ? +data.coin_balance : 0;
+
+          renderStats({ level, exp, coin, need: NEED });
+        } catch (e) {
+          console.warn('syncStatsAndRender error:', e);
+          renderStats({ level: 1, exp: 0, coin: 0, need: 20 });
+        }
+      }
+      
+      window.addEventListener('DOMContentLoaded', () => {
+        const savedName = localStorage.getItem('savedName');
+        const savedNum = localStorage.getItem('savedStudentNum');
+        if (savedName && savedNum) {
+          currentUserName = savedName;
+          currentStudentNumber = savedNum;
+          setUserInfoInput();
+        }
+      });
+
+      window.addEventListener('DOMContentLoaded', async () => {
+        const savedUsername = localStorage.getItem('savedUsername');
+        if (!savedUsername) { showLogin(); return; }
+
+        const { data: user, error } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('username', savedUsername)
+          .maybeSingle();
+
+        if (error || !user) { showLogin(); return; }
+
+        currentUserRole = user.role || 'user';
+        currentGrade = user.grade;
+        currentClassNum = user.class_num;
+        currentUserName = user.name;
+        currentStudentNumber = user.student_number;
+
+        localStorage.setItem('savedName', user.name);
+        localStorage.setItem('savedStudentNum', user.student_number);
+        localStorage.setItem('savedGrade', user.grade);
+        localStorage.setItem('savedClassNum', user.class_num);
+
+        setUserInfoInput();
+
+        await loadTimetableWeek(user.grade, user.class_num);
+        await loadCoinBalance();
+        showMain();
+        loadNotices();
+
+        afterLoginRefreshDashboard();
+      });
+      
+      document.addEventListener('DOMContentLoaded', () => {
+  const profileButton = document.getElementById('profile-button');
+  const dropdown = document.getElementById('profile-dropdown');
+
+  if (profileButton && dropdown) {
+    profileButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+    });
+    document.addEventListener('click', () => {
+      dropdown.style.display = 'none';
+    });
+  }
+});
+
+
+const GEMINI_API_KEY = 'AIzaSyCpr0FN7DA2eEjzfT3CgLlugBQFgp1YitE';   // ← 여기에 키 입력
+const GEMINI_MODEL   = 'gemini-1.5-flash';      // pro로 바꿔도 OK
+
+
+function weekdayKo(dateObj){
+  return ['일','월','화','수','목','금','토'][dateObj.getDay()];
+}
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function toYMD(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+
+function normalizeDate(s=''){
+  s = String(s).trim();
+  if(!s) return '';
+  // 2024-09-01 / 2024.9.1 / 2024/9/1 / 2024년 9월 1일
+  const m = s.match(/(20\d{2})[.\-\/년\s]*([01]?\d)[.\-\/월\s]*([0-3]?\d)/);
+  if(!m) return '';
+  const y = +m[1], mo = Math.min(12, Math.max(1, +m[2])), d = Math.min(31, Math.max(1, +m[3]));
+  return toYMD(new Date(y, mo-1, d));
+}
+
+function normalizeTime(s=''){
+  s = String(s).trim();
+  if(!s) return '';
+  // 오후 2시 5분 / 오전 9시 / 14:05 / 9:00
+  let ampm = s.match(/(오전|오후)/);
+  let hm = s.match(/([01]?\d|2[0-3])[:시]\s*([0-5]?\d)?/);
+  if(!hm) return '';
+  let h = +hm[1], m = hm[2]!=null ? +hm[2] : 0;
+  if(ampm){
+    if(ampm[1] === '오후' && h !== 12) h += 12;
+    if(ampm[1] === '오전' && h === 12) h = 0;
+  }
+  return `${pad2(h)}:${pad2(m)}`;
+}
+
+function detectPeriod(text=''){
+  const m = String(text).match(/([1-9]|1[0-2])\s*교시/);
+  return m ? String(+m[1]) : '';
+}
+
+function detectSubject(text=''){
+  const t = String(text);
+  for(const sub of KOR_SUBJECTS){
+    const re = new RegExp(`\\b${sub}\\b`);
+    if(re.test(t)) return sub;
+  }
+  // 라벨형 "과목: 영어" 도 보조
+  const m = t.match(/(?:과목|교과)\s*[:\-]\s*([가-힣A-Za-z0-9 ]{1,20})/);
+  return m ? m[1].trim() : '';
+}
+
+/* ========= 폼/출력 반영 ========= */
+function formatAnalyzeResult({subject,date,yoil,time,period,topic,materials}) {
+  return [
+    `[과목] ${subject||''}`,
+    `[평가 날짜] ${date||''}`,
+    `[요일] ${yoil||''}`,
+    `[평가 시간] ${time||''}`,
+    `[교시] ${period||''}`,
+    `[평가 주제] ${topic||''}`,
+    `[준비물] ${materials||''}`,
+    `--------------------------------`
+  ].join('\n');
+}
+
+function setAnalyzeForm(f){
+  const $ = (id) => document.getElementById(id);
+function setVal(id, val) {
+  const el = $(id);
+  if (!el) {
+    console.warn(`[WARN] Missing element: #${id}`);
+    return;
+  }
+  el.value = val ?? '';
+}
+
+// ---------- 요일 계산 ----------
+function weekdayKo(dateObj){
+  return ['일','월','화','수','목','금','토'][dateObj.getDay()];
+}
+
+// ---------- 요약 텍스트 ----------
+function formatAnalyzeResult({subject,date,yoil,time,period,topic,materials}) {
+  return [
+    `[과목] ${subject||''}`,
+    `[평가 날짜] ${date||''}`,
+    `[요일] ${yoil||''}`,
+    `[평가 시간] ${time||''}`,
+    `[교시] ${period||''}`,
+    `[평가 주제] ${topic||''}`,
+    `[준비물] ${materials||''}`,
+    `--------------------------------`
+  ].join('\n');
+}
+
+// ---------- 교체할 함수 (드롭인) ----------
+function setAnalyzeForm(f){
+  // date가 있다면 yoil 자동 계산
+  const yoil = f?.date ? weekdayKo(new Date(f.date)) : (f?.yoil || '');
+
+  setVal('af-subject',   f?.subject   || '');
+  setVal('af-date',      f?.date      || '');
+  setVal('af-yoil',      yoil);
+  setVal('af-time',      f?.time      || '');
+  setVal('af-period',    f?.period    || '');
+  setVal('af-topic',     f?.topic     || '');
+  setVal('af-materials', f?.materials || '');
+
+  const r = $('doc-result');
+  if (r) {
+    r.value = formatAnalyzeResult({
+      subject: f?.subject||'',
+      date: f?.date||'',
+      yoil,
+      time: f?.time||'',
+      period: f?.period||'',
+      topic: f?.topic||'',
+      materials: f?.materials||'',
+    });
+    try { r.style.height='auto'; r.style.height = r.scrollHeight + 'px'; } catch {}
+  } else {
+    console.warn('[WARN] Missing element: #doc-result');
+  }
+}
+
+// (선택) 빠르게 점검하고 싶다면 호출해 보세요.
+function debugFormPresence(){
+  [
+    'af-subject','af-date','af-yoil','af-time','af-period','af-topic','af-materials','doc-result'
+  ].forEach(id => console.log(`#${id}:`, !!$(id)));
+}
+}
+
+/* ========= Gemini 호출 ========= */
+async function callGeminiImageExtract({base64, mime}){
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+
+  const prompt = `
+다음 한국어 공지/안내 "이미지"에서 아래 필드를 정확히 추출해 JSON만 출력해.
+반드시 이 스키마를 지켜:
+{
+  "subject": "대표 과목명(국어/수학/영어/… 한 단어)",
+  "date": "YYYY-MM-DD",
+  "yoil": "한글 요일 한 글자(일/월/화/수/목/금/토) 또는 빈 문자열",
+  "time": "HH:MM(24h) 또는 빈 문자열",
+  "period": "정수(문자열 가능) 또는 빈 문자열",
+  "topic": "간단 주제(없으면 빈 문자열)",
+  "materials": "준비물(없으면 빈 문자열)"
+}
+규칙:
+- "3교시"가 보이면 period는 "3".
+- "오후 2시 5분" → time "14:05".
+- 날짜는 무조건 YYYY-MM-DD.
+- 확실치 않으면 해당 필드는 "" (빈 문자열).
+- JSON 외 불필요한 텍스트 금지.
+`;
+
+  const body = {
+    contents: [{
+      role: "user",
+      parts: [
+        { text: prompt },
+        { inline_data: { mime_type: mime, data: base64 } }
+      ]
+    }],
+    generationConfig: {
+      temperature: 0.2,
+      response_mime_type: "application/json"
+    }
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if(!res.ok){
+    const t = await res.text().catch(()=> '');
+    throw new Error(`Gemini API 오류: ${res.status} ${t}`);
+  }
+
+  const json = await res.json();
+
+  // v1beta 응답 파싱
+  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  let obj = {};
+  try { obj = JSON.parse(text); } catch { obj = {}; }
+  return obj;
+}
+
+/* ========= 정규화(빈 칸 보정 포함) ========= */
+function normalizeFields(raw={}, srcText=''){
+  let {
+    subject='', date='', yoil='',
+    time='', period='', topic='', materials=''
+  } = raw;
+
+  // 날짜/시간/교시 정규화
+  date   = normalizeDate(date) || normalizeDate(srcText);
+  time   = normalizeTime(time) || normalizeTime(srcText);
+  period = (String(period||'').trim()) || detectPeriod(srcText);
+
+  // 과목: 모델 결과 없으면 텍스트에서 보강
+  subject = (subject||'').trim() || detectSubject(srcText);
+
+  // 요일: date 있으면 계산
+  if (date && !yoil) yoil = weekdayKo(new Date(date));
+
+  // 타입/형식 보정
+  if (period && !/^\d+$/.test(period)) {
+    const p = detectPeriod(period);
+    period = p || '';
+  }
+  if (time && !/^\d{2}:\d{2}$/.test(time)) {
+    time = normalizeTime(time) || '';
+  }
+
+  return { subject, date, yoil, time, period, topic: topic||'', materials: materials||'' };
+}
+
+/** =========================
+ *  OCR 메인: analyzeDocument()
+ *  - 이미지(JPG/PNG/WebP...)와 PDF 모두 지원
+ *  - Tesseract.js(ko+en)로 인식 → 폼 자동 채우기
+ *  ========================= */
+async function analyzeDocument() {
+  const fileInput = document.getElementById('doc-file');
+  const previewEl = document.getElementById('doc-preview');
+  const resultEl  = document.getElementById('doc-result');
+  if (!fileInput || !fileInput.files.length) {
+    alert('이미지 또는 PDF 파일을 선택해 주세요.');
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const name = (file.name || '').toLowerCase();
+  const isPDF = name.endsWith('.pdf');
+
+  // 미리 보기(이미지는 그대로 / PDF는 1페이지 렌더링 캡처)
+  try {
+    if (!isPDF) {
+      const url = URL.createObjectURL(file);
+      previewEl.src = url;
+      previewEl.style.display = 'block';
+    } else {
+      previewEl.style.display = 'none'; // PDF는 미리보기를 생략(아래에서 1p 캔버스로도 가능)
+    }
+  } catch(e){ /* 미리보기 실패 시 무시 */ }
+
+  // OCR 진행 상태 표시
+  const setProgress = (msg) => {
+    if (!resultEl) return;
+    resultEl.value = msg;
+    autoResize();
+  };
+
+  try {
+    let text = '';
+    if (isPDF) {
+      text = await ocrPdf(file, setProgress);
+    } else {
+      text = await ocrImage(file, setProgress);
+    }
+
+    // 1) 원문을 일단 표시
+    resultEl.value = text.trim();
+    autoResize();
+
+    // 2) 프로젝트 내 파서로 폼 자동 채우기 + 보기 좋게 포맷
+    const formatted = fillFromText(text);
+    if (formatted && typeof formatted === 'string') {
+      resultEl.value = formatted;
+      autoResize();
+    }
+
+    alert('문서 분석이 완료되었습니다. 필요한 항목을 확인·수정 후 "분석된 글 등록하기"를 눌러 저장하세요.');
+
+  } catch (err) {
+    console.error(err);
+    setProgress('❌ 분석 중 오류가 발생했습니다. 파일을 다시 확인해 주세요.');
+    alert('OCR 중 오류가 발생했습니다.');
+  }
+}
+
+/** =========================
+ *  이미지 OCR
+ *  ========================= */
+async function ocrImage(fileOrCanvas, onProgress) {
+  const input = await ensureCanvas(fileOrCanvas); // 이미지 파일 → 캔버스
+  const text  = await tesseractRecognize(input, '이미지', onProgress);
+  return text;
+}
+
+/** =========================
+ *  PDF OCR (모든 페이지 합산)
+ *  ========================= */
+async function ocrPdf(file, onProgress) {
+  const pdfData = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+
+  let fullText = '';
+  const total = pdf.numPages;
+
+  for (let i = 1; i <= total; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2 }); // 품질/속도 균형
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    canvas.width  = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    const pageText = await tesseractRecognize(canvas, `PDF p.${i}/${total}`, onProgress);
+    fullText += `\n\n===== [Page ${i}] =====\n${pageText}\n`;
+  }
+
+  return fullText.trim();
+}
+
+/** =========================
+ *  Tesseract 래퍼
+ *  - ko+en 동시 사용
+ *  - 진행률 콜백 제공
+ *  ========================= */
+async function tesseractRecognize(imageOrCanvas, label, onProgress) {
+  const opts = {
+    // 한국어 데이터까지 내려받기 위해 tessdata 경로 지정
+    langPath: 'https://tessdata.projectnaptha.com/4.0.0',
+    logger: (m) => {
+      if (m && m.status && typeof m.progress === 'number') {
+        const pct = Math.round(m.progress * 100);
+        onProgress?.(`🔍 ${label}: ${m.status} (${pct}%)`);
+      }
+    }
+  };
+  const { data: { text } } = await Tesseract.recognize(imageOrCanvas, 'kor+eng', opts);
+  onProgress?.(`✅ ${label}: 완료`);
+  return (text || '').replace(/\u0000/g, ''); // 널문자 제거
+}
+
+/** =========================
+ *  파일 → 캔버스 변환 (이미지용)
+ *  ========================= */
+async function ensureCanvas(fileOrCanvas) {
+  if (fileOrCanvas instanceof HTMLCanvasElement) {
+    return fileOrCanvas;
+  }
+  if (fileOrCanvas instanceof Blob || fileOrCanvas instanceof File) {
+    const url = URL.createObjectURL(fileOrCanvas);
+    const img = await loadImage(url);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    // 너무 큰 이미지면 다운스케일(속도 ↑, 메모리 ↓)
+    const MAX_W = 2200; // 적당한 상한
+    let w = img.naturalWidth;
+    let h = img.naturalHeight;
+    if (w > MAX_W) {
+      const ratio = MAX_W / w;
+      w = Math.round(w * ratio);
+      h = Math.round(h * ratio);
+    }
+
+    canvas.width = w;
+    canvas.height = h;
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas;
+  }
+  throw new Error('지원하지 않는 입력 타입입니다.');
+}
+
+function loadImage(src) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+
+/** =========================
+ *  OCR 결과 등록: registerAnalyzedText()
+ *  - assessments 테이블에 저장
+ *  - (선택) 사진을 스토리지에 올리고,
+ *          공지(notices)도 자동 발행 가능
+ *  ========================= */
+async function registerAnalyzedText() {
+  try {
+    const fields = getAnalyzeForm(); // {subject,date,yoil,time,period,topic,materials}
+    const rawTxt = (document.getElementById('doc-result')?.value || '').trim();
+
+    // 최소 유효성
+    if (!fields.subject || !fields.date) {
+      alert('과목과 날짜는 필수입니다.');
+      return;
+    }
+
+    // 로그인 사용자 정보(기존 로직 재사용)
+    const { data: writerData, error: writerError } = await supabaseClient
+      .from('users')
+      .select('username,name,role,grade,class_num,student_number')
+      .eq('username', localStorage.getItem('savedUsername'))
+      .single();
+
+    if (writerError || !writerData) {
+      alert('사용자 정보를 불러오지 못했습니다.');
+      return;
+    }
+
+    // (선택) 이미지/파일 업로드
+    let uploadedUrl = '';
+    const fileInput = document.getElementById('doc-file');
+    const uploadChecked = document.getElementById('upload-image-check')?.checked;
+    if (uploadChecked && fileInput?.files?.length) {
+      const theFile = fileInput.files[0];
+      // 이미지가 아닐 경우 공지 첨부는 생략
+      if (/^image\//i.test(theFile.type)) {
+        const filePath = `assessments/${Date.now()}_${(theFile.name || 'file').replace(/[^\w.-]/g, '_')}`;
+        const { error: upErr } = await supabaseClient
+          .storage
+          .from('notice-images') // 필요 시 전용 버킷(assessments)로 변경
+          .upload(filePath, theFile, { upsert: true });
+        if (upErr) {
+          console.warn('이미지 업로드 실패:', upErr);
+        } else {
+          const { data: publicData } = supabaseClient
+            .storage
+            .from('notice-images')
+            .getPublicUrl(filePath);
+          uploadedUrl = publicData.publicUrl || '';
+        }
+      }
+    }
+
+    // assessments 저장(프로젝트 테이블 스키마에 맞춰 컬럼명 조정 가능)
+    const row = {
+      grade: writerData.grade,
+      class_num: writerData.class_num,
+      subject: fields.subject || null,
+      date: fields.date || null,
+      yoil: fields.yoil || null,
+      time: fields.time || null,
+      period: fields.period ? Number(fields.period) : null,
+      topic: fields.topic || null,
+      materials: fields.materials || null,
+      raw_text: rawTxt || null,
+      creator: writerData.name || null,
+      creator_username: writerData.username || null,
+      creator_student_number: writerData.student_number || null,
+      image_url: uploadedUrl || null
+    };
+
+    const { error: insertErr } = await supabaseClient
+      .from('assessments')
+      .insert([row]);
+
+    if (insertErr) {
+      console.error(insertErr);
+      alert('DB 저장에 실패했습니다: ' + insertErr.message);
+      return;
+    }
+
+    // (선택) 공지 자동 발행
+    if (uploadedUrl) {
+      const noticeTitle = `[수행 알림] ${fields.subject || ''} ${fields.date || ''} ${fields.period ? fields.period + '교시' : ''}`;
+      const noticeContent = [
+        fields.topic ? `주제: ${fields.topic}` : '',
+        fields.materials ? `준비물: ${fields.materials}` : '',
+      ].filter(Boolean).join('\n');
+
+      const newNotice = {
+        title: noticeTitle || '수행 알림',
+        content: noticeContent || '수행 일정 안내',
+        image_url: uploadedUrl,
+        writer: writerData.name,
+        writer_role: writerData.role,
+        grade: writerData.grade,
+        class_num: writerData.class_num
+      };
+
+      const { error: nErr } = await supabaseClient.from('notices').insert([newNotice]);
+      if (nErr) {
+        console.warn('공지 등록 실패:', nErr);
+      }
+    }
+
+    alert('등록이 완료되었습니다!');
+    // 필요 시 폼/파일 초기화
+    // document.getElementById('doc-file').value = '';
+    // document.getElementById('doc-result').value = '';
+    // setAnalyzeForm({}); // 폼 초기화 원하면 사용
+
+    // 대시보드/달력 갱신
+    try { await renderScheduleCalendar(); } catch(e){}
+    try { await loadNotices(); } catch(e){}
+
+  } catch (e) {
+    console.error(e);
+    alert('등록 중 오류가 발생했습니다.');
+  }
+}
+
+
     </script>
   </body> 
 </html>
