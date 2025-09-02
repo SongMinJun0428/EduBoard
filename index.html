@@ -788,6 +788,13 @@
         border-radius: 6px;
       }
 
+      #doc-panel label {
+        display: block;
+        margin-top: 0.5rem;
+        margin-bottom: 0.3rem;
+        font-weight: 600;
+        color: #495057;
+      }
   </style>
 </head>
   <body>
@@ -1107,11 +1114,14 @@
             <label>과목</label>
             <input id="af-subject" type="text" placeholder="예: 수학">
 
+            <label>수행 날짜</label>
+            <input id="af-date" type="date" oninput="syncYoilFromDate()">
+
             <label>요일</label>
             <input id="af-yoil" type="text" readonly placeholder="자동 계산">
 
             <label>교시</label>
-            <input id="af-period" type="number" min="1" max="12" placeholder="예: 3">
+            <input id="af-period" type="number" min="1" max="7" placeholder="예: 3">
 
             <label>평가 주제</label>
             <input id="af-topic" type="text" placeholder="예: 일차방정식 활용">
@@ -2040,19 +2050,53 @@ const SUBJECT_SYNONYMS = {
         if (r) { r.value = txt; if (typeof autoResize==='function') autoResize(); }
       }
 
-      function getAnalyzeForm(){
-        const g = id => (document.getElementById(id).value || '').trim();
-        const fields = {
-          subject:   g('af-subject'),
-          date:      g('af-date'),
-          time:      g('af-time'),
-          period:    g('af-period'),
-          topic:     g('af-topic'),
-          materials: g('af-materials')
-        };
-        fields.yoil = fields.date ? weekdayKo(new Date(fields.date)) : (document.getElementById('af-yoil').value || '');
-        return fields;
-      }
+function $v(id){
+  const el = document.getElementById(id);
+  return el && 'value' in el ? String(el.value).trim() : '';
+}
+
+// ✅ 날짜 → 요일 동기화(이미 있으시면 유지)
+function syncYoilFromDate(){
+  const d = $v('af-date');
+  const yoilEl = document.getElementById('af-yoil');
+  if (!yoilEl) return;
+  if (!d){ yoilEl.value = ''; return; }
+  const wd = ['일','월','화','수','목','금','토'][new Date(d).getDay()];
+  yoilEl.value = wd;
+}
+
+// ✅ 기존 함수 교체: 없는 필드가 있어도 에러 없이 동작
+function getAnalyzeForm(){
+  const fields = {
+    subject:   $v('af-subject'),
+    date:      $v('af-date'),
+    yoil:      $v('af-yoil'),
+    period:    $v('af-period'),
+    topic:     $v('af-topic'),
+    // 아래 두 개는 폼에 없으면 자동으로 빈 문자열 반환
+    time:      $v('af-time'),
+    materials: $v('af-materials'),
+  };
+
+  // 요일 빈칸이면 날짜로 자동 계산
+  if (!fields.yoil && fields.date){
+    fields.yoil = ['일','월','화','수','목','금','토'][new Date(fields.date).getDay()];
+  }
+
+  // 교시 숫자 정규화
+  if (fields.period) {
+    const n = parseInt(fields.period, 10);
+    fields.period = Number.isFinite(n) ? String(n) : '';
+  }
+
+  return fields;
+}
+
+// (선택) 값 채울 때도 안전하게
+function setValue(id, val){
+  const el = document.getElementById(id);
+  if (el) el.value = val ?? '';
+}
       if (typeof mergeMissing !== 'function') {
         // base(현재값)에서 빈 칸만 add(후보값)으로 보강
         function mergeMissing(base = {}, add = {}) {
@@ -2633,38 +2677,13 @@ const SUBJECT_SYNONYMS = {
         const first = ymd(startOfMonth(ref));
         const last  = ymd(endOfMonth(ref));
         const { data, error } = await supabaseClient
-          .from('assessments')
+          .from('analyzed_docs')
           .select('date, period, subject')
           .gte('date', first).lte('date', last)
           .eq('grade', currentGrade).eq('class_num', currentClassNum)
           .order('date, period');
         if(error){ console.warn('assessments error', error); return []; }
         return data || [];
-      }
-
-      function renderSchedDetail(dateStr, itemsA, itemsE){
-        const t  = document.getElementById('sched-detail-title');
-        const ul = document.getElementById('sched-detail-list');
-        t.textContent = `${dateStr.replace(/-/g,'.')} 일정`;
-
-        const aPart = (itemsA && itemsA.length)
-          ? itemsA.map(x=>`<li>📝 <b>${x.period}교시</b> · ${x.subject || '수행'}</li>`).join('')
-          : '<li>📝 수행 일정 없음</li>';
-
-        const ePart = (itemsE && itemsE.length)
-          ? itemsE.map(e=>{
-              const tag = e.kind==='holiday'?'🏖️':
-                          e.kind==='exam'?'🧪':'📌';
-              return `<li>${tag} ${e.title}</li>`;
-            }).join('')
-          : '<li>📌 학사일정 없음</li>';
-
-        ul.innerHTML = `
-          <div style="margin-bottom:.4rem;color:#6b7280;font-weight:700;">수행</div>
-          ${aPart}
-          <div style="margin:.6rem 0 .4rem;color:#6b7280;font-weight:700;">학사</div>
-          ${ePart}
-        `;
       }
 
       async function renderScheduleCalendar(){
@@ -3212,28 +3231,28 @@ const SUBJECT_SYNONYMS = {
           `;
         }
 
-  async function loadMeal(forDate) {
-    const d = forDate ? new Date(forDate) : seoulNow();
-    const url = `https://open.neis.go.kr/hub/mealServiceDietInfo`
-      + `?KEY=${encodeURIComponent(NEIS_KEY)}&Type=json`
-      + `&ATPT_OFCDC_SC_CODE=${encodeURIComponent(ATPT_OFCDC_SC_CODE)}`
-      + `&SD_SCHUL_CODE=${encodeURIComponent(SD_SCHUL_CODE)}`
-      + `&MLSV_YMD=${toYMD(d)}`;
+    async function loadMeal(forDate) {
+      const d = forDate ? new Date(forDate) : seoulNow();
+      const url = `https://open.neis.go.kr/hub/mealServiceDietInfo`
+        + `?KEY=${encodeURIComponent(NEIS_KEY)}&Type=json`
+        + `&ATPT_OFCDC_SC_CODE=${encodeURIComponent(ATPT_OFCDC_SC_CODE)}`
+        + `&SD_SCHUL_CODE=${encodeURIComponent(SD_SCHUL_CODE)}`
+        + `&MLSV_YMD=${toYMD(d)}`;
 
-    try {
-      const res = await fetch(url);
-      const json = await res.json();
-      const block = json && json.mealServiceDietInfo && json.mealServiceDietInfo[1];
-      renderMeal(d, block ? block.row : []);
-    } catch(e) {
-      document.getElementById("meal-box").innerHTML =
-        `<div style="color:#ef4444">급식 로딩 오류</div>`;
-      console.error(e);
+      try {
+        const res = await fetch(url);
+        const json = await res.json();
+        const block = json && json.mealServiceDietInfo && json.mealServiceDietInfo[1];
+        renderMeal(d, block ? block.row : []);
+      } catch(e) {
+        document.getElementById("meal-box").innerHTML =
+          `<div style="color:#ef4444">급식 로딩 오류</div>`;
+        console.error(e);
+      }
     }
-  }
 
-  document.addEventListener("DOMContentLoaded", ()=> loadMeal());
-  window.reloadMealCard = loadMeal;
+    document.addEventListener("DOMContentLoaded", ()=> loadMeal());
+    window.reloadMealCard = loadMeal;
 })();
 
       function renderStats({ level, exp, coin, need }) {
@@ -3325,527 +3344,393 @@ const SUBJECT_SYNONYMS = {
       });
       
       document.addEventListener('DOMContentLoaded', () => {
-  const profileButton = document.getElementById('profile-button');
-  const dropdown = document.getElementById('profile-dropdown');
+        const profileButton = document.getElementById('profile-button');
+        const dropdown = document.getElementById('profile-dropdown');
 
-  if (profileButton && dropdown) {
-    profileButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
-    });
-    document.addEventListener('click', () => {
-      dropdown.style.display = 'none';
-    });
-  }
-});
-
-
-const GEMINI_API_KEY = 'AIzaSyCpr0FN7DA2eEjzfT3CgLlugBQFgp1YitE';   // ← 여기에 키 입력
-const GEMINI_MODEL   = 'gemini-1.5-flash';      // pro로 바꿔도 OK
-
-
-function weekdayKo(dateObj){
-  return ['일','월','화','수','목','금','토'][dateObj.getDay()];
-}
-
-function pad2(n){ return String(n).padStart(2,'0'); }
-function toYMD(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
-
-function normalizeDate(s=''){
-  s = String(s).trim();
-  if(!s) return '';
-  // 2024-09-01 / 2024.9.1 / 2024/9/1 / 2024년 9월 1일
-  const m = s.match(/(20\d{2})[.\-\/년\s]*([01]?\d)[.\-\/월\s]*([0-3]?\d)/);
-  if(!m) return '';
-  const y = +m[1], mo = Math.min(12, Math.max(1, +m[2])), d = Math.min(31, Math.max(1, +m[3]));
-  return toYMD(new Date(y, mo-1, d));
-}
-
-function normalizeTime(s=''){
-  s = String(s).trim();
-  if(!s) return '';
-  // 오후 2시 5분 / 오전 9시 / 14:05 / 9:00
-  let ampm = s.match(/(오전|오후)/);
-  let hm = s.match(/([01]?\d|2[0-3])[:시]\s*([0-5]?\d)?/);
-  if(!hm) return '';
-  let h = +hm[1], m = hm[2]!=null ? +hm[2] : 0;
-  if(ampm){
-    if(ampm[1] === '오후' && h !== 12) h += 12;
-    if(ampm[1] === '오전' && h === 12) h = 0;
-  }
-  return `${pad2(h)}:${pad2(m)}`;
-}
-
-function detectPeriod(text=''){
-  const m = String(text).match(/([1-9]|1[0-2])\s*교시/);
-  return m ? String(+m[1]) : '';
-}
-
-function detectSubject(text=''){
-  const t = String(text);
-  for(const sub of KOR_SUBJECTS){
-    const re = new RegExp(`\\b${sub}\\b`);
-    if(re.test(t)) return sub;
-  }
-  // 라벨형 "과목: 영어" 도 보조
-  const m = t.match(/(?:과목|교과)\s*[:\-]\s*([가-힣A-Za-z0-9 ]{1,20})/);
-  return m ? m[1].trim() : '';
-}
-
-/* ========= 폼/출력 반영 ========= */
-function formatAnalyzeResult({subject,date,yoil,time,period,topic,materials}) {
-  return [
-    `[과목] ${subject||''}`,
-    `[평가 날짜] ${date||''}`,
-    `[요일] ${yoil||''}`,
-    `[평가 시간] ${time||''}`,
-    `[교시] ${period||''}`,
-    `[평가 주제] ${topic||''}`,
-    `[준비물] ${materials||''}`,
-    `--------------------------------`
-  ].join('\n');
-}
-
-function setAnalyzeForm(f){
-  const $ = (id) => document.getElementById(id);
-function setVal(id, val) {
-  const el = $(id);
-  if (!el) {
-    console.warn(`[WARN] Missing element: #${id}`);
-    return;
-  }
-  el.value = val ?? '';
-}
-
-// ---------- 요일 계산 ----------
-function weekdayKo(dateObj){
-  return ['일','월','화','수','목','금','토'][dateObj.getDay()];
-}
-
-// ---------- 요약 텍스트 ----------
-function formatAnalyzeResult({subject,date,yoil,time,period,topic,materials}) {
-  return [
-    `[과목] ${subject||''}`,
-    `[평가 날짜] ${date||''}`,
-    `[요일] ${yoil||''}`,
-    `[평가 시간] ${time||''}`,
-    `[교시] ${period||''}`,
-    `[평가 주제] ${topic||''}`,
-    `[준비물] ${materials||''}`,
-    `--------------------------------`
-  ].join('\n');
-}
-
-// ---------- 교체할 함수 (드롭인) ----------
-function setAnalyzeForm(f){
-  // date가 있다면 yoil 자동 계산
-  const yoil = f?.date ? weekdayKo(new Date(f.date)) : (f?.yoil || '');
-
-  setVal('af-subject',   f?.subject   || '');
-  setVal('af-date',      f?.date      || '');
-  setVal('af-yoil',      yoil);
-  setVal('af-time',      f?.time      || '');
-  setVal('af-period',    f?.period    || '');
-  setVal('af-topic',     f?.topic     || '');
-  setVal('af-materials', f?.materials || '');
-
-  const r = $('doc-result');
-  if (r) {
-    r.value = formatAnalyzeResult({
-      subject: f?.subject||'',
-      date: f?.date||'',
-      yoil,
-      time: f?.time||'',
-      period: f?.period||'',
-      topic: f?.topic||'',
-      materials: f?.materials||'',
-    });
-    try { r.style.height='auto'; r.style.height = r.scrollHeight + 'px'; } catch {}
-  } else {
-    console.warn('[WARN] Missing element: #doc-result');
-  }
-}
-
-// (선택) 빠르게 점검하고 싶다면 호출해 보세요.
-function debugFormPresence(){
-  [
-    'af-subject','af-date','af-yoil','af-time','af-period','af-topic','af-materials','doc-result'
-  ].forEach(id => console.log(`#${id}:`, !!$(id)));
-}
-}
-
-/* ========= Gemini 호출 ========= */
-async function callGeminiImageExtract({base64, mime}){
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
-
-  const prompt = `
-다음 한국어 공지/안내 "이미지"에서 아래 필드를 정확히 추출해 JSON만 출력해.
-반드시 이 스키마를 지켜:
-{
-  "subject": "대표 과목명(국어/수학/영어/… 한 단어)",
-  "date": "YYYY-MM-DD",
-  "yoil": "한글 요일 한 글자(일/월/화/수/목/금/토) 또는 빈 문자열",
-  "time": "HH:MM(24h) 또는 빈 문자열",
-  "period": "정수(문자열 가능) 또는 빈 문자열",
-  "topic": "간단 주제(없으면 빈 문자열)",
-  "materials": "준비물(없으면 빈 문자열)"
-}
-규칙:
-- "3교시"가 보이면 period는 "3".
-- "오후 2시 5분" → time "14:05".
-- 날짜는 무조건 YYYY-MM-DD.
-- 확실치 않으면 해당 필드는 "" (빈 문자열).
-- JSON 외 불필요한 텍스트 금지.
-`;
-
-  const body = {
-    contents: [{
-      role: "user",
-      parts: [
-        { text: prompt },
-        { inline_data: { mime_type: mime, data: base64 } }
-      ]
-    }],
-    generationConfig: {
-      temperature: 0.2,
-      response_mime_type: "application/json"
-    }
-  };
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-
-  if(!res.ok){
-    const t = await res.text().catch(()=> '');
-    throw new Error(`Gemini API 오류: ${res.status} ${t}`);
-  }
-
-  const json = await res.json();
-
-  // v1beta 응답 파싱
-  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  let obj = {};
-  try { obj = JSON.parse(text); } catch { obj = {}; }
-  return obj;
-}
-
-/* ========= 정규화(빈 칸 보정 포함) ========= */
-function normalizeFields(raw={}, srcText=''){
-  let {
-    subject='', date='', yoil='',
-    time='', period='', topic='', materials=''
-  } = raw;
-
-  // 날짜/시간/교시 정규화
-  date   = normalizeDate(date) || normalizeDate(srcText);
-  time   = normalizeTime(time) || normalizeTime(srcText);
-  period = (String(period||'').trim()) || detectPeriod(srcText);
-
-  // 과목: 모델 결과 없으면 텍스트에서 보강
-  subject = (subject||'').trim() || detectSubject(srcText);
-
-  // 요일: date 있으면 계산
-  if (date && !yoil) yoil = weekdayKo(new Date(date));
-
-  // 타입/형식 보정
-  if (period && !/^\d+$/.test(period)) {
-    const p = detectPeriod(period);
-    period = p || '';
-  }
-  if (time && !/^\d{2}:\d{2}$/.test(time)) {
-    time = normalizeTime(time) || '';
-  }
-
-  return { subject, date, yoil, time, period, topic: topic||'', materials: materials||'' };
-}
-
-/** =========================
- *  OCR 메인: analyzeDocument()
- *  - 이미지(JPG/PNG/WebP...)와 PDF 모두 지원
- *  - Tesseract.js(ko+en)로 인식 → 폼 자동 채우기
- *  ========================= */
-async function analyzeDocument() {
-  const fileInput = document.getElementById('doc-file');
-  const previewEl = document.getElementById('doc-preview');
-  const resultEl  = document.getElementById('doc-result');
-  if (!fileInput || !fileInput.files.length) {
-    alert('이미지 또는 PDF 파일을 선택해 주세요.');
-    return;
-  }
-
-  const file = fileInput.files[0];
-  const name = (file.name || '').toLowerCase();
-  const isPDF = name.endsWith('.pdf');
-
-  // 미리 보기(이미지는 그대로 / PDF는 1페이지 렌더링 캡처)
-  try {
-    if (!isPDF) {
-      const url = URL.createObjectURL(file);
-      previewEl.src = url;
-      previewEl.style.display = 'block';
-    } else {
-      previewEl.style.display = 'none'; // PDF는 미리보기를 생략(아래에서 1p 캔버스로도 가능)
-    }
-  } catch(e){ /* 미리보기 실패 시 무시 */ }
-
-  // OCR 진행 상태 표시
-  const setProgress = (msg) => {
-    if (!resultEl) return;
-    resultEl.value = msg;
-    autoResize();
-  };
-
-  try {
-    let text = '';
-    if (isPDF) {
-      text = await ocrPdf(file, setProgress);
-    } else {
-      text = await ocrImage(file, setProgress);
-    }
-
-    // 1) 원문을 일단 표시
-    resultEl.value = text.trim();
-    autoResize();
-
-    // 2) 프로젝트 내 파서로 폼 자동 채우기 + 보기 좋게 포맷
-    const formatted = fillFromText(text);
-    if (formatted && typeof formatted === 'string') {
-      resultEl.value = formatted;
-      autoResize();
-    }
-
-    alert('문서 분석이 완료되었습니다. 필요한 항목을 확인·수정 후 "분석된 글 등록하기"를 눌러 저장하세요.');
-
-  } catch (err) {
-    console.error(err);
-    setProgress('❌ 분석 중 오류가 발생했습니다. 파일을 다시 확인해 주세요.');
-    alert('OCR 중 오류가 발생했습니다.');
-  }
-}
-
-/** =========================
- *  이미지 OCR
- *  ========================= */
-async function ocrImage(fileOrCanvas, onProgress) {
-  const input = await ensureCanvas(fileOrCanvas); // 이미지 파일 → 캔버스
-  const text  = await tesseractRecognize(input, '이미지', onProgress);
-  return text;
-}
-
-/** =========================
- *  PDF OCR (모든 페이지 합산)
- *  ========================= */
-async function ocrPdf(file, onProgress) {
-  const pdfData = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-
-  let fullText = '';
-  const total = pdf.numPages;
-
-  for (let i = 1; i <= total; i++) {
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 2 }); // 품질/속도 균형
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    canvas.width  = viewport.width;
-    canvas.height = viewport.height;
-
-    await page.render({ canvasContext: ctx, viewport }).promise;
-
-    const pageText = await tesseractRecognize(canvas, `PDF p.${i}/${total}`, onProgress);
-    fullText += `\n\n===== [Page ${i}] =====\n${pageText}\n`;
-  }
-
-  return fullText.trim();
-}
-
-/** =========================
- *  Tesseract 래퍼
- *  - ko+en 동시 사용
- *  - 진행률 콜백 제공
- *  ========================= */
-async function tesseractRecognize(imageOrCanvas, label, onProgress) {
-  const opts = {
-    // 한국어 데이터까지 내려받기 위해 tessdata 경로 지정
-    langPath: 'https://tessdata.projectnaptha.com/4.0.0',
-    logger: (m) => {
-      if (m && m.status && typeof m.progress === 'number') {
-        const pct = Math.round(m.progress * 100);
-        onProgress?.(`🔍 ${label}: ${m.status} (${pct}%)`);
-      }
-    }
-  };
-  const { data: { text } } = await Tesseract.recognize(imageOrCanvas, 'kor+eng', opts);
-  onProgress?.(`✅ ${label}: 완료`);
-  return (text || '').replace(/\u0000/g, ''); // 널문자 제거
-}
-
-/** =========================
- *  파일 → 캔버스 변환 (이미지용)
- *  ========================= */
-async function ensureCanvas(fileOrCanvas) {
-  if (fileOrCanvas instanceof HTMLCanvasElement) {
-    return fileOrCanvas;
-  }
-  if (fileOrCanvas instanceof Blob || fileOrCanvas instanceof File) {
-    const url = URL.createObjectURL(fileOrCanvas);
-    const img = await loadImage(url);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-    // 너무 큰 이미지면 다운스케일(속도 ↑, 메모리 ↓)
-    const MAX_W = 2200; // 적당한 상한
-    let w = img.naturalWidth;
-    let h = img.naturalHeight;
-    if (w > MAX_W) {
-      const ratio = MAX_W / w;
-      w = Math.round(w * ratio);
-      h = Math.round(h * ratio);
-    }
-
-    canvas.width = w;
-    canvas.height = h;
-    ctx.drawImage(img, 0, 0, w, h);
-    return canvas;
-  }
-  throw new Error('지원하지 않는 입력 타입입니다.');
-}
-
-function loadImage(src) {
-  return new Promise((res, rej) => {
-    const img = new Image();
-    img.onload = () => res(img);
-    img.onerror = rej;
-    img.src = src;
-  });
-}
-
-/** =========================
- *  OCR 결과 등록: registerAnalyzedText()
- *  - assessments 테이블에 저장
- *  - (선택) 사진을 스토리지에 올리고,
- *          공지(notices)도 자동 발행 가능
- *  ========================= */
-async function registerAnalyzedText() {
-  try {
-    const fields = getAnalyzeForm(); // {subject,date,yoil,time,period,topic,materials}
-    const rawTxt = (document.getElementById('doc-result')?.value || '').trim();
-
-    // 최소 유효성
-    if (!fields.subject || !fields.date) {
-      alert('과목과 날짜는 필수입니다.');
-      return;
-    }
-
-    // 로그인 사용자 정보(기존 로직 재사용)
-    const { data: writerData, error: writerError } = await supabaseClient
-      .from('users')
-      .select('username,name,role,grade,class_num,student_number')
-      .eq('username', localStorage.getItem('savedUsername'))
-      .single();
-
-    if (writerError || !writerData) {
-      alert('사용자 정보를 불러오지 못했습니다.');
-      return;
-    }
-
-    // (선택) 이미지/파일 업로드
-    let uploadedUrl = '';
-    const fileInput = document.getElementById('doc-file');
-    const uploadChecked = document.getElementById('upload-image-check')?.checked;
-    if (uploadChecked && fileInput?.files?.length) {
-      const theFile = fileInput.files[0];
-      // 이미지가 아닐 경우 공지 첨부는 생략
-      if (/^image\//i.test(theFile.type)) {
-        const filePath = `assessments/${Date.now()}_${(theFile.name || 'file').replace(/[^\w.-]/g, '_')}`;
-        const { error: upErr } = await supabaseClient
-          .storage
-          .from('notice-images') // 필요 시 전용 버킷(assessments)로 변경
-          .upload(filePath, theFile, { upsert: true });
-        if (upErr) {
-          console.warn('이미지 업로드 실패:', upErr);
-        } else {
-          const { data: publicData } = supabaseClient
-            .storage
-            .from('notice-images')
-            .getPublicUrl(filePath);
-          uploadedUrl = publicData.publicUrl || '';
+        if (profileButton && dropdown) {
+          profileButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.style.display = (dropdown.style.display === 'block') ? 'none' : 'block';
+          });
+          document.addEventListener('click', () => {
+            dropdown.style.display = 'none';
+          });
         }
-      }
+      });
+
+    
+
+
+      /** 🔑 임시(비권장): 브라우저에 하드코딩 */
+const OPENAI_API_KEY = "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"; // 노출 위험 주의!
+
+/** 이미지 → 크기제한 JPEG dataURL */
+async function fileToBase64Optimized(file, maxW=1800, maxH=1800, type='image/jpeg', quality=0.9){
+  const dataUrl = await new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = rej;
+    fr.readAsDataURL(file);
+  });
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = dataUrl;
+  });
+  let { width:w, height:h } = img;
+  const scale = Math.min(maxW / w, maxH / h, 1);
+  w = Math.round(w * scale); h = Math.round(h * scale);
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  cv.getContext('2d').drawImage(img, 0, 0, w, h);
+  return cv.toDataURL(type, quality); // data:image/jpeg;base64,...
+}
+
+/** JSON 텍스트만 뽑아 파싱(백틱 코드블록 방어) */
+function parseJsonLoose(s=''){
+  const trimmed = s.trim();
+  try { return JSON.parse(trimmed); } catch {}
+  const m = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (m) {
+    try { return JSON.parse(m[1]); } catch {}
+  }
+  // 중괄호 블록만 추출 시도
+  const idx1 = trimmed.indexOf('{');
+  const idx2 = trimmed.lastIndexOf('}');
+  if (idx1 !== -1 && idx2 !== -1 && idx2 > idx1) {
+    try { return JSON.parse(trimmed.slice(idx1, idx2+1)); } catch {}
+  }
+  throw new Error('JSON 파싱 실패');
+}
+
+/** 출력: 문단 텍스트(폼 채우지 않음) */
+function toParagraph({ subject='', date='', period='', topic='' } = {}){
+  const s = subject || '-';
+  const d = date    || '-';
+  const p = period  || '-';
+  const t = topic   || '-';
+  return [
+    '📄 수행평가 분석 결과',
+    '--------------------------',
+    `• 과목: ${s}`,
+    `• 날짜: ${d}`,
+    `• 교시: ${p}`,
+    `• 평가 주제: ${t}`
+  ].join('\n');
+}
+
+/** 결과 표기 textarea 확보(#doc-result 없으면 즉석 생성) */
+function ensureResultBox(){
+  let box = document.getElementById('doc-result') || document.getElementById('ocr-result');
+  if (!box) {
+    const panel = document.getElementById('doc-panel') || document.body;
+    box = document.createElement('textarea');
+    box.id = 'ocr-result';
+    box.readOnly = true;
+    box.style.cssText = 'width:100%;min-height:140px;margin-top:8px;white-space:pre-wrap;';
+    panel.appendChild(box);
+  }
+  return box;
+}
+
+/** 메인: 버튼 onclick="analyzeDocument()" 연결용 */
+async function analyzeDocument(){
+  const fileInput = document.getElementById('doc-file');
+  const previewImg = document.getElementById('doc-preview');
+  const resultBox = ensureResultBox();
+
+  try{
+    if(!OPENAI_API_KEY || OPENAI_API_KEY.includes('여기에_본인')){
+      alert('OPENAI_API_KEY 상수에 본인 키를 넣어주세요.'); return;
+    }
+    if(!fileInput || !fileInput.files || !fileInput.files.length){
+      alert('이미지 파일(JPG/PNG)을 선택하세요.'); return;
+    }
+    const file = fileInput.files[0];
+    if(!/^image\//.test(file.type)){
+      alert('현재는 이미지(JPG/PNG)만 지원합니다. (PDF 제외)'); return;
     }
 
-    // assessments 저장(프로젝트 테이블 스키마에 맞춰 컬럼명 조정 가능)
-    const row = {
-      grade: writerData.grade,
-      class_num: writerData.class_num,
-      subject: fields.subject || null,
-      date: fields.date || null,
-      yoil: fields.yoil || null,
-      time: fields.time || null,
-      period: fields.period ? Number(fields.period) : null,
-      topic: fields.topic || null,
-      materials: fields.materials || null,
-      raw_text: rawTxt || null,
-      creator: writerData.name || null,
-      creator_username: writerData.username || null,
-      creator_student_number: writerData.student_number || null,
-      image_url: uploadedUrl || null
+    // 미리보기
+    if (previewImg) {
+      previewImg.src = URL.createObjectURL(file);
+      previewImg.style.display = 'block';
+    }
+    resultBox.value = '인식 및 분석 중…';
+
+    // 이미지 최적화 dataURL
+    const imageDataUrl = await fileToBase64Optimized(file);
+
+    // GPT 비전 호출 (chat.completions, gpt-4o-mini)
+    const payload = {
+      model: "gpt-4o-mini",
+      temperature: 0.2,
+      messages: [
+        {
+          role: "system",
+          content: "너는 한국 중학교 수행평가 안내 이미지를 OCR하고, 핵심 4항목(과목, 날짜, 교시, 평가 주제)을 구조화해 주는 도우미다. 반드시 JSON 객체 하나만 반환해."
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+`1) 이미지를 먼저 정확히 OCR하세요.
+2) OCR 결과를 바탕으로 아래 JSON 형식으로만 답변하세요(딱 한 개의 JSON, 다른 말 금지).
+{
+  "subject": "과목명(국어/수학/영어/과학/사회/역사/도덕/기술가정/정보/음악/미술/체육/창체/동아리/진로/한문 등, 추론 가능)",
+  "date": "YYYY-MM-DD 또는 '10월 3일' 등 원문 그대로. 여러 날짜면 수행평가 날짜를 선택",
+  "period": "숫자만(예: '3'). 교시 언급이 없으면 빈 문자열",
+  "topic": "평가 주제(없으면 빈 문자열)"
+}
+주의:
+- 추정일 경우 가장 가능성 높은 한 가지로만 기입.
+- 불명확하면 빈 문자열("")로 남겨둠.`
+            },
+            { type: "image_url", image_url: { url: imageDataUrl } }
+          ]
+        }
+      ]
     };
 
-    const { error: insertErr } = await supabaseClient
-      .from('assessments')
-      .insert([row]);
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
 
-    if (insertErr) {
-      console.error(insertErr);
-      alert('DB 저장에 실패했습니다: ' + insertErr.message);
-      return;
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error(`OpenAI 오류: ${res.status} ${t}`);
     }
 
-    // (선택) 공지 자동 발행
-    if (uploadedUrl) {
-      const noticeTitle = `[수행 알림] ${fields.subject || ''} ${fields.date || ''} ${fields.period ? fields.period + '교시' : ''}`;
-      const noticeContent = [
-        fields.topic ? `주제: ${fields.topic}` : '',
-        fields.materials ? `준비물: ${fields.materials}` : '',
-      ].filter(Boolean).join('\n');
+    const data = await res.json();
+    const raw = (data.choices?.[0]?.message?.content ?? "").trim();
+    const json = parseJsonLoose(raw);
+    fillFormFromJson(json);
 
-      const newNotice = {
-        title: noticeTitle || '수행 알림',
-        content: noticeContent || '수행 일정 안내',
-        image_url: uploadedUrl,
-        writer: writerData.name,
-        writer_role: writerData.role,
-        grade: writerData.grade,
-        class_num: writerData.class_num
-      };
-
-      const { error: nErr } = await supabaseClient.from('notices').insert([newNotice]);
-      if (nErr) {
-        console.warn('공지 등록 실패:', nErr);
-      }
-    }
-
-    alert('등록이 완료되었습니다!');
-    // 필요 시 폼/파일 초기화
-    // document.getElementById('doc-file').value = '';
-    // document.getElementById('doc-result').value = '';
-    // setAnalyzeForm({}); // 폼 초기화 원하면 사용
-
-    // 대시보드/달력 갱신
-    try { await renderScheduleCalendar(); } catch(e){}
-    try { await loadNotices(); } catch(e){}
-
-  } catch (e) {
-    console.error(e);
-    alert('등록 중 오류가 발생했습니다.');
+    resultBox.value = toParagraph(json);
+  }catch(err){
+    console.error(err);
+    ensureResultBox().value = `❌ 분석 실패: ${err.message || err}`;
   }
 }
 
+// 인라인 onclick 사용 시 전역에 노출
+window.analyzeDocument = analyzeDocument;
 
+function koWeekday(d){ return ['일','월','화','수','목','금','토'][d.getDay()]; }
+function isValidDate(d){ return d instanceof Date && !isNaN(d.getTime()); }
+
+// 날짜 파서: "2025-03-12", "2025.3.12", "3월12일", "03/12", "10.03(수)" 등 → {ymd, yoil}
+function parseDateSmart(raw=""){
+  const s = String(raw).replace(/\([^)]*\)/g,'').replace(/\s+/g,'').trim();
+  const nowY = new Date().getFullYear();
+
+  // 1) YYYY[.-/년]MM[.-/월]DD
+  let m = s.match(/(20\d{2})[.\-/년]?([01]?\d)[.\-/월]?([0-3]?\d)일?/);
+  if (m) {
+    const d = new Date(+m[1], +m[2]-1, +m[3]);
+    if (isValidDate(d)) return { ymd: d.toISOString().slice(0,10), yoil: koWeekday(d) };
+  }
+
+  // 2) M월D일
+  m = s.match(/([01]?\d)월([0-3]?\d)일/);
+  if (m) {
+    const d = new Date(nowY, +m[1]-1, +m[2]);
+    if (isValidDate(d)) return { ymd: d.toISOString().slice(0,10), yoil: koWeekday(d) };
+  }
+
+  // 3) MM[.-/]DD
+  m = s.match(/([01]?\d)[.\-/]([0-3]?\d)/);
+  if (m) {
+    const d = new Date(nowY, +m[1]-1, +m[2]);
+    if (isValidDate(d)) return { ymd: d.toISOString().slice(0,10), yoil: koWeekday(d) };
+  }
+
+  return { ymd: "", yoil: "" };
+}
+
+// ✅ 날짜를 바꾸면 요일 자동으로 갱신
+function syncYoilFromDate(){
+  const v = document.getElementById('af-date')?.value || "";
+  const yoilEl = document.getElementById('af-yoil');
+  if (!yoilEl) return;
+  yoilEl.value = v ? koWeekday(new Date(v)) : "";
+}
+
+// ✅ GPT JSON 결과를 폼에 채우기 (과목/날짜/요일/교시/주제)
+function fillFormFromJson(obj={}){
+  const subjectEl = document.getElementById('af-subject');
+  const periodEl  = document.getElementById('af-period');
+  const topicEl   = document.getElementById('af-topic');
+  const yoilEl    = document.getElementById('af-yoil');
+  const dateEl    = document.getElementById('af-date');
+
+  if (subjectEl && obj.subject) subjectEl.value = String(obj.subject).trim();
+  if (topicEl && obj.topic) topicEl.value = String(obj.topic).trim();
+
+  // 교시 숫자만 추출
+  if (periodEl && obj.period !== undefined && obj.period !== null) {
+    const num = String(obj.period).match(/\d+/);
+    if (num) periodEl.value = parseInt(num[0], 10);
+  }
+
+  // 날짜 파싱(문자열 어떤 형태든 parseDateSmart로 처리) → 날짜/요일 동시 세팅
+  let ymd = "";
+  if (obj.date) {
+    ymd = parseDateSmart(obj.date).ymd;
+  } else if (obj.ymd) {
+    ymd = String(obj.ymd).slice(0,10); // 이미 YYYY-MM-DD 형식으로 준 경우
+  }
+
+  if (ymd) {
+    if (dateEl) dateEl.value = ymd;         // 날짜 채우기
+    if (yoilEl) yoilEl.value = koWeekday(new Date(ymd)); // 요일 동기화
+  } else {
+    // 날짜가 없으면 요일도 비움(둘 다 같이 관리)
+    if (dateEl) dateEl.value = "";
+    if (yoilEl) yoilEl.value = "";
+  }
+}
+
+const $ = id => document.getElementById(id);
+function weekdayKo(d){ return ['일','월','화','수','목','금','토'][d.getDay()]; }
+
+// 날짜 → 요일 자동 채우기
+(function bindYoilAutoFill(){
+  const dateInput = $('af-date');     // ← 날짜 input (type="date")
+  const yoilInput = $('af-yoil');     // ← 요일 input (readonly)
+  if (!dateInput || !yoilInput) return;  // 폼에 둘 다 있어야 작동
+
+  const fill = () => {
+    const v = dateInput.value;
+    yoilInput.value = v ? weekdayKo(new Date(v)) : '';
+  };
+  dateInput.addEventListener('change', fill);
+  dateInput.addEventListener('input',  fill);
+  fill(); // 초기 1회
+})();
+function val(id){
+  const el = document.getElementById(id);
+  return (el && 'value' in el) ? (el.value || '').trim() : '';
+}
+
+// 날짜→요일 자동 계산(한 번만 붙임)
+(function attachYoilAutoFill(){
+  const dateEl = document.getElementById('af-date');
+  const yoilEl = document.getElementById('af-yoil');
+  if (!dateEl || !yoilEl) return;
+  const DOW = ['일','월','화','수','목','금','토'];
+  const setYoil = () => {
+    if (!dateEl.value) { yoilEl.value=''; return; }
+    const d = new Date(dateEl.value + 'T00:00:00');
+    yoilEl.value = isNaN(d) ? '' : DOW[d.getDay()];
+  };
+  dateEl.addEventListener('input', setYoil);
+  setYoil();
+})();
+
+// ✅ 체크되면 이미지 업로드 후 공개 URL 반환
+async function uploadDocImageIfNeeded(){
+  const checked   = document.getElementById('upload-image-check')?.checked;
+  const fileInput = document.getElementById('doc-file');
+  if (!checked || !fileInput || fileInput.files.length === 0) return null;
+
+  const file = fileInput.files[0];
+  const username = (localStorage.getItem('savedUsername') || 'anon')
+                    .replace(/[^\w.-]/g,'_');
+  const ts = Date.now();
+  const safe = file.name.normalize('NFD')
+                .replace(/[\u0300-\u036f]/g,'')
+                .replace(/[^\w.-]/g,'_');
+  const path = `${username}/${ts}_${safe}`;
+
+  // 버킷 이름을 사용 중인 것으로 바꿔도 됩니다 (예: 'homework-files')
+  const bucket = 'notice-images';
+
+  const { error: upErr } = await supabaseClient
+    .storage.from(bucket)
+    .upload(path, file, { cacheControl: '3600', upsert: true, contentType: file.type });
+
+  if (upErr) {
+    alert('이미지 업로드 실패: ' + upErr.message);
+    return null;
+  }
+  const { data: pub } = supabaseClient.storage.from(bucket).getPublicUrl(path);
+  return pub?.publicUrl || null;
+}
+
+// ✅ DB 저장(이미지 URL 포함)
+window.registerAnalyzedText = async function(){
+  try{
+    const subject = val('af-subject');
+    const date    = val('af-date');  // YYYY-MM-DD
+    const yoilUi  = val('af-yoil');
+    const periodS = val('af-period');
+    const topic   = val('af-topic');
+
+    // 선택 입력(없을 수도 있음)
+    const timeStr   = val('af-time') || null;
+    const materials = val('af-materials') || null;
+    const rawText   = val('doc-result') || null;
+
+    const period = periodS ? parseInt(periodS, 10) : null;
+    if (!subject || !date || !period || !topic) {
+      alert('과목, 수행 날짜, 교시, 평가 주제를 모두 입력해 주세요.');
+      return;
+    }
+
+    // 요일 보정
+    let yoil = yoilUi;
+    if (!yoil) {
+      const DOW = ['일','월','화','수','목','금','토'];
+      const d = new Date(date + 'T00:00:00');
+      yoil = isNaN(d) ? '' : DOW[d.getDay()];
+    }
+
+    // 🔼 이미지 업로드(체크된 경우)
+    const imageUrl = await uploadDocImageIfNeeded();
+
+    const payload = {
+      username:       localStorage.getItem('savedUsername') || '',
+      name:           localStorage.getItem('savedName') || '',
+      grade:          Number(localStorage.getItem('savedGrade')) || null,
+      class_num:      Number(localStorage.getItem('savedClassNum')) || null,
+      student_number: Number(localStorage.getItem('savedStudentNum')) || null,
+
+      subject,
+      date,          // DATE 컬럼
+      yoil,          // text
+      period,        // int4
+      topic,         // text
+      time: timeStr,       // text
+      materials,           // text
+      raw_text: rawText,   // text
+      image_url: imageUrl  // text (체크 안 했거나 업로드 실패 시 null)
+    };
+
+    const { data, error } = await supabaseClient
+      .from('analyzed_docs')
+      .insert([payload])
+      .select();
+
+    if (error) {
+      console.error(error);
+      alert('DB 저장 실패: ' + (error.message || '알 수 없는 오류'));
+      return;
+    }
+    alert('등록 완료!');
+  } catch (e) {
+    console.error(e);
+    alert('예상치 못한 오류: ' + (e?.message || e));
+  }
+};
     </script>
   </body> 
 </html>
