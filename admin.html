@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduBoard 관리자 설정</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #f8f9fa;
+      color: #333;
+    }
+    header {
+      background: #343a40;
+      color: #fff;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background: #fff;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.4rem;
+      color: #495057;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ced4da;
+      border-radius: 5px;
+    }
+    button {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      padding: 0.7rem 1.5rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>EduBoard 관리자 설정</h1>
+    <nav>
+      <a href="index.html" style="color:#fff; text-decoration:none; margin-right:15px;">홈</a>
+      <a href="admin.html" style="color:#ffc107; text-decoration:none;">관리자 설정</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <h2>기본 설정</h2>
+    <div class="form-group">
+      <label for="siteName">사이트 이름</label>
+      <input type="text" id="siteName" placeholder="EduBoard">
+    </div>
+
+    <div class="form-group">
+      <label for="theme">테마 선택</label>
+      <select id="theme">
+        <option value="light">라이트</option>
+        <option value="dark">다크</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="maxUsers">최대 사용자 수</label>
+      <input type="number" id="maxUsers" placeholder="100">
+    </div>
+
+    <h2>권한 관리</h2>
+    <div class="form-group">
+      <label for="role">사용자 권한 설정</label>
+      <select id="role">
+        <option value="teacher">선생님</option>
+        <option value="student">학생</option>
+        <option value="admin">관리자</option>
+      </select>
+    </div>
+
+    <button onclick="saveSettings()">저장하기</button>
+  </div>
+
+  <script>
+    function saveSettings() {
+      const siteName = document.getElementById('siteName').value;
+      const theme = document.getElementById('theme').value;
+      const maxUsers = document.getElementById('maxUsers').value;
+      const role = document.getElementById('role').value;
+
+      alert(`설정이 저장되었습니다:\n사이트 이름: ${siteName}\n테마: ${theme}\n최대 사용자: ${maxUsers}\n권한: ${role}`);
+    }
+  </script>
+</body>
+</html>

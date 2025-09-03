@@ -795,6 +795,39 @@
         font-weight: 600;
         color: #495057;
       }
+
+      /* ==== 색상 있는 섹션 헤더 ==== */
+      .section-head{
+        display:flex;
+        align-items:center;
+        gap:.5rem;
+        padding:.5rem .75rem;
+        border-radius:10px;
+        border:1px solid color-mix(in srgb, var(--head-color, #94a3b8) 35%, #ffffff);
+        background: color-mix(in srgb, var(--head-color, #94a3b8) 12%, #ffffff);
+      }
+
+      .section-head::before{
+        content:"";
+        width:6px; height:1.6rem;
+        border-radius:999px;
+        background: var(--head-color, #94a3b8);
+        margin-right:.25rem;
+      }
+
+      .section-head h3{ 
+        margin:0;
+        color: var(--head-color, #334155);
+      }
+
+      /* 카드별 색상 지정 */
+      .card[data-section="notice"]   { --head-color:#0d6efd; } /* 파랑 */
+      .card[data-section="profile"]  { --head-color:#7c3aed; } /* 보라 */
+      .card[data-section="schedule"] { --head-color:#22c55e; } /* 초록 */
+      .card[data-section="timetable"]{ --head-color:#f59e0b; } /* 주황 */
+      .card[data-section="rank"]     { --head-color:#ef4444; } /* 빨강 */
+      .card[data-section="meal"]     { --head-color:#06b6d4; } /* 청록 */
+
   </style>
 </head>
   <body>
@@ -954,7 +987,7 @@
           <h2>🏠 대시보드</h2>
             <div class="dash-top">
 
-              <div class="card">
+              <div class="card"data-section="notice">
                 <div class="card-body">
                   <div class="section-head">
                     <h3>📢 최근 공지</h3>
@@ -964,7 +997,7 @@
                 </div>
               </div>
 
-              <div class="card">
+              <div class="card"data-section="profile">
                 <div class="card-body">
                   <div class="profile-card">
                     <span class="lvl-badge">Lv <span id="lv-num">1</span></span>
@@ -1005,7 +1038,7 @@
                 </div>
               </div>
 
-              <div class="card">
+              <div class="card" data-section="schedule">
                 <div class="card-body">
                   <div class="section-head">
                     <h3>📄 일정</h3>
@@ -1030,7 +1063,7 @@
                 </div>
               </div>
 
-              <div class="card">
+              <div class="card"data-section="timetable">
                   <div class="card-body">
                     <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;">
                       <h3>🕒 시간표 <span id="badge-day" class="badge" style="margin-left:6px;"></span></h3>
@@ -1045,7 +1078,7 @@
                   </div>
               </div>
 
-              <div class="card" id="rank-card">
+              <div class="card" id="rank-card" data-section="rank">
                   <div class="card-body">
                     <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;">
                       <h3>🏆 랭킹</h3>
@@ -1058,8 +1091,8 @@
 
                         <select id="rank-scope" style="border:1px solid #e9ecef;border-radius:10px;padding:6px 8px;">
                           <option value="class">같은 반</option>
-                          <!-- <option value="grade">같은 학년</option>
-                          <option value="school">전교</option> -->
+                          <option value="grade">같은 학년</option>
+                          <option value="school">전교</option>
                         </select>
                         <button class="mini-btn" id="rank-refresh">새로고침</button>
                       </div>
@@ -1070,10 +1103,13 @@
                   </div>
               </div>
 
-              <div class="card">
+              <div class="card"  data-section="meal">
                 <div class="card-body">
                   <div class="section-head">
                     <h3>🍽️ 급식</h3>
+                    <div style="display:flex;gap:8px;align-items:center;margin:8px 0">
+                      <input type="date" id="mealDatePicker" />
+                    </div>
                   </div>
                   <div id="meal-box"></div>
                 </div>
@@ -1181,17 +1217,8 @@
           <button onclick="showPanel('doc-panel')">← 돌아가기</button>
         </div>
 
-        <div id="admin-panel" class="panel" style="display:none;">
-          <h2>⚙️ 관리자 설정</h2>
-          <input type="text" id="admin-user-id" placeholder="사용자 ID"/>
-          <select id="admin-role">
-            <option value="user">user</option>
-            <option value="admin">admin</option>
-          </select>
-          <button onclick="changeRole()">권한 변경</button>
-          <button onclick="deleteUser()">사용자 삭제</button>
-          <div id="admin-status" style="margin-top:0.5rem;"></div>
-        </div>
+        <a href="admin.html" style="color:#ffc107; text-decoration:none;">⚙️ 관리자 설정</a>
+          
 
         <div id="timetable-panel" class="panel" style="display:none;">
           <h2>🗓️ 나의 시간표</h2>
@@ -1226,10 +1253,37 @@
         <div id="minigame-panel" class="panel" style="display:none;">
           <h2>🎮 미니게임</h2>
           <!-- 4=10 게임 -->
-            <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+            <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
               <h3>🧮 4 = 10 퍼즐</h3>
               <p>숫자 4개로 연산하여 10을 만들어보세요<br><strong>💰 5코인 필요</strong></p>
               <button onclick="startGame('fourEqualsTen')">게임 시작</button>
+            </div>
+            <!-- 🧩 미로 탈출 -->
+            <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
+              <h3>🧩 미로 탈출</h3>
+              <p>10×10 미로에서 출구까지 도달하세요<br><strong>💰 5코인 필요</strong></p>
+              <button onclick="startGame('mazeEscape')">게임 시작</button>
+            </div>
+
+            <!-- 🧱 Falling Blocks -->
+            <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
+              <h3>🧱 Falling Blocks</h3>
+              <p>떨어지는 블록을 피하면서 오래 살아남으세요<br><strong>💰 5코인 필요</strong></p>
+              <button onclick="startGame('fallingBlocks')">게임 시작</button>
+            </div>
+
+            <!-- ⚡ Reaction -->
+            <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
+              <h3>⚡ Reaction</h3>
+              <p>랜덤 신호에 얼마나 빨리 반응할 수 있나요?<br><strong>💰 5코인 필요</strong></p>
+              <button onclick="startGame('reaction')">게임 시작</button>
+            </div>
+
+            <!-- 🐦 Flappy 스타일 -->
+            <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
+              <h3>🐦 점프 피하기</h3>
+              <p>터치/스페이스로 위로 점프하며 장애물을 피해보세요<br><strong>💰 5코인 필요</strong></p>
+              <button onclick="startGame('flappy')">게임 시작</button>
             </div>
         </div>
 
@@ -1242,6 +1296,77 @@
           <p id="game-feedback" style="margin-top:0.5rem;font-weight:bold;"></p>
           <button onclick="exitMiniGame()">❌ 나가기</button>
         </div>
+        <!-- =========================
+     🧮 4 = 10 퍼즐 패널
+     필요한 요소: generateFourNumbers()에서 채움
+     ========================= -->
+<div id="fourEqualsTen-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+  <h3>🧮 4 = 10 퍼즐</h3>
+  <p style="color:#6b7280">제공된 숫자 4개와 + - × ÷ ( ) 를 사용해 10을 만들어보세요.</p>
+
+  <!-- 숫자/입력/버튼 (initFourEqualsTen가 있다면 무시, generateFourNumbers가 채워도 OK) -->
+  <div id="four-eq-10" style="margin-top:.5rem;">
+    <div id="four10-numbers" style="font-weight:700;margin-bottom:.5rem">숫자: —</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <input id="four10-exp" type="text" placeholder="예) (2+3)*4-10/2"
+             style="flex:1 1 240px;padding:.5rem;border:1px solid #e5e7eb;border-radius:.5rem"/>
+      <button id="four10-check" style="padding:.5rem .8rem;border:1px solid #e5e7eb;border-radius:.5rem;background:#f9fafb">채점</button>
+      <button id="four10-new" style="padding:.5rem .8rem;border:1px solid #e5e7eb;border-radius:.5rem;background:#fff">새 문제</button>
+    </div>
+    <div id="four10-msg" style="margin-top:.5rem;color:#374151"></div>
+  </div>
+</div>
+
+<!-- =========================
+     🧩 미로 탈출 패널
+     필요한 요소: <canvas id="maze-cv">
+     ========================= -->
+<div id="mazeEscape-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+  <h3>🧩 미로 탈출</h3>
+  <p style="color:#6b7280">↑↓←→ 또는 스와이프(모바일)로 이동해 출구에 도달하세요.</p>
+  <canvas id="maze-cv" width="400" height="400"
+          style="width:100%;max-width:420px;border-radius:8px;background:#f0f9ff"></canvas>
+</div>
+
+<!-- =========================
+     🧱 Falling Blocks 패널
+     필요한 요소: <canvas id="fall-cv">
+     ========================= -->
+<div id="fallingBlocks-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+  <h3>🧱 Falling Blocks</h3>
+  <p style="color:#6b7280">← → 또는 좌/우 화면 터치로 이동. 블록을 피하고 오래 버티세요!</p>
+  <canvas id="fall-cv" width="480" height="300"
+          style="width:100%;max-width:560px;border-radius:8px;background:#fff1f2"></canvas>
+</div>
+
+<!-- =========================
+     ⚡ Reaction 패널
+     필요한 요소: #rx-pad #rx-start #rx-last #rx-best
+     ========================= -->
+<div id="reaction-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+  <h3>⚡ Reaction</h3>
+  <p style="color:#6b7280">Start 클릭 후 초록불이 되면 즉시 클릭/탭!</p>
+  <div id="rx-pad"
+       style="width:100%;max-width:560px;height:160px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;color:#991b1b;font-weight:700;user-select:none">
+    🔴 Wait…
+  </div>
+  <div style="display:flex;gap:.5rem;margin-top:.5rem;align-items:center;flex-wrap:wrap">
+    <span id="rx-last">—</span>
+    <span id="rx-best">Best —</span>
+    <button id="rx-start" style="padding:.5rem .8rem;border:1px solid #e5e7eb;border-radius:.5rem;background:#f9fafb">Start</button>
+  </div>
+</div>
+
+<!-- =========================
+     🐦 플래피 스타일 패널
+     필요한 요소: <div id="mini-flappy">
+     ========================= -->
+<div id="flappy-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+  <h3>🐦 점프 피하기</h3>
+  <p style="color:#6b7280">터치/클릭/스페이스로 점프. 장애물을 피해 점수를 올리세요!</p>
+  <div id="mini-flappy" style="max-width:480px;margin:auto"></div>
+</div>
+
       </div>
     </div>
 
@@ -1911,7 +2036,10 @@ const SUBJECT_SYNONYMS = {
             a.href = '#';
             a.id = 'admin-nav';
             a.innerText = '관리자 설정';
-            a.onclick = () => { showPanel('admin-panel'); };
+            a.onclick = (e) => {
+              e.preventDefault();   
+              window.location.href = 'admin.html';
+            };
             nav.appendChild(a);
           }
         }
@@ -2348,43 +2476,132 @@ function setValue(id, val){
         if (panel) panel.style.display = 'block';
       }
 
-      async function startGame(gameType) {
-        if (gameType !== 'fourEqualsTen') return;
+      // ✅ 교체용: 여러 게임을 처리하는 startGame
+async function startGame(gameType) {
+  // 중복 클릭 방지
+  if (startGame._busy) return;
+  startGame._busy = true;
+  try {
+    // 사용자 확인
+    const username = (localStorage.getItem('savedUsername') || '').trim();
+    if (!username) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
 
-        const username = localStorage.getItem('savedUsername');
-        if (!username) {
-          alert('로그인이 필요합니다.');
-          return;
+    // 게임 설정 테이블 (비용/패널ID/런처)
+    const GAME_TABLE = {
+      fourEqualsTen: {
+        cost: 5,
+        panelId: 'fourEqualsTen-game',
+        launch() {
+          // 숫자 4개 생성/초기화 함수
+          if (typeof generateFourNumbers === 'function') generateFourNumbers();
         }
-
-        await syncCoinBalance();
-
-        const cost = 5;
-        if (currentUserCoin < cost) {
-          alert('코인이 부족합니다. (필요: 5)');
-          return;
+      },
+      mazeEscape: {
+        cost: 5,
+        panelId: 'mazeEscape-game',
+        launch() {
+          // 예: <canvas id="maze-cv">가 panel 내부에 있다고 가정
+          if (typeof window.initMazeGame === 'function') window.initMazeGame('maze-cv');
         }
-
-        const { error } = await supabaseClient
-          .from('users')
-          .update({ coin_balance: currentUserCoin - cost })
-          .eq('username', username);
-
-        if (error) {
-          alert('코인 차감 실패: ' + error.message);
-          return;
+      },
+      fallingBlocks: {
+        cost: 5,
+        panelId: 'fallingBlocks-game',
+        launch() {
+          // 예: <canvas id="fall-cv">
+          if (typeof window.initFallingBlocks === 'function') window.initFallingBlocks('fall-cv');
         }
-
-        currentUserCoin -= cost;
-        if (typeof displayCoinBalance === 'function') {
-          displayCoinBalance();
+      },
+      reaction: {
+        cost: 5,
+        panelId: 'reaction-game',
+        launch() {
+          // 예: pad/start/label id가 패널 내부에 존재
+          if (typeof window.initReactionGame === 'function') {
+            window.initReactionGame({
+              padId: 'rx-pad',
+              startBtnId: 'rx-start',
+              lastId: 'rx-last',
+              bestId: 'rx-best'
+            });
+          }
         }
-
-        document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-        const game = document.getElementById('fourEqualsTen-game');
-        if (game) game.style.display = 'block';
-        generateFourNumbers();
+      },
+      flappy: {
+        cost: 5,
+        panelId: 'flappy-game',
+        launch() {
+          // 예: <div id="mini-flappy">
+          if (typeof window.initFlappyGame === 'function') window.initFlappyGame('mini-flappy', {});
+        }
       }
+    };
+
+    const cfg = GAME_TABLE[gameType];
+    if (!cfg) {
+      alert(`알 수 없는 게임 타입: ${gameType}`);
+      return;
+    }
+
+    // 잔액 동기화 (currentUserCoin 전역 사용 가정)
+    if (typeof syncCoinBalance === 'function') {
+      await syncCoinBalance();
+    }
+    const cost = Number(cfg.cost) || 0;
+    const current = Number(currentUserCoin || 0);
+
+    if (current < cost) {
+      alert(`코인이 부족합니다. (보유: ${current}, 필요: ${cost})`);
+      return;
+    }
+
+    // 코인 차감 (Supabase)
+    if (typeof supabaseClient === 'undefined') {
+      alert('supabaseClient가 설정되지 않았습니다.');
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from('users')
+      .update({ coin_balance: current - cost })
+      .eq('username', username);
+
+    if (error) {
+      alert('코인 차감 실패: ' + (error.message || error));
+      return;
+    }
+
+    // 로컬 잔액 반영 + 표시 갱신
+    currentUserCoin = current - cost;
+    if (typeof displayCoinBalance === 'function') {
+      displayCoinBalance();
+    }
+
+    // 패널 전환
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    const panel = document.getElementById(cfg.panelId);
+    if (!panel) {
+      alert(`패널을 찾을 수 없습니다: #${cfg.panelId}`);
+      return;
+    }
+    panel.style.display = 'block';
+
+    // 게임 런칭
+    if (typeof cfg.launch === 'function') {
+      // 패널이 보이도록 만든 후 초기화(캔버스/레이아웃 크기 계산 이슈 방지)
+      requestAnimationFrame(() => cfg.launch());
+    }
+  } catch (e) {
+    console.error(e);
+    alert('게임 시작 중 오류가 발생했습니다: ' + (e.message || e));
+  } finally {
+    startGame._busy = false;
+  }
+}
+
 
       document.addEventListener('DOMContentLoaded', () => {
         const input = document.getElementById('game-input');
@@ -3049,10 +3266,8 @@ function setValue(id, val){
         const selScope  = document.getElementById('rank-scope');
         const btnRefresh= document.getElementById('rank-refresh');
 
-        if (typeof currentUserRole === 'string' && currentUserRole !== 'admin') {
-          selScope.value = 'class';
-          selScope.disabled = true;
-        }
+        // ✅ 모두가 범위를 바꿀 수 있도록 보장
+        selScope.disabled = false;
 
         const escapeHtml = (s='') => String(s)
           .replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -3115,8 +3330,8 @@ function setValue(id, val){
         }
 
         async function loadRanking(){
-          const metric = selMetric.value;         
-          const scope  = selScope.value;    
+          const metric = selMetric.value;
+          const scope  = selScope.value; // 'class' | 'grade' | 'school' (가정)
 
           const myUsername = localStorage.getItem('savedUsername') || '';
           const g = (typeof currentGrade === 'number'
@@ -3129,17 +3344,18 @@ function setValue(id, val){
           ul.innerHTML = `<li style="padding:10px;color:#6b7280">불러오는 중…</li>`;
           meEl.style.display = 'none';
 
+          // ✅ 관리자 여부와 무관하게 항상 같은 기본 쿼리 사용
           let q = supabaseClient.from('users')
             .select('username,name,grade,class_num,student_number,coin_balance,level,xp,role', { count: 'exact' })
-            .neq('role','admin');
+            .neq('role','admin'); // 랭킹에서 관리자 제외 (유지)
 
-          if (typeof currentUserRole === 'string' && currentUserRole !== 'admin') {
+          // ✅ scope에만 따라 필터
+          if (scope === 'class') {
             if (g!=null) q = q.eq('grade', g);
             if (c!=null) q = q.eq('class_num', c);
-          } else {
-            if (scope === 'class') { if (g!=null) q = q.eq('grade', g); if (c!=null) q = q.eq('class_num', c); }
-            else if (scope === 'grade') { if (g!=null) q = q.eq('grade', g); }
-          }
+          } else if (scope === 'grade') {
+            if (g!=null) q = q.eq('grade', g);
+          } // scope === 'school' 이면 추가 필터 없음
 
           const { data, error } = await q;
 
@@ -3156,7 +3372,7 @@ function setValue(id, val){
 
           const sorted = sortUsers(users, metric);
 
-          const N = 10;
+          const N = 5;
           ul.innerHTML = '';
           sorted.slice(0, N).forEach((u, i) => {
             ul.insertAdjacentHTML('beforeend', rowHtml(i+1, u, metric));
@@ -3170,7 +3386,6 @@ function setValue(id, val){
             meEl.style.display = 'none';
           }
         }
-
 
         selMetric.addEventListener('change', loadRanking);
         selScope.addEventListener('change', loadRanking);
@@ -3209,6 +3424,7 @@ function setValue(id, val){
             (m[r.MMEAL_SC_NM] ??= []).push(...parseDishList(r.DDISH_NM));
             return m;
           },{});
+
           const order = ["조식","중식","석식"];
           const types = Object.keys(byType).sort((a,b)=>{
             const ia=order.indexOf(a), ib=order.indexOf(b);
@@ -3253,7 +3469,39 @@ function setValue(id, val){
 
     document.addEventListener("DOMContentLoaded", ()=> loadMeal());
     window.reloadMealCard = loadMeal;
+    document.addEventListener('DOMContentLoaded', () => {
+  const box = document.getElementById('meal-box');
+  if (!box) return;
+
+  // 1) 기존 #mealDatePicker가 있으면 재사용
+  let picker = document.getElementById('mealDatePicker');
+
+  // 2) 없으면 bar와 함께 새로 생성
+  if (!picker) {
+    const bar = document.createElement('div');
+    bar.id = 'mealDateBar';
+    bar.style.display = 'flex';
+    bar.style.gap = '8px';
+    bar.style.marginBottom = '8px';
+
+    picker = document.createElement('input');
+    picker.type = 'date';
+    picker.id = 'mealDatePicker';
+
+    bar.appendChild(picker);
+    box.parentNode.insertBefore(bar, box);
+  }
+
+  // 기본값: 서울 기준 오늘 (기존 값이 없을 때만 세팅)
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  const ymd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if (!picker.value) picker.value = ymd;
+
+  // 날짜 변경 시 해당 일자 급식 로드
+  picker.onchange = () => loadMeal(picker.value);
+});
 })();
+
 
       function renderStats({ level, exp, coin, need }) {
         const levelBadge = document.getElementById('lv-num');
@@ -3477,17 +3725,17 @@ async function analyzeDocument(){
             {
               type: "text",
               text:
-`1) 이미지를 먼저 정확히 OCR하세요.
-2) OCR 결과를 바탕으로 아래 JSON 형식으로만 답변하세요(딱 한 개의 JSON, 다른 말 금지).
-{
-  "subject": "과목명(국어/수학/영어/과학/사회/역사/도덕/기술가정/정보/음악/미술/체육/창체/동아리/진로/한문 등, 추론 가능)",
-  "date": "YYYY-MM-DD 또는 '10월 3일' 등 원문 그대로. 여러 날짜면 수행평가 날짜를 선택",
-  "period": "숫자만(예: '3'). 교시 언급이 없으면 빈 문자열",
-  "topic": "평가 주제(없으면 빈 문자열)"
-}
-주의:
-- 추정일 경우 가장 가능성 높은 한 가지로만 기입.
-- 불명확하면 빈 문자열("")로 남겨둠.`
+              `1) 이미지를 먼저 정확히 OCR하세요.
+              2) OCR 결과를 바탕으로 아래 JSON 형식으로만 답변하세요(딱 한 개의 JSON, 다른 말 금지).
+              {
+                "subject": "과목명(국어/수학/영어/과학/사회/역사/도덕/기술가정/정보/음악/미술/체육/창체/동아리/진로/한문 등, 추론 가능)",
+                "date": "YYYY-MM-DD 또는 '10월 3일' 등 원문 그대로. 여러 날짜면 수행평가 날짜를 선택",
+                "period": "숫자만(예: '3'). 교시 언급이 없으면 빈 문자열",
+                "topic": "평가 주제(없으면 빈 문자열)"
+              }
+              주의:
+              - 추정일 경우 가장 가능성 높은 한 가지로만 기입.
+              - 불명확하면 빈 문자열("")로 남겨둠.`
             },
             { type: "image_url", image_url: { url: imageDataUrl } }
           ]
