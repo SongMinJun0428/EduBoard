@@ -1,119 +1,527 @@
-<!DOCTYPE html>
-<html lang="ko">
+<!doctype html>
+<html lang="ko" class="h-full">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EduBoard 관리자 설정</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>EduBoard 관리자</title>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta name="color-scheme" content="light dark"/>
   <style>
-    body {
-      margin: 0;
-      font-family: 'Noto Sans KR', sans-serif;
-      background: #f8f9fa;
-      color: #333;
+    html,body{height:100%}
+    /* Toast */
+    #toast{position:fixed;right:20px;bottom:20px;max-width:480px;padding:.75rem .9rem;border-radius:.7rem;
+      background:rgba(17,24,39,.95);color:#fff;font-size:.92rem;box-shadow:0 12px 30px rgba(0,0,0,.25);
+      opacity:0;transform:translateY(8px);transition:all .22s ease;z-index:60}
+    #toast.show{opacity:1;transform:translateY(0)}
+    /* Badge (권한 색) */
+    .badge{display:inline-flex;align-items:center;padding:.18rem .5rem;border-radius:999px;font-size:.72rem;font-weight:700;line-height:1}
+    .role-admin{background:#fee2e2;color:#7f1d1d}
+    .role-teacher{background:#dbeafe;color:#1d4ed8}
+    .role-class_admin{background:#fef3c7;color:#92400e}
+    .role-student{background:#dcfce7;color:#166534}
+    .role-user{background:#e5e7eb;color:#374151}
+    /* Table */
+    .table thead{position:sticky;top:0;z-index:1}
+    .table tbody tr:nth-child(even){background-color:rgba(0,0,0,.025)}
+    .table tbody tr:hover{background-color:rgba(37,99,235,.07)}
+    th.sortable{cursor:pointer}
+    th.sortable:hover{color:#2563eb}
+    /* Btn */
+    .btn{display:inline-flex;align-items:center;gap:.45rem;border:1px solid #e5e7eb;padding:.48rem .7rem;border-radius:.55rem}
+    .btn-ghost{border-color:transparent;background:transparent}
+    .btn-primary{background:#2563eb;color:#fff;border-color:#2563eb}
+    .btn-danger{background:#ef4444;color:#fff;border-color:#ef4444}
+    /* Popover (툴바 More 만 사용) */
+    .popover{position:absolute;inset-inline-end:0;top:100%;margin-top:.35rem;min-width:220px;border:1px solid rgba(0,0,0,.08);
+      border-radius:.6rem;background:var(--bg,#fff);box-shadow:0 10px 30px rgba(0,0,0,.12);display:none;z-index:55}
+    .popover.open{display:block}
+    /* Drawer (bulk) */
+    .drawer{position:sticky;bottom:0;left:0;right:0;z-index:40;background:rgba(255,255,255,.96);backdrop-filter:saturate(160%) blur(6px);
+      border-top:1px solid rgba(0,0,0,.08)}
+    .dark .drawer{background:rgba(31,41,55,.9)}
+    /* Modal */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:70}
+    .modal.open{display:flex}
+    /* 전역 컨텍스트 메뉴(행 작업) */
+    #ctx{
+      position:fixed; z-index:1000; display:none; min-width:220px; max-width:calc(100vw - 16px);
+      border:1px solid rgba(0,0,0,.08); border-radius:.6rem;
+      background:var(--bg,#fff); box-shadow:0 10px 30px rgba(0,0,0,.12);
     }
-    header {
-      background: #343a40;
-      color: #fff;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    header h1 {
-      margin: 0;
-      font-size: 1.2rem;
-    }
-    .container {
-      max-width: 900px;
-      margin: 2rem auto;
-      background: #fff;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    h2 {
-      margin-top: 0;
-      font-size: 1.4rem;
-      color: #495057;
-    }
-    .form-group {
-      margin-bottom: 1rem;
-    }
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-    }
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #ced4da;
-      border-radius: 5px;
-    }
-    button {
-      background: #007bff;
-      color: #fff;
-      border: none;
-      padding: 0.7rem 1.5rem;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
+    #ctx.open{ display:block }
   </style>
 </head>
-<body>
-  <header>
-    <h1>EduBoard 관리자 설정</h1>
-    <nav>
-      <a href="index.html" style="color:#fff; text-decoration:none; margin-right:15px;">홈</a>
-      <a href="admin.html" style="color:#ffc107; text-decoration:none;">관리자 설정</a>
-    </nav>
+<body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+  <!-- 헤더 -->
+  <header class="bg-white/80 dark:bg-gray-800/70 backdrop-blur border-b sticky top-0 z-50">
+    <div class="w-full px-8 py-3 flex items-center gap-3">
+      <a href="./index.html" class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+        <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        대시보드
+      </a>
+      <h1 class="text-lg font-semibold">사용자 & 권한 관리</h1>
+      <div class="ml-auto flex items-center gap-2">
+        <button id="theme" class="btn btn-ghost text-sm">테마</button>
+        <span id="me" class="text-sm text-gray-600 dark:text-gray-300 px-2 py-1 rounded bg-gray-100/70 dark:bg-gray-700/60"></span>
+        <button id="signout" class="btn">로그아웃</button>
+      </div>
+    </div>
   </header>
 
-  <div class="container">
-    <h2>기본 설정</h2>
-    <div class="form-group">
-      <label for="siteName">사이트 이름</label>
-      <input type="text" id="siteName" placeholder="EduBoard">
-    </div>
+  <!-- 본문 -->
+  <main class="w-full px-8 py-6 space-y-8">
+    <!-- KPI 카드 -->
+    <section class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-6">
+      <div class="rounded-xl border bg-white p-5 shadow-sm"><h3 class="text-sm text-gray-500">전체 사용자</h3><p id="stat-total" class="text-2xl font-bold mt-1">0</p></div>
+      <div class="rounded-xl border bg-white p-5 shadow-sm"><h3 class="text-sm text-gray-500">학생</h3><p id="stat-student" class="text-2xl font-bold mt-1 text-green-600">0</p></div>
+      <div class="rounded-xl border bg-white p-5 shadow-sm"><h3 class="text-sm text-gray-500">교사</h3><p id="stat-teacher" class="text-2xl font-bold mt-1 text-blue-600">0</p></div>
+      <div class="rounded-xl border bg-white p-5 shadow-sm"><h3 class="text-sm text-gray-500">관리자</h3><p id="stat-admin" class="text-2xl font-bold mt-1 text-red-600">0</p></div>
+      <div class="rounded-xl border bg-white p-5 shadow-sm"><h3 class="text-sm text-gray-500">학급 수</h3><p id="stat-classes" class="text-2xl font-bold mt-1">0</p></div>
+      <div class="rounded-xl border bg-white p-5 shadow-sm"><h3 class="text-sm text-gray-500">평균 학년</h3><p id="stat-avg-grade" class="text-2xl font-bold mt-1">-</p></div>
+    </section>
 
-    <div class="form-group">
-      <label for="theme">테마 선택</label>
-      <select id="theme">
-        <option value="light">라이트</option>
-        <option value="dark">다크</option>
+    <!-- 툴바 -->
+    <section class="rounded-xl border bg-white p-5 shadow-sm">
+      <div class="flex flex-wrap items-center gap-2">
+        <select id="f-grade" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900">
+          <option value="">학년 전체</option><option>1</option><option>2</option><option>3</option>
+        </select>
+        <select id="f-class" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900">
+          <option value="">반 전체</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+        </select>
+        <select id="f-role" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900">
+          <option value="">권한 전체</option>
+          <option>admin</option><option>teacher</option><option>class_admin</option><option>student</option><option>user</option>
+        </select>
+
+        <div class="flex items-center gap-2 px-3 py-2 rounded-lg border bg-white dark:bg-gray-900">
+          <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="search" class="outline-none bg-transparent text-sm w-72" placeholder="이름/학번/아이디 검색"/>
+        </div>
+
+        <button id="refresh" class="btn">새로고침</button>
+
+        <div class="relative">
+          <button id="more-btn" class="btn">More ▾</button>
+          <div id="more" class="popover dark:[--bg:rgba(31,41,55,.98)]">
+            <div class="p-2 text-sm">
+              <button id="open-add" class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700">+ 사용자 추가</button>
+              <label class="w-full block px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                CSV 업로드<input id="csv-in" type="file" accept=".csv" class="hidden">
+              </label>
+              <button id="csv-out" class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700">CSV 다운로드</button>
+              <div class="my-1 h-px bg-gray-200 dark:bg-gray-700"></div>
+              <button id="open-logs" class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700">활동 로그</button>
+              <button id="promote" class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700">신학기 자동 승급</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ml-auto flex items-center gap-2">
+          <label class="text-sm">페이지</label>
+          <select id="page-size" class="rounded-lg border px-2 py-1 text-sm dark:bg-gray-900">
+            <option>25</option><option selected>50</option><option>100</option><option>200</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- 사용자 테이블 -->
+    <section class="rounded-xl border bg-white p-5 shadow-sm">
+      <div class="border rounded-xl overflow-x-auto bg-white dark:bg-gray-800 table">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr class="[&>th]:p-2 [&>th]:border">
+              <th class="w-10 text-center"><input type="checkbox" id="check-all"></th>
+              <th class="sortable" data-sort="name">이름</th>
+              <th class="w-16 text-center sortable" data-sort="grade">학년</th>
+              <th class="w-16 text-center sortable" data-sort="class_num">반</th>
+              <th class="w-20 text-center sortable" data-sort="student_number">번호</th>
+              <th>권한</th>
+              <th class="w-[220px] text-center">작업</th>
+            </tr>
+          </thead>
+          <tbody id="rows" class="[&>tr>td]:p-2 [&>tr>td]:border"></tbody>
+        </table>
+        <p id="empty" class="hidden p-5 text-center text-gray-500">결과가 없습니다.</p>
+      </div>
+
+      <div class="flex items-center justify-between py-3 text-sm">
+        <div id="page-info" class="text-gray-600 dark:text-gray-300"></div>
+        <div class="flex gap-2">
+          <button id="prev" class="btn">이전</button>
+          <button id="next" class="btn">다음</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 일괄 권한 배너 -->
+  <div id="bulk-drawer" class="drawer hidden">
+    <div class="w-full px-8 py-3 flex items-center gap-2">
+      <div class="text-sm flex-1">선택됨: <span id="sel-count">0</span>명</div>
+      <select id="bulk-role" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900">
+        <option value="">일괄 권한 선택…</option>
+        <option>admin</option><option>teacher</option><option>class_admin</option><option>student</option><option>user</option>
       </select>
+      <button id="bulk-apply" class="btn btn-primary">일괄 적용</button>
     </div>
-
-    <div class="form-group">
-      <label for="maxUsers">최대 사용자 수</label>
-      <input type="number" id="maxUsers" placeholder="100">
-    </div>
-
-    <h2>권한 관리</h2>
-    <div class="form-group">
-      <label for="role">사용자 권한 설정</label>
-      <select id="role">
-        <option value="teacher">선생님</option>
-        <option value="student">학생</option>
-        <option value="admin">관리자</option>
-      </select>
-    </div>
-
-    <button onclick="saveSettings()">저장하기</button>
   </div>
 
-  <script>
-    function saveSettings() {
-      const siteName = document.getElementById('siteName').value;
-      const theme = document.getElementById('theme').value;
-      const maxUsers = document.getElementById('maxUsers').value;
-      const role = document.getElementById('role').value;
+  <!-- 사용자 추가 모달 -->
+  <div id="modal-add" class="modal">
+    <div class="w-full max-w-xl rounded-xl border bg-white dark:bg-gray-800 p-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">사용자 추가</h3>
+        <button class="btn btn-ghost" data-close>닫기</button>
+      </div>
+      <div class="mt-3 grid sm:grid-cols-2 gap-3">
+        <input id="add-username" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="아이디(username)"/>
+        <input id="add-name" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="이름"/>
+        <input id="add-email" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="이메일(선택)"/>
+        <input id="add-grade" type="number" min="1" max="3" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="학년"/>
+        <input id="add-class" type="number" min="1" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="반"/>
+        <input id="add-number" type="number" min="1" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="번호(학번)"/>
+        <select id="add-role" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900">
+          <option value="student">student</option><option>teacher</option><option>class_admin</option><option>admin</option><option>user</option>
+        </select>
+        <input id="add-password" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="임시 비번(선택)"/>
+      </div>
+      <div class="mt-4 flex justify-end">
+        <button id="add-submit" class="btn btn-primary">추가</button>
+      </div>
+      <p class="text-xs text-gray-500 mt-2">운영에선 비밀번호는 서버에서 해시 저장 권장.</p>
+    </div>
+  </div>
 
-      alert(`설정이 저장되었습니다:\n사이트 이름: ${siteName}\n테마: ${theme}\n최대 사용자: ${maxUsers}\n권한: ${role}`);
+  <!-- 로그 모달 -->
+  <div id="modal-logs" class="modal">
+    <div class="w-full max-w-2xl rounded-xl border bg-white dark:bg-gray-800 p-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">활동 로그</h3>
+        <div class="flex gap-2">
+          <button id="refresh-logs" class="btn">새로고침</button>
+          <button class="btn btn-ghost" data-close>닫기</button>
+        </div>
+      </div>
+      <ul id="log-list" class="mt-3 space-y-2 max-h:[60vh] overflow-auto text-sm"></ul>
+      <p id="log-empty" class="hidden text-sm text-gray-500">로그가 없습니다(테이블 없을 수도 있음).</p>
+    </div>
+  </div>
+
+  <!-- 전역 컨텍스트 메뉴(작업) -->
+  <div id="ctx" class="dark:[--bg:rgba(31,41,55,.98)]">
+    <div class="p-1 text-sm">
+      <button class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700" data-ctx="save">권한 저장</button>
+      <button class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700" data-ctx="reset">비번 초기화</button>
+      <button class="w-full text-left px-3 py-2 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30" data-ctx="del">삭제</button>
+    </div>
+  </div>
+
+  <!-- 토스트 -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ===== Supabase =====
+    const SUPABASE_URL = "https://ucmzrkwrsezfdjnnwsww.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const USE_SUPABASE_RESET_EMAIL = true;
+
+    // ===== Utils =====
+    const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+    let toastTimer; function toast(m){clearTimeout(toastTimer); const t=$('#toast'); t.textContent=m; t.classList.add('show'); toastTimer=setTimeout(()=>t.classList.remove('show'),1800);}
+    const roleBadge=r=>`<span class="badge ${({admin:'role-admin',teacher:'role-teacher',class_admin:'role-class_admin',student:'role-student',user:'role-user'})[r]||'role-user'}">${r||'-'}</span>`;
+    const chunked=(a,n)=>{const o=[];for(let i=0;i<a.length;i+=n)o.push(a.slice(i,i+n));return o;}
+    const randTemp=()=> 'temp-'+Math.random().toString(36).slice(2,10);
+
+    // ===== Theme/Auth =====
+    (async()=>{ const {data:{user}}=await sb.auth.getUser(); $('#me').textContent=user?.email||''; })();
+    const root=document.documentElement; (localStorage.getItem('theme')==='dark')&&root.classList.add('dark');
+    $('#theme').onclick=()=>{root.classList.toggle('dark');localStorage.setItem('theme',root.classList.contains('dark')?'dark':'light');};
+    $('#signout').onclick=async()=>{await sb.auth.signOut(); location.href='./index.html';};
+
+    // ===== State =====
+    let all=[], view=[], page=1, pageSize=50, sortKey='grade', sortDir='asc';
+
+    // ===== Load & Stats =====
+    async function loadUsers(){
+      let q = sb.from('users').select('username,name,grade,class_num,student_number,role,email').limit(5000);
+      const g=$('#f-grade').value, c=$('#f-class').value, r=$('#f-role').value;
+      if(g) q=q.eq('grade',Number(g)); if(c) q=q.eq('class_num',Number(c)); if(r) q=q.eq('role',r);
+      const {data,error}=await q; if(error){console.error(error); return toast('사용자 로드 실패');}
+      all=data||[];
+      apply();
+      renderStats();
     }
+    function renderStats(){
+      const total = all.length;
+      const byRole = all.reduce((m,u)=>(m[u.role]=(m[u.role]||0)+1,m),{});
+      const classes = new Set(all.filter(u=>u.grade&&u.class_num).map(u=>`${u.grade}-${u.class_num}`)).size;
+      const grades = all.map(u=>u.grade).filter(Boolean);
+      const avg = grades.length? (grades.reduce((a,b)=>a+b,0)/grades.length).toFixed(1):'-';
+      $('#stat-total').textContent = total.toLocaleString();
+      $('#stat-student').textContent = (byRole.student||0).toLocaleString();
+      $('#stat-teacher').textContent = (byRole.teacher||0).toLocaleString();
+      $('#stat-admin').textContent = (byRole.admin||0).toLocaleString();
+      $('#stat-classes').textContent = classes.toLocaleString();
+      $('#stat-avg-grade').textContent = avg;
+    }
+
+    // ===== Filter / Sort / Paging =====
+    function apply(){
+      const kw=$('#search').value.trim().toLowerCase();
+      view = all.filter(u=>{
+        if(!kw) return true;
+        return (u.name||'').toLowerCase().includes(kw)
+            || String(u.student_number||'').includes(kw)
+            || (u.username||'').toLowerCase().includes(kw);
+      });
+      const cmp=(a,b)=> (a<b?-1:(a>b?1:0));
+      view.sort((a,b)=>{
+        let r=(sortDir==='asc'?1:-1)*cmp(a[sortKey]??'', b[sortKey]??'');
+        if(r!==0) return r;
+        for(const k of ['grade','class_num','student_number','name']){ if(k===sortKey) continue; const t=cmp(a[k]??'', b[k]??''); if(t!==0) return t; }
+        return 0;
+      });
+      pageSize=Number($('#page-size').value||50);
+      const total=view.length, pages=Math.max(1,Math.ceil(total/pageSize)); if(page>pages) page=pages;
+      render(view.slice((page-1)*pageSize, (page-1)*pageSize+pageSize));
+      $('#page-info').textContent=`총 ${total.toLocaleString()}명 · ${page}/${pages}페이지`;
+      $('#empty').classList.toggle('hidden', total>0);
+      updateSelectionUI();
+    }
+    function render(list){
+      const tb=$('#rows'); tb.innerHTML='';
+      for(const u of list){
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+          <td class="text-center"><input type="checkbox" class="row-check" data-username="${u.username}"></td>
+          <td class="font-medium">${u.name??'-'}</td>
+          <td class="text-center">${u.grade??'-'}</td>
+          <td class="text-center">${u.class_num??'-'}</td>
+          <td class="text-center">${u.student_number??'-'}</td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span>${roleBadge(u.role)}</span>
+              <select class="rounded border px-2 py-1 text-xs dark:bg-gray-900" data-role="${u.username}">
+                ${['admin','teacher','class_admin','student','user'].map(r=>`<option ${u.role===r?'selected':''}>${r}</option>`).join('')}
+              </select>
+            </div>
+          </td>
+          <td class="text-center">
+            <button class="btn text-xs" data-menu="${u.username}">⋯</button>
+          </td>`;
+        tb.appendChild(tr);
+      }
+    }
+
+    // ===== Actions =====
+    async function updateRole(username, role){
+      const {error}=await sb.from('users').update({role}).eq('username',username);
+      if(error){console.error(error); return toast('권한 저장 실패');}
+      toast('권한 저장 완료'); logAction('role_update',{target:username,role});
+    }
+    async function deleteUser(username){
+      if(!confirm(`${username} 계정을 삭제할까요?`)) return;
+      const {error}=await sb.from('users').delete().eq('username',username);
+      if(error){console.error(error); return toast('삭제 실패');}
+      toast('삭제 완료'); logAction('user_delete',{target:username}); loadUsers();
+    }
+    async function addUser(){
+      const p={
+        username:$('#add-username').value.trim(),
+        name:$('#add-name').value.trim(),
+        email:$('#add-email').value.trim()||null,
+        grade:Number($('#add-grade').value||0)||null,
+        class_num:Number($('#add-class').value||0)||null,
+        student_number:Number($('#add-number').value||0)||null,
+        role:$('#add-role').value
+      };
+      const pw=$('#add-password').value.trim(); if(pw) p.password=pw;
+      if(!p.username || !p.name) return toast('아이디와 이름은 필수');
+      const {error}=await sb.from('users').insert(p);
+      if(error){console.error(error); return toast('추가 실패');}
+      toast('추가 완료'); logAction('user_create',p);
+      closeModal('#modal-add');
+      ['#add-username','#add-name','#add-email','#add-grade','#add-class','#add-number','#add-password'].forEach(s=>$(s).value=''); $('#add-role').value='student';
+      loadUsers();
+    }
+    async function bulkApplyRole(){
+      const role=$('#bulk-role').value; if(!role) return toast('일괄 권한을 선택하세요');
+      const ids=[...$$('.row-check:checked')].map(i=>i.dataset.username); if(!ids.length) return;
+      const {error}=await sb.from('users').update({role}).in('username',ids);
+      if(error){console.error(error); return toast('일괄 변경 실패');}
+      toast(`일괄 변경 완료 (${ids.length}명)`); logAction('role_bulk_update',{targets:ids,role}); loadUsers();
+    }
+    async function promote(){
+      if(!confirm('신학기 자동 승급(1→2, 2→3)을 실행할까요?')) return;
+      const {error}=await sb.rpc('promote_students_safe',{}); // 있으면 사용
+      if(!error){toast('승급 완료'); logAction('promote',{via:'rpc'}); return loadUsers();}
+      const {data,error:e2}=await sb.from('users').select('username,grade').eq('role','student').limit(5000);
+      if(e2){console.error(e2); return toast('승급 실패');}
+      const ups=data.map(u=>({username:u.username, grade:(u.grade>=1&&u.grade<=2)?u.grade+1:u.grade}));
+      for(const c of chunked(ups,200)){ const {error:e3}=await sb.from('users').upsert(c); if(e3) console.error(e3); }
+      toast('승급 완료'); logAction('promote',{count:ups.length}); loadUsers();
+    }
+    async function resetByUsername(username){
+      const {data,error}=await sb.from('users').select('email').eq('username',username).maybeSingle();
+      if(error||!data?.email) return toast('이메일이 없습니다');
+      if(USE_SUPABASE_RESET_EMAIL){
+        const {error:e2}=await sb.auth.resetPasswordForEmail(data.email,{redirectTo:location.origin+'/reset.html'});
+        if(e2){console.error(e2); return toast('메일 전송 실패');}
+        toast('재설정 메일 전송'); logAction('password_reset_email',{target:username});
+      }else{
+        const temp=randTemp(); const {error:e3}=await sb.from('users').update({password:temp}).eq('username',username);
+        if(e3){console.error(e3); return toast('임시 비번 실패');}
+        toast(`임시 비번: ${temp}`); logAction('password_temp_set',{target:username});
+      }
+    }
+
+    // ===== Logs (optional) =====
+    async function logAction(action,details){
+      try{ const {data:{user}}=await sb.auth.getUser();
+        await sb.from('user_logs').insert({action,actor:user?.email||'unknown',target:details?.target||null,details}); }catch(e){}
+    }
+    async function loadLogs(){
+      try{
+        const {data,error}=await sb.from('user_logs').select('action,actor,target,created_at').order('created_at',{ascending:false}).limit(50);
+        if(error) throw error;
+        const ul=$('#log-list'); ul.innerHTML=''; if(!data?.length){$('#log-empty').classList.remove('hidden'); return;}
+        $('#log-empty').classList.add('hidden');
+        for(const r of data){
+          const li=document.createElement('li'); const when=new Date(r.created_at).toLocaleString();
+          li.innerHTML=`<div class="p-2 rounded border dark:border-gray-700">
+            <div class="text-xs text-gray-500">${when}</div>
+            <div class="text-sm"><b>${r.actor}</b> → <span class="font-mono">${r.target||'-'}</span></div>
+            <div class="text-xs text-blue-600 dark:text-blue-400">${r.action}</div>
+          </div>`;
+          ul.appendChild(li);
+        }
+      }catch(e){ $('#log-empty').classList.remove('hidden'); }
+    }
+
+    // ===== CSV =====
+    function toCSV(rows){ const esc=v=>('"'+String(v??'').replace(/"/g,'""')+'"');
+      const head=['username','name','grade','class_num','student_number','role','email'];
+      return [head.join(',')].concat(rows.map(r=>[r.username,r.name,r.grade,r.class_num,r.student_number,r.role,r.email].map(esc).join(','))).join('\n');}
+    function download(name,text){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'text/csv'})); a.download=name; document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove();}
+    function parseCSV(text){ const lines=text.replace(/\r/g,'').split('\n').filter(Boolean); const header=lines.shift().split(',').map(h=>h.trim());
+      return lines.map(line=>{ const cols=splitCSV(line); const o={}; header.forEach((h,i)=>o[h]=cols[i]);
+        if(o.grade) o.grade=Number(o.grade); if(o.class_num) o.class_num=Number(o.class_num); if(o.student_number) o.student_number=Number(o.student_number); return o;});}
+    function splitCSV(line){ const out=[]; let cur='',inq=false; for(let i=0;i<line.length;i++){const ch=line[i];
+      if(ch==='"'){ if(line[i+1]==='"'){cur+='"'; i++;} else inq=!inq; } else if(ch===',' && !inq){ out.push(cur); cur=''; } else cur+=ch; }
+      out.push(cur); return out.map(s=>s.trim()); }
+
+    // ===== UI helpers & Events =====
+    function openModal(id){ $(id).classList.add('open'); }
+    function closeModal(id){ $(id).classList.remove('open'); }
+    function togglePopover(el){ el.classList.toggle('open'); }
+    function updateSelectionUI(){
+      const cnt=[...$$('.row-check:checked')].length;
+      $('#sel-count').textContent=cnt; $('#bulk-drawer').classList.toggle('hidden', cnt===0);
+      $('#check-all').checked = !!cnt && [...$$('.row-check')].every(i=>i.checked);
+    }
+
+    // 필터/검색/페이징
+    $('#f-grade').onchange=()=>{page=1;loadUsers();};
+    $('#f-class').onchange=()=>{page=1;loadUsers();};
+    $('#f-role').onchange =()=>{page=1;loadUsers();};
+    $('#search').oninput   =()=>{page=1;apply();};
+    $('#page-size').onchange=()=>{page=1;apply();};
+    $('#prev').onclick=()=>{ if(page>1){page--; apply();}};
+    $('#next').onclick=()=>{ const pages=Math.max(1,Math.ceil(view.length/pageSize)); if(page<pages){page++; apply();}};
+
+    // ✅ 행 작업: 전역 컨텍스트 메뉴(포털)
+    let ctxUser = null;
+    function openCtx(btn, username){
+      ctxUser = username;
+      const el = document.getElementById('ctx');
+      el.style.left = '0px'; el.style.top = '0px';
+      el.classList.add('open');
+
+      const r = btn.getBoundingClientRect();
+      const pad = 8;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const mw = el.offsetWidth, mh = el.offsetHeight || 180;
+
+      let top = r.bottom + pad;
+      let left = Math.min(vw - mw - pad, Math.max(pad, r.left));
+      if(top + mh + pad > vh){ top = r.top - mh - pad; }
+      if(top < pad) top = pad;
+      if(left < pad) left = pad;
+
+      el.style.left = `${left}px`;
+      el.style.top  = `${top}px`;
+    }
+    function closeCtx(){ const el=document.getElementById('ctx'); el.classList.remove('open'); ctxUser=null; }
+
+    // 버튼/배경 클릭으로 열고 닫기
+    document.addEventListener('click', (e)=>{
+      const btn = e.target.closest('[data-menu]');
+      if(btn){
+        const current = document.getElementById('ctx');
+        if(current.classList.contains('open') && ctxUser === btn.dataset.menu){ closeCtx(); return; }
+        openCtx(btn, btn.dataset.menu);
+      }else if(!e.target.closest('#ctx')){
+        closeCtx();
+      }
+    });
+    window.addEventListener('scroll', closeCtx, {passive:true});
+    window.addEventListener('resize', closeCtx);
+
+    // 전역 메뉴 항목 클릭
+    document.getElementById('ctx').addEventListener('click', (e)=>{
+      const act = e.target.closest('[data-ctx]')?.dataset.ctx;
+      if(!act || !ctxUser) return;
+      if(act==='save'){
+        const sel = document.querySelector(`select[data-role="${ctxUser}"]`);
+        if(sel) updateRole(ctxUser, sel.value);
+      }else if(act==='reset'){
+        resetByUsername(ctxUser);
+      }else if(act==='del'){
+        deleteUser(ctxUser);
+      }
+      closeCtx();
+    });
+
+    // 테이블 내부 체크/버튼
+    $('#rows').onclick=async(e)=>{
+      const chk = e.target.closest('.row-check'); if(chk){ updateSelectionUI(); }
+    };
+    $('#check-all').onchange=(e)=>{ $$('.row-check').forEach(i=>i.checked=e.target.checked); updateSelectionUI(); };
+    $('#bulk-apply').onclick=bulkApplyRole;
+
+    // 툴바
+    $('#refresh').onclick=loadUsers;
+    $('#more-btn').onclick=()=>togglePopover($('#more'));
+    document.addEventListener('click', (e)=>{ if(!e.target.closest('#more-btn') && !e.target.closest('#more')) $('#more').classList.remove('open'); });
+
+    // CSV
+    $('#csv-out').onclick = ()=> download('users_export.csv', toCSV(view));
+    $('#csv-in').onchange = async(e)=>{ const f=e.target.files?.[0]; if(!f) return; const rows=parseCSV(await f.text()); const good=rows.filter(r=>r.username && r.name);
+      for(const c of chunked(good,200)){ const {error}=await sb.from('users').upsert(c); if(error) console.error(error); }
+      toast(`CSV 업로드 완료 (${good.length}명)`); e.target.value=''; loadUsers(); };
+
+    // 모달
+    $('#open-add').onclick=()=>openModal('#modal-add');
+    $$('#modal-add [data-close]').forEach(b=>b.onclick=()=>closeModal('#modal-add'));
+    $('#add-submit').onclick=addUser;
+
+    $('#open-logs').onclick=()=>{ openModal('#modal-logs'); loadLogs(); };
+    $$('#modal-logs [data-close]').forEach(b=>b.onclick=()=>closeModal('#modal-logs'));
+    $('#refresh-logs').onclick=loadLogs;
+
+    // 정렬
+    document.querySelectorAll('th.sortable').forEach(th=>{
+      th.onclick=()=>{ const key=th.dataset.sort; sortDir=(sortKey===key && sortDir==='asc')?'desc':'asc'; sortKey=key; apply(); };
+    });
+
+    // 초기 로드
+    document.addEventListener('DOMContentLoaded', async ()=>{ await loadUsers(); });
   </script>
 </body>
 </html>
