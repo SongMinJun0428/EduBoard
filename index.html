@@ -886,6 +886,28 @@ html, body {
   }
 }
 
+/* 모바일(1080px 이하)에서 여백 줄이기 */
+@media (max-width: 1080px) {
+  .content {
+    padding: 1rem;         /* 2rem → 1rem */
+    max-width: 100%;       /* 화면 전체 너비 활용 */
+  }
+
+  .panel,
+  .dashboard-panel,
+  .dashboard-card {
+    margin-left: 0;
+    margin-right: 0;
+    width: 100% !important;   /* 카드가 삐져나오지 않도록 */
+    box-sizing: border-box;
+  }
+
+  /* 카드 안쪽 여백은 유지, 바깥쪽만 줄임 */
+  .panel {
+    padding: 1rem;
+  }
+}
+
   </style>
 </head>
   <body>
