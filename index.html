@@ -907,6 +907,19 @@ html, body {
     padding: 1rem;
   }
 }
+/* === 모바일 전용: 폰트 크기 1px 줄이기 === */
+@media (max-width: 1080px) {
+  body {
+    font-size: 0.95rem;   /* 기본 글씨 크기 살짝 축소 */
+  }
+
+  h1 { font-size: 1.3rem; }  /* 원래 1.4rem → 1.3rem */
+  h2 { font-size: 1.1rem; }
+  h3 { font-size: 1rem; }
+  p, span, a, li, input, textarea, button, small {
+    font-size: 0.9rem;   /* 원래보다 -1px 효과 */
+  }
+}
 
   </style>
 </head>
