@@ -141,6 +141,9 @@
               <th class="w-16 text-center sortable" data-sort="class_num">반</th>
               <th class="w-20 text-center sortable" data-sort="student_number">번호</th>
               <th>권한</th>
+              <th class="w-16 text-center">레벨</th>
+              <th class="w-20 text-center">XP</th>
+              <th class="w-20 text-center">포인트</th>
               <th class="w-[220px] text-center">작업</th>
             </tr>
           </thead>
@@ -186,8 +189,11 @@
         <input id="add-class" type="number" min="1" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="반"/>
         <input id="add-number" type="number" min="1" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="번호(학번)"/>
         <select id="add-role" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900">
-          <option value="student">student</option><option>teacher</option><option>class_admin</option><option>admin</option><option>user</option>
+          <option value="student">student(동아리)</option><option>class_admin</option><option>admin</option><option>user</option>
         </select>
+        <input id="add-level" type="number" min="1" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="레벨(선택)"/>
+        <input id="add-xp" type="number" min="0" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="XP(선택)"/>
+        <input id="add-point" type="number" min="0" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="포인트(선택)"/>
         <input id="add-password" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="임시 비번(선택)"/>
       </div>
       <div class="mt-4 flex justify-end">
@@ -196,6 +202,18 @@
       <p class="text-xs text-gray-500 mt-2">운영에선 비밀번호는 서버에서 해시 저장 권장.</p>
     </div>
   </div>
+
+  <div id="modal-coin" class="modal">
+    <div class="w-full max-w-sm rounded-xl border bg-white dark:bg-gray-800 p-4">
+      <h3 class="font-semibold mb-3">포인트 지급</h3>
+      <input id="coin-amount" type="number" min="1" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="지급할 포인트 수"/>
+      <div class="mt-4 flex justify-end gap-2">
+        <button class="btn btn-ghost" data-close>취소</button>
+        <button class="btn btn-primary" id="coin-submit">지급</button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- 로그 모달 -->
   <div id="modal-logs" class="modal">
@@ -217,6 +235,7 @@
     <div class="p-1 text-sm">
       <button class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700" data-ctx="save">권한 저장</button>
       <button class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700" data-ctx="reset">비번 초기화</button>
+      <button class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700" data-ctx="coin">포인트 지급</button>
       <button class="w-full text-left px-3 py-2 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30" data-ctx="del">삭제</button>
     </div>
   </div>
@@ -249,7 +268,7 @@
 
     // ===== Load & Stats =====
     async function loadUsers(){
-      let q = sb.from('users').select('username,name,grade,class_num,student_number,role,email').limit(5000);
+      let q = sb.from('users').select('username,name,grade,class_num,student_number,role,email,level,xp,coin_balance').limit(5000);
       const g=$('#f-grade').value, c=$('#f-class').value, r=$('#f-role').value;
       if(g) q=q.eq('grade',Number(g)); if(c) q=q.eq('class_num',Number(c)); if(r) q=q.eq('role',r);
       const {data,error}=await q; if(error){console.error(error); return toast('사용자 로드 실패');}
@@ -312,6 +331,9 @@
               </select>
             </div>
           </td>
+          <td class="text-center">${u.level ?? '-'}</td>
+          <td class="text-center">${u.xp ?? '-'}</td>
+          <td class="text-center">${u.coin_balance ?? '-'}</td>
           <td class="text-center">
             <button class="btn text-xs" data-menu="${u.username}">⋯</button>
           </td>`;
@@ -340,6 +362,8 @@
         class_num:Number($('#add-class').value||0)||null,
         student_number:Number($('#add-number').value||0)||null,
         role:$('#add-role').value
+        
+        
       };
       const pw=$('#add-password').value.trim(); if(pw) p.password=pw;
       if(!p.username || !p.name) return toast('아이디와 이름은 필수');
@@ -468,6 +492,7 @@
         openCtx(btn, btn.dataset.menu);
       }else if(!e.target.closest('#ctx')){
         closeCtx();
+        
       }
     });
     window.addEventListener('scroll', closeCtx, {passive:true});
@@ -485,6 +510,12 @@
       }else if(act==='del'){
         deleteUser(ctxUser);
       }
+      else if (act === 'coin') {
+        targetUserForCoin = ctxUser; 
+        closeCtx();               
+        openModal('#modal-coin');
+      }
+
       closeCtx();
     });
 
@@ -522,6 +553,46 @@
 
     // 초기 로드
     document.addEventListener('DOMContentLoaded', async ()=>{ await loadUsers(); });
+
+    let targetUserForCoin = null;
+$('#coin-submit').onclick = async () => {
+  const raw = $('#coin-amount')?.value?.trim();  // ✅ 먼저 정의
+  console.log('입력값:', raw);
+  console.log('지급 대상:', targetUserForCoin); // 👈 여기 추가
+
+  const amount = parseInt(raw, 10);              // ✅ 그 다음 사용
+
+  if (!targetUserForCoin || !raw || isNaN(amount) || amount <= 0) {
+    return toast('지급할 포인트를 올바르게 입력하세요');
+  }
+
+  const { data, error: getError } = await sb.from('users')
+    .select('coin_balance')
+    .eq('username', targetUserForCoin)
+    .maybeSingle();
+
+  if (getError || !data) return toast('유저 정보를 불러올 수 없습니다');
+
+  const newBalance = (data.coin_balance || 0) + amount;
+
+  const { error: updateError } = await sb.from('users')
+    .update({ coin_balance: newBalance })
+    .eq('username', targetUserForCoin);
+
+  if (updateError) {
+    console.error(updateError);
+    return toast('포인트 지급 실패');
+  }
+
+  toast(`포인트 ${amount} 지급 완료`);
+  logAction('coin_given', { target: targetUserForCoin, amount });
+  closeModal('#modal-coin');
+  $('#coin-amount').value = '';
+  targetUserForCoin = null;
+  loadUsers();
+};
+
+$$('#modal-coin [data-close]').forEach(b => b.onclick = () => closeModal('#modal-coin'));
   </script>
 </body>
 </html>

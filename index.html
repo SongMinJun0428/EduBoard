@@ -828,6 +828,64 @@
       .card[data-section="rank"]     { --head-color:#ef4444; } /* 빨강 */
       .card[data-section="meal"]     { --head-color:#06b6d4; } /* 청록 */
 
+
+      /* === 모바일 좌우 스크롤 방지 패치 === */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* 모든 요소 박스사이징 통일 */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* 모바일 전용 규칙 */
+@media (max-width: 1080px) {
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 폭을 100%로 제한 */
+  .content,
+  .panel,
+  .dashboard-panel,
+  .dashboard-grid,
+  header,
+  nav,
+  footer {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* 이미지/비디오 튀어나감 방지 */
+  img, video, canvas {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* flex/grid 아이템 오버플로우 방지 */
+  [class*="col"], [class*="row"], [class*="grid"] {
+    min-width: 0;
+  }
+
+  /* 사이드 메뉴 등 transform 요소 튀어나올 때 방지 */
+  .mobile-side-menu {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* 표·코드블록 내부만 가로 스크롤 */
+  table, pre, code {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
   </style>
 </head>
   <body>
@@ -973,8 +1031,6 @@
 
       <nav id="main-nav">
         <a href="#" onclick="showPanel('dashboard')">대시보드</a>
-        <a id="tab-23" href="#" onclick="showPanel('class23-panel')">2-3반</a>
-
         <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
         <a href="#" onclick="showPanel('doc-panel')">수행 등록</a>
         <!-- <a href="#" onclick="showPanel('student-panel')">학생 관리</a> -->
@@ -1064,37 +1120,6 @@
                   </div>
                 </div>
               </div>
-              
-              <!-- 2-3반 전용 패널 (권한 가드: 스크립트에서 접근 차단) -->
-<div id="class23-panel" class="panel" style="display:none;">
-  <h2>👥 2-3반 명단</h2>
-
-  <div style="display:flex; gap:.5rem; align-items:center; margin:.6rem 0 1rem;">
-    <div style="display:flex; gap:.4rem; align-items:center; border:1px solid #e5e7eb; padding:.4rem .6rem; border-radius:.5rem;">
-      <span style="opacity:.7">검색</span>
-      <input id="c23-search" placeholder="이름/학번/아이디" style="border:none; outline:none; width:16rem;">
-    </div>
-    <button id="c23-reload" class="mini-btn">새로고침</button>
-    <button id="c23-csv" class="mini-btn">CSV 다운로드</button>
-    <span style="margin-left:auto; font-size:.9rem; color:#6b7280;">접근 권한: <b>2학년 3반</b>만</span>
-  </div>
-
-  <div style="border:1px solid #e5e7eb; border-radius:.75rem; overflow:auto;">
-    <table class="min-w-full" style="font-size:.95rem; border-collapse:separate; border-spacing:0;">
-      <thead style="background:#f9fafb; position:sticky; top:0; z-index:1;">
-        <tr>
-          <th style="padding:.6rem .5rem; border-bottom:1px solid #e5e7eb; width:80px; text-align:center;">학번</th>
-          <th style="padding:.6rem .5rem; border-bottom:1px solid #e5e7eb;">이름</th>
-          <th style="padding:.6rem .5rem; border-bottom:1px solid #e5e7eb; width:160px;">아이디</th>
-          <th style="padding:.6rem .5rem; border-bottom:1px solid #e5e7eb; width:110px; text-align:center;">권한</th>
-        </tr>
-      </thead>
-      <tbody id="c23-rows"></tbody>
-    </table>
-    <p id="c23-empty" style="display:none; padding:1rem; text-align:center; color:#6b7280;">학생이 없습니다.</p>
-  </div>
-</div>
-
 
               <div class="card"data-section="timetable">
                   <div class="card-body">
@@ -1170,13 +1195,13 @@
               <button onclick="addNotice()">공지 추가</button>
         </div>  
 
-<div id="admin-panel"
-     class="panel cursor-pointer hover:bg-gray-50"
-     style="display:none;"
-     onclick="window.location.href='admin.html'">
-  <h2>⚙️ 관리자 설정</h2>
-</div>
-
+        <div id="admin-panel"
+            class="panel cursor-pointer hover:bg-gray-50"
+            style="display:none;"
+            onclick="window.location.href='admin.html'">
+          <h2>⚙️ 관리자 설정</h2>
+        </div>  
+        
         <div id="doc-panel" class="panel">
           <h2>📄 수행 평가 업로드</h2>
           <input type="file" id="doc-file" accept=".pdf,.jpg,.png"/>
@@ -1460,9 +1485,9 @@
 
       
 const SUBJECT_CANON = [
-  '국어','수학','영어','과학','사회','역사','지리','도덕','기술·가정','정보',
-  '음악','미술','체육','통합사회','통합과학','창체','자율','동아리','진로','한문',
-  '중국어','일본어','스포츠'
+  '국어','수학','영어','과학','사회','역사', '도덕','기술·가정','정보',
+  '음악','미술','체육','자율','동아리','진로','한문',
+  '중국어','스포츠'
 ];
 
 const SUBJECT_SYNONYMS = {
@@ -1472,22 +1497,17 @@ const SUBJECT_SYNONYMS = {
   '과학': ['과학','과 학','과탐','과학탐구','물리','화학','생명과학','지구과학','통합과학'],
   '사회': ['사회','사회과','통합사회','법과정치','경제','윤리'],
   '역사': ['역사','한국사','세계사'],
-  '지리': ['지리'],
   '도덕': ['도덕','윤리'],
   '기술·가정': ['기술·가정','기술가정','기술 가정','기가','기 술','가 정','기술','가정'],
   '정보': ['정보','컴퓨터','프로그래밍','코딩','SW','소프트웨어'],
   '음악': ['음악','합창','합주','실기(음악)'],
   '미술': ['미술','디자인','드로잉','실기(미술)'],
   '체육': ['체육','체육활동','체 육','스포츠','스포츠클럽'],
-  '통합사회': ['통합사회'],
-  '통합과학': ['통합과학'],
-  '창체': ['창체','창의적체험활동','창의적 체험활동'],
   '자율': ['자율','자율활동'],
   '동아리': ['동아리'],
   '진로': ['진로','진로활동'],
   '한문': ['한문','한자'],
   '중국어': ['중국어','중국어회화','중국어Ⅰ','중국어 I','중국어1'],
-  '일본어': ['일본어','일본어회화','일본어Ⅰ','일본어 I','일본어1'],
   '스포츠': ['스포츠','스포츠클럽']
 };
 
@@ -2066,26 +2086,6 @@ const SUBJECT_SYNONYMS = {
         }
       });
 
-function setupAdminNav() {
-  if (window.currentUserRole === 'admin') {
-    if (!document.getElementById('admin-nav')) {
-      const nav = document.getElementById('main-nav');
-      const a = document.createElement('a');
-      a.href = 'admin.html';     // ← 관리자 페이지 파일
-      a.id = 'admin-nav';
-      a.innerText = '관리자 설정';
-      // 패널 열기 대신 페이지 이동
-      a.onclick = (e) => {
-        e.preventDefault();
-        window.location.href = 'admin.html';
-      };
-      nav.appendChild(a);
-    }
-  }
-}
-
-
-
       function norm(s='') {
         return String(s)
           .replace(/\r/g,'')
@@ -2409,29 +2409,30 @@ function setValue(id, val){
         loadTimetableWeek(currentGrade, currentClassNum, timetableOffset);
       }
 
-function setupAdminNav() {
-  const existing = document.getElementById('admin-nav');
+      function setupAdminNav() {
+        const existing = document.getElementById('admin-nav');
 
-  if (currentUserRole === 'admin') {
-    if (!existing) {
-      const nav = document.getElementById('main-nav');
-      const a = document.createElement('a');
-      a.href = 'admin.html';      // ← 바로 admin.html로 이동
-      a.id = 'admin-nav';
-      a.innerText = '관리자 설정';
+        if (currentUserRole === 'admin') {
+          if (!existing) {
+            const nav = document.getElementById('main-nav');
+            const a = document.createElement('a');
+            a.href = 'admin.html';      // ← 바로 admin.html로 이동
+            a.id = 'admin-nav';
+            a.innerText = '관리자 설정';
 
-      a.onclick = (e) => {
-        e.preventDefault();       // 혹시 SPA 라우터가 기본 동작 막아도 강제 이동
-        window.location.href = 'admin.html';
-      };
+            a.onclick = (e) => {
+              e.preventDefault();       // 혹시 SPA 라우터가 기본 동작 막아도 강제 이동
+              window.location.href = 'admin.html';
+            };
 
-      nav.appendChild(a);
-    }
-  } else {
-    if (existing) existing.remove();
-  }
-}
-
+            nav.appendChild(a);
+          }
+        } else {
+          if (existing) existing.remove();
+        }
+      }
+      
+      
 
       document.querySelectorAll('#main-nav a').forEach(link => {
         link.addEventListener('click', () => {
@@ -4025,197 +4026,22 @@ window.registerAnalyzedText = async function(){
     console.error(e);
     alert('예상치 못한 오류: ' + (e?.message || e));
   }
-};
+};  
 
-const CLASS23_GRADE = 2;
-const CLASS23_CLASS = 3;
-
-// me(로그인 사용자) 가져오기: 이미 전역 me가 있으면 사용.
-// 없으면 localStorage.username → users 테이블에서 조회,
-// 둘 다 없으면 Supabase auth의 email로 fallback 조회.
-async function fetchMe() {
-  if (window.me && (window.me.grade != null)) return window.me;
-
-  // 1) 로컬에 username 저장해뒀다면
-  const u = localStorage.getItem('username');
-  if (u && window.sb) {
-    const { data, error } = await sb
-      .from('users')
-      .select('username,name,grade,class_num,student_number,role,email')
-      .eq('username', u)
-      .maybeSingle();
-    if (!error && data) {
-      window.me = data;
-      return data;
+function setupStudentPanel() {
+  if (
+    window.currentUserRole === 'student' &&
+    Number(window.currentGrade) === 2 &&
+    Number(window.currentClassNum) === 3
+  ) {
+    const panel = document.getElementById('student-panel');
+    if (panel) {
+      panel.style.display = 'block';
     }
   }
-
-  // 2) Supabase auth 사용자 이메일로 조회 (email 컬럼이 있는 경우에만 유효)
-  if (window.sb) {
-    try {
-      const { data: { user } } = await sb.auth.getUser();
-      if (user?.email) {
-        const { data, error } = await sb
-          .from('users')
-          .select('username,name,grade,class_num,student_number,role,email')
-          .eq('email', user.email)
-          .maybeSingle();
-        if (!error && data) {
-          window.me = data;
-          return data;
-        }
-      }
-    } catch (_) {}
-  }
-
-  // 3) 마지막 시도: 전역에 me가 없다면 null
-  return window.me || null;
 }
 
-// 2-3반 조건 판단
-async function canSeeClass23() {
-  const me = await fetchMe();
-  return !!(me && Number(me.grade) === CLASS23_GRADE && Number(me.class_num) === CLASS23_CLASS);
-}
 
-// 탭/패널 UI를 사용자 권한에 따라 제어
-async function setupClass23Gate() {
-  const ok = await canSeeClass23();
-
-  const tab = document.getElementById('tab-23');
-  const tabMobile = document.getElementById('tab-23-mobile'); // (모바일에 만들었다면)
-  const panel = document.getElementById('class23-panel');
-
-  if (!ok) {
-    // 보이지 않게 (완전 제거)
-    if (tab) tab.remove();
-    if (tabMobile) tabMobile.remove();
-    // 혹시 누가 직접 showPanel로 열려고 할 때도 가드
-    if (panel) panel.setAttribute('data-guarded', '1');
-  } else {
-    // 접근 가능 → 탭 그대로, 패널 활성화 허용
-    if (panel) panel.removeAttribute('data-guarded');
-  }
-}
-
-// showPanel 가드: class23-panel이면 권한 확인 후 실패 시 대시보드로 되돌림
-(function wrapShowPanel() {
-  const orig = window.showPanel;
-  if (typeof orig === 'function') {
-    window.showPanel = async function(id) {
-      // 2-3반 패널 접근 시 가드
-      if (id === 'class23-panel') {
-        const ok = await canSeeClass23();
-        if (!ok) {
-          alert('2-3반 학생만 접근할 수 있어요.');
-          return orig('dashboard'); // 대시보드로 회귀
-        }
-      }
-      return orig(id);
-    };
-  } else {
-    // 혹시 기존 showPanel이 없다면 매우 단순 버전 제공
-    window.showPanel = async function(id) {
-      if (id === 'class23-panel') {
-        const ok = await canSeeClass23();
-        if (!ok) {
-          alert('2-3반 학생만 접근할 수 있어요.');
-          id = 'dashboard';
-        }
-      }
-      document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-      const t = document.getElementById(id);
-      if (t) t.style.display = 'block';
-    };
-  }
-})();
-
-// ==== 2-3반 데이터 로딩 & 렌더 ==== //
-let class23All = [];
-
-async function loadClass23() {
-  // UI 가드 (혹시 직접 호출되었을 때)
-  const ok = await canSeeClass23();
-  if (!ok) return;
-
-  try {
-    const { data, error } = await sb
-      .from('users')
-      .select('username,name,role,grade,class_num,student_number')
-      .eq('grade', CLASS23_GRADE)
-      .eq('class_num', CLASS23_CLASS)
-      .order('student_number', { ascending: true });
-    if (error) throw error;
-    class23All = data || [];
-    renderClass23();
-  } catch (e) {
-    console.error(e);
-    if (typeof toast === 'function') toast('2-3반 로드 실패');
-  }
-}
-
-function renderClass23() {
-  const kw = (document.getElementById('c23-search')?.value || '').trim().toLowerCase();
-  const list = !kw ? class23All : class23All.filter(s =>
-    (s.name||'').toLowerCase().includes(kw) ||
-    String(s.student_number||'').includes(kw) ||
-    (s.username||'').toLowerCase().includes(kw)
-  );
-
-  const tb = document.getElementById('c23-rows');
-  const empty = document.getElementById('c23-empty');
-  if (!tb || !empty) return;
-
-  tb.innerHTML = '';
-  if (!list.length) {
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-
-  for (const s of list) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="padding:.55rem .5rem; border-top:1px solid #eef2f7; text-align:center;">${s.student_number ?? '-'}</td>
-      <td style="padding:.55rem .5rem; border-top:1px solid #eef2f7;">${s.name ?? '-'}</td>
-      <td style="padding:.55rem .5rem; border-top:1px solid #eef2f7; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;">${s.username ?? '-'}</td>
-      <td style="padding:.55rem .5rem; border-top:1px solid #eef2f7; text-align:center;">${s.role ?? '-'}</td>
-    `;
-    tb.appendChild(tr);
-  }
-}
-
-// CSV 다운로드
-function c23DownloadCSV() {
-  const head = ['student_number','name','username','role'];
-  const rows = class23All.map(s => [s.student_number, s.name, s.username, s.role]);
-  const csv = [head.join(',')]
-    .concat(rows.map(r => r.map(v => `"${String(v??'').replace(/"/g,'""')}"`).join(',')))
-    .join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
-  a.download = 'class_2-3_students.csv';
-  document.body.appendChild(a);
-  a.click();
-  URL.revokeObjectURL(a.href);
-  a.remove();
-}
-
-// 이벤트 바인딩 (요소가 있을 때만)
-document.addEventListener('DOMContentLoaded', async () => {
-  await setupClass23Gate();          // 탭 보이기/숨기기 결정
-  // 패널 열릴 때만 로드되도록: showPanel('class23-panel') 호출 시 loadClass23를 따로 불러줘도 됨
-  // 필요하면 최초 진입 시 자동 오픈:
-  // if (await canSeeClass23()) showPanel('class23-panel');
-});
-
-document.getElementById('c23-search')?.addEventListener('input', renderClass23);
-document.getElementById('c23-reload')?.addEventListener('click', loadClass23);
-document.getElementById('c23-csv')?.addEventListener('click', c23DownloadCSV);
-
-// 이미 있는 showPanel 흐름 속에서 class23-panel이 열릴 때 데이터를 불러오고 싶다면,
-// 기존 showPanel 호출부 근처에서 다음 한 줄을 추가해도 좋다:
-// if (id === 'class23-panel') loadClass23();
     </script>
   </body> 
 </html>
