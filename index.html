@@ -1358,28 +1358,28 @@ html, body {
             </div>
             <!-- 🧩 미로 탈출 -->
             <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
-              <h3>🧩 미로 탈출</h3>
+              <h3>🧩 미로 탈출(테스트)</h3>
               <p>10×10 미로에서 출구까지 도달하세요<br><strong>💰 5코인 필요</strong></p>
               <button onclick="startGame('mazeEscape')">게임 시작</button>
             </div>
 
             <!-- 🧱 Falling Blocks -->
             <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
-              <h3>🧱 Falling Blocks</h3>
+              <h3>🧱 Falling Blocks(테스트)</h3>
               <p>떨어지는 블록을 피하면서 오래 살아남으세요<br><strong>💰 5코인 필요</strong></p>
               <button onclick="startGame('fallingBlocks')">게임 시작</button>
             </div>
 
             <!-- ⚡ Reaction -->
             <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
-              <h3>⚡ Reaction</h3>
+              <h3>⚡ Reaction(테스트)</h3>
               <p>랜덤 신호에 얼마나 빨리 반응할 수 있나요?<br><strong>💰 5코인 필요</strong></p>
               <button onclick="startGame('reaction')">게임 시작</button>
             </div>
 
             <!-- 🐦 Flappy 스타일 -->
             <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
-              <h3>🐦 점프 피하기</h3>
+              <h3>🐦 점프 피하기(테스트)</h3>
               <p>터치/스페이스로 위로 점프하며 장애물을 피해보세요<br><strong>💰 5코인 필요</strong></p>
               <button onclick="startGame('flappy')">게임 시작</button>
             </div>
@@ -1415,56 +1415,6 @@ html, body {
   </div>
 </div>
 
-<!-- =========================
-     🧩 미로 탈출 패널
-     필요한 요소: <canvas id="maze-cv">
-     ========================= -->
-<div id="mazeEscape-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
-  <h3>🧩 미로 탈출</h3>
-  <p style="color:#6b7280">↑↓←→ 또는 스와이프(모바일)로 이동해 출구에 도달하세요.</p>
-  <canvas id="maze-cv" width="400" height="400"
-          style="width:100%;max-width:420px;border-radius:8px;background:#f0f9ff"></canvas>
-</div>
-
-<!-- =========================
-     🧱 Falling Blocks 패널
-     필요한 요소: <canvas id="fall-cv">
-     ========================= -->
-<div id="fallingBlocks-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
-  <h3>🧱 Falling Blocks</h3>
-  <p style="color:#6b7280">← → 또는 좌/우 화면 터치로 이동. 블록을 피하고 오래 버티세요!</p>
-  <canvas id="fall-cv" width="480" height="300"
-          style="width:100%;max-width:560px;border-radius:8px;background:#fff1f2"></canvas>
-</div>
-
-<!-- =========================
-     ⚡ Reaction 패널
-     필요한 요소: #rx-pad #rx-start #rx-last #rx-best
-     ========================= -->
-<div id="reaction-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
-  <h3>⚡ Reaction</h3>
-  <p style="color:#6b7280">Start 클릭 후 초록불이 되면 즉시 클릭/탭!</p>
-  <div id="rx-pad"
-       style="width:100%;max-width:560px;height:160px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;color:#991b1b;font-weight:700;user-select:none">
-    🔴 Wait…
-  </div>
-  <div style="display:flex;gap:.5rem;margin-top:.5rem;align-items:center;flex-wrap:wrap">
-    <span id="rx-last">—</span>
-    <span id="rx-best">Best —</span>
-    <button id="rx-start" style="padding:.5rem .8rem;border:1px solid #e5e7eb;border-radius:.5rem;background:#f9fafb">Start</button>
-  </div>
-</div>
-
-<!-- =========================
-     🐦 플래피 스타일 패널
-     필요한 요소: <div id="mini-flappy">
-     ========================= -->
-<div id="flappy-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
-  <h3>🐦 점프 피하기</h3>
-  <p style="color:#6b7280">터치/클릭/스페이스로 점프. 장애물을 피해 점수를 올리세요!</p>
-  <div id="mini-flappy" style="max-width:480px;margin:auto"></div>
-</div>
-
       </div>
     </div>
 
@@ -1472,7 +1422,7 @@ html, body {
       <ul class="menu-section">
         <li><a href="#" onclick="showPanel('dashboard');closeMobileMenu()">🏠대시보드</a></li>
         <li><a href="#" onclick="showPanel('notice-panel'); closeMobileMenu()">📢 공지사항</a></li>
-        <li><a href="#" onclick="showPanel('doc-panel'); closeMobileMenu()">📄 문서 분석</a></li>
+        <li><a href="#" onclick="showPanel('doc-panel'); closeMobileMenu()">📄 수행 등록</a></li>
         <li><a href="#" onclick="showPanel('homework-panel'); closeMobileMenu()">📁 자료실</a></li>
         <li><a href="#" onclick="showPanel('timetable-panel'); closeMobileMenu()">🕒 시간표</a></li>
         <li><a href="#" onclick="showPanel('minigame-panel'); closeMobileMenu()">🎮 미니게임</a></li>
@@ -3693,7 +3643,7 @@ async function startGame(gameType) {
 
 
       /** 🔑 임시(비권장): 브라우저에 하드코딩 */
-const OPENAI_API_KEY = "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"; // 노출 위험 주의!
+const OPENAI_API_KEY = "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";
 
 /** 이미지 → 크기제한 JPEG dataURL */
 async function fileToBase64Optimized(file, maxW=1800, maxH=1800, type='image/jpeg', quality=0.9){
@@ -4076,6 +4026,387 @@ function setupStudentPanel() {
   }
 }
 
+(() => {
+  // ========= 공통 유틸 =========
+  const $ = (sel) => document.querySelector(sel);
+  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+  const now = () => (typeof performance!=='undefined' ? performance.now() : Date.now());
+
+  // 패널이 화면에 나타날 때만 자동 시작(IntersectionObserver)
+  function onVisibleOnce(el, fn) {
+    if (!el) return;
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if (e.isIntersecting) { fn(); io.disconnect(); }
+      });
+    }, { threshold: 0.1 });
+    io.observe(el);
+  }
+
+  // ========= 1) 🧩 미로 탈출 =========
+  (function initMaze(){
+    const panel = $('#mazeEscape-game');
+    const cv = $('#maze-cv');
+    if (!cv) return;
+
+    const ctx = cv.getContext('2d');
+    const COLS = 15, ROWS = 15;
+    const cellW = cv.width / COLS, cellH = cv.height / ROWS;
+
+    // 미로 생성 (DFS)
+    const grid = Array.from({length:ROWS},()=>Array.from({length:COLS},()=>({v:false, w:[1,1,1,1]}))); // up,right,down,left
+    function carve(r,c){
+      grid[r][c].v = true;
+      const dirs = [0,1,2,3].sort(()=>Math.random()-0.5);
+      for (const d of dirs){
+        const nr = r + (d===0?-1:d===2?1:0);
+        const nc = c + (d===1?1 :d===3?-1:0);
+        if (nr<0||nr>=ROWS||nc<0||nc>=COLS) continue;
+        if (!grid[nr][nc].v){
+          grid[r][c].w[d]=0;
+          grid[nr][nc].w[(d+2)%4]=0;
+          carve(nr,nc);
+        }
+      }
+    }
+    carve(0,0);
+
+    let player = { r:0, c:0 };
+    const exit = { r: ROWS-1, c: COLS-1 };
+
+    function drawMaze(){
+      ctx.clearRect(0,0,cv.width,cv.height);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#0ea5e9';
+      ctx.fillStyle = '#e0f2fe';
+
+      for(let r=0;r<ROWS;r++){
+        for(let c=0;c<COLS;c++){
+          const x = c*cellW, y = r*cellH;
+          // 칸 배경
+          ctx.globalAlpha = 0.12;
+          ctx.fillRect(x+1,y+1,cellW-2,cellH-2);
+          ctx.globalAlpha = 1;
+
+          const w = grid[r][c].w;
+          ctx.beginPath();
+          if (w[0]) { ctx.moveTo(x,y); ctx.lineTo(x+cellW,y); }
+          if (w[1]) { ctx.moveTo(x+cellW,y); ctx.lineTo(x+cellW,y+cellH); }
+          if (w[2]) { ctx.moveTo(x,y+cellH); ctx.lineTo(x+cellW,y+cellH); }
+          if (w[3]) { ctx.moveTo(x,y); ctx.lineTo(x,y+cellH); }
+          ctx.stroke();
+        }
+      }
+
+      // 출구
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(exit.c*cellW+cellW*0.25, exit.r*cellH+cellH*0.25, cellW*0.5, cellH*0.5);
+
+      // 플레이어
+      ctx.fillStyle = '#1d4ed8';
+      ctx.beginPath();
+      ctx.arc(player.c*cellW+cellW/2, player.r*cellH+cellH/2, Math.min(cellW,cellH)*0.28, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    function tryMove(dr,dc){
+      const r = player.r, c = player.c;
+      const d = dr===-1?0 : dc===1?1 : dr===1?2 : 3;
+      if (grid[r][c].w[d]===0){
+        const nr = clamp(r+dr, 0, ROWS-1);
+        const nc = clamp(c+dc, 0, COLS-1);
+        player.r = nr; player.c = nc;
+        drawMaze();
+        if (player.r===exit.r && player.c===exit.c) {
+          setTimeout(()=>alert('🎉 미로 탈출 성공!'), 10);
+          // 재시작
+          player = { r:0, c:0 };
+          drawMaze();
+        }
+      }
+    }
+
+    // 키보드
+    function onKey(e){
+      if (e.key==='ArrowUp') tryMove(-1,0);
+      if (e.key==='ArrowDown') tryMove(1,0);
+      if (e.key==='ArrowLeft') tryMove(0,-1);
+      if (e.key==='ArrowRight') tryMove(0,1);
+    }
+
+    // 스와이프
+    let t0=null, p0=null;
+    cv.addEventListener('touchstart', (e)=>{ const t=e.touches[0]; t0=now(); p0={x:t.clientX,y:t.clientY}; });
+    cv.addEventListener('touchend', (e)=>{
+      if(!p0) return;
+      const t = now()-t0;
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - p0.x;
+      const dy = touch.clientY - p0.y;
+      const absx = Math.abs(dx), absy = Math.abs(dy);
+      if (t<800 && (absx>24 || absy>24)) {
+        if (absx>absy) { tryMove(0, dx>0?1:-1); }
+        else { tryMove(dy>0?1:-1, 0); }
+      }
+      p0=null;
+    });
+
+    function start(){
+      drawMaze();
+      addEventListener('keydown', onKey);
+    }
+    onVisibleOnce(panel, start);
+  })();
+
+  // ========= 2) 🧱 Falling Blocks =========
+  (function initFalling(){
+    const panel = $('#fallingBlocks-game');
+    const cv = $('#fall-cv');
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+
+    let running=false, score=0, best=Number(localStorage.getItem('fb_best')||0);
+    const player = { x: cv.width/2, y: cv.height-18, w: 38, h: 12, vx:0, speed: 4.2 };
+    const blocks = [];
+    let lastSpawn=0, speedScale=1;
+
+    function spawn(){
+      const w = 18 + Math.random()*22;
+      blocks.push({ x: Math.random()*(cv.width-w), y: -w, w, h: w, vy: 1.8 + Math.random()*1.8 });
+    }
+
+    function reset(){
+      score=0; speedScale=1; blocks.length=0; player.x=cv.width/2; player.vx=0; lastSpawn=0;
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,cv.width,cv.height);
+      // 배경
+      ctx.globalAlpha = 0.08; ctx.fillStyle = '#f43f5e';
+      for(let x=0;x<cv.width;x+=24) ctx.fillRect(x,0,1,cv.height);
+      ctx.globalAlpha = 1;
+
+      // 플레이어
+      ctx.fillStyle='#0f172a';
+      ctx.fillRect(player.x-player.w/2, player.y-player.h/2, player.w, player.h);
+
+      // 블록
+      ctx.fillStyle='#e11d48';
+      blocks.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+
+      // 점수
+      ctx.fillStyle='#0f172a'; ctx.font='12px system-ui';
+      ctx.fillText(`점수 ${score}`, 8, 14);
+      ctx.fillText(`최고 ${best}`, 8, 28);
+    }
+
+    function collide(a,b){
+      return (a.x-a.w/2) < (b.x+b.w) && (a.x+a.w/2) > b.x &&
+             (a.y-a.h/2) < (b.y+b.h) && (a.y+a.h/2) > b.y;
+    }
+
+    const keys = new Set();
+    function updateVX(){
+      const left = keys.has('ArrowLeft');
+      const right = keys.has('ArrowRight');
+      player.vx = (left?-1:0) + (right?1:0);
+      player.vx *= player.speed;
+    }
+    addEventListener('keydown',(e)=>{ if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ keys.add(e.key); updateVX(); }});
+    addEventListener('keyup',(e)=>{ if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ keys.delete(e.key); updateVX(); }});
+
+    // 모바일 좌/우 터치: 좌측/우측 영역 탭
+    cv.addEventListener('touchstart', (e)=>{
+      const x = e.changedTouches[0].clientX - cv.getBoundingClientRect().left;
+      if (x < cv.clientWidth/2) { keys.add('ArrowLeft'); keys.delete('ArrowRight'); }
+      else { keys.add('ArrowRight'); keys.delete('ArrowLeft'); }
+      updateVX();
+    });
+    cv.addEventListener('touchend', ()=>{ keys.clear(); updateVX(); });
+
+    function loop(ts){
+      if (!running) return;
+      if (!lastSpawn) lastSpawn = ts;
+      if (ts - lastSpawn > 650/Math.min(speedScale, 2.5)) { spawn(); lastSpawn = ts; }
+
+      // 이동
+      player.x += player.vx;
+      player.x = clamp(player.x, player.w/2+4, cv.width-player.w/2-4);
+
+      for(let i=blocks.length-1;i>=0;i--){
+        const b = blocks[i];
+        b.y += b.vy * speedScale;
+        if (b.y>cv.height+40) { blocks.splice(i,1); score+=1; continue; }
+        if (collide(player,b)) {
+          running=false;
+          if (score>best){ best=score; localStorage.setItem('fb_best', best); }
+          draw();
+          setTimeout(()=>alert('💥 Game Over'),10);
+          return;
+        }
+      }
+
+      speedScale = clamp(speedScale+0.0012, 1, 3.2);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function start(){
+      if (running) return;
+      reset(); running=true; draw(); requestAnimationFrame(loop);
+    }
+    onVisibleOnce(panel, start);
+  })();
+
+  // ========= 3) ⚡ Reaction =========
+  (function initReaction(){
+    const pad = $('#rx-pad'), btn = $('#rx-start'), lastEl = $('#rx-last'), bestEl = $('#rx-best');
+    const panel = $('#reaction-game');
+    if (!pad || !btn) return;
+
+    let state='idle', tStart=0, best=Number(localStorage.getItem('rx_best')||0), timeoutId=null;
+
+    function setPad(color, text, dark=false){
+      pad.style.background = color;
+      pad.style.color = dark ? '#052e16' : '#991b1b';
+      pad.textContent = text;
+    }
+    function resetToWait(){
+      state='waiting';
+      setPad('#fee2e2','🔴 Wait…');
+    }
+
+    function start(){
+      if (state!=='idle') { clearTimeout(timeoutId); }
+      lastEl.textContent='—';
+      bestEl.textContent = `Best ${best||'—'}`;
+      resetToWait();
+      const delay = 1500 + Math.random()*1500;
+      timeoutId = setTimeout(()=>{
+        state='go';
+        tStart = now();
+        setPad('#dcfce7','🟢 GO!', true);
+      }, delay);
+    }
+
+    pad.addEventListener('click', ()=>{
+      if (state==='waiting') {
+        // 성급 클릭
+        clearTimeout(timeoutId);
+        setPad('#fef3c7','🟡 Too early! 다시 Start', false);
+        state='idle';
+      } else if (state==='go') {
+        const t = Math.round(now()-tStart);
+        lastEl.textContent = `${t} ms`;
+        if (!best || t<best){ best=t; localStorage.setItem('rx_best', best); }
+        bestEl.textContent = `Best ${best} ms`;
+        setPad('#e0f2fe','🔵 Nice! Start로 재시작');
+        state='idle';
+      }
+    });
+    btn.addEventListener('click', start);
+    onVisibleOnce(panel, ()=>{ bestEl.textContent = `Best ${best||'—'}`; });
+  })();
+
+  // ========= 4) 🐦 플래피 스타일 =========
+  (function initFlappy(){
+    const host = $('#mini-flappy');
+    const panel = $('#flappy-game');
+    if (!host) return;
+
+    // canvas 생성
+    const w = 480, h = 300;
+    const cv = Object.assign(document.createElement('canvas'), { width:w, height:h, style:'width:100%;max-width:480px;border-radius:10px;background:#ecfeff;border:1px solid #bae6fd' });
+    host.appendChild(cv);
+    const ctx = cv.getContext('2d');
+
+    let running=false, bird, pipes, score, best=Number(localStorage.getItem('fl_best')||0), tLast=0;
+
+    function reset(){
+      bird = { x: 90, y: h/2, vy: 0 };
+      pipes = [];
+      score = 0; tLast=0;
+      for(let i=0;i<3;i++) spawnPipe(w + i*200);
+    }
+    function spawnPipe(x){
+      const gap = 92;
+      const top = 50 + Math.random()*(h-100-gap);
+      pipes.push({ x, w: 46, top, gap });
+    }
+    function draw(){
+      // sky
+      ctx.clearRect(0,0,w,h);
+      // ground stripe
+      ctx.globalAlpha=0.06; ctx.fillStyle='#0369a1';
+      for(let x=0;x<w;x+=24) ctx.fillRect(x,0,1,h);
+      ctx.globalAlpha=1;
+
+      // pipes
+      ctx.fillStyle = '#0ea5e9';
+      pipes.forEach(p=>{
+        ctx.fillRect(p.x, 0, p.w, p.top);
+        ctx.fillRect(p.x, p.top + p.gap, p.w, h - (p.top + p.gap));
+      });
+
+      // bird
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath(); ctx.arc(bird.x, bird.y, 10, 0, Math.PI*2); ctx.fill();
+
+      // score
+      ctx.fillStyle='#0c4a6e'; ctx.font='14px system-ui';
+      ctx.fillText(`점수 ${score}`, 8, 18);
+      ctx.fillText(`최고 ${best}`, 8, 34);
+    }
+    function collide(){
+      if (bird.y<10 || bird.y>h-10) return true;
+      for (const p of pipes){
+        if (bird.x>p.x-10 && bird.x<p.x+p.w+10){
+          if (bird.y < p.top+10 || bird.y > p.top+p.gap-10) return true;
+        }
+      }
+      return false;
+    }
+    function loop(ts){
+      if (!running) return;
+      if (!tLast) tLast = ts;
+      const dt = Math.min(32, ts - tLast); tLast = ts;
+
+      // physics
+      bird.vy += 0.0015 * dt; // gravity
+      bird.y += bird.vy;
+
+      // pipes update
+      for(let i=pipes.length-1;i>=0;i--){
+        const p = pipes[i];
+        p.x -= 0.12 * dt;
+        if (p.x + p.w < 0) { pipes.splice(i,1); spawnPipe(w+120); continue; }
+        if (!p.passed && p.x + p.w < bird.x) { p.passed=true; score+=1; }
+      }
+
+      if (collide()){
+        running=false;
+        if (score>best){ best=score; localStorage.setItem('fl_best', best); }
+        draw();
+        setTimeout(()=>alert('🪦 Game Over – 클릭/스페이스로 재시작'),10);
+        return;
+      }
+
+      draw();
+      requestAnimationFrame(loop);
+    }
+    function flap(){
+      if (!running){ reset(); running=true; draw(); requestAnimationFrame(loop); return; }
+      bird.vy = -4.2;
+    }
+
+    cv.addEventListener('mousedown', flap);
+    addEventListener('keydown', (e)=>{ if (e.code==='Space'){ e.preventDefault(); flap(); }});
+    cv.addEventListener('touchstart', (e)=>{ e.preventDefault(); flap(); }, {passive:false});
+
+    onVisibleOnce(panel, ()=>{ reset(); draw(); });
+  })();
+
+})();
 
     </script>
   </body> 
