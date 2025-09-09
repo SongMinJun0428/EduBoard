@@ -1038,7 +1038,7 @@ html, body {
               color: black;
               cursor: pointer;
               font-size: 0.95rem;">
-              내 정보 수정
+              내 설정
             </button>
             <button onclick="logout()" style="
               width: 100%;
@@ -1061,7 +1061,7 @@ html, body {
       <div class="mobile-only mobile-header">
         <div class="menu-icon" onclick="toggleMobileMenu()">☰</div>
         <div class="mobile-title">EduBoard</div>
-        <div class="mobile-user" id="mobile-user-name">admin</div>
+        <div class="mobile-user" id="mobile-user-name">이름</div>
       </div>
 
       <nav id="main-nav">
@@ -1178,7 +1178,7 @@ html, body {
                       <div style="display:flex;gap:6px;align-items:center;">
 
                         <select id="rank-metric" style="border:1px solid #e9ecef;border-radius:10px;padding:6px 8px;">
-                          <option value="coin">코인</option>
+                          <option value="coin">포인트</option>
                           <option value="level">레벨</option>
                         </select>
 
@@ -1309,14 +1309,122 @@ html, body {
           <ul id="material-list" style="margin-top:1rem;"></ul>
         </div>
 
-        <div id="profile-panel" class="panel" style="display:none;">
-          <h2>내 정보 수정</h2>
-          <input type="text" id="update-name" placeholder="이름 수정">
-          <input type="password" id="update-password" placeholder="비밀번호 수정">
-          <button onclick="updateProfile()">수정하기</button>
-          <button onclick="showPanel('doc-panel')">← 돌아가기</button>
-        </div>
-          
+        <div id="profile-panel" class="panel" style="display:none; max-width:960px; margin:0 auto; padding:16px;">
+  <style>
+    .btn{padding:10px 14px;border-radius:8px;border:1px solid #111827;background:#111827;color:#fff;cursor:pointer}
+    .btn:hover{filter:brightness(0.95)}
+    .btn-secondary{border-color:#d1d5db;background:#fff;color:#111827}
+    .btn-danger{border-color:#dc2626;background:#fff;color:#dc2626}
+    .section{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px}
+    .grid2{display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center}
+    .input{padding:8px;border:1px solid #ccc;border-radius:6px}
+    .input[readonly]{border-color:#eee;background:#f9fafb}
+    .small-muted{margin-top:10px;font-size:.9rem;color:#666}
+    .row-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  </style>
+
+  <h2 style="margin-bottom:16px;">내 설정</h2>
+
+  <!-- 📌 기본 프로필 관리 (프로필 이미지 제거됨) -->
+  <div class="section">
+    <h3 style="margin-bottom:8px;">📌 기본 프로필 관리</h3>
+
+    <div class="grid2">
+      <label>이름</label>
+      <input id="profile-name" type="text" placeholder="홍길동" class="input">
+
+      <label>아이디</label>
+      <input id="profile-username" type="text" placeholder="영어/숫자만" class="input">
+
+      <label>이메일</label>
+      <input id="profile-email" type="email" placeholder="example@school.kr" class="input">
+
+    </div>
+
+    <div class="grid2" style="margin-top:12px;">
+      <label>학년</label>
+      <input id="profile-grade" type="text" class="input" readonly>
+
+      <label>반</label>
+      <input id="profile-class" type="text" class="input" readonly>
+
+      <label>번호</label>
+      <input id="profile-number" type="text" class="input" readonly>
+    </div>
+
+    <div class="grid2" style="margin-top:12px;">
+      <label>비밀번호 변경</label>
+      <input id="profile-newpass" type="password" placeholder="8자 이상 권장" class="input">
+    </div>
+
+    <div class="row-btns">
+      <button id="btn-profile-save" class="btn">저장</button>
+      <button id="btn-profile-refresh" class="btn btn-secondary">새로고침</button>
+    </div>
+    <div id="profile-status" class="small-muted"></div>
+  </div>
+
+  <!-- 📌 계정/보안 -->
+  <div class="section">
+    <h3 style="margin-bottom:8px;">📌 계정/보안</h3>
+    <div class="row-btns">
+      <button id="btn-session-logout" class="btn btn-secondary">현재 기기 로그아웃</button>
+      <button id="btn-session-global-logout" class="btn btn-secondary">모든 기기 로그아웃</button>
+      <button id="btn-password-reset" class="btn btn-secondary">비밀번호 재설정 메일</button>
+      <button id="btn-account-delete" class="btn btn-danger">계정 삭제/탈퇴 (요청)</button>
+    </div>
+  </div>
+
+  <!-- 📌 알림/환경 설정 -->
+  <div class="section">
+    <h3 style="margin-bottom:8px;">📌 알림/환경 설정</h3>
+
+    <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:12px;">
+      <div><div style="font-weight:600;">공지 알림</div><div style="color:#6b7280;font-size:.9rem;">새 공지 등록 시 알림</div></div>
+      <input id="pref-notice" type="checkbox">
+
+      <div><div style="font-weight:600;">숙제/과제 알림</div><div style="color:#6b7280;font-size:.9rem;">마감 전 리마인더</div></div>
+      <input id="pref-homework" type="checkbox">
+
+      <div><div style="font-weight:600;">푸시 알림</div><div style="color:#6b7280;font-size:.9rem;">브라우저 푸시(지원 브라우저)</div></div>
+      <input id="pref-push" type="checkbox">
+    </div>
+
+    <div class="grid2">
+      <label>테마</label>
+      <select id="pref-theme" class="input">
+        <option value="light">밝은 모드</option>
+        <option value="dark">어두운 모드</option>
+        <option value="system">시스템 기본</option>
+      </select>
+
+      <label>언어</label>
+      <select id="pref-lang" class="input">
+        <option value="ko">한국어</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+
+    <div class="row-btns">
+      <button id="btn-pref-save" class="btn">환경 저장</button>
+      <button id="btn-pref-reset" class="btn btn-secondary">기본값으로</button>
+    </div>
+    <div id="pref-status" class="small-muted"></div>
+  </div>
+
+  <!-- 📌 기타 -->
+  <div class="section">
+    <h3 style="margin-bottom:8px;">📌 기타</h3>
+    <div class="row-btns">
+      <button id="btn-go-notices" class="btn btn-secondary">공지/이벤트 바로가기</button>
+      <button id="btn-go-help" class="btn btn-secondary">도움말/FAQ/1:1 문의</button>
+      <button id="btn-check-updates" class="btn btn-secondary">업데이트 확인</button>
+    </div>
+    <div id="app-version" class="small-muted">v—</div>
+  </div>
+</div>
+
+
 
         <div id="timetable-panel" class="panel" style="display:none;">
           <h2>🗓️ 나의 시간표</h2>
@@ -1353,34 +1461,34 @@ html, body {
           <!-- 4=10 게임 -->
             <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
               <h3>🧮 4 = 10 퍼즐</h3>
-              <p>숫자 4개로 연산하여 10을 만들어보세요<br><strong>💰 5코인 필요</strong></p>
+              <p>숫자 4개로 연산하여 10을 만들어보세요<br><strong>💰 5포인트 필요</strong></p>
               <button onclick="startGame('fourEqualsTen')">게임 시작</button>
             </div>
             <!-- 🧩 미로 탈출 -->
             <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
               <h3>🧩 미로 탈출(테스트)</h3>
-              <p>10×10 미로에서 출구까지 도달하세요<br><strong>💰 5코인 필요</strong></p>
+              <p>10×10 미로에서 출구까지 도달하세요<br><strong>💰 5포인트 필요</strong></p>
               <button onclick="startGame('mazeEscape')">게임 시작</button>
             </div>
 
             <!-- 🧱 Falling Blocks -->
             <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
               <h3>🧱 Falling Blocks(테스트)</h3>
-              <p>떨어지는 블록을 피하면서 오래 살아남으세요<br><strong>💰 5코인 필요</strong></p>
+              <p>떨어지는 블록을 피하면서 오래 살아남으세요<br><strong>💰 5포인트 필요</strong></p>
               <button onclick="startGame('fallingBlocks')">게임 시작</button>
             </div>
 
             <!-- ⚡ Reaction -->
             <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
               <h3>⚡ Reaction(테스트)</h3>
-              <p>랜덤 신호에 얼마나 빨리 반응할 수 있나요?<br><strong>💰 5코인 필요</strong></p>
+              <p>랜덤 신호에 얼마나 빨리 반응할 수 있나요?<br><strong>💰 5포인트 필요</strong></p>
               <button onclick="startGame('reaction')">게임 시작</button>
             </div>
 
             <!-- 🐦 Flappy 스타일 -->
             <div style="border:1px solid #ddd;padding:1rem;border-radius:0.75rem;margin-bottom:1rem;">
               <h3>🐦 점프 피하기(테스트)</h3>
-              <p>터치/스페이스로 위로 점프하며 장애물을 피해보세요<br><strong>💰 5코인 필요</strong></p>
+              <p>터치/스페이스로 위로 점프하며 장애물을 피해보세요<br><strong>💰 5포인트 필요</strong></p>
               <button onclick="startGame('flappy')">게임 시작</button>
             </div>
         </div>
@@ -1429,7 +1537,7 @@ html, body {
       </ul>
       <hr>
       <ul class="user-section">
-        <li><a href="#" id="menu-profile">🙍‍♂️ 내 정보</a></li>
+        <li><a href="#" id="menu-profile">🙍‍♂️ 내 설정</a></li>
         <li><a href="#" id="menu-password">🔒 비밀번호 변경</a></li>
         <li><a href="#" id="menu-setting">⚙️ 설정</a></li>
         <li><a href="#" id="menu-logout">🚪 로그아웃</a></li>
@@ -1692,41 +1800,65 @@ const SUBJECT_SYNONYMS = {
         loadNotices();
       }
 
-      async function loadNotices() {
-        let query = supabaseClient.from('notices').select('*').order('id', { ascending: false });
+async function loadNotices() {
+  // 기본 쿼리
+  let query = supabaseClient.from('notices').select('*').order('id', { ascending: false });
 
-        if (currentUserRole !== 'admin') {
-          query = query
-            .eq('grade', currentGrade)
-            .eq('class_num', currentClassNum)
-            .neq('writer_role', 'admin');
-        }
+  const g = Number(currentGrade);
+  const c = Number(currentClassNum);
 
-        const { data, error } = await query;
+  if (currentUserRole === 'admin') {
+    // ✅ 어드민
+    // - 0학년 어드민: 전체 조회
+    // - N학년 M반 어드민: 해당 반만 조회
+    if (g !== 0) {
+      query = supabaseClient
+        .from('notices')
+        .select('*')
+        .eq('grade', g)
+        .eq('class_num', c)
+        .order('id', { ascending: false });
+    }
+  } else {
+    // ✅ 비관리자(학생/교사)
+    // - 전체 공지(grade=0) + 본인 반 공지
+    query = supabaseClient
+      .from('notices')
+      .select('*')
+      .or(`grade.eq.0,and(grade.eq.${g},class_num.eq.${c})`)
+      .order('id', { ascending: false });
+  }
 
-        if (error) {
-          console.error('공지 불러오기 실패:', error);
-          return;
-        }
+  const { data, error } = await query;
 
-        const listEl = document.getElementById('notice-list');
-        listEl.innerHTML = '';
+  if (error) {
+    console.error('공지 불러오기 실패:', error);
+    return;
+  }
 
-        data.forEach(item => {
-          const formattedContent = item.content.replace(/\n/g, '<br>');
-          const div = document.createElement('div');
-          div.style.borderBottom = '1px solid #ddd';
-          div.style.padding = '0.5rem 0';
-          // 누가 올린 글인지 표시
-          div.innerHTML = `<strong>${item.title}</strong> <span style="font-size:0.8rem;color:#888;">(${item.writer})</span><br>${formattedContent}`;
+  const listEl = document.getElementById('notice-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
 
-          if (item.image_url) {
-            div.innerHTML += `<br><img src="${item.image_url}" style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem;">`;
-          }
+  (data || []).forEach(item => {
+    const formattedContent = (item.content || '').replace(/\n/g, '<br>');
+    const div = document.createElement('div');
+    div.style.borderBottom = '1px solid #ddd';
+    div.style.padding = '0.5rem 0';
+    div.innerHTML = `<strong>${item.title ?? ''}</strong> 
+                     <span style="font-size:0.8rem;color:#888;">(${item.writer ?? ''})</span><br>
+                     ${formattedContent}`;
 
-          listEl.appendChild(div);
-        });
-      }
+    if (item.image_url) {
+      div.innerHTML += `<br><img src="${item.image_url}" 
+                           style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem;">`;
+    }
+
+    listEl.appendChild(div);
+  });
+}
+
+
 
       async function loadTimetableWeek(grade, classNum) {
         currentGrade = grade;
@@ -1970,6 +2102,7 @@ const SUBJECT_SYNONYMS = {
         });
       }
       
+      
       async function syncCoinBalance() {
       const username = localStorage.getItem('savedUsername');
       if (!username) return;
@@ -2000,7 +2133,7 @@ const SUBJECT_SYNONYMS = {
           const ok = Math.abs(result - 10) < 1e-9;
 
           if (ok) {
-            fb.textContent = '🎉 정답입니다! (+10코인 지급)';
+            fb.textContent = '🎉 정답입니다! (+10포인트 지급)';
             const username = localStorage.getItem('savedUsername');
             if (username) {
               const { error } = await supabaseClient
@@ -2587,11 +2720,11 @@ async function startGame(gameType) {
     const current = Number(currentUserCoin || 0);
 
     if (current < cost) {
-      alert(`코인이 부족합니다. (보유: ${current}, 필요: ${cost})`);
+      alert(`포인트가 부족합니다. (보유: ${current}, 필요: ${cost})`);
       return;
     }
 
-    // 코인 차감 (Supabase)
+    // 포인트 차감 (Supabase)
     if (typeof supabaseClient === 'undefined') {
       alert('supabaseClient가 설정되지 않았습니다.');
       return;
@@ -2603,7 +2736,7 @@ async function startGame(gameType) {
       .eq('username', username);
 
     if (error) {
-      alert('코인 차감 실패: ' + (error.message || error));
+      alert('포인트 차감 실패: ' + (error.message || error));
       return;
     }
 
@@ -2694,7 +2827,9 @@ async function startGame(gameType) {
           menuProfile.addEventListener('click', (e) => {
             e.preventDefault();
             showPanel('profile-panel');
+            
             closeMobileMenu();
+            window.initProfilePanel();
           });
         }
 
@@ -2809,31 +2944,51 @@ async function startGame(gameType) {
         syncStatsAndRender();
       }
 
-      async function loadRecentNotices3(){
-        const box = $id('dash-notice-list');
-        if(!box) return;
-        box.innerHTML = `<div class="notice-item"><div class="meta">불러오는 중…</div></div>`;
+async function loadRecentNotices3() {
+  const box = $id('dash-notice-list');
+  if (!box) return;
+  box.innerHTML = `<div class="notice-item"><div class="meta">불러오는 중…</div></div>`;
 
-        let q = supabaseClient.from('notices').select('*').order('id',{ascending:false}).limit(3);
-        if(currentUserRole !== 'admin'){
-          q = q.eq('grade', currentGrade).eq('class_num', currentClassNum).neq('writer_role','admin');
-        }
-        const {data, error} = await q;
-        if(error){ box.innerHTML = `<div class="notice-item"><div class="meta">공지 불러오기 실패</div></div>`; return; }
-        if(!data || data.length===0){ box.innerHTML = `<div class="notice-item"><div class="meta">최근 공지가 없습니다.</div></div>`; return; }
+  const g = Number(currentGrade);
+  const c = Number(currentClassNum);
 
-        box.innerHTML = '';
-        data.forEach(n=>{
-          const preview = (n.content||'').replace(/\n/g,' ').slice(0,90);
-          const el = document.createElement('div');
-          el.className='notice-item';
-          el.innerHTML = `
-            <div class="title">${n.title}</div>
-            <div class="meta">${n.writer} · ${n.grade}학년 ${n.class_num}반</div>
-            <div class="meta" style="margin-top:4px">${preview}${(n.content||'').length>90?'…':''}</div>`;
-          box.appendChild(el);
-        });
-      }
+  let q = supabaseClient.from('notices').select('*');
+
+  if (currentUserRole === 'admin') {
+    // 0학년 admin → 전체 / N학년 M반 admin → 해당 반만
+    if (g !== 0) {
+      q = q.eq('grade', g).eq('class_num', c);
+    }
+  } else {
+    // 비관리자 → 전체공지(grade=0) + 본인 반 공지
+    // (⚠️ 이전 코드에서 .neq('writer_role','admin') 때문에 대시보드에 안 떴을 수 있음 → 제거)
+    q = q.or(`grade.eq.0,and(grade.eq.${g},class_num.eq.${c})`);
+  }
+
+  const { data, error } = await q.order('id', { ascending: false }).limit(3);
+
+  if (error) {
+    box.innerHTML = `<div class="notice-item"><div class="meta">공지 불러오기 실패</div></div>`;
+    return;
+  }
+  if (!data || data.length === 0) {
+    box.innerHTML = `<div class="notice-item"><div class="meta">최근 공지가 없습니다.</div></div>`;
+    return;
+  }
+
+  box.innerHTML = '';
+  data.forEach(n => {
+    const preview = (n.content || '').replace(/\n/g, ' ').slice(0, 90);
+    const el = document.createElement('div');
+    el.className = 'notice-item';
+    el.innerHTML = `
+      <div class="title">${n.title || ''}</div>
+      <div class="meta">${n.writer || ''} · ${n.grade}학년 ${n.class_num}반</div>
+      <div class="meta" style="margin-top:4px">${preview}${(n.content || '').length > 90 ? '…' : ''}</div>`;
+    box.appendChild(el);
+  });
+}
+
 
       async function syncStatsAndRender(){
         try{
@@ -4408,6 +4563,102 @@ function setupStudentPanel() {
 
 })();
 
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const say = (m) => { const el = $('profile-status'); if (el) el.textContent = m || ''; };
+
+  // --- Cookie helpers ---
+  function getCookie(name) {
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g,'\\$1') + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function pickCookie(keys) {
+    const out = {};
+    keys.forEach(k => { const v = getCookie(k); if (v !== '') out[k] = v; });
+    return out;
+  }
+
+  // 폼 채우기(존재 체크)
+  function fillInputs(row) {
+    if ($('profile-username')) $('profile-username').value = row.username ?? '';
+    if ($('profile-name'))     $('profile-name').value     = row.name ?? '';
+    if ($('profile-email'))    $('profile-email').value    = row.email ?? '';
+    if ($('profile-grade'))    $('profile-grade').value    = row.grade ?? '';
+    if ($('profile-class'))    $('profile-class').value    = row.class_num ?? '';
+    if ($('profile-number'))   $('profile-number').value   = row.student_number ?? '';
+  }
+
+  // 쿠키 + DB 병합(쿠키 우선 입력 -> DB로 보강)
+  function mergeProfile(cookieRow, dbRow) {
+    return {
+      username:        (cookieRow.username ?? dbRow?.username) ?? '',
+      name:            (cookieRow.name ?? dbRow?.name) ?? '',
+      email:           (cookieRow.email ?? dbRow?.email) ?? '',
+      grade:           asInt(cookieRow.grade ?? dbRow?.grade),
+      class_num:       asInt(cookieRow.class_num ?? dbRow?.class_num),
+      student_number:  asInt(cookieRow.student_number ?? dbRow?.student_number),
+    };
+  }
+  function asInt(v) {
+    if (v === undefined || v === null || v === '') return '';
+    const n = Number(v);
+    return Number.isFinite(n) ? n : '';
+    }
+
+  // 🔹 메인: 쿠키 기반으로 users를 조회해 보강 후 채워넣기
+  async function loadBasicProfileFromCookie() {
+    try {
+      say('불러오는 중…');
+
+      // 1) 쿠키에서 1차 정보 확보
+      //    (원하시는 쿠키 키 이름으로 맞춰주세요)
+      const ck = pickCookie(['username','email','name','grade','class_num','student_number']);
+
+      // 2) 조회 키 결정 (email > username). 둘 다 없으면 Auth에 기대어 채우기만 함
+      let dbRow = null;
+      if (ck.email) {
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('username,email,name,grade,class_num,student_number')
+          .eq('email', ck.email)
+          .maybeSingle();
+        if (!error && data) dbRow = data;
+      } else if (ck.username) {
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('username,email,name,grade,class_num,student_number')
+          .eq('username', ck.username)
+          .maybeSingle();
+        if (!error && data) dbRow = data;
+      } else {
+        // 쿠키에 키가 전혀 없으면, 로그인 유저의 이메일로 보조 조회
+        const { data: authData } = await supabaseClient.auth.getUser();
+        const email = authData?.user?.email || '';
+        if (email) {
+          const { data } = await supabaseClient
+            .from('users')
+            .select('username,email,name,grade,class_num,student_number')
+            .eq('email', email)
+            .maybeSingle();
+          if (data) dbRow = data;
+          if (!ck.email) ck.email = email; // 폼 표시용
+        }
+      }
+
+      // 3) 병합 후 채우기
+      const merged = mergeProfile(ck, dbRow);
+      fillInputs(merged);
+
+      say('불러오기 완료');
+    } catch (e) {
+      console.error('[loadBasicProfileFromCookie] failed:', e);
+      say('불러오기 실패');
+    }
+  }
+
+  // 외부에서 호출
+  window.loadBasicProfileFromCookie = loadBasicProfileFromCookie;
+})();
     </script>
   </body> 
 </html>
