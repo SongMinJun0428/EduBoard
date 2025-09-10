@@ -1038,7 +1038,7 @@ html, body {
               color: black;
               cursor: pointer;
               font-size: 0.95rem;">
-              내 설정(기능 테스트중)
+              내 설정
             </button>
             <button onclick="logout()" style="
               width: 100%;
@@ -1327,46 +1327,56 @@ html, body {
 
   <!-- 📌 기본 프로필 관리 (프로필 이미지 제거됨) -->
   <div class="section">
-    <h3 style="margin-bottom:8px;">📌 기본 프로필 관리</h3>
+  <h3 style="margin-bottom:8px;">📌 기본 프로필 관리</h3>
 
-    <div class="grid2">
-      <label>이름</label>
-      <input id="profile-name" type="text" placeholder="홍길동" class="input">
+  <div class="grid2">
+    <label>이름</label>
+    <input id="profile-name" type="text" placeholder="홍길동" class="input">
 
-      <label>아이디</label>
-      <input id="profile-username" type="text" placeholder="영어/숫자만" class="input">
+    <label>아이디</label>
+    <input id="profile-username" type="text" placeholder="영어/숫자만" class="input">
 
-      <label>이메일</label>
-      <input id="profile-email" type="email" placeholder="example@school.kr" class="input">
-
-    </div>
-
-    <div class="grid2" style="margin-top:12px;">
-      <label>학년</label>
-      <input id="profile-grade" type="text" class="input" readonly>
-
-      <label>반</label>
-      <input id="profile-class" type="text" class="input" readonly>
-
-      <label>번호</label>
-      <input id="profile-number" type="text" class="input" readonly>
-    </div>
-
-    <div class="grid2" style="margin-top:12px;">
-      <label>비밀번호 변경</label>
-      <input id="profile-newpass" type="password" placeholder="8자 이상 권장" class="input">
-    </div>
-
-    <div class="row-btns">
-      <button id="btn-profile-save" class="btn">저장</button>
-      <button id="btn-profile-refresh" class="btn btn-secondary">새로고침</button>
-    </div>
-    <div id="profile-status" class="small-muted"></div>
+    <label>이메일</label>
+    <input id="profile-email" type="email" placeholder="example@school.kr" class="input">
   </div>
+  <input type="hidden" id="profile-username-origin">
+  <div class="grid2" style="margin-top:12px;">
+    <label>학년</label>
+    <input id="profile-grade" type="text" class="input" readonly>
+
+    <label>반</label>
+    <input id="profile-class" type="text" class="input" readonly>
+
+    <label>번호</label>
+    <input id="profile-number" type="text" class="input" readonly>
+  </div>
+
+  <div class="row-btns">
+    <button id="btn-profile-save" class="btn">프로필 저장</button>
+    <button id="btn-profile-refresh" class="btn btn-secondary">새로고침</button>
+  </div>
+  <div id="profile-status" class="small-muted"></div>
+</div>
+
+<!-- 🔐 비밀번호 변경 영역 분리 -->
+<div class="section" style="margin-top:24px;">
+  <h3 style="margin-bottom:8px;">🔐 비밀번호 변경</h3>
+  <div class="grid2">
+    <label>새 비밀번호</label>
+    <input id="profile-newpass" type="password" placeholder="8자 이상 권장" class="input">
+    <label>새 비밀번호 확인</label>
+    <input id="profile-newpass2" type="password" placeholder="새 비밀번호 확인" class="input">
+  </div>
+  <div class="row-btns">
+    <button id="btn-profile-pass" class="btn btn-red">비밀번호 변경</button>
+  </div>
+  <div id="profile-pass-status" class="small-muted"></div>
+</div>
+
 
   <!-- 📌 계정/보안 -->
   <div class="section">
-    <h3 style="margin-bottom:8px;">📌 계정/보안</h3>
+    <h3 style="margin-bottom:8px;">📌 계정/보안 (테스트 중)</h3>
     <div class="row-btns">
       <button id="btn-session-logout" class="btn btn-secondary">현재 기기 로그아웃</button>
       <button id="btn-session-global-logout" class="btn btn-secondary">모든 기기 로그아웃</button>
@@ -1377,7 +1387,7 @@ html, body {
 
   <!-- 📌 알림/환경 설정 -->
   <div class="section">
-    <h3 style="margin-bottom:8px;">📌 알림/환경 설정</h3>
+    <h3 style="margin-bottom:8px;">📌 알림/환경 설정 (테스트 중)</h3>
 
     <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:12px;">
       <div><div style="font-weight:600;">공지 알림</div><div style="color:#6b7280;font-size:.9rem;">새 공지 등록 시 알림</div></div>
@@ -1414,13 +1424,13 @@ html, body {
 
   <!-- 📌 기타 -->
   <div class="section">
-    <h3 style="margin-bottom:8px;">📌 기타</h3>
+    <h3 style="margin-bottom:8px;">📌 기타 (테스트 중)</h3>
     <div class="row-btns">
       <button id="btn-go-notices" class="btn btn-secondary">공지/이벤트 바로가기</button>
       <button id="btn-go-help" class="btn btn-secondary">도움말/FAQ/1:1 문의</button>
       <button id="btn-check-updates" class="btn btn-secondary">업데이트 확인</button>
     </div>
-    <div id="app-version" class="small-muted">v—</div>
+    <div id="app-version" class="small-muted">v—1.09</div>
   </div>
 </div>
 
@@ -1502,27 +1512,23 @@ html, body {
           <p id="game-feedback" style="margin-top:0.5rem;font-weight:bold;"></p>
           <button onclick="exitMiniGame()">❌ 나가기</button>
         </div>
-        <!-- =========================
-     🧮 4 = 10 퍼즐 패널
-     필요한 요소: generateFourNumbers()에서 채움
-     ========================= -->
-<div id="fourEqualsTen-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
-  <h3>🧮 4 = 10 퍼즐</h3>
-  <p style="color:#6b7280">제공된 숫자 4개와 + - × ÷ ( ) 를 사용해 10을 만들어보세요.</p>
 
-  <!-- 숫자/입력/버튼 (initFourEqualsTen가 있다면 무시, generateFourNumbers가 채워도 OK) -->
-  <div id="four-eq-10" style="margin-top:.5rem;">
-    <div id="four10-numbers" style="font-weight:700;margin-bottom:.5rem">숫자: —</div>
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-      <input id="four10-exp" type="text" placeholder="예) (2+3)*4-10/2"
-             style="flex:1 1 240px;padding:.5rem;border:1px solid #e5e7eb;border-radius:.5rem"/>
-      <button id="four10-check" style="padding:.5rem .8rem;border:1px solid #e5e7eb;border-radius:.5rem;background:#f9fafb">채점</button>
-      <button id="four10-new" style="padding:.5rem .8rem;border:1px solid #e5e7eb;border-radius:.5rem;background:#fff">새 문제</button>
-    </div>
-    <div id="four10-msg" style="margin-top:.5rem;color:#374151"></div>
-  </div>
-</div>
+        <div id="fourEqualsTen-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+          <h3>🧮 4 = 10 퍼즐</h3>
+          <p style="color:#6b7280">제공된 숫자 4개와 + - × ÷ ( ) 를 사용해 10을 만들어보세요.</p>
 
+          <!-- 숫자/입력/버튼 (initFourEqualsTen가 있다면 무시, generateFourNumbers가 채워도 OK) -->
+          <div id="four-eq-10" style="margin-top:.5rem;">
+            <div id="four10-numbers" style="font-weight:700;margin-bottom:.5rem">숫자: —</div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+              <input id="four10-exp" type="text" placeholder="예) (2+3)*4-10/2"
+                    style="flex:1 1 240px;padding:.5rem;border:1px solid #e5e7eb;border-radius:.5rem"/>
+              <button id="four10-check" style="padding:.5rem .8rem;border:1px solid #e5e7eb;border-radius:.5rem;background:#f9fafb">채점</button>
+              <button id="four10-new" style="padding:.5rem .8rem;border:1px solid #e5e7eb;border-radius:.5rem;background:#fff">새 문제</button>
+            </div>
+            <div id="four10-msg" style="margin-top:.5rem;color:#374151"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1560,7 +1566,7 @@ html, body {
 
     <script>
       const { createClient } = supabase;
-      const supabaseClient = createClient(
+      const supabaseClient = window.supabase.createClient(
         'https://ucmzrkwrsezfdjnnwsww.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw'
       );
@@ -1832,7 +1838,7 @@ async function loadNotices() {
   const { data, error } = await query;
 
   if (error) {
-    console.error('공지 불러오기 실패:', error);
+    //console.error('공지 불러오기 실패:', error);
     return;
   }
 
@@ -1888,7 +1894,7 @@ async function loadNotices() {
           const results = await Promise.all(
             dates.map(async (dateStr) => {
               const url = `https://open.neis.go.kr/hub/misTimetable?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&AY=${year}&SEM=${semester}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
-              console.log(url);
+              //console.log(url);
               const res = await fetch(url);
               const data = await res.json();
               return { dateStr, data };
@@ -1946,7 +1952,7 @@ async function loadNotices() {
           container.appendChild(dayBox);
         }
         } catch (err) {
-          console.error('주간 시간표 오류:', err);
+          //console.error('주간 시간표 오류:', err);
         container.innerHTML = '<p>시간표를 불러오는 중 오류가 발생했습니다.</p>';
       }
     }
@@ -2030,7 +2036,7 @@ async function loadNotices() {
           loadMaterials();
 
         } catch (err) {
-          console.error(err);
+          //console.error(err);
           statusEl.style.color = 'red';
           statusEl.textContent = err.message || '업로드 중 오류 발생';
         }
@@ -2046,7 +2052,7 @@ async function loadNotices() {
           .order('uploaded_at', { ascending: false });
 
         if (error) {
-          console.error('❌ 자료 불러오기 오류:', error);
+          //console.error('❌ 자료 불러오기 오류:', error);
           listEl.innerHTML = '<li>자료를 불러오는 중 오류가 발생했습니다.</li>';
           return;
         }
@@ -2761,7 +2767,7 @@ async function startGame(gameType) {
       requestAnimationFrame(() => cfg.launch());
     }
   } catch (e) {
-    console.error(e);
+    //console.error(e);
     alert('게임 시작 중 오류가 발생했습니다: ' + (e.message || e));
   } finally {
     startGame._busy = false;
@@ -3010,7 +3016,7 @@ async function loadRecentNotices3() {
 
           renderStats({ level, exp, need });
         }catch(e){
-          console.warn(e);
+          //console.warn(e);
           renderStats({ level:1, exp:0, need:20 });
         }
       }
@@ -3200,7 +3206,7 @@ async function loadRecentNotices3() {
     }
 
   } catch (e) {
-    console.warn('달력 렌더 오류:', e);
+    //console.warn('달력 렌더 오류:', e);
     grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 8px; color:#ef4444;">달력 데이터를 불러오지 못했습니다.</div>';
     if (detailTitle) detailTitle.textContent = '날짜를 선택하세요';
     if (detailList)  detailList.innerHTML = '';
@@ -3877,9 +3883,13 @@ async function analyzeDocument(){
   const resultBox = ensureResultBox();
 
   try{
+    const OPENAI_API_KEY = await getOpenAIKeyFromSupabase();  // ← 여기만 바뀜
+
     if(!OPENAI_API_KEY || OPENAI_API_KEY.includes('여기에_본인')){
-      alert('OPENAI_API_KEY 상수에 본인 키를 넣어주세요.'); return;
+      alert('OpenAI 키를 가져올 수 없습니다. Supabase에 저장되었는지 확인하세요.');
+      return;
     }
+
     if(!fileInput || !fileInput.files || !fileInput.files.length){
       alert('이미지 파일(JPG/PNG)을 선택하세요.'); return;
     }
@@ -3955,6 +3965,19 @@ async function analyzeDocument(){
     console.error(err);
     ensureResultBox().value = `❌ 분석 실패: ${err.message || err}`;
   }
+}
+async function getOpenAIKeyFromSupabase() {
+  const { data, error } = await supabaseClient
+    .from('eduboard')
+    .select('api_url')
+    .eq('id', 1)
+    .single();
+
+  if (error || !data) {
+    throw new Error('Supabase에서 API 키를 가져오는 데 실패했습니다.');
+  }
+
+  return data.api_url;
 }
 
 // 인라인 onclick 사용 시 전역에 노출
@@ -4562,105 +4585,279 @@ function setupStudentPanel() {
   })();
 
 })();
+  
+async function loadUserFromDashboardValues() {
+  // ✅ 대시보드에 표시된 값 읽기
+  const name = document.getElementById("dash-name")?.textContent?.trim();
+  const grade = parseInt(document.getElementById("dash-grade")?.textContent?.trim());
+  const classNum = parseInt(document.getElementById("dash-class")?.textContent?.trim());
+  const studentNum = parseInt(document.getElementById("dash-num")?.textContent?.trim());
 
-(() => {
-  const $ = (id) => document.getElementById(id);
-  const say = (m) => { const el = $('profile-status'); if (el) el.textContent = m || ''; };
+  console.log("📥 대시보드 값:", { name, grade, classNum, studentNum });
 
-  // --- Cookie helpers ---
-  function getCookie(name) {
-    const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g,'\\$1') + '=([^;]*)'));
-    return m ? decodeURIComponent(m[1]) : '';
-  }
-  function pickCookie(keys) {
-    const out = {};
-    keys.forEach(k => { const v = getCookie(k); if (v !== '') out[k] = v; });
-    return out;
-  }
-
-  // 폼 채우기(존재 체크)
-  function fillInputs(row) {
-    if ($('profile-username')) $('profile-username').value = row.username ?? '';
-    if ($('profile-name'))     $('profile-name').value     = row.name ?? '';
-    if ($('profile-email'))    $('profile-email').value    = row.email ?? '';
-    if ($('profile-grade'))    $('profile-grade').value    = row.grade ?? '';
-    if ($('profile-class'))    $('profile-class').value    = row.class_num ?? '';
-    if ($('profile-number'))   $('profile-number').value   = row.student_number ?? '';
+  // ✅ 유효성 검사
+  if (!name || isNaN(grade) || isNaN(classNum) || isNaN(studentNum)) {
+    console.warn("⚠️ 대시보드 정보가 올바르지 않습니다.");
+    return;
   }
 
-  // 쿠키 + DB 병합(쿠키 우선 입력 -> DB로 보강)
-  function mergeProfile(cookieRow, dbRow) {
-    return {
-      username:        (cookieRow.username ?? dbRow?.username) ?? '',
-      name:            (cookieRow.name ?? dbRow?.name) ?? '',
-      email:           (cookieRow.email ?? dbRow?.email) ?? '',
-      grade:           asInt(cookieRow.grade ?? dbRow?.grade),
-      class_num:       asInt(cookieRow.class_num ?? dbRow?.class_num),
-      student_number:  asInt(cookieRow.student_number ?? dbRow?.student_number),
-    };
+  console.log("🔍 Supabase 쿼리 실행 중...");
+
+  // ✅ Supabase에서 사용자 찾기
+  const { data, error } = await supabaseClient
+    .from('users')
+    .select('*')
+    .eq('name', name)
+    .eq('grade', grade)
+    .eq('class_num', classNum)
+    .eq('student_number', studentNum)
+    .limit(1)
+    .maybeSingle(); // 여러 명 방지 + null 처리 안전하게
+
+  if (error) {
+    console.error("❌ 쿼리 에러:", error);
+    return;
   }
-  function asInt(v) {
-    if (v === undefined || v === null || v === '') return '';
-    const n = Number(v);
-    return Number.isFinite(n) ? n : '';
+
+  if (!data) {
+    console.warn("❗ 일치하는 사용자가 없습니다.");
+    return;
+  }
+
+  // ✅ 콘솔 출력 (디버그용)
+  console.log("✅ 사용자 찾음:", data);
+  console.log("👤 이름:", data.name);
+  console.log("🆔 아이디:", data.username);
+  console.log("📧 이메일:", data.email);
+  console.log("🔒 비밀번호:", data.password);
+
+
+
+  // 나머지 입력창들
+  document.getElementById("profile-name").value   = data.name || "";
+  document.getElementById("profile-username").value   = data.username || "";
+  document.getElementById("profile-username-origin").value = data.username; // ← 핵심
+  document.getElementById("profile-email").value      = data.email || "";
+  document.getElementById("profile-grade").value      = data.grade || "";
+  document.getElementById("profile-class").value      = data.class_num || "";
+  document.getElementById("profile-number").value     = data.student_number || "";
+
+  console.log("📌 모든 프로필 정보가 입력창에 반영되었습니다.");
+}
+
+
+
+window.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    loadUserFromDashboardValues().catch(console.error);
+  }, 300);
+});
+
+
+    
+// 키 컬럼은 id(uuid)
+// ✅ 키 컬럼
+const USER_KEY_COLUMN = 'username';
+
+// 예: 버튼 클릭 핸들러
+document.getElementById("btn-profile-save")?.addEventListener("click", () => {
+  saveProfileByUsername().catch((e)=> { document.getElementById("profile-status").innerText = "❌ 저장 실패: " + e.message; });
+});
+
+
+async function loadProfileByUsername() {
+  const status = document.getElementById("profile-status");
+  const username = document.getElementById("profile-username").value.trim();
+  if (!username) { status.innerText = "❌ 아이디(username)를 입력하세요."; return; }
+
+  const { data: row, error } = await supabaseClient
+    .from("users")
+    .select("username, name, email, grade, class_num, student_number, can_edit_username, can_edit_name")
+    .eq("username", username)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) { status.innerText = "❌ 사용자 조회 오류: " + error.message; return; }
+  if (!row)   { status.innerText = "❌ 해당 아이디의 사용자 행이 없습니다."; return; }
+
+  document.getElementById("profile-name").value   = row.name ?? "";
+  document.getElementById("profile-email").value  = row.email ?? "";
+  document.getElementById("profile-grade").value  = row.grade ?? "";
+  document.getElementById("profile-class").value  = row.class_num ?? "";
+  document.getElementById("profile-number").value = row.student_number ?? "";
+
+  // 입력칸엔 현재 username 표시, hidden에는 “원래값” 저장
+  document.getElementById("profile-username").value        = row.username;
+  document.getElementById("profile-username-origin").value = row.username;
+
+  // (선택) 1회 제한 상태에 따라 안내만
+  status.innerText = "";
+}
+
+// 이름 1회 제한 + username 변경 1회 제한을 모두 적용
+async function saveProfileByUsername() {
+  const statusEl    = document.getElementById("profile-status");
+  const newUsername = document.getElementById("profile-username").value.trim();
+  const originEl    = document.getElementById("profile-username-origin");
+  let   oldUsername = (originEl?.value || "").trim();
+
+  if (!newUsername) { statusEl.innerText = "❌ 아이디(username)를 입력하세요."; return; }
+
+  // origin 비었으면 newUsername으로 보충(최초 진입 대비)
+  if (!oldUsername) {
+    const { data: probe, error: probeErr } = await supabaseClient
+      .from("users").select("username").eq("username", newUsername).limit(1).maybeSingle();
+    if (probeErr) { statusEl.innerText = "❌ 사용자 조회 오류: " + probeErr.message; return; }
+    if (!probe)   { statusEl.innerText = "❌ 아이디 정보가 없습니다. 먼저 사용자 로드가 필요합니다."; return; }
+    oldUsername = probe.username;
+    if (originEl) originEl.value = oldUsername;
+  }
+
+  // 현재 DB 값 + 플래그
+  const { data: current, error: curErr } = await supabaseClient
+    .from("users")
+    .select("username, name, email, grade, class_num, student_number, can_edit_username, can_edit_name")
+    .eq("username", oldUsername)
+    .limit(1)
+    .maybeSingle();
+
+  if (curErr)  { statusEl.innerText = "❌ 사용자 조회 오류: " + curErr.message; return; }
+  if (!current){ statusEl.innerText = "❌ 원래 아이디의 사용자 행이 없습니다."; return; }
+
+  // 폼 값
+  const nameStr  = document.getElementById("profile-name").value.trim();
+  const emailStr = document.getElementById("profile-email").value.trim();
+  const gradeStr = document.getElementById("profile-grade").value.trim();
+  const classStr = document.getElementById("profile-class").value.trim();
+  const numStr   = document.getElementById("profile-number").value.trim();
+  const toNumOrNull = (s) => (s === "" ? null : (isNaN(Number(s)) ? null : Number(s)));
+  const changed = (a, b) => (a ?? null) !== (b ?? null);
+
+  const next = {
+    name:           nameStr || null,
+    email:          emailStr || null,
+    grade:          toNumOrNull(gradeStr),
+    class_num:      toNumOrNull(classStr),
+    student_number: toNumOrNull(numStr),
+  };
+
+  // 변경된 필드만 담기
+  const updateData = {};
+  if (changed(current.email,  next.email))         updateData.email = next.email;
+  if (changed(current.grade,  next.grade))         updateData.grade = next.grade;
+  if (changed(current.class_num, next.class_num))  updateData.class_num = next.class_num;
+  if (changed(current.student_number, next.student_number))
+                                                   updateData.student_number = next.student_number;
+
+  // ✅ 이름은 1회만: 실제 변경 시에만 검사/적용
+  const wantChangeName = changed(current.name, next.name) && next.name !== null;
+  if (wantChangeName) {
+    if (current.can_edit_name) {
+      updateData.name = next.name;
+      updateData.can_edit_name = false; // 이름 변경 기회 소비
+    } else {
+      // 거부 + 폼 되돌리기(선택)
+      statusEl.innerText = "❌ 이름은 이미 한 번 변경했습니다. 관리자 승인 필요.";
+      document.getElementById("profile-name").value = current.name ?? "";
+      return;
     }
+  }
 
-  // 🔹 메인: 쿠키 기반으로 users를 조회해 보강 후 채워넣기
-  async function loadBasicProfileFromCookie() {
-    try {
-      say('불러오는 중…');
-
-      // 1) 쿠키에서 1차 정보 확보
-      //    (원하시는 쿠키 키 이름으로 맞춰주세요)
-      const ck = pickCookie(['username','email','name','grade','class_num','student_number']);
-
-      // 2) 조회 키 결정 (email > username). 둘 다 없으면 Auth에 기대어 채우기만 함
-      let dbRow = null;
-      if (ck.email) {
-        const { data, error } = await supabaseClient
-          .from('users')
-          .select('username,email,name,grade,class_num,student_number')
-          .eq('email', ck.email)
-          .maybeSingle();
-        if (!error && data) dbRow = data;
-      } else if (ck.username) {
-        const { data, error } = await supabaseClient
-          .from('users')
-          .select('username,email,name,grade,class_num,student_number')
-          .eq('username', ck.username)
-          .maybeSingle();
-        if (!error && data) dbRow = data;
-      } else {
-        // 쿠키에 키가 전혀 없으면, 로그인 유저의 이메일로 보조 조회
-        const { data: authData } = await supabaseClient.auth.getUser();
-        const email = authData?.user?.email || '';
-        if (email) {
-          const { data } = await supabaseClient
-            .from('users')
-            .select('username,email,name,grade,class_num,student_number')
-            .eq('email', email)
-            .maybeSingle();
-          if (data) dbRow = data;
-          if (!ck.email) ck.email = email; // 폼 표시용
-        }
-      }
-
-      // 3) 병합 후 채우기
-      const merged = mergeProfile(ck, dbRow);
-      fillInputs(merged);
-
-      say('불러오기 완료');
-    } catch (e) {
-      console.error('[loadBasicProfileFromCookie] failed:', e);
-      say('불러오기 실패');
+  // (선택) username도 1회만 바꾸고 싶다면 아래 유지, 아니라면 이 블록 제거
+  const wantChangeUsername = newUsername !== oldUsername;
+  if (wantChangeUsername) {
+    if (current.can_edit_username) {
+      updateData.username = newUsername;
+      updateData.can_edit_username = false;
+    } else {
+      statusEl.innerText = "❌ 아이디는 이미 한 번 변경했습니다. 관리자 승인 필요.";
+      document.getElementById("profile-username").value = current.username; // 되돌리기(선택)
+      return;
     }
   }
 
-  // 외부에서 호출
-  window.loadBasicProfileFromCookie = loadBasicProfileFromCookie;
-})();
+  if (Object.keys(updateData).length === 0) {
+    statusEl.innerText = "ℹ️ 변경사항이 없습니다.";
+    return;
+  }
+
+  statusEl.innerText = "⏳ 저장 중...";
+  const { error: upErr } = await supabaseClient
+    .from("users")
+    .update(updateData)
+    .eq("username", oldUsername); // 항상 원래 username 기준
+
+  if (upErr) { statusEl.innerText = "❌ 저장 실패: " + upErr.message; return; }
+
+  // 성공: origin 갱신
+  if (wantChangeUsername) {
+    document.getElementById("profile-username-origin").value = newUsername;
+  }
+  statusEl.innerText = "✅ 저장 완료!";
+}
+
+
+
+
+// 🔐 비밀번호 변경 함수
+async function changePassword() {
+  const statusEl = document.getElementById("profile-pass-status");
+  const newPass  = document.getElementById("profile-newpass").value.trim();
+  const newPass2 = document.getElementById("profile-newpass2").value.trim();
+
+  // username (원래 값이 있으면 그것을 사용, 없으면 현재 입력값 사용)
+  const originEl = document.getElementById("profile-username-origin");
+  const inputEl  = document.getElementById("profile-username");
+  const newUsername = (inputEl?.value || "").trim();
+  let oldUsername   = (originEl?.value || "").trim();
+
+  if (!newUsername && !oldUsername) {
+    statusEl.innerText = "❌ 아이디 정보가 없습니다. 먼저 프로필을 로드하세요.";
+    return;
+  }
+  if (!oldUsername && newUsername) oldUsername = newUsername;
+
+  // 기본 검증
+  if (!newPass) {
+    statusEl.innerText = "❌ 새 비밀번호를 입력하세요.";
+    return;
+  }
+  if (newPass.length < 8) {
+    statusEl.innerText = "❌ 비밀번호는 최소 8자 이상이어야 합니다.";
+    return;
+  }
+  if (newPass !== newPass2) {
+    statusEl.innerText = "❌ 새 비밀번호 확인이 일치하지 않습니다.";
+    return;
+  }
+
+  statusEl.innerText = "⏳ 비밀번호 변경 중...";
+
+  // ✅ DB 업데이트
+  const { error: upErr } = await supabaseClient
+    .from("users")
+    .update({ password: newPass })
+    .eq("username", oldUsername);
+
+  if (upErr) {
+    statusEl.innerText = "❌ 비밀번호 변경 실패: " + upErr.message;
+    return;
+  }
+
+  // 성공 → 입력창 비우기
+  document.getElementById("profile-newpass").value  = "";
+  document.getElementById("profile-newpass2").value = "";
+  statusEl.innerText = "✅ 비밀번호가 변경되었습니다.";
+}
+
+// 버튼 이벤트 바인딩
+document.getElementById("btn-profile-pass")?.addEventListener("click", () => {
+  changePassword().catch(e => {
+    document.getElementById("profile-pass-status").innerText = "❌ 오류: " + e.message;
+  });
+});
+
     </script>
+    
   </body> 
 </html>
-
-
