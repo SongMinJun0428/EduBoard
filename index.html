@@ -1513,22 +1513,41 @@ html, body {
           <button onclick="exitMiniGame()">❌ 나가기</button>
         </div>
 
-        <div id="fourEqualsTen-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
-          <h3>🧮 4 = 10 퍼즐</h3>
-          <p style="color:#6b7280">제공된 숫자 4개와 + - × ÷ ( ) 를 사용해 10을 만들어보세요.</p>
+        <!-- 🧩 미로 탈출 -->
+<div id="mazeEscape-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+  <h3>🧩 미로 탈출</h3>
+  <p>방향키 / 스와이프로 출구까지 도달하세요<br>
+     ⏱ 30초 이내 +10점 / 35초 이내 +5점</p>
+  <canvas id="maze-cv" width="300" height="300" style="border:1px solid #ddd"></canvas>
+</div>
 
-          <!-- 숫자/입력/버튼 (initFourEqualsTen가 있다면 무시, generateFourNumbers가 채워도 OK) -->
-          <div id="four-eq-10" style="margin-top:.5rem;">
-            <div id="four10-numbers" style="font-weight:700;margin-bottom:.5rem">숫자: —</div>
-            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-              <input id="four10-exp" type="text" placeholder="예) (2+3)*4-10/2"
-                    style="flex:1 1 240px;padding:.5rem;border:1px solid #e5e7eb;border-radius:.5rem"/>
-              <button id="four10-check" style="padding:.5rem .8rem;border:1px solid #e5e7eb;border-radius:.5rem;background:#f9fafb">채점</button>
-              <button id="four10-new" style="padding:.5rem .8rem;border:1px solid #e5e7eb;border-radius:.5rem;background:#fff">새 문제</button>
-            </div>
-            <div id="four10-msg" style="margin-top:.5rem;color:#374151"></div>
-          </div>
-        </div>
+<!-- 🧱 Falling Blocks -->
+<div id="fallingBlocks-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+  <h3>🧱 Falling Blocks</h3>
+  <p>떨어지는 블록을 피하면서 오래 살아남으세요</p>
+  <canvas id="fall-cv" width="300" height="360" style="border:1px solid #ddd"></canvas>
+</div>
+
+<!-- ⚡ Reaction -->
+<div id="reaction-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+  <h3>⚡ Reaction</h3>
+  <p>랜덤 신호에 얼마나 빨리 반응할 수 있나요?</p>
+  <div id="rx-pad" style="width:300px;height:200px;display:flex;align-items:center;justify-content:center;border:1px solid #ddd;margin-bottom:.5rem">
+    🔵 Ready
+  </div>
+  <button id="rx-start">Start</button>
+  <div style="margin-top:.5rem">
+    ⏱ 최근 반응: <span id="rx-last">—</span> | <span id="rx-best">Best —</span>
+  </div>
+</div>
+
+<!-- 🐦 플래피 스타일 -->
+<div id="flappy-game" class="panel" style="display:none;border:1px solid #ddd;padding:1rem;border-radius:0.75rem;">
+  <h3>🐦 점프 피하기</h3>
+  <p>스페이스/터치로 점프하며 장애물을 피해보세요</p>
+  <div id="mini-flappy"></div>
+</div>
+
       </div>
     </div>
 
@@ -3966,19 +3985,68 @@ async function analyzeDocument(){
     ensureResultBox().value = `❌ 분석 실패: ${err.message || err}`;
   }
 }
-async function getOpenAIKeyFromSupabase() {
+async function getOpenAIKeysFromSupabase() {
   const { data, error } = await supabaseClient
-    .from('eduboard')
-    .select('api_url')
-    .eq('id', 1)
-    .single();
+    .from("eduboard")
+    .select("id, api_url")
+    .in("id", [1, 2]); // id 1, 2를 동시에 가져옴
 
-  if (error || !data) {
-    throw new Error('Supabase에서 API 키를 가져오는 데 실패했습니다.');
+  if (error || !data || data.length === 0) {
+    throw new Error("❌ Supabase에서 API 키를 가져오지 못했습니다.");
   }
 
-  return data.api_url;
+  // id=1 우선, id=2 백업
+  const primary = data.find((row) => row.id === 1)?.api_url;
+  const backup = data.find((row) => row.id === 2)?.api_url;
+
+  return { primary, backup };
 }
+
+// OpenAI 요청 함수 (자동 키 교체 포함)
+async function callOpenAIWithFallback(payload) {
+  const { primary, backup } = await getOpenAIKeysFromSupabase();
+
+  // 1️⃣ 우선 기본 키로 시도
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${primary}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`❌ 1차 키 실패: ${errText}`);
+    }
+
+    return await res.json(); // ✅ 성공
+  } catch (err) {
+    console.warn("⚠️ 1차 키 실패 → 백업 키로 전환:", err.message);
+
+    if (!backup) throw new Error("❌ 백업 API 키 없음");
+
+    // 2️⃣ 백업 키로 재시도
+    const res2 = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${backup}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res2.ok) {
+      const errText = await res2.text();
+      throw new Error(`❌ 백업 키도 실패: ${errText}`);
+    }
+
+    return await res2.json(); // ✅ 백업 성공
+  }
+}
+
 
 // 인라인 onclick 사용 시 전역에 노출
 window.analyzeDocument = analyzeDocument;
