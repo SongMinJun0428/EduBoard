@@ -2319,29 +2319,6 @@ async function loadNotices() {
         return '';
       }
 
-      function extractMaterials(text) {
-        text = norm(text);
-        let m = text.match(/(?:준비물|챙길것|지참|필수 지참)\s*[:\-]\s*([^\n]+)/);
-        if (m) return m[1].trim();
-
-        m = text.match(/(필기구|자|연필|지우개|계산기|태블릿|크롬북|색연필|사인펜|노트|공책)(?:[ ,·와및]|$)/);
-        if (m) return m[0].trim();
-        return '';
-      }
-
-      function formatAnalyzeResult({subject,date,yoil,time,period,topic,materials}) {
-        return [
-          `[과목] ${subject||''}`,
-          `[평가 날짜] ${date||''}`,
-          `[요일] ${yoil||''}`,
-          `[평가 시간] ${time||''}`,
-          `[교시] ${period||''}`,
-          `[평가 주제] ${topic||''}`,
-          `[준비물] ${materials||''}`,
-          `--------------------------------`
-        ].join('\n');
-      }
-
       function updateYoilFromDate(){
         const v = document.getElementById('af-date').value;
         document.getElementById('af-yoil').value = v ? weekdayKo(new Date(v)) : '';
@@ -2501,13 +2478,6 @@ function setValue(id, val){
             return m ? m[1].trim() : '';
           };
 
-          const _extractMaterials = (typeof extractMaterials === 'function') ? extractMaterials : (txt)=>{
-            txt = _norm(txt);
-            let m = txt.match(/(?:준비물|지참|필수\s*지참|챙길것)\s*[:\-]\s*([^\n]+)/);
-            if (m) return m[1].trim();
-            m = txt.match(/(필기구|자|연필|지우개|계산기|태블릿|크롬북|색연필|사인펜|노트|공책)/);
-            return m ? m[1] : '';
-          };
 
           // 실제 파싱
           const subject = (seed.subject || _extractSubject(text) || '').trim();
@@ -3822,7 +3792,10 @@ async function loadRecentNotices3() {
     
 
 
-      /** 이미지 → 크기제한 JPEG dataURL */
+      /** 🔑 임시(비권장): 브라우저에 하드코딩 */
+
+
+/** 이미지 → 크기제한 JPEG dataURL */
 async function fileToBase64Optimized(file, maxW=1800, maxH=1800, type='image/jpeg', quality=0.9){
   const dataUrl = await new Promise((res, rej) => {
     const fr = new FileReader();
@@ -3893,25 +3866,20 @@ function ensureResultBox(){
 }
 
 /** 메인: 버튼 onclick="analyzeDocument()" 연결용 */
-async function analyzeDocument(){
+async function analyzeDocument() {
   const fileInput = document.getElementById('doc-file');
   const previewImg = document.getElementById('doc-preview');
   const resultBox = ensureResultBox();
 
-  try{
-    const OPENAI_API_KEY = await getOpenAIKeyFromSupabase();  // ← 여기만 바뀜
-
-    if(!OPENAI_API_KEY || OPENAI_API_KEY.includes('여기에_본인')){
-      alert('OpenAI 키를 가져올 수 없습니다. Supabase에 저장되었는지 확인하세요.');
+  try {
+    if (!fileInput || !fileInput.files || !fileInput.files.length) {
+      alert('이미지 파일(JPG/PNG)을 선택하세요.');
       return;
     }
-
-    if(!fileInput || !fileInput.files || !fileInput.files.length){
-      alert('이미지 파일(JPG/PNG)을 선택하세요.'); return;
-    }
     const file = fileInput.files[0];
-    if(!/^image\//.test(file.type)){
-      alert('현재는 이미지(JPG/PNG)만 지원합니다. (PDF 제외)'); return;
+    if (!/^image\//.test(file.type)) {
+      alert('현재는 이미지(JPG/PNG)만 지원합니다. (PDF 제외)');
+      return;
     }
 
     // 미리보기
@@ -3924,32 +3892,32 @@ async function analyzeDocument(){
     // 이미지 최적화 dataURL
     const imageDataUrl = await fileToBase64Optimized(file);
 
-    // GPT 비전 호출 (chat.completions, gpt-4o-mini)
+    // GPT 비전 호출 payload
     const payload = {
       model: "gpt-4o-mini",
       temperature: 0.2,
       messages: [
         {
           role: "system",
-          content: "너는 한국 중학교 수행평가 안내 이미지를 OCR하고, 핵심 4항목(과목, 날짜, 교시, 평가 주제)을 구조화해 주는 도우미다. 반드시 JSON 객체 하나만 반환해."
+          content:
+            "너는 한국 중학교 수행평가 안내 이미지를 OCR하고, 핵심 4항목(과목, 날짜, 교시, 평가 주제)을 구조화해 주는 도우미다. 반드시 JSON 객체 하나만 반환해."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text:
-              `1) 이미지를 먼저 정확히 OCR하세요.
-              2) OCR 결과를 바탕으로 아래 JSON 형식으로만 답변하세요(딱 한 개의 JSON, 다른 말 금지).
-              {
-                "subject": "과목명(국어/수학/영어/과학/사회/역사/도덕/기술가정/정보/음악/미술/체육/창체/동아리/진로/한문 등, 추론 가능)",
-                "date": "YYYY-MM-DD 또는 '10월 3일' 등 원문 그대로. 여러 날짜면 수행평가 날짜를 선택",
-                "period": "숫자만(예: '3'). 교시 언급이 없으면 빈 문자열",
-                "topic": "평가 주제(없으면 빈 문자열)"
-              }
-              주의:
-              - 추정일 경우 가장 가능성 높은 한 가지로만 기입.
-              - 불명확하면 빈 문자열("")로 남겨둠.`
+              text: `1) 이미지를 먼저 정확히 OCR하세요.
+2) OCR 결과를 바탕으로 아래 JSON 형식으로만 답변하세요(딱 한 개의 JSON, 다른 말 금지).
+{
+  "subject": "과목명(국어/수학/영어/과학/사회/역사/도덕/기술가정/정보/음악/미술/체육/창체/동아리/진로/한문 등, 추론 가능)",
+  "date": "YYYY-MM-DD 또는 '10월 3일' 등 원문 그대로",
+  "period": "숫자만(예: '3'). 교시 언급이 없으면 빈 문자열",
+  "topic": "평가 주제(없으면 빈 문자열)"
+}
+주의:
+- 추정일 경우 가장 가능성 높은 한 가지로만 기입.
+- 불명확하면 빈 문자열("")로 남겨둠.`
             },
             { type: "image_url", image_url: { url: imageDataUrl } }
           ]
@@ -3957,53 +3925,43 @@ async function analyzeDocument(){
       ]
     };
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
+    // 🔑 API 호출 (기본 → 실패 시 백업)
+    const data = await callOpenAIWithFallback(payload);
 
-    if(!res.ok){
-      const t = await res.text();
-      throw new Error(`OpenAI 오류: ${res.status} ${t}`);
-    }
-
-    const data = await res.json();
+    // 결과 처리
     const raw = (data.choices?.[0]?.message?.content ?? "").trim();
     const json = parseJsonLoose(raw);
     fillFormFromJson(json);
-
     resultBox.value = toParagraph(json);
-  }catch(err){
+
+  } catch (err) {
     console.error(err);
-    ensureResultBox().value = `❌ 분석 실패: ${err.message || err}`;
+    resultBox.value = `❌ 분석 실패: ${err.message || err}`;
   }
 }
-async function getOpenAIKeyFromSupabase() {
+
+/** Supabase에서 API 키 가져오기 (id=1 기본, id=2 백업) */
+async function getOpenAIKeysFromSupabase() {
   const { data, error } = await supabaseClient
     .from("eduboard")
     .select("id, api_url")
-    .in("id", [1, 2]); // id 1, 2를 동시에 가져옴
+    .in("id", [1, 2]);
 
   if (error || !data || data.length === 0) {
     throw new Error("❌ Supabase에서 API 키를 가져오지 못했습니다.");
   }
 
-  // id=1 우선, id=2 백업
   const primary = data.find((row) => row.id === 1)?.api_url;
   const backup = data.find((row) => row.id === 2)?.api_url;
 
   return { primary, backup };
 }
 
-// OpenAI 요청 함수 (자동 키 교체 포함)
+/** OpenAI API 호출 (기본 키 실패 시 백업 키로 재시도) */
 async function callOpenAIWithFallback(payload) {
   const { primary, backup } = await getOpenAIKeysFromSupabase();
 
-  // 1️⃣ 우선 기본 키로 시도
+  // 1️⃣ 기본 키 시도
   try {
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -4042,6 +4000,33 @@ async function callOpenAIWithFallback(payload) {
 
     return await res2.json(); // ✅ 백업 성공
   }
+}
+
+
+function fileToBase64Optimized(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function parseJsonLoose(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    const match = str.match(/{[\s\S]+}/);
+    return match ? JSON.parse(match[0]) : {};
+  }
+}
+
+function fillFormFromJson(json) {
+  console.log("📝 분석 결과:", json);
+}
+
+function toParagraph(json) {
+  return `📘 과목: ${json.subject || "-"}\n📅 날짜: ${json.date || "-"}\n⏰ 교시: ${json.period || "-"}\n📝 주제: ${json.topic || "-"}`;
 }
 
 
@@ -4626,13 +4611,13 @@ function setupStudentPanel() {
         if (!p.passed && p.x + p.w < bird.x) { p.passed=true; score+=1; }
       }
 
-      // if (collide()){
-      //   running=false;
-      //   if (score>best){ best=score; localStorage.setItem('fl_best', best); }
-      //   draw();
-      //   setTimeout(()=>alert('🪦 Game Over – 클릭/스페이스로 재시작'),10);
-      //   return;
-      // }
+      if (collide()){
+        running=false;
+        if (score>best){ best=score; localStorage.setItem('fl_best', best); }
+        draw();
+        setTimeout(()=>alert('🪦 Game Over – 클릭/스페이스로 재시작'),10);
+        return;
+      }
 
       draw();
       requestAnimationFrame(loop);
@@ -4926,5 +4911,3 @@ document.getElementById("btn-profile-pass")?.addEventListener("click", () => {
     
   </body> 
 </html>
-
-
