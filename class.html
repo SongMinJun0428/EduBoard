@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>2-3반 학급 사이트</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
   <style>
     body{
       margin:0;
@@ -18,16 +19,32 @@
       color:white;padding:1rem 1.5rem;
       display:flex;justify-content:space-between;align-items:center;
     }
-    header h1{margin:0;font-size:1.3rem;font-weight:700}
     nav{display:flex;gap:.8rem;flex-wrap:wrap}
-    nav a{color:white;text-decoration:none;font-size:.9rem}
-    nav a:hover{text-decoration:underline}
     .wrap{max-width:1000px;margin:20px auto;padding:0 1rem}
     h2{font-size:1.2rem;font-weight:600;margin:0 0 .75rem 0}
     .card{
       background:white;border-radius:1rem;padding:1.2rem;
       box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:20px
     }
+    header h1 {
+  margin: 0;
+  font-size: 1.6rem;   /* 제목 크게 */
+  font-weight: 800;    /* 더 두껍게 */
+  letter-spacing: 1px; /* 자간 조금 */
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  font-size: 1rem;      /* 메뉴 글씨 조금 크게 */
+  font-weight: 600;     /* 굵게 */
+}
+
+nav a:hover {
+  text-decoration: underline;
+  color: #e0e7ff;       /* hover 시 연보라색 */
+}
+
     body.dark .card{background:#1e293b}
     .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
     .grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
@@ -56,6 +73,26 @@
     @media(min-width:641px){
       .hamburger{display:none}
     }
+    /* 자리 스타일 */
+#seat-map {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* 5열 */
+  grid-template-rows: repeat(6, auto);   /* 6행 */
+  gap: 10px;
+}
+.seat {
+  background:#f9fafb;
+  border:1px solid #e2e8f0;
+  border-radius:.5rem;
+  padding:.7rem 1rem;
+  text-align:center;
+}
+body.dark .seat {
+  background:#334155;
+  border-color:#475569;
+  color:#f1f5f9;
+}
+
   </style>
 </head>
 <body>
@@ -73,6 +110,7 @@
       <a href="#attendance">출석</a>
       <a href="#gallery">갤러리</a>
       <a href="#points">포인트</a>
+      <a href="#vote">투표</a>
       <button class="btn" onclick="toggleDark()">🌙 모드</button>
     </nav>
   </header>
@@ -105,12 +143,11 @@
       </div>
     </div>
 
-    <!-- 청소/자리 -->
-    <div id="clean" class="card">
-      <h2>🧹 청소 당번 & 🪑 자리 배치</h2>
-      <button class="btn" onclick="shuffleSeats()">🔄 자리 바꾸기</button>
-      <div id="seat-map" class="grid-4" style="margin-top:1rem"></div>
-    </div>
+<div id="clean" class="card">
+  <h2>🧹 청소 당번 & 🪑 자리 배치</h2>
+  <button class="btn" onclick="shuffleSeats()">🔄 자리 바꾸기</button>
+  <div id="seat-map" style="margin-top:1rem"></div>
+</div>  
 
     <!-- 출석 -->
     <div id="attendance" class="card">
@@ -139,6 +176,17 @@
       <h2>🏆 포인트 보드</h2>
       <div id="points-list"></div>
     </div>
+
+    <!-- 투표 -->
+    <div id="vote" class="card">
+      <h2>🗳️ 학급 투표</h2>
+      <p>체육 시간에 하고 싶은 운동은?</p>
+      <button class="btn" onclick="submitVote('축구')">⚽ 축구</button>
+      <button class="btn" onclick="submitVote('농구')">🏀 농구</button>
+      <button class="btn" onclick="submitVote('피구')">🏐 피구</button>
+      <div id="vote-result" class="muted" style="margin-top:.5rem"></div>
+    </div>
+
   </div>
 
   <script>
@@ -164,33 +212,6 @@
     function loadTimetable(){
       $('timetable-grid').innerHTML='<div>국어</div><div>수학</div><div>과학</div><div>영어</div>';
     }
-
-    /* 자리 */
-    const seats=['철수','영희','민수','지은','준호','예진','가영','동현','현수','서연'];
-    function renderSeats(list){
-      $('seat-map').innerHTML='';
-      list.forEach(n=>{
-        const d=document.createElement('div');d.className='seat';d.textContent=n;$('seat-map').appendChild(d);
-      });
-    }
-    function shuffleSeats(){
-      const arr=[...seats];
-      for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
-      renderSeats(arr);
-    }
-
-    /* 출석 체크 */
-    function loadAttendance(){
-      const ul=$('att-list');
-      seats.forEach(name=>{
-        const li=document.createElement('li');
-        li.innerHTML=`${name} 
-          <button class="btn" onclick="mark(this,'출석')">출석</button>
-          <button class="btn" onclick="mark(this,'지각')">지각</button>
-          <button class="btn" onclick="mark(this,'결석')">결석</button>`;
-        ul.appendChild(li);
-      });
-    }
     function mark(btn,status){
       btn.parentElement.innerHTML=btn.parentElement.textContent.split(' ')[0]+" - "+status;
     }
@@ -202,6 +223,7 @@
       if(val===30){res.textContent='✅ 정답! +5점';res.style.color='green';score=Number(score)+5;}
       else{res.textContent='❌ 오답';res.style.color='red';}
       localStorage.setItem('quizScore',score);
+      loadPoints();
     }
 
     /* 갤러리 */
@@ -215,9 +237,130 @@
       $('points-list').innerHTML='<p>내 점수: '+score+'점</p>';
     }
 
+    /* 투표 */
+    function submitVote(choice){
+      // localStorage 저장
+      localStorage.setItem("voteChoice",choice);
+      $('vote-result').textContent="내 선택: "+choice;
+
+      // ✅ 추후 API 연동 예정
+      // fetch("/api/vote", {
+      //   method:"POST",
+      //   headers:{"Content-Type":"application/json"},
+      //   body:JSON.stringify({student:"홍길동", choice})
+      // });
+    }
+    function loadVote(){
+      const saved=localStorage.getItem("voteChoice");
+      if(saved) $('vote-result').textContent="내 선택: "+saved;
+    }
+
     document.addEventListener('DOMContentLoaded',()=>{
-      loadNotices();loadAssignments();loadTimetable();renderSeats(seats);loadAttendance();loadGallery();loadPoints();
+      loadNotices();loadAssignments();loadTimetable();
+      renderSeats(seats);loadAttendance();loadGallery();loadPoints();loadVote();
     });
+
+    /* 자리 */
+const seats=[
+  '철수','영희','민수','지은','준호',
+  '예진','가영','동현','현수','서연',
+  '민호','하준','유진','승민','다현',
+  '시우','나연','수빈','연우','지호',
+  '하린','태현','예준','다인','주원',
+  '서윤','지원','현우','채원','도윤'
+];
+
+function renderSeats(list){
+  const container=$('seat-map');
+  container.innerHTML='';
+  list.forEach(name=>{
+    const seatDiv=document.createElement('div');
+    seatDiv.className='seat';
+    seatDiv.textContent=name;
+    container.appendChild(seatDiv);
+  });
+}
+
+function shuffleSeats(){
+  const arr=[...seats];
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  renderSeats(arr);
+}
+  const client = window.supabase.createClient(
+    "https://ucmzrkwrsezfdjnnwsww.supabase.co", // ✅ Supabase URL
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw"                     // ✅ Supabase anon key
+  );
+
+async function loadNotices(){
+    const { data, error } = await client
+      .from("notices")
+      .select("title, content, created_at")
+      .eq("grade",2).eq("class_num",3)
+      .order("created_at",{ascending:false});
+
+    if(error){
+      $('notice-list').innerHTML="❌ 공지 불러오기 오류";
+      return;
+    }
+    $('notice-list').innerHTML = data?.length
+      ? "<ul>" + data.map(n=>`<li><b>${n.title}</b> - ${n.content}</li>`).join("") + "</ul>"
+      : "공지 없음";
+  }
+
+  async function loadAssignments(){
+    const { data, error } = await client
+      .from("assignments")
+      .select("title, deadline")
+      .eq("grade",2).eq("class_num",3)
+      .order("deadline",{ascending:true});
+
+    if(error){ $('assign-list').innerHTML="❌ 과제 불러오기 오류"; return; }
+    $('assign-list').innerHTML = data?.length
+      ? "<ul>" + data.map(a=>`<li>${a.title} (${a.deadline})</li>`).join("") + "</ul>"
+      : "과제 없음";
+  }
+
+  async function loadTimetable(){
+    const { data, error } = await client
+      .from("timetable")
+      .select("day, subject, period")
+      .eq("grade",2).eq("class_num",3)
+      .order("day").order("period");
+
+    if(error){ $('timetable-grid').innerHTML="❌ 시간표 불러오기 오류"; return; }
+    $('timetable-grid').innerHTML = data.map(t=>
+      `<div>${t.day}교시 ${t.subject}</div>`
+    ).join("");
+  }
+
+  async function loadAttendance(){
+    const { data, error } = await client
+      .from("users")
+      .select("name")
+      .eq("grade",2).eq("class_num",3)
+      .order("student_number");
+
+    if(error){ $('att-list').innerHTML="❌ 출석 불러오기 오류"; return; }
+    const ul=$('att-list'); ul.innerHTML="";
+    data.forEach(u=>{
+      const li=document.createElement('li');
+      li.innerHTML=`${u.name} 
+        <button class="btn" onclick="mark(this,'출석')">출석</button>
+        <button class="btn" onclick="mark(this,'지각')">지각</button>
+        <button class="btn" onclick="mark(this,'결석')">결석</button>`;
+      ul.appendChild(li);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    loadNotices();
+    loadAssignments();
+    loadTimetable();
+    loadAttendance();
+  });
   </script>
 </body>
 </html>
