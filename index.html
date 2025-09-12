@@ -3985,7 +3985,7 @@ async function analyzeDocument(){
     ensureResultBox().value = `❌ 분석 실패: ${err.message || err}`;
   }
 }
-async function getOpenAIKeysFromSupabase() {
+async function getOpenAIKeyFromSupabase() {
   const { data, error } = await supabaseClient
     .from("eduboard")
     .select("id, api_url")
@@ -4929,3 +4929,4 @@ document.getElementById("btn-profile-pass")?.addEventListener("click", () => {
     
   </body> 
 </html>
+
