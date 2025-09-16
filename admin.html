@@ -406,26 +406,75 @@
     }
 
     // ===== Logs (optional) =====
-    async function logAction(action,details){
-      try{ const {data:{user}}=await sb.auth.getUser();
-        await sb.from('user_logs').insert({action,actor:user?.email||'unknown',target:details?.target||null,details}); }catch(e){}
+    async function logAction(action, details = {}) {
+      try {
+        const { data: { user } } = await sb.auth.getUser();
+
+        const payload = {
+          user_id: user?.id || null,
+          username: user?.user_metadata?.username || null,
+          email: user?.email || null,
+          action,
+          target: details?.target || null,
+          target_type: details?.target_type || null,
+          details,
+          ip_address: await getIP(),               // IP 가져오기
+          user_agent: navigator.userAgent || null
+        };
+
+        await sb.from('user_activity_logs').insert(payload);
+      } catch (e) {
+        console.error('logAction 오류', e);
+      }
     }
-    async function loadLogs(){
-      try{
-        const {data,error}=await sb.from('user_logs').select('action,actor,target,created_at').order('created_at',{ascending:false}).limit(50);
-        if(error) throw error;
-        const ul=$('#log-list'); ul.innerHTML=''; if(!data?.length){$('#log-empty').classList.remove('hidden'); return;}
+    
+    async function getIP() {
+      try {
+        const res = await fetch('https://api.ipify.org?format=json');
+        const json = await res.json();
+        return json.ip || null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function loadLogs() {
+      try {
+        const { data, error } = await sb
+          .from('user_activity_logs')
+          .select('action, username, email, target, target_type, created_at')
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        const ul = $('#log-list');
+        ul.innerHTML = '';
+
+        if (error || !data?.length) {
+          $('#log-empty').classList.remove('hidden');
+          return;
+        }
+
         $('#log-empty').classList.add('hidden');
-        for(const r of data){
-          const li=document.createElement('li'); const when=new Date(r.created_at).toLocaleString();
-          li.innerHTML=`<div class="p-2 rounded border dark:border-gray-700">
-            <div class="text-xs text-gray-500">${when}</div>
-            <div class="text-sm"><b>${r.actor}</b> → <span class="font-mono">${r.target||'-'}</span></div>
-            <div class="text-xs text-blue-600 dark:text-blue-400">${r.action}</div>
-          </div>`;
+
+        for (const r of data) {
+          const when = new Date(r.created_at).toLocaleString();
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <div class="p-2 rounded border dark:border-gray-700">
+              <div class="text-xs text-gray-500">${when}</div>
+              <div class="text-sm">
+                <b>${r.username || r.email || '-'}</b>
+                → <span class="font-mono">${r.target || '-'}</span>
+                <span class="ml-1 text-xs text-gray-400">${r.target_type || ''}</span>
+              </div>
+              <div class="text-xs text-blue-600 dark:text-blue-400">${r.action}</div>
+            </div>`;
           ul.appendChild(li);
         }
-      }catch(e){ $('#log-empty').classList.remove('hidden'); }
+      } catch (e) {
+        console.error('loadLogs 오류', e);
+        $('#log-empty').classList.remove('hidden');
+      }
     }
 
     // ===== CSV =====
