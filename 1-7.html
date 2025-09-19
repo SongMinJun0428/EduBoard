@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>1-7반 학급 사이트</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <style>
+    body{
+      margin:0;
+      font-family:system-ui,sans-serif;
+      background:#f8fafc;
+      color:#1f2937;
+      transition:background .3s,color .3s;
+    }
+    body.dark{background:#0f172a;color:#f1f5f9}
+    header{
+      background:linear-gradient(135deg,#4f46e5,#3b82f6);
+      color:white;padding:1rem 1.5rem;
+      display:flex;justify-content:space-between;align-items:center;
+    }
+    nav{display:flex;gap:.8rem;flex-wrap:wrap}
+    .wrap{max-width:1000px;margin:20px auto;padding:0 1rem}
+    h2{font-size:1.2rem;font-weight:600;margin:0 0 .75rem 0}
+    .card{
+      background:white;border-radius:1rem;padding:1.2rem;
+      box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:20px
+    }
+    header h1 {
+  margin: 0;
+  font-size: 1.6rem;   /* 제목 크게 */
+  font-weight: 800;    /* 더 두껍게 */
+  letter-spacing: 1px; /* 자간 조금 */
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  font-size: 1rem;      /* 메뉴 글씨 조금 크게 */
+  font-weight: 600;     /* 굵게 */
+}
+
+nav a:hover {
+  text-decoration: underline;
+  color: #e0e7ff;       /* hover 시 연보라색 */
+}
+
+    body.dark .card{background:#1e293b}
+    .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+    .grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+    .btn{
+      padding:.55rem .9rem;border-radius:.6rem;border:1px solid #d1d5db;
+      background:white;font-size:.9rem;cursor:pointer
+    }
+    .btn.primary{background:#60a5fa;color:white;border:none}
+    .btn.primary:hover{background:#3b82f6}
+    body.dark .btn{background:#334155;color:#f1f5f9;border-color:#475569}
+    ul{margin:0;padding-left:1rem}
+    .seat{background:#f9fafb;border:1px solid #e2e8f0;border-radius:.5rem;padding:.5rem;text-align:center}
+    body.dark .seat{background:#334155;border-color:#475569}
+    .gallery-item{border:1px solid #e2e8f0;border-radius:.75rem;padding:.9rem;text-align:center;background:#fafafa}
+    body.dark .gallery-item{background:#334155;border-color:#475569}
+    .muted{color:#6b7280;font-size:.85rem}
+    body.dark .muted{color:#94a3b8}
+
+    /* 반응형 */
+    @media(max-width:640px){
+      header{flex-direction:column;align-items:flex-start}
+      nav{display:none;flex-direction:column;gap:.5rem;margin-top:.5rem}
+      nav.show{display:flex}
+      .hamburger{display:block;cursor:pointer;margin-top:.5rem}
+    }
+    @media(min-width:641px){
+      .hamburger{display:none}
+    }
+    /* 자리 스타일 */
+#seat-map {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); /* ✅ 6열 */
+  grid-auto-rows: auto;
+  gap: 10px;
+}
+
+.seat {
+  background:#f9fafb;
+  border:1px solid #e2e8f0;
+  border-radius:.5rem;
+  padding:.7rem 1rem;
+  text-align:center;
+}
+body.dark .seat {
+  background:#334155;
+  border-color:#475569;
+  color:#f1f5f9;
+}
+.seat {
+  background:#f9fafb;
+  border:1px solid #e2e8f0;
+  border-radius:.5rem;
+  padding:.7rem 1rem;
+  text-align:center;
+  cursor:grab;  /* 드래그 가능 마우스 표시 */
+}
+.seat:active {
+  cursor:grabbing;
+}
+.seat.locked {
+  background:#e0f2fe;  /* 고정된 자리 하늘색 표시 */
+  border-color:#0284c7;
+}
+.notice-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.6rem 0;
+}
+.notice-item:last-child {
+  border-bottom: none;
+}
+.notice-thumb {
+  width: 100px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+#image-modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+#image-modal img {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.notice-body {
+  flex: 1;
+}
+.notice-title {
+  font-weight: 700;
+  color: #1e3a8a;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+.notice-date {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.3rem;
+}
+.notice-content {
+  font-size: 0.85rem;
+  color: #374151;
+  white-space: pre-line;
+}
+body.dark .notice-title { color: #93c5fd; }
+body.dark .notice-date { color: #9ca3af; }
+body.dark .notice-content { color: #e5e7eb; }
+.file-card {
+  display: grid;
+  grid-template-columns: 100px 1fr 40px;
+  align-items: center;
+  gap: 15px;
+  background: #f9fafb;
+  padding: 1rem 1.2rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.file-card:hover {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+
+.file-thumb {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.file-title {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 4px;
+  color: #1e3a8a;
+}
+
+.file-meta {
+  font-size: 0.85rem;
+  color: #4b5563;
+  margin-bottom: 2px;
+}
+
+.file-scope {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* 🔍 미리보기 아이콘 */
+.file-action {
+  font-size: 1.3rem;
+  color: #6b7280;
+  text-align: right;
+}
+
+.file-action:hover {
+  color: #1e40af;
+}
+
+/* 다크 모드 대응 */
+body.dark .file-card { background: #1e293b; border-color: #334155; }
+body.dark .file-meta,
+body.dark .file-scope,
+body.dark .file-action { color: #cbd5e1; }
+.modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  display: flex;
+  flex-direction: row; /* ✅ 가로 배치 */
+  background: white;
+  border-radius: 1rem;
+  overflow: hidden;
+  max-width: 800px;
+  width: 95%;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-image {
+  max-height: 400px;
+  height: auto;
+  object-fit: contain;
+}
+
+
+.modal-text {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.modal-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1e3a8a;
+  margin-bottom: 0.5rem;
+}
+
+.modal-meta {
+  font-size: 0.95rem;
+  color: #374151;
+  margin-bottom: 0.3rem;
+}
+
+.modal-comment {
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin-bottom: 0.3rem;
+}
+
+.modal-scope {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+@media (max-width: 600px) {
+  .modal-card {
+    flex-direction: column;
+  }
+.modal-image {
+  max-height: 400px;
+  height: auto;
+  object-fit: contain;
+}
+
+}
+/* 다크모드 대응 */
+body.dark .modal-card {
+  background: #1e293b;
+}
+body.dark .modal-title { color: #93c5fd; }
+body.dark .modal-meta { color: #e0e7ff; }
+body.dark .modal-comment { color: #cbd5e1; }
+body.dark .modal-scope { color: #94a3b8; }
+.quiz-box {
+background: #f9fafb;
+border: 1px solid #e5e7eb;
+border-radius: 1rem;
+padding: 1.5rem;
+box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+max-width: 600px;
+margin: auto;
+}
+
+
+.quiz-box input[type="text"] {
+width: 100%;
+padding: 0.6rem;
+margin-top: 0.4rem;
+margin-bottom: 1rem;
+border: 1px solid #d1d5db;
+border-radius: 0.5rem;
+font-size: 0.95rem;
+}
+
+
+.quiz-box input[type="text"]:focus {
+border-color: #60a5fa;
+outline: none;
+box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.4);
+}
+
+
+.quiz-box label {
+font-weight: 600;
+color: #1e3a8a;
+}
+
+
+.quiz-box .btn {
+display: block;
+width: 100%;
+padding: 0.7rem;
+font-size: 1rem;
+margin-top: 0.8rem;
+background-color: #3b82f6;
+color: white;
+border: none;
+border-radius: 0.6rem;
+cursor: pointer;
+}
+
+
+.quiz-box .btn:hover {
+background-color: #2563eb;
+}
+
+
+.quiz-box .result {
+margin-top: 1rem;
+font-weight: 600;
+color: green;
+}
+
+
+body.dark .quiz-box {
+background: #1e293b;
+border-color: #334155;
+}
+
+
+body.dark .quiz-box input[type="text"] {
+background: #334155;
+color: #f1f5f9;
+border-color: #475569;
+}
+#quiz input[type="text"] {
+  width: 100%;
+  padding: 0.6rem;
+  margin: 0.3rem 0 1rem 0;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+}
+body.dark #quiz input[type="text"] {
+  background: #334155;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+#quiz strong {
+  color: #1e3a8a;
+}
+body.dark #quiz strong {
+  color: #93c5fd;
+}
+.points-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 1rem;
+}
+
+.point-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 0.8rem;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.point-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+}
+
+.point-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+  color: #ffffff;
+}
+
+.point-score {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+/* 다크 모드 */
+body.dark .point-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+body.dark .point-name {
+  color: #93c5fd;
+}
+body.dark .point-score {
+  color: #60a5fa;
+}
+.points-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.points-table thead {
+  background: #3b82f6;
+  color: white;
+}
+
+.points-table th, 
+.points-table td {
+  padding: 10px 12px;
+  text-align: center;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.points-table tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+.points-table tbody tr:hover {
+  background: #e0f2fe;
+  transition: 0.2s;
+}
+
+.points-table th:first-child, 
+.points-table td:first-child {
+  width: 15%;
+}
+
+.points-table th:last-child, 
+.points-table td:last-child {
+  font-weight: 700;
+  color: #2563eb;
+}
+
+/* 다크 모드 */
+body.dark .points-table {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+body.dark .points-table thead {
+  background: #2563eb;
+}
+
+body.dark .points-table tbody tr:nth-child(even) {
+  background: #273449;
+}
+
+body.dark .points-table tbody tr:hover {
+  background: #334155;
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: calc(1rem - 1.5px); /* 기본 글자 크기에서 1.5px 감소 */
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-size: calc(100% - 1.5px); /* 제목류도 동일하게 줄이기 */
+  }
+
+  .btn, .seat, .notice-title, .file-title, .point-name, .point-score {
+    font-size: calc(100% - 1.5px); /* 주요 UI 글자도 축소 */
+  }
+}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>🏫 2-3반 학급 사이트</h1>
+      <div class="hamburger" onclick="toggleMenu()">☰ 메뉴</div>
+    </div>
+    <nav id="nav">
+      <a href="#notices">공지</a>
+      <a href="#assign">과제</a>
+      <a href="#timetable">시간표</a>
+      <a href="#clean">청소/자리</a>
+      <a href="#test">테스트</a>
+      <a href="#gallery">갤러리</a>
+      <a href="#points">포인트</a>
+      <a href="#vote">투표</a>
+      <button class="btn" onclick="toggleDark()">🌙 모드</button>
+    </nav>
+  </header>
+
+  <div class="wrap">
+
+    <!-- 빠른메뉴 -->
+    <div class="card grid-4">
+      <button class="btn primary" onclick="location.hash='#assign'">📝 과제</button>
+      <button class="btn primary" onclick="location.hash='#notices'">📢 공지</button>
+      <button class="btn primary" onclick="location.hash='#clean'">🧹 청소/자리</button>
+      <button class="btn primary" onclick="location.hash='#test'">📝 테스트</button>
+    </div>
+
+    <!-- 공지 -->
+    <div id="notices" class="card">
+      <h2>📢 공지사항</h2>
+      <div id="notice-list" class="muted">불러오는 중…</div>
+    </div>
+
+    <!-- 과제 + 시간표 -->
+    <div class="grid-2">
+      <div id="assign" class="card">
+        <h2>📝 과제</h2>
+        <div id="assign-list" class="muted">불러오는 중…</div>
+      </div>
+      <div id="timetable" class="card">
+        <h2>🗓️ 시간표</h2>
+        <input type="date" id="timetable-date" />
+        <button class="btn primary" onclick="loadTimetableByDate()">📅 불러오기</button>
+        <div id="timetable-grid"></div>
+      </div>
+    </div>
+
+<div id="clean" class="card">
+  <h2>🧹 청소 당번 & 🪑 자리 배치(드래그 = 이동, 우클릭 = 고정)</h2>
+  <button class="btn" onclick="shuffleSeats()">🔄 자리 바꾸기</button>
+  <div id="seat-map" style="margin-top:1rem"></div>
+</div>  
+
+<div id="quiz" class="card">
+  <h2>🇺🇸 영어 퀴즈</h2>
+  <div class="quiz-box">
+    <input type="text" id="student-name" placeholder="이름 입력" />
+    <div id="quiz-questions">로딩 중...</div>
+    <button class="btn" onclick="submitEnglishAnswers()">제출</button>
+    <div id="quiz-submit-result" class="result"></div>
+  </div>
+</div>
+    <!-- 갤러리 -->
+    <div id="gallery" class="card">
+      <h2>📂 자료실 & 갤러리</h2>
+      <div id="files" class="grid-4"></div>
+    </div>
+
+    <!-- 포인트 -->
+<div id="points" class="card">
+  <h2>🏆 학급 전용 포인트</h2>
+  <div id="points-list" class="points-grid">불러오는 중...</div>
+</div>
+
+    <!-- 투표 -->
+    <div id="vote" class="card">
+      <h2>🗳️ 학급 투표</h2>
+      <div id="vote-box">불러오는 중...</div>
+      <div id="vote-result" class="muted" style="margin-top:.5rem"></div>
+    </div>
+
+  </div>
+<div id="image-modal" onclick="closeModal()">
+  <img id="modal-img" src="" alt="확대 이미지" />
+</div>
+<div id="file-modal" class="modal" onclick="closeFileModal()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <img id="modal-preview" src="" alt="미리보기" class="modal-image" />
+    <div class="modal-text">
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-meta" id="modal-meta"></div>
+      <div class="modal-comment" id="modal-comment"></div>
+      <div class="modal-scope" id="modal-scope"></div>
+    </div>
+  </div>
+</div>
+
+
+  <script>
+  const $ = (id) => document.getElementById(id);
+
+  /* 메뉴 토글 */
+  function toggleMenu(){ $('nav').classList.toggle('show'); }
+
+  /* 다크 모드 */
+  function toggleDark(){ document.body.classList.toggle('dark'); }
+
+  /* Supabase 클라이언트 */
+  const client = window.supabase.createClient(
+    "https://ucmzrkwrsezfdjnnwsww.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw"
+  );
+
+  /* 공지 */
+  async function loadNotices(){
+  try{
+    const { data, error } = await client
+      .from("notices")
+      .select("title, content, created_at, image_url")
+      .eq("grade",2).eq("class_num",3)
+      .order("created_at",{ascending:false});
+    if(error) throw error;
+
+    if (data && data.length) {
+      $('notice-list').innerHTML = data.map(n => {
+        const date = new Date(n.created_at).toLocaleDateString("ko-KR", {
+          year: "numeric", month: "2-digit", day: "2-digit"
+        });
+        return `
+          <div class="notice-item">
+            ${n.image_url 
+    ? `<img src="${n.image_url}" class="notice-thumb" alt="공지 이미지" onclick="openModal('${n.image_url}')">`
+    : ""}
+            <div class="notice-body">
+              <div class="notice-title">📌 ${n.title}</div>
+              <div class="notice-date">${date}</div>
+              <div class="notice-content">${n.content}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    } else {
+      $('notice-list').innerHTML = "<p>공지 없음</p>";
+    }
+  }catch(e){
+    console.error(e);
+    $('notice-list').innerHTML="❌ 공지 불러오기 오류";
+  }
+}
+
+  /* 과제 */
+  async function loadAssignments(){
+    try{
+      const { data, error } = await client
+        .from("assignments")
+        .select("title, deadline")
+        .eq("grade",2).eq("class_num",3)
+        .order("deadline",{ascending:true});
+      if(error) throw error;
+      $('assign-list').innerHTML = (data && data.length)
+        ? "<ul>"+data.map(a=>`<li>${a.title} (${a.deadline})</li>`).join("")+"</ul>"
+        : "과제 없음";
+    }catch(e){
+      console.error(e);
+      $('assign-list').innerHTML="❌ 과제 불러오기 오류";
+    }
+  }
+  
+async function loadTimetableByDate() {
+  const API_KEY = "28ca0f05af184e8ba231d5a949d52db2"; 
+  const ATPT_OFCDC_SC_CODE = "J10";   // 경기도교육청
+  const SD_SCHUL_CODE = "7679111";    // 봉담중학교
+  const grade = 2;
+  const classNum = 3;
+
+  const input = document.getElementById("timetable-date");
+
+  // ✅ input 값이 있으면 그걸 쓰고, 없으면 오늘 날짜
+  let dateStr;
+  if (input.value && input.value.trim() !== "") {
+    dateStr = input.value.replace(/-/g, "");
+  } else {
+    const today = new Date();
+    dateStr = today.getFullYear() +
+      String(today.getMonth() + 1).padStart(2, '0') +
+      String(today.getDate()).padStart(2, '0');
+  }
+
+  const year = dateStr.slice(0, 4);
+  const month = parseInt(dateStr.slice(4, 6));
+  const semester = (month <= 8) ? 1 : 2;
+
+  const url = `https://open.neis.go.kr/hub/misTimetable?KEY=${API_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&AY=${year}&SEM=${semester}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
+
+  const container = document.getElementById("timetable-grid");
+  container.innerHTML = "<p>시간표 불러오는 중...</p>";
+
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
+
+    container.innerHTML = "";
+
+    if (json.misTimetable && json.misTimetable[1]) {
+      const rows = json.misTimetable[1].row;
+      rows.sort((a, b) => parseInt(a.PERIO) - parseInt(b.PERIO));
+
+      rows.forEach(r => {
+        const item = document.createElement("div");
+        item.innerHTML = `<strong>${r.PERIO}교시</strong> : ${r.ITRT_CNTNT}`;
+        container.appendChild(item);
+      });
+    } else {
+      container.innerHTML = "<p>❌ 시간표 데이터 없음</p>";
+    }
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "<p>❌ 시간표 불러오기 오류</p>";
+  }
+}
+
+async function loadGalleryFromHomeworks(){
+  const grade = 2;
+  const classNum = 3;
+  const container = document.getElementById("files");
+
+  container.innerHTML = "<p>📂 파일 불러오는 중...</p>";
+
+  try {
+    const { data, error } = await client
+      .from("homeworks")
+      .select("name, title, comment, file_url, grade, class_num, share_scope, uploaded_at")
+      .order("uploaded_at", { ascending: false });
+
+    if (error) throw error;
+
+    // 🔎 필터링 (공유 범위 조건)
+    const filtered = (data || []).filter(file => {
+      return file.share_scope === 'all' ||
+             (file.share_scope === 'grade' && file.grade === grade) ||
+             (file.share_scope === 'class' && file.grade === grade && file.class_num === classNum);
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = "<p class='muted'>📂 열람 가능한 파일이 없습니다.</p>";
+      return;
+    }
+
+container.innerHTML = filtered.map(file => `
+  <div class="file-card" onclick='openFileModal(${JSON.stringify(file)})'>
+    <img src="${file.file_url}" alt="파일 이미지" class="file-thumb" />
+    <div class="file-info">
+      <div class="file-title">📄 ${file.title}</div>
+      <div class="file-meta">${file.name} ・ ${file.comment}</div>
+      <div class="file-scope muted">${
+        file.share_scope === 'all' ? '전체공개' :
+        file.share_scope === 'grade' ? `${file.grade}학년 전체` :
+        `${file.grade}-${file.class_num}반`
+      }</div>
+    </div>
+  </div>
+`).join("");
+
+
+
+
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = "<p class='muted'>❌ 파일 불러오기 실패</p>";
+  }
+}
+
+function loadGallery() {
+  loadGalleryFromHomeworks();  // homeworks 테이블에서 불러오도록 변경
+}
+
+  /* 자리배치 (드래그&드롭 + 고정) */
+  let seatData = [];      // 학생 이름 배열
+  let lockedSeats = {};   // {index: true}
+  
+
+  function renderSeats(list){
+    const container = $('seat-map');
+    container.innerHTML = '';
+
+    list.forEach((name, i) => {
+      const seatDiv = document.createElement('div');
+      seatDiv.className = 'seat';
+      seatDiv.textContent = name;
+
+      if(lockedSeats[i]) seatDiv.classList.add('locked');
+
+      seatDiv.draggable = true;
+      seatDiv.dataset.index = i;
+
+      seatDiv.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("index", String(i));
+      });
+      seatDiv.addEventListener("dragover", e => e.preventDefault());
+      seatDiv.addEventListener("drop", e => {
+        e.preventDefault();
+        const from = parseInt(e.dataTransfer.getData("index"), 10);
+        const to = parseInt(e.currentTarget.dataset.index, 10);
+        swapSeats(from, to);
+      });
+
+      // 우클릭 고정/해제
+      seatDiv.addEventListener("contextmenu", e => {
+        e.preventDefault();
+        lockedSeats[i] = !lockedSeats[i];
+        renderSeats(seatData);
+      });
+
+      container.appendChild(seatDiv);
+    });
+  }
+
+  function swapSeats(from, to){
+    if(Number.isNaN(from) || Number.isNaN(to)) return;
+    if(lockedSeats[from] || lockedSeats[to]) return;
+    [seatData[from], seatData[to]] = [seatData[to], seatData[from]];
+    renderSeats(seatData);
+  }
+
+  function shuffleSeats(){
+    if(!seatData.length) return;
+    const arr = [...seatData];
+    for(let i=arr.length-1; i>0; i--){
+      const j = Math.floor(Math.random()*(i+1));
+      if(!lockedSeats[i] && !lockedSeats[j]){
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+    seatData = arr;
+    renderSeats(seatData);
+  }
+  window.shuffleSeats = shuffleSeats; // 버튼에서 호출 가능하도록
+
+  async function loadSeats(){
+    try{
+      const { data, error } = await client
+        .from("users")
+        .select("name")
+        .eq("grade", 1)
+        .eq("class_num", 7)
+        .not("name", "ilike", "%선생님%")
+        .order("student_number");
+      if(error) throw error;
+      seatData = (data||[]).map(u => u.name);
+      renderSeats(seatData);
+    }catch(e){
+      console.error(e);
+      $('seat-map').innerHTML = "❌ 자리 불러오기 오류";
+    }
+  }
+
+  /* DOMContentLoaded */
+  document.addEventListener('DOMContentLoaded',()=>{
+    loadNotices();
+    loadAssignments();
+    loadSeats();
+    loadGallery();
+    loadVotePolls();
+    loadClassStudentPoints();
+    const input = document.getElementById("timetable-date");
+    if (!input.value) {   // 사용자가 직접 선택한 값이 없을 때만 기본값 세팅
+      const today = new Date();
+      input.value = today.toISOString().slice(0, 10);
+    }
+    loadTimetableByDate();  // 기본적으로 오늘 시간표 보여주기
+    loadEnglishQuiz()
+  });
+  function openModal(src) {
+  document.getElementById("modal-img").src = src;
+  document.getElementById("image-modal").style.display = "flex";
+}
+
+function closeModal() {
+  document.getElementById("image-modal").style.display = "none";
+}
+
+function openFileModal(file) {
+  $('modal-preview').src = file.file_url;
+  $('modal-title').textContent = file.title;
+  $('modal-meta').textContent = `${file.name}`;
+  $('modal-comment').textContent = file.comment;
+  $('modal-scope').textContent =
+    file.share_scope === 'all' ? '전체공개' :
+    file.share_scope === 'grade' ? `${file.grade}학년 전체` :
+    `${file.grade}-${file.class_num}반`;
+
+  $('file-modal').style.display = 'flex';
+}
+
+function closeFileModal() {
+  $('file-modal').style.display = 'none';
+}
+let currentQuizSetId = null;
+
+async function loadEnglishQuiz() {
+  try {
+    const { data, error } = await client
+      .from("english_quiz_questions")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (error || !data.length) {
+      $('quiz-questions').innerHTML = "❌ 퀴즈 없음";
+      return;
+    }
+
+    currentQuizSetId = data[0].quiz_set_id;
+
+    $('quiz-questions').innerHTML = data.map(q => `
+      <div style="margin-bottom:10px;">
+        <div><strong>Q${q.number}:</strong> ${q.question}</div>
+        <input type="text" id="answer-${q.number}" placeholder="답변 입력" style="width:100%; padding:6px;" />
+      </div>
+    `).join("");
+
+  } catch (e) {
+    console.error(e);
+    $('quiz-questions').innerHTML = "❌ 오류 발생";
+  }
+}
+
+async function submitEnglishAnswers() {
+  const name = $('student-name').value.trim();
+  if (!name || !currentQuizSetId) {
+    $('quiz-submit-result').textContent = "❌ 이름을 입력해주세요.";
+    return;
+  }
+
+  const answers = {};
+  for (let i = 1; i <= 5; i++) {
+    answers[i] = $(`answer-${i}`).value.trim();
+  }
+
+  try {
+    const { error } = await client.from("english_quiz_submissions").insert({
+      student_name: name,
+      grade: 1,
+      class_num: 7,
+      quiz_set_id: currentQuizSetId,
+      answers
+    });
+
+    if (error) throw error;
+
+    $('quiz-submit-result').textContent = "✅ 제출 완료!";
+    $('student-name').value = "";
+    for (let i = 1; i <= 5; i++) $(`answer-${i}`).value = "";
+  } catch (e) {
+    console.error(e);
+    $('quiz-submit-result').textContent = "❌ 제출 실패";
+  }
+}
+async function loadClassStudentPoints(){
+  try {
+    const { data, error } = await client
+      .from("class_student_points")
+      .select("student_number, name, point")
+      .eq("grade", 1)
+      .eq("class_num", 7)
+      .order("student_number");
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      $('points-list').innerHTML = "<p class='muted'>❌ 학생 포인트 데이터 없음</p>";
+      return;
+    }
+
+    let html = `
+      <table class="points-table">
+        <thead>
+          <tr>
+            <th>번호</th>
+            <th>이름</th>
+            <th>포인트</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    data.forEach(row => {
+      html += `
+        <tr>
+          <td>${row.student_number}</td>
+          <td>${row.name}</td>
+          <td>⭐ ${row.point}</td>
+        </tr>
+      `;
+    });
+
+    html += "</tbody></table>";
+    $('points-list').innerHTML = html;
+
+  } catch (e) {
+    console.error(e);
+    $('points-list').innerHTML = "❌ 포인트 불러오기 오류";
+  }
+}
+let currentVote = null;
+
+async function loadVotePolls(){
+  try {
+    const { data, error } = await client
+      .from("class_votes")
+      .select("*")
+      .eq("grade", 1)
+      .eq("class_num", 7)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      $("vote-box").innerHTML = "<p class='muted'>현재 진행 중인 투표가 없습니다.</p>";
+      return;
+    }
+
+    $("vote-box").innerHTML = data.map(vote => {
+      // ✅ 옵션 안전 처리
+      let options = [];
+      try {
+        if (typeof vote.options === "string") {
+          options = JSON.parse(vote.options);
+        } else {
+          options = vote.options || [];
+        }
+      } catch (e) {
+        console.error("❌ 옵션 파싱 실패", e, vote.options);
+        options = [];
+      }
+
+      return `
+        <div class="vote-card" style="margin-bottom:1rem; padding:1rem; border:1px solid #e5e7eb; border-radius:0.75rem; background:#f9fafb;">
+          <p style="font-weight:600; margin-bottom:0.5rem;">${vote.question}</p>
+          ${options.map(opt => `
+            <button class="btn" onclick="submitVote(${vote.id}, '${opt}')">${opt}</button>
+          `).join(" ")}
+          <div id="vote-result-${vote.id}" class="muted" style="margin-top:.5rem"></div>
+        </div>
+      `;
+    }).join("");
+
+  } catch (e) {
+    console.error(e);
+    $("vote-box").innerHTML = "❌ 투표 불러오기 실패";
+  }
+}
+
+
+async function submitVote(voteId, choice) {
+  const studentName = prompt("이름을 입력하세요"); 
+  if (!studentName) return;
+
+  // 🔍 이미 투표했는지 확인
+  const { data: existing, error: checkError } = await client
+    .from("class_vote_submissions")
+    .select("id")
+    .eq("vote_id", voteId)
+    .eq("name", studentName)
+    .maybeSingle();
+
+  if (checkError) {
+    console.error(checkError);
+    alert("❌ 확인 오류");
+    return;
+  }
+
+  if (existing) {
+    alert("❌ 이미 투표에 참여했습니다.");
+    return;
+  }
+
+  // ✅ 새로운 투표 저장
+  const { error } = await client.from("class_vote_submissions").insert({
+    vote_id: voteId,
+    grade: 1,
+    class_num: 7,
+    name: studentName,
+    choice
+  });
+
+  if (error) {
+    console.error(error);
+    alert("❌ 투표 저장 실패");
+  } else {
+    document.getElementById(`vote-result-${voteId}`).textContent = `내 선택: ${choice}`;
+    alert("✅ 투표 완료!");
+  }
+}
+
+
+</script>
+
+</body>
+</html>
