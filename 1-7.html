@@ -522,7 +522,7 @@ body.dark .points-table tbody tr:hover {
 <body>
   <header>
     <div>
-      <h1>🏫 2-3반 학급 사이트</h1>
+      <h1>🏫 1-7반 학급 사이트</h1>
       <div class="hamburger" onclick="toggleMenu()">☰ 메뉴</div>
     </div>
     <nav id="nav">
@@ -640,7 +640,7 @@ body.dark .points-table tbody tr:hover {
     const { data, error } = await client
       .from("notices")
       .select("title, content, created_at, image_url")
-      .eq("grade",2).eq("class_num",3)
+      .eq("grade",1).eq("class_num",7)
       .order("created_at",{ascending:false});
     if(error) throw error;
 
@@ -677,7 +677,7 @@ body.dark .points-table tbody tr:hover {
       const { data, error } = await client
         .from("assignments")
         .select("title, deadline")
-        .eq("grade",2).eq("class_num",3)
+        .eq("grade",1).eq("class_num",7)
         .order("deadline",{ascending:true});
       if(error) throw error;
       $('assign-list').innerHTML = (data && data.length)
@@ -693,8 +693,8 @@ async function loadTimetableByDate() {
   const API_KEY = "28ca0f05af184e8ba231d5a949d52db2"; 
   const ATPT_OFCDC_SC_CODE = "J10";   // 경기도교육청
   const SD_SCHUL_CODE = "7679111";    // 봉담중학교
-  const grade = 2;
-  const classNum = 3;
+  const grade = 1;
+  const classNum = 7;
 
   const input = document.getElementById("timetable-date");
 
@@ -743,8 +743,8 @@ async function loadTimetableByDate() {
 }
 
 async function loadGalleryFromHomeworks(){
-  const grade = 2;
-  const classNum = 3;
+  const grade = 1;
+  const classNum = 7;
   const container = document.getElementById("files");
 
   container.innerHTML = "<p>📂 파일 불러오는 중...</p>";
