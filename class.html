@@ -569,8 +569,7 @@ body.dark .points-table tbody tr:hover {
     </div>
 
 <div id="clean" class="card">
-  <h2>🧹 청소 당번 & 🪑 자리 배치(드래그 = 이동, 우클릭 = 고정)</h2>
-  <button class="btn" onclick="shuffleSeats()">🔄 자리 바꾸기</button>
+  <h2>🧹 청소 당번 & 🪑 자리 배치</h2>
   <div id="seat-map" style="margin-top:1rem"></div>
 </div>  
 
@@ -860,22 +859,43 @@ function loadGallery() {
   window.shuffleSeats = shuffleSeats; // 버튼에서 호출 가능하도록
 
   async function loadSeats(){
-    try{
-      const { data, error } = await client
-        .from("users")
-        .select("name")
-        .eq("grade", 2)
-        .eq("class_num", 3)
-        .not("name", "ilike", "%선생님%")
-        .order("student_number");
-      if(error) throw error;
-      seatData = (data||[]).map(u => u.name);
-      renderSeats(seatData);
-    }catch(e){
-      console.error(e);
-      $('seat-map').innerHTML = "❌ 자리 불러오기 오류";
+  try{
+    const { data, error } = await client
+      .from("class_seats")
+      .select("student_number, name, seat_index, locked")
+      .eq("grade", 2)
+      .eq("class_num", 3)
+      .order("seat_index", { ascending: true });
+
+    if(error) throw error;
+
+    if (!data || data.length === 0) {
+      $('seat-map').innerHTML = "<p class='muted'>자리 데이터 없음</p>";
+      return;
     }
+
+    const container = $('seat-map');
+    container.innerHTML = '';
+
+    data.forEach(seat => {
+      const seatDiv = document.createElement('div');
+      seatDiv.className = 'seat';
+      seatDiv.textContent = seat.name;
+
+      // 고정 좌석은 색상 다르게 표시
+      if(seat.locked){
+        seatDiv.classList.add('locked');
+      }
+
+      container.appendChild(seatDiv);
+    });
+
+  }catch(e){
+    console.error(e);
+    $('seat-map').innerHTML = "❌ 자리 불러오기 오류";
   }
+}
+
 
   /* DOMContentLoaded */
   document.addEventListener('DOMContentLoaded',()=>{

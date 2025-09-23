@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>2-3반 관리자 페이지</title>
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <style>
+    body {
+      margin:0;
+      font-family:system-ui,sans-serif;
+      background:#f8fafc;
+      color:#1f2937;
+    }
+    header {
+      background:linear-gradient(135deg,#4f46e5,#3b82f6);
+      color:white;
+      padding:1rem 1.5rem;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    header h1 { margin:0; font-size:1.4rem; font-weight:800; }
+    nav a {
+      color:white;
+      margin-left:1rem;
+      text-decoration:none;
+      font-weight:600;
+    }
+    nav a:hover { text-decoration:underline; color:#e0e7ff; }
+    .wrap { max-width:1000px; margin:20px auto; padding:0 1rem }
+    h2 { font-size:1.2rem; margin-bottom:.5rem; }
+    .card {
+      background:white;
+      border-radius:1rem;
+      padding:1.2rem;
+      box-shadow:0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom:20px;
+    }
+    .btn {
+      padding:.55rem .9rem;
+      border-radius:.6rem;
+      border:1px solid #d1d5db;
+      background:white;
+      font-size:.9rem;
+      cursor:pointer;
+      margin:.2rem 0;
+    }
+    .btn.primary { background:#3b82f6; color:white; border:none }
+    .btn.primary:hover { background:#2563eb }
+    input, textarea {
+      width:100%;
+      padding:.5rem;
+      margin-top:.3rem;
+      border:1px solid #ddd;
+      border-radius:.5rem;
+    }
+    label { font-weight:600; display:block; margin-top:.7rem }
+    /* 자리 */
+    #seat-map {
+      display:grid;
+      grid-template-columns:repeat(6,1fr);
+      gap:10px;
+      margin-top:1rem;
+    }
+    .seat {
+      background:#f9fafb;
+      border:1px solid #e2e8f0;
+      border-radius:.5rem;
+      padding:.6rem;
+      text-align:center;
+      cursor:grab;
+    }
+    .seat:active { cursor:grabbing }
+    .seat.locked {
+      background:#e0f2fe;
+      border-color:#0284c7;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏫 2-3반 관리자 페이지</h1>
+    <nav>
+      <a href="#seats">자리</a>
+      <a href="#assign">과제</a>
+      <a href="#points">포인트</a>
+      <a href="#quiz">퀴즈</a>
+      <a href="#vote">투표</a>
+    </nav>
+  </header>
+
+  <div class="wrap">
+
+    <!-- 자리 관리 -->
+    <div id="seats" class="card">
+      <h2>🪑 자리 관리</h2>
+      <button class="btn" onclick="loadSeats()">📥 불러오기</button>
+      <button class="btn primary" onclick="shuffleSeats()">🔄 랜덤 섞기</button>
+      <button class="btn primary" onclick="saveSeats()">💾 저장</button>
+      <div id="seat-map"></div>
+    </div>
+    
+    <!-- 과제 관리 -->
+    <div id="assign" class="card">
+      <h2>📝 과제 등록</h2>
+      <label>제목 <input id="assign-title"></label>
+      <label>마감일 <input type="date" id="assign-deadline"></label>
+      <button class="btn primary" onclick="addAssignment()">등록</button>
+    </div>
+
+    <!-- 포인트 관리 -->
+    <div id="points" class="card">
+      <h2>🏆 포인트 관리</h2>
+      <label>학생 선택
+        <select id="point-student"></select>
+      </label>
+      <label>추가할 포인트 <input type="number" id="point-value"></label>
+      <button class="btn primary" onclick="addPoint()">➕ 포인트 추가</button>
+    </div>
+
+
+    <!-- 퀴즈 관리 -->
+    <div id="quiz" class="card">
+      <h2>🇺🇸 영어 퀴즈 등록</h2>
+      <label>문제 <input id="quiz-question"></label>
+      <button class="btn primary" onclick="addQuiz()">추가</button>
+    </div>
+
+    <!-- 투표 관리 -->
+    <div id="vote" class="card">
+      <h2>🗳️ 투표 등록</h2>
+      <label>질문 <input id="vote-question"></label>
+      <label>옵션 (콤마로 구분) <input id="vote-options"></label>
+      <button class="btn primary" onclick="addVote()">등록</button>
+    </div>
+
+  </div>
+
+  <script>
+    const client = window.supabase.createClient(
+      "https://ucmzrkwrsezfdjnnwsww.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw"
+    );
+
+    /* --------------------
+       자리 관리
+    -------------------- */
+    let seatData = [];
+
+    async function loadSeats(){
+      const { data, error } = await client.from("class_seats")
+        .select("id,student_number,name,seat_index,locked")  // ✅ name 불러옴
+        .eq("grade",2).eq("class_num",3)
+        .order("seat_index");
+      if(error){ console.error(error); return; }
+      seatData = data || [];
+      renderSeats();
+    }
+
+    function renderSeats(){
+      const container = document.getElementById("seat-map");
+      container.innerHTML = "";
+      seatData.forEach((s,i)=>{
+        const div = document.createElement("div");
+        div.className="seat";
+        if(s.locked) div.classList.add("locked");
+        div.textContent = s.name;    // ✅ 이름만 표시
+        div.draggable = true;
+        div.dataset.index = i;
+
+        div.addEventListener("dragstart", e=>{
+          e.dataTransfer.setData("from",i);
+        });
+        div.addEventListener("dragover", e=>e.preventDefault());
+        div.addEventListener("drop", e=>{
+          e.preventDefault();
+          const from = parseInt(e.dataTransfer.getData("from"));
+          swapSeats(from,i);
+        });
+        div.addEventListener("contextmenu", async e=>{
+          e.preventDefault();
+          seatData[i].locked = !seatData[i].locked;
+          await client.from("class_seats")
+            .update({locked:seatData[i].locked})
+            .eq("id",seatData[i].id);
+          renderSeats();
+        });
+
+        container.appendChild(div);
+      });
+    }
+
+    function swapSeats(from,to){
+      if(seatData[from].locked || seatData[to].locked) return;
+
+      const temp = seatData[from];
+      seatData[from] = seatData[to];
+      seatData[to] = temp;
+
+      renderSeats();  // 화면만 갱신
+    }
+
+    function shuffleSeats(){
+      let free = seatData.filter(s=>!s.locked);
+      let shuffled = [...free].sort(()=>Math.random()-0.5);
+
+      let idx = 0;
+      seatData = seatData.map(s=>{
+        if(s.locked) return s;
+        return {...shuffled[idx++]};
+      });
+
+      // 새로운 배열 순서대로 seat_index 다시 부여
+      seatData.forEach((s,i)=> s.seat_index = i+1);
+
+      renderSeats();
+    }
+
+
+async function saveSeats() {
+  try {
+    // 1️⃣ seat_index 재할당
+    seatData.forEach((s, i) => s.seat_index = i + 1);
+
+    // 2️⃣ 기존 데이터 삭제
+    let { error: delError } = await client
+      .from("class_seats")
+      .delete()
+      .eq("grade", 2)
+      .eq("class_num", 3);
+
+    if (delError) throw delError;
+
+    // 3️⃣ seatData 다시 insert (⚠️ id 제거!)
+    const insertData = seatData.map(s => ({
+      grade: 2,
+      class_num: 3,
+      student_number: s.student_number,
+      name: s.name,
+      seat_index: s.seat_index,
+      locked: s.locked
+    }));
+
+    let { error: insError } = await client
+      .from("class_seats")
+      .insert(insertData);
+
+    if (insError) throw insError;
+
+    console.log("✅ 새로 저장된 데이터:", insertData);
+    alert("✅ 자리 초기화 후 저장 완료!");
+    await loadSeats(); // 저장 후 다시 불러오기
+  } catch (e) {
+    console.error("❌ 저장 실패", e);
+    alert("❌ 저장 실패: " + e.message);
+  }
+}
+
+
+
+
+
+
+    /* --------------------
+       과제
+    -------------------- */
+    async function addAssignment(){
+      const title=document.getElementById("assign-title").value;
+      const deadline=document.getElementById("assign-deadline").value;
+      await client.from("assignments")
+        .insert([{title,deadline,grade:2,class_num:3}]);
+      alert("✅ 과제 등록 완료");
+    }
+
+    /* --------------------
+       포인트
+    -------------------- */
+    async function updatePoint(){
+      const name=document.getElementById("point-name").value;
+      const point=parseInt(document.getElementById("point-value").value);
+      await client.from("class_student_points")
+        .update({point})
+        .eq("name",name).eq("grade",2).eq("class_num",3);
+      alert("✅ 포인트 수정 완료");
+    }
+
+    /* --------------------
+       퀴즈
+    -------------------- */
+    // 퀴즈 추가
+    async function addQuiz() {
+      const question = document.getElementById("quiz-question").value.trim();
+      if (!question) {
+        alert("❌ 문제를 입력하세요.");
+        return;
+      }
+
+      try {
+        // 오늘 세트 uuid 가져오기 (없으면 새로 생성)
+        let setId = localStorage.getItem("quiz_set_id");
+        if (!setId) {
+          setId = crypto.randomUUID();  // ✅ uuid 생성
+          localStorage.setItem("quiz_set_id", setId);
+        }
+
+        // 현재 세트 내 마지막 number 조회
+        const { data: existing, error: fetchError } = await client
+          .from("english_quiz_questions")
+          .select("number")
+          .eq("quiz_set_id", setId)
+          .order("number", { ascending: false })
+          .limit(1);
+
+        if (fetchError) throw fetchError;
+
+        const nextNumber = existing?.[0]?.number ? existing[0].number + 1 : 1;
+
+        // 퀴즈 저장
+        const { error } = await client.from("english_quiz_questions").insert([
+          {
+            quiz_set_id: setId,
+            number: nextNumber,
+            question
+          }
+        ]);
+
+        if (error) throw error;
+
+        alert(`✅ 퀴즈 추가 완료! (번호: ${nextNumber})`);
+        document.getElementById("quiz-question").value = "";
+
+      } catch (e) {
+        console.error("❌ 퀴즈 추가 실패", e);
+        alert("❌ 퀴즈 추가 실패: " + e.message);
+      }
+    }
+
+
+    /* --------------------
+       투표
+    -------------------- */
+    async function addVote(){
+      const q=document.getElementById("vote-question").value;
+      const opts=document.getElementById("vote-options").value.split(",").map(x=>x.trim());
+      await client.from("class_votes").insert([
+        {question:q,options:opts,grade:2,class_num:3}
+      ]);
+      alert("✅ 투표 등록 완료");
+    }
+
+    document.addEventListener("DOMContentLoaded", loadSeats);
+
+    // 학생 목록 불러오기 → 드롭다운 채우기
+async function loadPointStudents() {
+  try {
+    const { data, error } = await client
+      .from("class_student_points")
+      .select("name")
+      .eq("grade", 2)
+      .eq("class_num", 3)
+      .order("student_number");
+
+    if (error) throw error;
+
+    const select = document.getElementById("point-student");
+    select.innerHTML = data.map(s => `<option value="${s.name}">${s.name}</option>`).join("");
+  } catch (e) {
+    console.error("❌ 학생 불러오기 실패", e);
+  }
+}
+
+// 포인트 추가
+async function addPoint() {
+  const name = document.getElementById("point-student").value;
+  const addValue = parseInt(document.getElementById("point-value").value);
+
+  if (!name || isNaN(addValue)) {
+    alert("❌ 학생과 포인트를 입력하세요.");
+    return;
+  }
+
+  try {
+    // 1️⃣ 현재 포인트 가져오기
+    const { data, error } = await client
+      .from("class_student_points")
+      .select("point")
+      .eq("grade", 2)
+      .eq("class_num", 3)
+      .eq("name", name)
+      .single();
+
+    if (error) throw error;
+
+    const newPoint = (data?.point || 0) + addValue;
+
+    // 2️⃣ 새로운 포인트 저장
+    const { error: updateError } = await client
+      .from("class_student_points")
+      .update({ point: newPoint })
+      .eq("grade", 2)
+      .eq("class_num", 3)
+      .eq("name", name);
+
+    if (updateError) throw updateError;
+
+    alert(`✅ ${name} 학생 포인트가 ${newPoint}점으로 업데이트됨!`);
+    document.getElementById("point-value").value = "";
+  } catch (e) {
+    console.error("❌ 포인트 추가 실패", e);
+    alert("❌ 포인트 추가 실패: " + e.message);
+  }
+}
+
+// 페이지 로드시 학생 목록 불러오기
+document.addEventListener("DOMContentLoaded", () => {
+  loadSeats();         // 기존 자리 불러오기
+  loadPointStudents(); // 학생 목록 불러오기
+});
+
+  </script>
+</body>
+</html>
