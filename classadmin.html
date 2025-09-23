@@ -75,6 +75,70 @@
       background:#e0f2fe;
       border-color:#0284c7;
     }
+    /* 📱 모바일 반응형 */
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  header h1 {
+    font-size: 1.1rem;
+    margin-bottom: .5rem;
+  }
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  nav a {
+    margin: 0 .5rem .5rem 0;
+    font-size: .85rem;
+  }
+
+  .wrap {
+    padding: 0 .5rem;
+  }
+
+  .card {
+    padding: 1rem;
+    border-radius: .7rem;
+  }
+
+  h2 {
+    font-size: 1rem;
+  }
+
+  .btn {
+    font-size: .8rem;
+    padding: .4rem .7rem;
+  }
+
+  input, textarea {
+    font-size: .85rem;
+    padding: .4rem;
+  }
+
+  /* 자리 배치: 모바일은 3열 */
+  #seat-map {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .seat {
+    font-size: .8rem;
+    padding: .5rem;
+  }
+}
+
+/* 초소형 기기 (아이폰 SE ~ 375px 이하) */
+@media (max-width: 400px) {
+  #seat-map {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .seat {
+    font-size: .75rem;
+    padding: .4rem;
+  }
+}
+
   </style>
 </head>
 <body>
