@@ -595,39 +595,13 @@
     $$('#modal-logs [data-close]').forEach(b=>b.onclick=()=>closeModal('#modal-logs'));
     $('#refresh-logs').onclick=loadLogs;
 
-    document.addEventListener('DOMContentLoaded', async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) {
-    alert("로그인이 필요합니다.");
-    location.href = "/";
-    return;
-  }
-
-  const { user } = session;
-
-  const { data: profile, error } = await sb
-    .from('users')
-    .select('role')
-    .eq('email', user.email)
-    .maybeSingle();
-
-  if (error || !profile || profile.role !== 'admin') {
-    alert("접근 권한이 없습니다. 관리자만 접근 가능합니다.");
-    location.href = "/";
-    return;
-  }
-
-  console.log("✅ 관리자 인증 완료:", user.email);
-  
-  // ✅ 여기서만 loadUsers 실행
-  await loadUsers();
-});
-
-
     // 정렬
     document.querySelectorAll('th.sortable').forEach(th=>{
       th.onclick=()=>{ const key=th.dataset.sort; sortDir=(sortKey===key && sortDir==='asc')?'desc':'asc'; sortKey=key; apply(); };
     });
+
+    // 초기 로드
+    document.addEventListener('DOMContentLoaded', async ()=>{ await loadUsers(); });
 
     let targetUserForCoin = null;
 $('#coin-submit').onclick = async () => {
