@@ -6,10 +6,8 @@
   <title>EduBoard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
-  <!-- PDF.js (PDF → Canvas 렌더링용) -->
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
   <script>
-    // PDF.js 워커 경로 설정
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
   </script>
@@ -21,7 +19,6 @@
       background: #f8f9fa;
       color: #333;
     }
-
     header {
       background: #fff;
       border-bottom: 1px solid #dee2e6;
@@ -31,24 +28,20 @@
       align-items: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-
     #profile-wrapper {
       position: relative;
       margin-left: auto;
     }
-
     header h1 {
       margin: 0;
       font-size: 1.4rem;
       color: #007bff;
     }
-
     #profile-icon {
       cursor: pointer;
       font-size: 1.3rem;
       margin-left: 1rem;
     }
-
     nav {
       background: #fff;
       border-bottom: 1px solid #dee2e6;
@@ -57,7 +50,6 @@
       gap: 1rem;
       padding: 0.75rem;
     }
-
     nav a {
       text-decoration: none;
       color: #495057;
@@ -65,18 +57,15 @@
       border-radius: 0.5rem;
       font-weight: 500;
     }
-
     nav a:hover {
       background: #e9ecef;
       color: #007bff;
     }
-
     .content {
       padding: 2rem;
       max-width: 1000px;
       margin: auto;
     }
-
     .panel {
       background: #fff;
       border: 1px solid #dee2e6;
@@ -85,7 +74,6 @@
       margin-bottom: 1.5rem;
       box-shadow: 0 2px 4px rgba(0,0,0,0.04);
     }
-
     button {
       background: #007bff;
       border: none;
@@ -98,11 +86,9 @@
       width: 100%;
       margin-bottom: 0.5rem;
     }
-
     button:hover {
       background: #0056b3;
     }
-
     input[type=text],
     input[type=password],
     input[type=email],
@@ -119,12 +105,10 @@
       background: #fff;
       box-sizing: border-box;
     }
-
     textarea {
       height: 80px;
       padding: 0.6rem;
     }
-
     #login-screen {
       height: 100vh;
       display: flex;
@@ -132,7 +116,6 @@
       align-items: center;
       background: #ffffff;
     }
-
     .auth-box {
       background: #fff;
       padding: 2rem;
@@ -141,23 +124,19 @@
       width: 320px;
       text-align: center;
     }
-
     .auth-box h2 {
       margin-top: 0;
       margin-bottom: 1rem;
       color: #007bff;
     }
-
     #doc-panel h2 {
       margin-bottom: 1rem;
       font-size: 1.2rem;
       color: #343a40;
     }
-
     #doc-panel input[type="file"] {
       margin-bottom: 0.8rem;
     }
-
     #doc-panel h3 {
       margin-top: 1.5rem;
       margin-bottom: 0.5rem;
@@ -166,7 +145,6 @@
       border-top: 1px solid #dee2e6;
       padding-top: 0.8rem;
     }
-
     #doc-panel textarea {
       width: 100%;
       min-height: 150px;
@@ -180,17 +158,14 @@
       margin-bottom: 1rem;
       box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
     }
-
     #doc-panel .button-group {
       display: flex;
       gap: 0.5rem;
       margin-top: 0.5rem;
     }
-
     #doc-panel .button-group button {
       flex: 1;
     }
-
     #doc-panel button {
       background: #007bff;
       border: none;
@@ -201,11 +176,9 @@
       cursor: pointer;
       transition: background 0.3s;
     }
-
     #doc-panel button:hover {
       background: #0056b3;
     }
-
     #doc-result {
       width: 100%;
       min-height: 100px;      
@@ -219,7 +192,6 @@
       background: #fdfdfd;
       box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
     }
-    
     #homework-panel label {
       font-weight: 600;
       margin-top: 0.5rem;
@@ -227,7 +199,6 @@
       margin-bottom: 0.3rem;
       color: #495057;
     }
-
     #homework-panel input[type="text"],
     #homework-panel input[type="file"],
     #homework-panel textarea {
@@ -241,26 +212,20 @@
       background: #fff;
       box-sizing: border-box;
     }
-
     #homework-panel textarea {
       min-height: 80px;
       resize: vertical;
     }
-
     .mobile-only {
       display: none;
     }
-
-    
     @media (max-width: 768px) {
       header {
         display: none !important;
       }
-
       .mobile-only {
         display: block;
       }
-
       .mobile-header {
         position: fixed;
         top: 0;
@@ -275,17 +240,14 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         z-index: 3000;
       }
-
       .menu-icon {
         font-size: 24px;
         cursor: pointer;
       }
-
       .mobile-title {
         font-weight: bold;
         font-size: 18px;
       }
-
       .mobile-user {
         font-size: 14px;
         color: #333;
@@ -293,7 +255,6 @@
         overflow: visible;      
         max-width: none; 
       }
-
       .mobile-side-menu {
         position: fixed;
         top: 0;
@@ -307,27 +268,22 @@
         box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         transition: left 0.3s ease;
       }
-
       .mobile-side-menu.open {
         transform: translateX(0);;
       }
-
       .mobile-side-menu ul {
         list-style: none;
         padding: 0;
         margin: 0;
       }
-
       .mobile-side-menu li {
         margin-bottom: 1rem;
       }
-
       .mobile-side-menu a {
         text-decoration: none;
         font-size: 16px;
         color: #333;
       }
-
       .mobile-overlay {
         display: none;
         position: fixed;
@@ -338,52 +294,43 @@
         background-color: rgba(0,0,0,0.3);
         z-index: 2800;
       }
-
       .mobile-overlay.show {
         display: block;
       }
-
       hr {
         border: none;
         border-top: 1px solid #ccc;
         margin: 16px 0;
       }
-
       nav {
         display: flex;
         gap: 2rem;
       }
-
       @media (max-width: 768px) {
         nav {
           visibility: hidden; 
           height: 1.2rem;      
           margin-top: 0.5rem;  
         }
-
         .preview-container img {
           width: 100px;
           height: 100px;
         }
       }
     }
-
     .login-help {
       margin-top: 1rem;
       text-align: center;
       font-size: 0.9rem;
     }
-
     .login-help a {
       color: #007bff;
       text-decoration: none;
       margin: 0 0.5rem;
     }
-
     .login-help a:hover {
       text-decoration: underline;
     }
-    
     .mini-btn {
       padding: 2px 6px;
       font-size: 0.75rem;
@@ -395,11 +342,9 @@
       font-weight: 600;
       line-height: 1;
     }
-
     .mini-btn:hover {
       background: #0056b3;
     }
-
     .week-nav {
       display: flex;
       border: 2px solid #007bff;
@@ -410,7 +355,6 @@
       margin: 0 auto;
       height: 44px;
     }
-
     .nav-btn {
       flex: 1;
       background-color: white;
@@ -428,15 +372,12 @@
       cursor: pointer;
       transition: background-color 0.2s ease;
     }
-
     .nav-btn:last-child {
       border-right: none;
     }
-
     .nav-btn:hover {
       background-color: #e6f0ff;
     }
-
     .dashboard-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1102,10 +1043,10 @@ html, body {
                       <div class="info-top">
                         <div class="profile-name">
                           <span id="dash-name">admin</span>
-                          <small style="margin-left:4px;color:#6c757d">학생</small>
+                          <small id="dash-role" style="margin-left:4px;color:#6c757d">학생</small>
                         </div>
                         <div class="points-chip">
-                          <span class="p-dot"></span> P <span id="coin-balance" style="margin-left:4px">99999999</span>
+                          <span class="p-dot"></span> P <span id="coin-balance" style="margin-left:4px">1</span>
                         </div>
                       </div>
 
@@ -1657,12 +1598,16 @@ const SUBJECT_SYNONYMS = {
           localStorage.setItem('savedStudentNum', currentStudentNumber);
           localStorage.setItem('savedGrade', user.grade);
           localStorage.setItem('savedClassNum', user.class_num);
+          localStorage.setItem('savedRole', user.role);
 
           setUserInfoInput();
 
           currentUserRole = user.role || 'user';
           currentGrade = user.grade;
           currentClassNum = user.class_num;
+
+          document.getElementById('dash-name').textContent = user.name;
+          document.getElementById('dash-role').textContent = user.role === 'admin' ? '관리자' : '학생';
 
           loadTimetableWeek(user.grade, user.class_num);
           showMain();
@@ -2827,24 +2772,6 @@ async function startGame(gameType) {
           });
         }
 
-          if (menuPassword) {
-            menuPassword.addEventListener('click', (e) => {
-              e.preventDefault();
-              alert('비밀번호 변경은 준비 중입니다.');
-              closeMobileMenu();
-              /*showPanel('profile-panel'); //비번 설정 패널로 바꾸기
-              closeMobileMenu();*/
-            });
-          }
-
-          if (menuSetting) {
-            menuSetting.addEventListener('click', (e) => {
-              e.preventDefault();
-              alert('설정은 준비 중입니다.');
-              closeMobileMenu();
-            });
-          }
-
           if (menuLogout) {
             menuLogout.addEventListener('click', (e) => {
               e.preventDefault();
@@ -2930,6 +2857,10 @@ async function startGame(gameType) {
         const grd = (currentGrade ?? parseInt(localStorage.getItem('savedGrade') || '0', 10)) || '-';
         const cls = (currentClassNum ?? parseInt(localStorage.getItem('savedClassNum') || '0', 10)) || '-';
         if($id('dash-name')) $id('dash-name').textContent = nm;
+        if($id('dash-role')) {
+          const savedRole = localStorage.getItem('savedRole') || 'user';
+          $id('dash-role').textContent = savedRole === 'admin' ? '관리자' : '학생';
+        }
         if($id('dash-num')) $id('dash-num').textContent = num;
         if($id('dash-grade')) $id('dash-grade').textContent = grd;
         if($id('dash-class')) $id('dash-class').textContent = cls;
@@ -4252,7 +4183,7 @@ function setupStudentPanel() {
     }
   }
 }
-
+/*
 (() => {
   // ========= 공통 유틸 =========
   const $ = (sel) => document.querySelector(sel);
@@ -4634,7 +4565,7 @@ function setupStudentPanel() {
   })();
 
 })();
-  
+  */
 async function loadUserFromDashboardValues() {
   // ✅ 대시보드에 표시된 값 읽기
   const name = document.getElementById("dash-name")?.textContent?.trim();
@@ -4910,4 +4841,3 @@ document.getElementById("btn-profile-pass")?.addEventListener("click", () => {
     
   </body> 
 </html>
-
