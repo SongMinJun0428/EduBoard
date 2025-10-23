@@ -264,7 +264,7 @@
       renderSeats();  // 화면만 갱신
     }
 
-    function shuffleSeats(){
+    /*function shuffleSeats(){
       let free = seatData.filter(s=>!s.locked);
       let shuffled = [...free].sort(()=>Math.random()-0.5);
 
@@ -278,46 +278,81 @@
       seatData.forEach((s,i)=> s.seat_index = i+1);
 
       renderSeats();
-    }
+    }*/
+function setCookie(name, value, days) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+}
 
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
 
-async function saveSeats() {
-  try {
-    // 1️⃣ seat_index 재할당
+function shuffleSeats() {
+  const cookieKey = "minjun_hojoo_count";
+  const count = parseInt(getCookie(cookieKey) || "0");
+
+  // ✅ 11회 이상이면 기존 방식 사용
+  if (count >= 2) {
+    let free = seatData.filter(s => !s.locked);
+    let shuffled = [...free].sort(() => Math.random() - 0.5);
+
+    let idx = 0;
+    seatData = seatData.map(s => {
+      if (s.locked) return s;
+      return { ...shuffled[idx++] };
+    });
+
     seatData.forEach((s, i) => s.seat_index = i + 1);
+    renderSeats();
 
-    // 2️⃣ 기존 데이터 삭제
-    let { error: delError } = await client
-      .from("class_seats")
-      .delete()
-      .eq("grade", 2)
-      .eq("class_num", 3);
-
-    if (delError) throw delError;
-
-    // 3️⃣ seatData 다시 insert (⚠️ id 제거!)
-    const insertData = seatData.map(s => ({
-      grade: 2,
-      class_num: 3,
-      student_number: s.student_number,
-      name: s.name,
-      seat_index: s.seat_index,
-      locked: s.locked
-    }));
-
-    let { error: insError } = await client
-      .from("class_seats")
-      .insert(insertData);
-
-    if (insError) throw insError;
-
-    console.log("✅ 새로 저장된 데이터:", insertData);
-    alert("✅ 자리 초기화 후 저장 완료!");
-    await loadSeats(); // 저장 후 다시 불러오기
-  } catch (e) {
-    console.error("❌ 저장 실패", e);
-    alert("❌ 저장 실패: " + e.message);
+    return;
   }
+
+  // ✅ 1~10회는 송민준, 곽호주 고정 + 나머지 랜덤
+  const idxMinjun = seatData.findIndex(s => s.name === "송민준");
+  const idxHojoo = seatData.findIndex(s => s.name === "곽호주");
+
+  if (idxMinjun === -1 || idxHojoo === -1) {
+    alert("❌ 송민준 또는 곽호주 학생을 찾을 수 없습니다.");
+    return;
+  }
+
+  const minjun = seatData[idxMinjun];
+  const hojoo = seatData[idxHojoo];
+
+  // 🔄 송민준/곽호주 제외하고 unlocked 자리만 섞기
+  const others = seatData.filter(s =>
+    !s.locked &&
+    s.name !== "송민준" &&
+    s.name !== "곽호주"
+  );
+  const shuffled = [...others].sort(() => Math.random() - 0.5);
+
+  let newSeats = [];
+  let shuffledIndex = 0;
+
+  for (let i = 0; i < seatData.length; i++) {
+    if (seatData[i].locked) {
+      newSeats.push(seatData[i]); // 고정 좌석
+    } else if (i === 24) {
+      newSeats.push({ ...minjun }); // 25번 자리에 송민준
+    } else if (i === 25) {
+      newSeats.push({ ...hojoo }); // 26번 자리에 곽호주
+    } else {
+      const next = shuffled[shuffledIndex++];
+      newSeats.push(next ? { ...next } : { ...seatData[i] });
+    }
+  }
+
+  newSeats.forEach((s, i) => {
+    s.seat_index = i + 1;
+  });
+
+  seatData = newSeats;
+  renderSeats();
+  setCookie(cookieKey, (count + 1).toString(), 365);
 }
 
 
@@ -474,12 +509,53 @@ async function addPoint() {
     alert("❌ 포인트 추가 실패: " + e.message);
   }
 }
+async function makeAdjacentByName(name1, name2) {
+  // 1️⃣ 두 학생 찾기
+  const idx1 = seatData.findIndex(s => s.name === name1);
+  const idx2 = seatData.findIndex(s => s.name === name2);
+
+  if (idx1 === -1 || idx2 === -1) {
+    alert("❌ 두 학생 중 한 명을 찾을 수 없습니다.");
+    return;
+  }
+
+  // 2️⃣ 두 학생을 배열에서 추출
+  const stu1 = seatData[idx1];
+  const stu2 = seatData[idx2];
+
+  // 3️⃣ 잠긴 좌석 제외하고 빈 쌍 찾기
+  for (let i = 0; i < seatData.length - 1; i++) {
+    if (
+      !seatData[i].locked &&
+      !seatData[i + 1].locked &&
+      seatData[i].name !== name1 &&
+      seatData[i].name !== name2 &&
+      seatData[i + 1].name !== name1 &&
+      seatData[i + 1].name !== name2
+    ) {
+      // 해당 위치에 stu1, stu2 삽입
+      seatData.splice(idx1, 1);
+      if (idx2 > idx1) seatData.splice(idx2 - 1, 1);
+      else seatData.splice(idx2, 1);
+
+      seatData.splice(i, 0, stu1);
+      seatData.splice(i + 1, 0, stu2);
+
+      renderSeats();
+      alert(`✅ ${name1}과 ${name2}를 붙여 배치했습니다.`);
+      return;
+    }
+  }
+
+  alert("❌ 인접한 자리가 없습니다.");
+}
 
 // 페이지 로드시 학생 목록 불러오기
 document.addEventListener("DOMContentLoaded", () => {
   loadSeats();         // 기존 자리 불러오기
   loadPointStudents(); // 학생 목록 불러오기
 });
+
 
   </script>
 </body>
