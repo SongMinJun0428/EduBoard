@@ -355,6 +355,44 @@ function shuffleSeats() {
   setCookie(cookieKey, (count + 1).toString(), 365);
 }
 
+async function saveSeats() {
+  try {
+    // 1️⃣ seat_index 재정렬
+    seatData.forEach((s, i) => s.seat_index = i + 1);
+
+    // 2️⃣ 기존 데이터 삭제
+    let { error: delError } = await client
+      .from("class_seats")
+      .delete()
+      .eq("grade", 2)
+      .eq("class_num", 3);
+
+    if (delError) throw delError;
+
+    // 3️⃣ seatData -> insert 용으로 정리 (id 제거!)
+    const insertData = seatData.map(s => ({
+      grade: 2,
+      class_num: 3,
+      student_number: s.student_number,
+      name: s.name,
+      seat_index: s.seat_index,
+      locked: s.locked
+    }));
+
+    let { error: insError } = await client
+      .from("class_seats")
+      .insert(insertData);
+
+    if (insError) throw insError;
+
+    alert("✅ 자리 저장 완료!");
+    await loadSeats(); // 저장 후 다시 불러오기
+
+  } catch (e) {
+    console.error("❌ 저장 실패", e);
+    alert("❌ 저장 실패: " + e.message);
+  }
+}
 
 
 
