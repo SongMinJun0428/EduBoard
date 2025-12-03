@@ -5,87 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>아이디 찾기 - EduBoard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      font-family: 'Noto Sans KR', sans-serif;
-      background: #f8f9fa;
-      color: #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-    header {
-      background: #fff;
-      border-bottom: 1px solid #dee2e6;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    header h1 {
-      margin: 0;
-      font-size: 1.5rem;
-      color: #007bff;
-    }
-    .container {
-      margin-top: 3rem;
-      background: #fff;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-      width: 100%;
-      max-width: 420px;
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 2rem;
-      color: #343a40;
-    }
-    input {
-      width: 100%;
-      padding: 0.75rem;
-      margin-bottom: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-    button {
-      width: 100%;
-      padding: 0.75rem;
-      font-size: 1rem;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    #result {
-      margin-top: 1rem;
-      font-weight: bold;
-      text-align: center;
-    }
-    .back-link {
-      text-align: center;
-      margin-top: 2rem;
-    }
-    .back-link a {
-      text-decoration: none;
-      color: #007bff;
-    }
-    .back-link a:hover {
-      text-decoration: underline;
-    }
-  </style>
+  <link rel="stylesheet" href="css/find-id.css">
 </head>
 <body>
   <header>
@@ -104,40 +24,6 @@
     </div>
   </main>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const supabase = window.supabase.createClient(
-        "https://ucmzrkwrsezfdjnnwsww.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw"
-      );
-
-      document.getElementById("findIdBtn").addEventListener("click", async () => {
-        const name = document.getElementById("name").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const result = document.getElementById("result");
-
-        if (!name || !email) {
-          result.innerText = "이름과 이메일을 모두 입력해주세요.";
-          result.style.color = "red";
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from("users")
-          .select("username")
-          .eq("name", name)
-          .eq("email", email)
-          .single();
-
-        if (error || !data) {
-          result.innerText = "일치하는 아이디를 찾을 수 없습니다.";
-          result.style.color = "red";
-        } else {
-          result.innerText = `가입된 아이디: ${data.username}`;
-          result.style.color = "#28a745";
-        }
-      });
-    });
-  </script>
+  <script src="js/find-id.js"></script>
 </body>
 </html>

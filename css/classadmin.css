@@ -1,0 +1,446 @@
+    body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: #f8fafc;
+        color: #1f2937;
+    }
+
+    header {
+        background: linear-gradient(135deg, #4f46e5, #3b82f6);
+        color: white;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    header h1 {
+        margin: 0;
+        font-size: 1.4rem;
+        font-weight: 800;
+    }
+
+    nav a {
+        color: white;
+        margin-left: 1rem;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    nav a:hover {
+        text-decoration: underline;
+        color: #e0e7ff;
+    }
+
+    .wrap {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 0 1rem
+    }
+
+    h2 {
+        font-size: 1.2rem;
+        margin-bottom: .5rem;
+    }
+
+    .card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+    }
+
+    .btn {
+        padding: .55rem .9rem;
+        border-radius: .6rem;
+        border: 1px solid #d1d5db;
+        background: white;
+        font-size: .9rem;
+        cursor: pointer;
+        margin: .2rem 0;
+    }
+
+    .btn.primary {
+        background: #3b82f6;
+        color: white;
+        border: none
+    }
+
+    .btn.primary:hover {
+        background: #2563eb
+    }
+
+    input,
+    textarea {
+        width: 100%;
+        padding: .5rem;
+        margin-top: .3rem;
+        border: 1px solid #ddd;
+        border-radius: .5rem;
+    }
+
+    label {
+        font-weight: 600;
+        display: block;
+        margin-top: .7rem
+    }
+
+    /* 자리 */
+    #seat-map {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 10px;
+        margin-top: 1rem;
+    }
+
+    .seat {
+        background: #f9fafb;
+        border: 1px solid #e2e8f0;
+        border-radius: .5rem;
+        padding: .6rem;
+        text-align: center;
+        cursor: grab;
+        position: relative;
+        /* ✅ 추가 */
+        transition:
+            transform .15s ease-out,
+            box-shadow .15s ease-out,
+            border-color .15s ease-out,
+            background .15s ease-out;
+        /* ✅ 추가 */
+    }
+
+    /* 좌석에 마우스를 올렸을 때 살짝 떠오르는 효과 */
+    .seat:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(15, 23, 42, 0.12);
+        background: #ffffff;
+    }
+
+    /* 자리 바뀐 좌석에 살짝 튀면서 반짝이는 효과 */
+    .seat-moved {
+        animation: seat-bounce 0.35s ease-out;
+    }
+
+    @keyframes seat-bounce {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 rgba(59, 130, 246, 0);
+            background: #eef2ff;
+        }
+
+        50% {
+            transform: scale(1.08);
+            box-shadow: 0 0 16px rgba(59, 130, 246, 0.6);
+            background: #dbeafe;
+        }
+
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 rgba(59, 130, 246, 0);
+            background: #f9fafb;
+        }
+    }
+
+    /* 전체 섞일 때 가볍게 흔들리는 효과 (선택사항) */
+    .seat-shuffle {
+        animation: seat-shake 0.28s ease-out;
+    }
+
+    @keyframes seat-shake {
+        0% {
+            transform: translateX(0);
+        }
+
+        25% {
+            transform: translateX(-3px);
+        }
+
+        50% {
+            transform: translateX(3px);
+        }
+
+        75% {
+            transform: translateX(-2px);
+        }
+
+        100% {
+            transform: translateX(0);
+        }
+    }
+
+
+
+    .seat:active {
+        cursor: grabbing
+    }
+
+    .seat.locked {
+        background: #e0f2fe;
+        border-color: #0284c7;
+    }
+
+    /* 📱 모바일 반응형 */
+    @media (max-width: 768px) {
+        header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            margin-bottom: .5rem;
+        }
+
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            margin: 0 .5rem .5rem 0;
+            font-size: .85rem;
+        }
+
+        .wrap {
+            padding: 0 .5rem;
+        }
+
+        .card {
+            padding: 1rem;
+            border-radius: .7rem;
+        }
+
+        h2 {
+            font-size: 1rem;
+        }
+
+        .btn {
+            font-size: .8rem;
+            padding: .4rem .7rem;
+        }
+
+        input,
+        textarea {
+            font-size: .85rem;
+            padding: .4rem;
+        }
+
+        /* 자리 배치: 모바일은 3열 */
+        #seat-map {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .seat {
+            font-size: .8rem;
+            padding: .5rem;
+        }
+    }
+
+    /* 초소형 기기 (아이폰 SE ~ 375px 이하) */
+    @media (max-width: 400px) {
+        #seat-map {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .seat {
+            font-size: .75rem;
+            padding: .4rem;
+        }
+    }
+
+    /* 전체 섞을 때 좌석 퍼졌다가 모이는 효과 */
+    .shuffle-zoom {
+        animation: shuffleZoom 0.45s ease-in-out;
+    }
+
+    @keyframes shuffleZoom {
+        0% {
+            transform: scale(1) rotate(0deg);
+        }
+
+        25% {
+            transform: scale(1.15) rotate(2deg);
+        }
+
+        50% {
+            transform: scale(0.9) rotate(-2deg);
+        }
+
+        75% {
+            transform: scale(1.05);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    /* 각 좌석 흔들리는 wobble 효과 */
+    .seat-wobble {
+        animation: wobble 0.55s ease-out;
+    }
+
+    @keyframes wobble {
+        0% {
+            transform: translate(0, 0) rotate(0deg);
+        }
+
+        20% {
+            transform: translate(-4px, 2px) rotate(-4deg);
+        }
+
+        40% {
+            transform: translate(4px, -2px) rotate(4deg);
+        }
+
+        60% {
+            transform: translate(-3px, 3px) rotate(-2deg);
+        }
+
+        80% {
+            transform: translate(3px, -3px) rotate(2deg);
+        }
+
+        100% {
+            transform: translate(0, 0) rotate(0deg);
+        }
+    }
+
+    /* 랜덤한 방향으로 튀는 효과 */
+    .seat-pop {
+        animation: popRandom 0.35s ease-out;
+    }
+
+    @keyframes popRandom {
+        0% {
+            transform: translate(0, 0) scale(1);
+        }
+
+        50% {
+            transform: translate(var(--x), var(--y)) scale(1.1);
+        }
+
+        100% {
+            transform: translate(0, 0) scale(1);
+        }
+    }
+
+    /* 반짝임 색상 효과 */
+    .seat-flash {
+        animation: seatFlash 0.35s ease-in-out;
+    }
+
+    @keyframes seatFlash {
+        0% {
+            background: #dbeafe;
+        }
+
+        50% {
+            background: #bfdbfe;
+        }
+
+        100% {
+            background: #f9fafb;
+        }
+    }
+
+    /* 🔥 랜덤 셔플용 풀스크린 오버레이 */
+    #shuffle-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        background: radial-gradient(circle at top, rgba(129, 140, 248, 0.35), rgba(15, 23, 42, 0.96));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #e5e7eb;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s ease-out;
+        backdrop-filter: blur(5px);
+    }
+
+    #shuffle-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    #shuffle-overlay .overlay-inner {
+        text-align: center;
+        animation: overlayFloat 0.9s ease-in-out infinite alternate;
+    }
+
+    #shuffle-overlay .overlay-title {
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        margin-bottom: 0.8rem;
+    }
+
+    #shuffle-overlay .overlay-count {
+        font-size: 3.6rem;
+        font-weight: 900;
+        margin-bottom: 0.6rem;
+        animation: overlayPulse 0.7s ease-in-out infinite;
+    }
+
+    #shuffle-overlay .overlay-sub {
+        font-size: 0.95rem;
+        opacity: 0.8;
+    }
+
+    @keyframes overlayPulse {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        50% {
+            transform: scale(1.2);
+            opacity: 0.7;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    @keyframes overlayFloat {
+        0% {
+            transform: translateY(0);
+        }
+
+        100% {
+            transform: translateY(-6px);
+        }
+    }
+
+    /* 셔플 직후 자리 카드가 웅장하게 “팡” 하는 효과 */
+    .grand-seat {
+        animation: grandPop 0.6s ease-out;
+    }
+
+    @keyframes grandPop {
+        0% {
+            transform: translateY(0) scale(1);
+            box-shadow: 0 0 0 rgba(30, 64, 175, 0);
+            background: #eef2ff;
+        }
+
+        40% {
+            transform: translateY(-10px) scale(1.06);
+            box-shadow: 0 16px 32px rgba(30, 64, 175, 0.6);
+            background: #dbeafe;
+        }
+
+        100% {
+            transform: translateY(0) scale(1);
+            box-shadow: 0 0 0 rgba(30, 64, 175, 0);
+            background: #f9fafb;
+        }
+    }
