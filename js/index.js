@@ -5,19 +5,70 @@ if (typeof pdfjsLib !== 'undefined') {
 }
 
 const { createClient } = supabase;
-const supabaseClient = window.supabase.createClient(
+window.supabaseClient = window.supabase.createClient(
   'https://ucmzrkwrsezfdjnnwsww.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw'
 );
+const supabaseClient = window.supabaseClient;
 
 const NEIS_KEY = '28ca0f05af184e8ba231d5a949d52db2';
 const ATPT_OFCDC_SC_CODE = 'J10';
 const SD_SCHUL_CODE = '7679111';
 
+// 🍪 쿠키 헬퍼 함수
+function setCookie(name, value, days) {
+  let expires = "";
+  if (days) {
+    let date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    expires = "; expires=" + date.toUTCString();
+  }
+  document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+function getCookie(name) {
+  let nameEQ = name + "=";
+  let ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+}
+
+// 초기 로딩 시 세션 복구 및 설정 (실제 구동은 initApp 또는 DOMContentLoaded 하단에서 수행되도록 연동)
+function syncPersistentSession() {
+  const savedUser = localStorage.getItem('savedUsername');
+  const cookieUser = getCookie('savedUsername');
+
+  if (!savedUser && cookieUser) {
+    localStorage.setItem('savedUsername', cookieUser);
+  } else if (savedUser && !cookieUser) {
+    setCookie('savedUsername', savedUser, 7); // 7일 유지
+  }
+}
+syncPersistentSession();
+
 const KOR_SUBJECTS = [
   '국어', '수학', '영어', '과학', '사회', '역사', '도덕', '기술', '가정', '정보', '음악', '미술', '체육',
   '통합', '자율', '창체', '자율활동', '동아리', '진로', '한문', '스포츠'
 ];
+
+/** 🛡️ 학년/반 데이터를 안전하게 정수로 변환 (null/NaN 방지) */
+function getSafeGradeClass() {
+  const rawG = currentGrade ?? localStorage.getItem('savedGrade');
+  const rawC = currentClassNum ?? localStorage.getItem('savedClassNum');
+
+  // "null" 문자열 또는 falsy 값 처리
+  const g = (rawG === "null" || rawG === null || rawG === undefined) ? 0 : parseInt(rawG, 10);
+  const c = (rawC === "null" || rawC === null || rawC === undefined) ? 0 : parseInt(rawC, 10);
+
+  return {
+    safeG: isNaN(g) ? 0 : g,
+    safeC: isNaN(c) ? 0 : c
+  };
+}
 
 const docResult = document.getElementById('doc-result');
 
@@ -57,48 +108,98 @@ let currentClassNum = null;
 let timetableOffset = 0;
 
 let currentFourNumbers = [];
-let currentUserCoin = 0;
+// let currentUserCoin = 0; // 전역 window.currentUserCoin 사용으로 전환
+
+/** 🔐 보안 유틸리티: HTML 특수문자 이스케이프 (XSS 방지) */
+function escapeHtml(text) {
+  if (!text) return "";
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/** 🔄 글로벌 로딩 제어 */
+function showLoading() {
+  const loader = document.getElementById('loader-overlay');
+  if (loader) {
+    loader.style.display = 'flex';
+  }
+}
+function hideLoading() {
+  const loader = document.getElementById('loader-overlay');
+  if (loader) {
+    loader.style.display = 'none';
+  }
+}
 
 async function loginDirect() {
+  const userBtn = document.getElementById('login-btn');
   const username = document.getElementById('loginUsername').value.replace(/\s+/g, '');
   const password = document.getElementById('loginPassword').value.replace(/\s+/g, '');
-  const { data: user } = await supabaseClient
-    .from('users')
-    .select('*')
-    .eq('username', username)
-    .eq('password', password)
-    .single();
 
-  if (user) {
-    currentUserName = user.name;
-    currentStudentNumber = user.student_number;
+  if (!username || !password) {
+    alert('아이디와 비밀번호를 입력해주세요.');
+    return;
+  }
 
-    localStorage.setItem('savedUsername', username);
-    localStorage.setItem('savedName', currentUserName);
-    localStorage.setItem('savedStudentNum', currentStudentNumber);
-    localStorage.setItem('savedGrade', user.grade);
-    localStorage.setItem('savedClassNum', user.class_num);
-    localStorage.setItem('savedRole', user.role);
+  showLoading();
+  if (userBtn) userBtn.disabled = true;
 
-    setUserInfoInput();
+  try {
+    const { data: user } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .eq('password', password)
+      .single();
 
-    currentUserRole = user.role || 'user';
-    currentGrade = user.grade;
-    currentClassNum = user.class_num;
+    if (user) {
+      currentUserName = user.name;
+      currentStudentNumber = user.student_number;
 
-    document.getElementById('dash-name').textContent = user.name;
-    document.getElementById('dash-role').textContent = user.role === 'admin' ? '관리자' : '학생';
+      localStorage.setItem('savedUsername', username);
+      setCookie('savedUsername', username, 7); // 7일 유지
+      localStorage.setItem('savedName', currentUserName);
+      localStorage.setItem('savedStudentNum', currentStudentNumber);
+      localStorage.setItem('savedGrade', user.grade || 0);
+      localStorage.setItem('savedClassNum', user.class_num || 0);
+      localStorage.setItem('savedRole', user.role || 'user');
+      localStorage.setItem('savedUserId', user.id || '');
+      localStorage.setItem('savedEmail', user.email || '');
 
-    loadTimetableWeek(user.grade, user.class_num);
-    showMain();
-    loadNotices();
-    afterLoginRefreshDashboard();
-  } else {
-    document.getElementById('loginStatus').innerText = '아이디 또는 비밀번호가 틀렸습니다.';
+      setUserInfoInput();
+
+      currentUserRole = user.role || 'user';
+      currentGrade = user.grade;
+      currentClassNum = user.class_num;
+
+      // 📝 로그인 로그 기록 (통합 로그 함수 사용)
+      if (window.logActivity) {
+        window.logActivity('login', username, 'user', { name: user.name, student_number: user.student_number });
+      }
+
+      document.getElementById('dash-name').innerHTML = formatUserDisplayName(user);
+      document.getElementById('dash-role').textContent = user.role === 'admin' ? '관리자' : '학생';
+
+      loadTimetableWeek(user.grade, user.class_num);
+      showMain();
+      loadNotices();
+      initDashboardTop();
+    } else {
+      document.getElementById('loginStatus').innerText = '아이디 또는 비밀번호가 틀렸습니다.';
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    document.getElementById('loginStatus').innerText = '로그인 중 오류가 발생했습니다: ' + err.message;
+  } finally {
+    hideLoading();
+    if (userBtn) userBtn.disabled = false;
   }
 }
 
 async function signup() {
+  const signupBtn = document.getElementById('signup-btn');
+  const signupStatus = document.getElementById('signupStatus');
   const username = document.getElementById('signupUsername').value.trim();
   const password = document.getElementById('signupPassword').value.trim();
   const emailId = document.getElementById('signupEmailId').value.trim();
@@ -112,24 +213,39 @@ async function signup() {
   const agree = document.getElementById('privacy-agree').checked;
 
   if (!agree) {
-    document.getElementById('signupStatus').innerText = '개인정보 수집·이용에 동의해 주세요.';
+    if (signupStatus) signupStatus.innerText = '개인정보 수집·이용에 동의해 주세요.';
     return;
   }
   if (!username || !password || !email || !name || !grade || !classNum || !number) {
-    document.getElementById('signupStatus').innerText = '모든 항목을 입력해 주세요.';
+    if (signupStatus) signupStatus.innerText = '모든 항목을 입력해 주세요.';
     return;
   }
   if (password.length < 6) {
-    document.getElementById('signupStatus').innerText = '비밀번호는 6자 이상이어야 합니다.';
+    if (signupStatus) signupStatus.innerText = '비밀번호는 6자 이상이어야 합니다.';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (signupStatus) signupStatus.innerText = '올바른 이메일을 입력해 주세요.';
     return;
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    document.getElementById('signupStatus').innerText = '올바른 이메일을 입력해 주세요.';
-    return;
-  }
+  showLoading();
+  if (signupBtn) signupBtn.disabled = true;
 
   try {
+    // 1. 중복 확인
+    const { data: existingUser } = await supabaseClient
+      .from('users')
+      .select('username')
+      .eq('username', username)
+      .maybeSingle();
+
+    if (existingUser) {
+      if (signupStatus) signupStatus.innerText = '이미 존재하는 아이디입니다.';
+      return;
+    }
+
+    // 2. 가입 시도
     const { error } = await supabaseClient.from('users').insert([{
       username: username,
       password: password,
@@ -138,17 +254,22 @@ async function signup() {
       grade: parseInt(grade, 10),
       class_num: parseInt(classNum, 10),
       student_number: parseInt(number, 10),
-      role: 'user'
+      role: 'user',
+      privacy_agreed_at: new Date().toISOString()
     }]);
-    if (error) {
-      document.getElementById('signupStatus').innerText = '회원가입 실패: ' + error.message;
-      return;
+
+    if (error) throw error;
+
+    alert('가입을 축하합니다! 로그인 해 주세요.');
+    showLogin();
+  } catch (err) {
+    if (signupStatus) {
+      signupStatus.innerText = '가입 오류: ' + err.message;
+      signupStatus.style.color = 'red';
     }
-    alert("회원가입이 완료되었습니다!");
-    document.getElementById('signupStatus').style.color = 'green';
-    document.getElementById('signupStatus').innerText = '회원가입이 완료되었습니다. 로그인해 주세요.';
-  } catch (e) {
-    document.getElementById('signupStatus').innerText = '오류 발생: ' + e.message;
+  } finally {
+    hideLoading();
+    if (signupBtn) signupBtn.disabled = false;
   }
 }
 
@@ -178,6 +299,7 @@ async function updateProfile() {
 }
 
 async function addNotice() {
+  const submitBtn = document.querySelector('#notice-panel button');
   const title = document.getElementById('notice-title').value.trim();
   const content = document.getElementById('notice-content').value.trim();
   const fileInput = document.getElementById('notice-image');
@@ -188,124 +310,208 @@ async function addNotice() {
     return;
   }
 
-  let imageUrl = '';
+  showLoading();
+  if (submitBtn) submitBtn.disabled = true;
 
-  if (uploadChecked && fileInput.files.length) {
-    const file = fileInput.files[0];
-    const uniqueName = Date.now() + '_' + file.name;
-    const filePath = `public/${uniqueName}`;
+  try {
+    let imageUrl = '';
+    if (uploadChecked && fileInput.files.length) {
+      const file = fileInput.files[0];
+      const uniqueName = Date.now() + '_' + file.name;
+      const filePath = `public/${uniqueName}`;
 
-    const { error: uploadErr } = await supabaseClient
-      .storage
-      .from('notice-images')
-      .upload(filePath, file, { upsert: true });
+      const { error: uploadErr } = await supabaseClient
+        .storage
+        .from('notice-images')
+        .upload(filePath, file, { upsert: true });
 
-    if (uploadErr) {
-      alert('이미지 업로드 실패: ' + uploadErr.message);
+      if (uploadErr) throw uploadErr;
+
+      const { data: publicData } = supabaseClient
+        .storage
+        .from('notice-images')
+        .getPublicUrl(filePath);
+
+      imageUrl = publicData.publicUrl;
+    }
+
+    const { data: writerData, error: writerError } = await supabaseClient
+      .from('users')
+      .select('username,name,role,grade,class_num')
+      .eq('username', localStorage.getItem('savedUsername'))
+      .single();
+
+    if (writerError || !writerData) throw new Error('사용자 정보 확인 실패');
+
+    const newNotice = {
+      title,
+      content,
+      image_url: imageUrl,
+      writer: writerData.name,
+      username: writerData.username,
+      writer_role: writerData.role,
+      grade: writerData.grade,
+      class_num: writerData.class_num
+    };
+
+    const { error } = await supabaseClient.from('notices').insert([newNotice]);
+    if (error) throw error;
+
+    // 🎯 [이관] 일일 XP 보상 지급 (notice 등록 시)
+    await awardDailyXP('notice');
+
+    alert('공지 등록 완료!');
+    document.getElementById('notice-title').value = '';
+    document.getElementById('notice-content').value = '';
+    document.getElementById('notice-image').value = '';
+    document.getElementById('notice-upload-check').checked = false;
+
+    loadNotices();
+  } catch (err) {
+    alert('공지 등록 실패: ' + err.message);
+  } finally {
+    hideLoading();
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+/** 👤 사용자 표시 이름 포맷터 (칭호 포함) */
+function formatUserDisplayName(user) {
+  if (!user) return '사용자';
+  let nameHtml = user.name;
+  if (user.equipped_title) {
+    let titleStyle = 'font-size:0.85rem; font-weight:700; margin-right:6px; color:#6366f1;'; // 기본 인디고
+    if (user.equipped_title.includes('rainbow') || (user.equipped_color && user.equipped_color.includes('무지개'))) {
+      titleStyle += 'background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent;';
+    }
+    const cleanTitle = user.equipped_title.replace('[칭호]', '').trim();
+    nameHtml = `<span style="${titleStyle}">[${cleanTitle}]</span> ${user.name}`;
+  }
+  return nameHtml;
+}
+
+/** 📢 공지사항 메뉴 토글 */
+window.toggleNoticeMenu = function (id) {
+  const menu = document.getElementById(`notice-menu-${id}`);
+  if (!menu) return;
+  const isVisible = menu.style.display === 'block';
+
+  // 다른 모든 메뉴 닫기
+  document.querySelectorAll('.notice-menu-dropdown').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.material-menu-dropdown').forEach(el => el.style.display = 'none');
+
+  menu.style.display = isVisible ? 'none' : 'block';
+};
+
+/** 📁 자료실 메뉴 토글 */
+window.toggleMaterialMenu = function (id) {
+  const menu = document.getElementById(`material-menu-${id}`);
+  if (!menu) return;
+  const isVisible = menu.style.display === 'block';
+
+  // 다른 모든 메뉴 닫기
+  document.querySelectorAll('.notice-menu-dropdown').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.material-menu-dropdown').forEach(el => el.style.display = 'none');
+
+  menu.style.display = isVisible ? 'none' : 'block';
+};
+
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.notice-menu-container') && !e.target.closest('.material-menu-container')) {
+    document.querySelectorAll('.notice-menu-dropdown').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.material-menu-dropdown').forEach(el => el.style.display = 'none');
+  }
+});
+
+async function loadNotices() {
+  const listEl = document.getElementById('notice-list');
+  if (listEl) listEl.innerHTML = '<div style="text-align:center; padding:2rem; color:#6b7280;">공지사항을 불러오는 중...</div>';
+
+  try {
+    const { safeG, safeC } = getSafeGradeClass();
+
+    let query = supabaseClient.from('notices').select('*, users(equipped_title)');
+
+    if (currentUserRole === 'admin') {
+      if (safeG !== 0) {
+        // 관리자도 전교 공지(grade=0, null)와 자기 반 공지를 함께 봄
+        query = query.or(`grade.is.null,grade.eq.0,and(grade.eq.${safeG},class_num.eq.${safeC})`);
+      }
+      // safeG가 0이면 모든 공지 노출
+    } else {
+      // 전교 공지(grade=0, null) 또는 내 반 공지
+      query = query.or(`grade.is.null,grade.eq.0,and(grade.eq.${safeG},class_num.eq.${safeC})`);
+    }
+
+    const { data, error } = await query.order('id', { ascending: false }).limit(20);
+
+    if (error) {
+      console.error('Notice loading error:', error);
+      if (listEl) listEl.innerHTML = `<div style="text-align:center; padding:2rem; color:#dc3545;">공지사항 로딩 실패: ${error.message}</div>`;
       return;
     }
 
-    const { data: publicData } = supabaseClient
-      .storage
-      .from('notice-images')
-      .getPublicUrl(filePath);
+    if (!listEl) return;
+    listEl.innerHTML = '';
 
-    imageUrl = publicData.publicUrl;
-  }
-
-  const { data: writerData, error: writerError } = await supabaseClient
-    .from('users')
-    .select('username,name,role,grade,class_num')
-    .eq('username', localStorage.getItem('savedUsername'))
-    .single();
-
-  if (writerError || !writerData) {
-    alert('사용자 정보 확인 중 오류가 발생했습니다.');
-    return;
-  }
-
-  const newNotice = {
-    title: title,
-    content: content,
-    image_url: imageUrl,
-    writer: writerData.name,
-    writer_role: writerData.role,
-    grade: writerData.grade,
-    class_num: writerData.class_num
-  };
-
-  const { error } = await supabaseClient.from('notices').insert([newNotice]);
-  if (error) {
-    alert('공지 등록 실패: ' + error.message);
-    return;
-  }
-
-  alert('공지 등록 완료!');
-  document.getElementById('notice-title').value = '';
-  document.getElementById('notice-content').value = '';
-  document.getElementById('notice-image').value = '';
-  document.getElementById('notice-upload-check').checked = false;
-
-  loadNotices();
-}
-
-async function loadNotices() {
-  // 기본 쿼리
-  let query = supabaseClient.from('notices').select('*').order('id', { ascending: false });
-
-  const g = Number(currentGrade);
-  const c = Number(currentClassNum);
-
-  if (currentUserRole === 'admin') {
-    // ✅ 어드민
-    // - 0학년 어드민: 전체 조회
-    // - N학년 M반 어드민: 해당 반만 조회
-    if (g !== 0) {
-      query = supabaseClient
-        .from('notices')
-        .select('*')
-        .eq('grade', g)
-        .eq('class_num', c)
-        .order('id', { ascending: false });
-    }
-  } else {
-    // ✅ 비관리자(학생/교사)
-    // - 전체 공지(grade=0) + 본인 반 공지
-    query = supabaseClient
-      .from('notices')
-      .select('*')
-      .or(`grade.eq.0,and(grade.eq.${g},class_num.eq.${c})`)
-      .order('id', { ascending: false });
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    //console.error('공지 불러오기 실패:', error);
-    return;
-  }
-
-  const listEl = document.getElementById('notice-list');
-  if (!listEl) return;
-  listEl.innerHTML = '';
-
-  (data || []).forEach(item => {
-    const formattedContent = (item.content || '').replace(/\n/g, '<br>');
-    const div = document.createElement('div');
-    div.style.borderBottom = '1px solid #ddd';
-    div.style.padding = '0.5rem 0';
-    div.innerHTML = `<strong>${item.title ?? ''}</strong> 
-                     <span style="font-size:0.8rem;color:#888;">(${item.writer ?? ''})</span><br>
-                     ${formattedContent}`;
-
-    if (item.image_url) {
-      div.innerHTML += `<br><img src="${item.image_url}" 
-                           style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem;">`;
+    if (!data || data.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center; padding:2rem; color:#888;">등록된 공지사항이 없습니다.</div>';
+      return;
     }
 
-    listEl.appendChild(div);
-  });
+    data.forEach(item => {
+      const safeTitle = escapeHtml(item.title);
+      const writerTitle = item.users?.equipped_title ? `[${item.users.equipped_title.replace('[칭호]', '').trim()}] ` : '';
+      const safeWriter = escapeHtml(item.writer);
+      const safeContent = (item.content || '').split('\n').map(line => escapeHtml(line)).join('<br>');
+
+      const div = document.createElement('div');
+      div.style.borderBottom = '1px solid #ddd';
+      div.style.padding = '0.75rem 0';
+
+      const currentUsername = localStorage.getItem('savedUsername');
+      const isAuthor = (item.username === currentUsername);
+      const isAdmin = (currentUserRole === 'admin');
+
+      let adminBtns = '';
+      if (isAuthor || isAdmin) {
+        adminBtns = `
+              <div class="notice-menu-container" style="position:relative; display:inline-block;">
+                <button onclick="toggleNoticeMenu(${item.id})" style="background:none; border:none; font-size:1.2rem; cursor:pointer; padding:0 5px; color:#888; line-height:1;">⋮</button>
+                <div id="notice-menu-${item.id}" class="notice-menu-dropdown" style="display:none; position:absolute; right:0; top:100%; background:white; border:1px solid #ddd; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:100; min-width:90px; overflow:hidden;">
+                  <button onclick="openEditNoticeModal(${item.id})" style="display:block; width:100%; text-align:left; padding:10px 14px; background:none; border:none; cursor:pointer; font-size:0.85rem; color:#333; border-bottom:1px solid #eee; transition:background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='none'">수정</button>
+                  <button onclick="deleteNotice(${item.id}, '${item.image_url || ''}')" style="display:block; width:100%; text-align:left; padding:10px 14px; background:none; border:none; cursor:pointer; font-size:0.85rem; color:#dc3545; transition:background 0.2s;" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'">삭제</button>
+                </div>
+              </div>
+          `;
+      }
+
+      const editedBadge = item.is_edited ? '<span style="font-size:0.75rem; color:#94a3b8; background:#f1f5f9; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:normal;">(수정됨)</span>' : '';
+
+      div.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                           <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                             <strong>${safeTitle}</strong>
+                             ${editedBadge}
+                             <span style="font-size:0.8rem;color:#6366f1;font-weight:700;margin-left:8px;">${writerTitle}</span>
+                             <span style="font-size:0.8rem;color:#888;">${safeWriter}</span>
+                           </div>
+                           ${adminBtns}
+                         </div>
+                         <div style="margin-top:0.4rem; padding-right:1rem; word-break:break-all;">${safeContent}</div>`;
+
+      if (item.image_url) {
+        div.innerHTML += `<br><img src="${item.image_url}" 
+                               style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem; cursor:pointer;"
+                               onclick="openImageModal('${item.image_url}')">`;
+      }
+      listEl.appendChild(div);
+    });
+  } catch (err) {
+    console.error('Notice load exception:', err);
+    if (listEl) listEl.innerHTML = `<div style="text-align:center; padding:2rem; color:#dc3545;">공지사항을 불러오는 중 오류가 발생했습니다.</div>`;
+  }
 }
+
 
 
 
@@ -348,13 +554,8 @@ async function loadTimetableWeek(grade, classNum) {
 
     for (const { dateStr, data } of results) {
       const dayBox = document.createElement('div');
-      dayBox.style.border = '1px solid #ccc';
-      dayBox.style.borderRadius = '8px';
-      dayBox.style.padding = '8px';
-      dayBox.style.background = '#fdfdfd';
-      dayBox.style.marginBottom = '10px';
+      dayBox.className = 'tt-card';
 
-      const title = document.createElement('h4');
       const dateObj = new Date(
         dateStr.slice(0, 4),
         parseInt(dateStr.slice(4, 6)) - 1,
@@ -363,35 +564,36 @@ async function loadTimetableWeek(grade, classNum) {
 
       const days = ['일', '월', '화', '수', '목', '금', '토'];
       const dayName = days[dateObj.getDay()];
+      const displayDate = `${dateStr.slice(4, 6)}/${dateStr.slice(6, 8)}`;
 
-      title.innerText = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)} (${dayName})`;
-
-      dayBox.appendChild(title);
+      const header = document.createElement('div');
+      header.className = 'tt-day';
+      header.innerHTML = `${dayName}요일 <small>${displayDate}</small>`;
+      dayBox.appendChild(header);
 
       if (data.misTimetable && data.misTimetable[1]) {
         const rows = data.misTimetable[1].row;
         const unique = {};
         rows.forEach(row => {
           const key = row.PERIO;
-          if (!unique[key]) {
-            unique[key] = row.ITRT_CNTNT;
-          }
+          if (!unique[key]) unique[key] = row.ITRT_CNTNT;
         });
 
         Object.keys(unique).sort((a, b) => parseInt(a) - parseInt(b)).forEach(perio => {
           const item = document.createElement('div');
-          item.innerHTML = `<strong>${perio}교시</strong> : ${unique[perio]}`;
+          item.className = 'tt-item';
+          item.innerHTML = `
+            <span class="tt-period">${perio}</span>
+            <span class="tt-subject">${unique[perio]}</span>
+          `;
           dayBox.appendChild(item);
         });
-
-      }
-
-      else {
-        const none = document.createElement('p');
-        none.innerText = '교육청 시간표 데이터 없음';
+      } else {
+        const none = document.createElement('div');
+        none.className = 'tt-empty';
+        none.innerText = '일정 없음';
         dayBox.appendChild(none);
       }
-
       container.appendChild(dayBox);
     }
   } catch (err) {
@@ -401,6 +603,7 @@ async function loadTimetableWeek(grade, classNum) {
 }
 
 async function submitHomework() {
+  const submitBtn = document.querySelector('#homework-panel button');
   const name = currentUserName;
   const studentNum = currentStudentNumber;
   const grade = currentGrade;
@@ -416,8 +619,10 @@ async function submitHomework() {
     return;
   }
 
+  showLoading();
+  if (submitBtn) submitBtn.disabled = true;
   statusEl.style.color = '#007bff';
-  statusEl.textContent = '⏳ 업로드 중입니다...';
+  statusEl.textContent = '⏳ 업로드 중...';
 
   const insertRecords = [];
 
@@ -425,12 +630,7 @@ async function submitHomework() {
     for (let i = 0; i < fileInput.files.length; i++) {
       const file = fileInput.files[i];
       const timestamp = Date.now();
-
-      const safeFileName = file.name
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^\w.-]/g, '_');
-
+      const safeFileName = file.name.replace(/[^\w.-]/g, '_');
       const fileName = `${studentNum}_${timestamp}_${i}_${safeFileName}`;
 
       const { error: uploadError } = await supabaseClient
@@ -438,25 +638,22 @@ async function submitHomework() {
         .from('homework-files')
         .upload(fileName, file);
 
-      if (uploadError) {
-        throw new Error(`❌ 파일 업로드 실패: ${safeFileName} - ${uploadError.message}`);
-      }
+      if (uploadError) throw uploadError;
 
       const { data: publicURLData } = supabaseClient
         .storage
         .from('homework-files')
         .getPublicUrl(fileName);
 
-      const fileURL = publicURLData.publicUrl;
-
       insertRecords.push({
         name,
+        username: localStorage.getItem('savedUsername'),
         student_number: studentNum,
         title,
         grade,
         class_num: classNum,
         comment,
-        file_url: fileURL,
+        file_url: publicURLData.publicUrl,
         share_scope: scope
       });
     }
@@ -465,104 +662,143 @@ async function submitHomework() {
       .from('homeworks')
       .insert(insertRecords);
 
-    if (insertError) {
-      throw new Error(`❌ DB 저장 실패: ${insertError.message}`);
-    }
+    if (insertError) throw insertError;
 
+    alert('업로드 완료!');
     statusEl.style.color = 'green';
     statusEl.textContent = `✅ 총 ${insertRecords.length}개 파일 업로드 완료!`;
 
     document.getElementById('homework-title').value = '';
     document.getElementById('homework-comment').value = '';
     document.getElementById('homework-file').value = '';
-
     loadMaterials();
-
   } catch (err) {
-    //console.error(err);
+    alert('업로드 실패: ' + err.message);
     statusEl.style.color = 'red';
-    statusEl.textContent = err.message || '업로드 중 오류 발생';
+    statusEl.textContent = '❌ 실패';
+  } finally {
+    hideLoading();
+    if (submitBtn) submitBtn.disabled = false;
   }
 }
 
 async function loadMaterials() {
   const listEl = document.getElementById('material-list');
-  listEl.innerHTML = '';
+  if (listEl) listEl.innerHTML = '<div style="text-align:center; padding:2rem; color:#6b7280;">자료를 불러오는 중...</div>';
 
-  const { data, error } = await supabaseClient
-    .from('homeworks')
-    .select('*')
-    .order('uploaded_at', { ascending: false });
+  try {
+    const { safeG, safeC } = getSafeGradeClass();
 
-  if (error) {
-    //console.error('❌ 자료 불러오기 오류:', error);
-    listEl.innerHTML = '<li>자료를 불러오는 중 오류가 발생했습니다.</li>';
-    return;
-  }
+    let query = supabaseClient.from('homeworks').select('*, users(equipped_title)');
 
-  const visible = (data || []).filter(canUserSeeMaterial);
+    if (currentUserRole !== 'admin') {
+      // 권한 필터: 전교(school/null/0), 같은 학년(grade), 또는 같은 반(class)
+      query = query.or(`share_scope.eq.school,grade.is.null,grade.eq.0,and(share_scope.eq.grade,grade.eq.${safeG}),and(share_scope.eq.class,grade.eq.${safeG},class_num.eq.${safeC})`);
+    }
 
-  if (!visible || visible.length === 0) {
-    listEl.innerHTML = '<li>내 공유 범위에 해당하는 자료가 없습니다.</li>';
-    return;
-  }
+    const { data, error } = await query.order('uploaded_at', { ascending: false }).limit(20);
 
-  visible.forEach(item => {
-    const titleLine = `📌 ${item.title} (${item.grade}학년 ${item.class_num}반 ${item.student_number}번 ${item.name})` +
-      ` <span style="font-size:.8rem;color:#6b7280;">· 범위: ${item.share_scope === 'class' ? '같은 반' :
-        item.share_scope === 'grade' ? '같은 학년' : '전교'
-      }</span>`;
+    if (error) {
+      console.error('Material loading error:', error);
+      if (listEl) listEl.innerHTML = `<li style="text-align:center; padding:2rem; color:#dc3545;">자료 로딩 실패: ${error.message}</li>`;
+      return;
+    }
 
-    const commentHtml = item.comment
-      ? `<p style="margin:6px 0;">💬 ${item.comment}</p>`
-      : '';
+    if (!listEl) return;
+    listEl.innerHTML = '';
 
-    const fileUrls = Array.isArray(item.file_url)
-      ? item.file_url
-      : (typeof item.file_url === 'string' && item.file_url.startsWith('['))
-        ? JSON.parse(item.file_url)
-        : [item.file_url];
+    if (!data || data.length === 0) {
+      listEl.innerHTML = '<li style="text-align:center; padding:2rem; color:#888;">표시할 자료가 없습니다.</li>';
+      return;
+    }
 
-    const fileHtmlArray = fileUrls.map(url => {
-      const filename = decodeURIComponent((url || '').split('/').pop() || '');
-      const isImage = (url || '').match(/\.(jpg|jpeg|png|gif|webp)$/i);
-      const imagePreview = isImage
-        ? `<img src="${url}" alt="${filename}"
-                  onclick="openImageModal('${url}')"
-                  style="max-width:120px; max-height:120px; border-radius:6px; cursor:pointer; margin-bottom:6px;" />`
+    data.forEach(item => {
+      const safeTitle = escapeHtml(item.title);
+      const writerTitle = item.users?.equipped_title ? `[${item.users.equipped_title.replace('[칭호]', '').trim()}] ` : '';
+      const safeName = escapeHtml(item.name);
+      const safeComment = escapeHtml(item.comment || '');
+
+      const titleLine = `📌 ${safeTitle} (<span style="color:#6366f1;font-weight:700;">${writerTitle}</span>${item.grade}학년 ${item.class_num}반 ${item.student_number}번 ${safeName})`;
+      const editedBadge = item.is_edited ? '<span style="font-size:0.75rem; color:#94a3b8; background:#f1f5f9; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:normal;">(수정됨)</span>' : '';
+      const scopeTag = `<span style="font-size:.8rem;color:#6b7280; margin-left:8px;">· 범위: ${item.share_scope === 'class' ? '같은 반' : item.share_scope === 'grade' ? '같은 학년' : '전교'}</span>`;
+
+      const currentUsername = localStorage.getItem('savedUsername');
+      const isOwner = (item.username === currentUsername) || (currentUserRole === 'admin');
+
+      let adminBtns = '';
+      if (isOwner) {
+        adminBtns = `
+            <div class="material-menu-container" style="position:relative; display:inline-block; flex-shrink:0;">
+                <button onclick="toggleMaterialMenu(${item.id})" style="background:none; border:none; font-size:1.2rem; cursor:pointer; padding:0 5px; color:#888; line-height:1;">⋮</button>
+                <div id="material-menu-${item.id}" class="material-menu-dropdown" style="display:none; position:absolute; right:0; top:100%; background:white; border:1px solid #ddd; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:100; min-width:90px; overflow:hidden;">
+                    <button onclick="openEditMaterialModal(${item.id})" style="display:block; width:100%; text-align:left; padding:10px 14px; background:none; border:none; cursor:pointer; font-size:0.85rem; color:#333; border-bottom:1px solid #eee; transition:background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='none'">수정</button>
+                    <button onclick="deleteMaterial(${item.id})" style="display:block; width:100%; text-align:left; padding:10px 14px; background:none; border:none; cursor:pointer; font-size:0.85rem; color:#dc3545; transition:background 0.2s;" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'">삭제</button>
+                </div>
+            </div>
+        `;
+      }
+
+      const commentHtml = safeComment
+        ? `<p style="margin:6px 0; color:#4b5563;">💬 ${safeComment.split('\n').join('<br>')}</p>`
         : '';
-      const downloadLink = `<a href="${url}" download="${filename}" target="_blank"
-                                    style="color:#007bff;text-decoration:none;font-weight:500;">
-                                    📥 파일 다운로드
-                                  </a>`;
-      return `${imagePreview}<br>${downloadLink}`;
+
+      const rawUrls = item.file_url;
+      let fileUrls = [];
+      if (Array.isArray(rawUrls)) {
+        fileUrls = rawUrls;
+      } else if (typeof rawUrls === 'string' && rawUrls.startsWith('[')) {
+        try { fileUrls = JSON.parse(rawUrls); } catch (e) { fileUrls = [rawUrls]; }
+      } else if (rawUrls) {
+        fileUrls = [rawUrls];
+      }
+
+      // 유효한 URL만 필터링 (null, undefined, 빈 문자열 제외)
+      fileUrls = fileUrls.filter(u => u && u !== '[]');
+
+      const fileHtmlArray = (fileUrls || []).map(url => {
+        if (!url) return '';
+        const filename = decodeURIComponent(url.split('/').pop() || '파일');
+        const isImage = (url.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+        const imagePreview = isImage
+          ? `<img src="${url}" alt="${escapeHtml(filename)}"
+                      onclick="openImageModal('${url}')"
+                      style="max-width:120px; max-height:120px; border-radius:6px; cursor:pointer; margin-bottom:6px; border:1px solid #e5e7eb;" />`
+          : '';
+        const downloadLink = `<a href="${url}" download="${escapeHtml(filename)}" target="_blank"
+                                        style="color:#007bff;text-decoration:none;font-weight:500; font-size:0.9rem;">
+                                        📥 ${escapeHtml(filename.length > 20 ? filename.slice(0, 17) + '...' : filename)}
+                                      </a>`;
+        return `<div style="margin-bottom:8px;">${imagePreview}${imagePreview ? '<br>' : ''}${downloadLink}</div>`;
+      });
+
+      const li = document.createElement('li');
+      li.style.listStyle = 'none';
+      li.style.borderBottom = '1px solid #e5e7eb';
+      li.style.padding = '16px 0';
+      li.innerHTML = `
+                <div style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:flex-start;">
+                  <div style="flex:1;">
+                    <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                      <div style="font-weight:bold; color:#1f2937;">${titleLine}</div>
+                      ${editedBadge}
+                    </div>
+                    ${scopeTag}
+                  </div>
+                  ${adminBtns}
+                </div>
+                ${commentHtml}
+                <div style="margin-top:10px;">${fileHtmlArray.join('')}</div>
+              `;
+      listEl.appendChild(li);
     });
-
-    const li = document.createElement('li');
-    li.style.borderBottom = '1px solid #ddd';
-    li.style.padding = '12px 0';
-    li.innerHTML = `
-            <div style="font-weight:bold; margin-bottom:6px;">${titleLine}</div>
-            ${commentHtml}
-            ${fileHtmlArray.join('<br><br>')}
-          `;
-    listEl.appendChild(li);
-  });
-}
-
-
-async function syncCoinBalance() {
-  const username = localStorage.getItem('savedUsername');
-  if (!username) return;
-  const { data, error } = await supabaseClient
-    .from('users')
-    .select('coin_balance')
-    .eq('username', username)
-    .single();
-  if (!error && data) {
-    currentUserCoin = data.coin_balance || 0;
+  } catch (err) {
+    console.error('Material load exception:', err);
+    if (listEl) listEl.innerHTML = `<li style="text-align:center; padding:2rem; color:#dc3545;">자료를 불러오는 중 오류가 발생했습니다.</li>`;
   }
 }
+
+
+
 
 async function checkFourEqualsTen() {
   const fb = document.getElementById('game-feedback');
@@ -582,18 +818,8 @@ async function checkFourEqualsTen() {
 
     if (ok) {
       fb.textContent = '🎉 정답입니다! (+10포인트 지급)';
-      const username = localStorage.getItem('savedUsername');
-      if (username) {
-        const { error } = await supabaseClient
-          .from('users')
-          .update({ coin_balance: currentUserCoin + 10 })
-          .eq('username', username);
-        if (!error) {
-          currentUserCoin += 10;
-          if (typeof displayCoinBalance === 'function') {
-            displayCoinBalance();
-          }
-        }
+      if (typeof window.rewardPoints === 'function') {
+        window.rewardPoints(10);
       }
     } else {
       fb.textContent = `😅 오답! 결과는 ${result} 입니다.`;
@@ -632,16 +858,65 @@ function showLogin() {
 }
 
 function showPanel(panelId) {
+  console.log(`Switching to panel: ${panelId}`);
+
+  // 퀘스트 진행 감지 (함수 시작 부분에서 미리 실행)
+  if (panelId === 'notice-panel') updateQuestProgress('check_notices');
+  if (panelId === 'homework-panel' || panelId === 'doc-panel') updateQuestProgress('visit_materials'); // 자료실 또는 수행등록 모두 방문으로 체크
+  if (panelId === 'timetable-panel') updateQuestProgress('check_timetable');
+  if (panelId === 'shop-panel') updateQuestProgress('visit_shop');
+  if (panelId === 'dashboard') updateQuestProgress('visit_dashboard');
+  if (panelId === 'minigame-panel') {
+    if (typeof window.checkDailyGameStatus === 'function') window.checkDailyGameStatus();
+  }
+
+  // 모든 패널 숨기기
   document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+
   const target = document.getElementById(panelId);
   if (target) {
     target.style.display = 'block';
+
+    // 📱 모바일 하단 네비게이션 활성 상태 동기화
+    updateBottomNav(panelId);
+
+    // 모바일 메뉴가 열려있다면 닫기
+    if (typeof closeMobileMenu === 'function') {
+      closeMobileMenu();
+    }
+
     if (panelId === 'shop-panel') {
-      loadShopItems();
-      loadCoinBalance();
+      if (typeof loadShopItems === 'function') loadShopItems();
+      if (typeof syncCoinBalance === 'function') window.syncCoinBalance();
     } else if (panelId === 'inventory-panel') {
       loadInventory();
+    } else if (panelId === 'notice-panel') {
+      if (typeof loadNotices === 'function') loadNotices();
+    } else if (panelId === 'homework-panel') {
+      if (typeof loadMaterials === 'function') loadMaterials();
+    } else if (panelId === 'dashboard') {
+      if (typeof initDashboardTop === 'function') initDashboardTop();
+    } else if (panelId === 'profile-panel') {
+      if (typeof loadOwnedCollection === 'function') loadOwnedCollection();
     }
+  }
+}
+
+/** 📱 하단 네비게이션 아이콘 강조 상태 업데이트 */
+function updateBottomNav(panelId) {
+  const mapping = {
+    'dashboard': 'nav-dash',
+    'notice-panel': 'nav-notice',
+    'minigame-panel': 'nav-game',
+    'shop-panel': 'nav-shop',
+    'profile-panel': 'nav-profile'
+  };
+
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  const activeId = mapping[panelId];
+  if (activeId) {
+    const el = document.getElementById(activeId);
+    if (el) el.classList.add('active');
   }
 }
 
@@ -1060,10 +1335,15 @@ function safeEval(expr) {
 }
 
 function exitMiniGame() {
-  const game = document.getElementById('fourEqualsTen-game');
-  if (game) game.style.display = 'none';
-  const panel = document.getElementById('minigame-panel');
-  if (panel) panel.style.display = 'block';
+  if (typeof window.stopAllGames === 'function') window.stopAllGames();
+
+  // 모든 패널 숨기기 및 미니게임 메인 복구
+  if (typeof showPanel === 'function') {
+    showPanel('minigame-panel');
+  }
+
+  // 세션 정리
+  window.miniGameSessionId = null;
 }
 // ✅ 교체용: 여러 게임을 처리하는 startGame
 async function startGame(gameType) {
@@ -1084,7 +1364,6 @@ async function startGame(gameType) {
         cost: 5,
         panelId: 'fourEqualsTen-game',
         launch() {
-          // 숫자 4개 생성/초기화 함수
           if (typeof generateFourNumbers === 'function') generateFourNumbers();
         }
       },
@@ -1092,7 +1371,6 @@ async function startGame(gameType) {
         cost: 5,
         panelId: 'mazeEscape-game',
         launch() {
-          // 예: <canvas id="maze-cv">가 panel 내부에 있다고 가정
           if (typeof window.initMazeGame === 'function') window.initMazeGame('maze-cv');
         }
       },
@@ -1100,7 +1378,6 @@ async function startGame(gameType) {
         cost: 5,
         panelId: 'fallingBlocks-game',
         launch() {
-          // 예: <canvas id="fall-cv">
           if (typeof window.initFallingBlocks === 'function') window.initFallingBlocks('fall-cv');
         }
       },
@@ -1108,7 +1385,6 @@ async function startGame(gameType) {
         cost: 5,
         panelId: 'reaction-game',
         launch() {
-          // 예: pad/start/label id가 패널 내부에 존재
           if (typeof window.initReactionGame === 'function') {
             window.initReactionGame({
               padId: 'rx-pad',
@@ -1119,12 +1395,53 @@ async function startGame(gameType) {
           }
         }
       },
+      mathPower: {
+        cost: 5,
+        panelId: 'mathPower-game',
+        launch() {
+          if (typeof window.initMathPowerGame === 'function') window.initMathPowerGame();
+        }
+      },
+      colorMatch: {
+        cost: 5,
+        panelId: 'colorMatch-game',
+        launch() {
+          if (typeof window.initColorMatchGame === 'function') window.initColorMatchGame();
+        }
+      },
+      numberMemory: {
+        cost: 5,
+        panelId: 'numberMemory-game',
+        launch() {
+          if (typeof window.initNumberMemoryGame === 'function') window.initNumberMemoryGame();
+        }
+      },
+      moleWhack: {
+        cost: 5,
+        panelId: 'moleWhack-game',
+        launch() {
+          if (typeof window.initMoleWhackGame === 'function') window.initMoleWhackGame();
+        }
+      },
+      snakeGame: {
+        cost: 5,
+        panelId: 'snakeGame-game',
+        launch() {
+          if (typeof window.initSnakeGame === 'function') window.initSnakeGame('snake-cv');
+        }
+      },
+      lightingQuiz: {
+        cost: 5,
+        panelId: 'lightingQuiz-game',
+        launch() {
+          if (typeof window.initLightingQuiz === 'function') window.initLightingQuiz();
+        }
+      },
       flappy: {
         cost: 5,
         panelId: 'flappy-game',
         launch() {
-          // 예: <div id="mini-flappy">
-          if (typeof window.initFlappyGame === 'function') window.initFlappyGame('mini-flappy', {});
+          if (typeof window.initFlappyGame === 'function') window.initFlappyGame();
         }
       }
     };
@@ -1135,53 +1452,76 @@ async function startGame(gameType) {
       return;
     }
 
-    // 잔액 동기화 (currentUserCoin 전역 사용 가정)
-    if (typeof syncCoinBalance === 'function') {
-      await syncCoinBalance();
-    }
+    // 잔액 동기화
+    if (typeof window.syncCoinBalance === 'function') await window.syncCoinBalance();
     const cost = Number(cfg.cost) || 0;
-    const current = Number(currentUserCoin || 0);
+    const current = Number(window.currentUserCoin || 0);
 
-    if (current < cost) {
-      alert(`포인트가 부족합니다. (보유: ${current}, 필요: ${cost})`);
-      return;
+    // 🛑 [보안] 세션 ID 생성
+    window.miniGameSessionId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    if (!window._rewardedSessions) window._rewardedSessions = new Set();
+
+    // 🛑 [일일 제한] 보상 획득 횟수 사전 체크 (KST 기준)
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const kstTodayStart = new Date(utc + (9 * 60 * 60 * 1000));
+    kstTodayStart.setHours(0, 0, 0, 0);
+    const utcTodayStart = new Date(kstTodayStart.getTime() - (9 * 60 * 60 * 1000));
+
+    const { count: rewardCount } = await supabaseClient
+      .from('user_activity_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('username', username)
+      .eq('action', 'game_reward')
+      .gte('created_at', utcTodayStart.toISOString());
+
+    // 모든 UI 카운터 동기화
+    document.querySelectorAll('.reward-count-val').forEach(el => {
+      el.innerText = rewardCount || 0;
+    });
+
+    if (rewardCount >= 10) {
+      if (!confirm('오늘 받을 수 있는 최대 보상(10회)을 모두 받으셨습니다. 더 이상 보상이 지급되지 않는데 게임을 시작하시겠습니까?')) {
+        return;
+      }
     }
 
     // 포인트 차감 (Supabase)
-    if (typeof supabaseClient === 'undefined') {
-      alert('supabaseClient가 설정되지 않았습니다.');
-      return;
+    const { error: deductErr } = await supabaseClient.rpc('increment_coin', {
+      u_name: username,
+      amount: -cost
+    });
+
+    if (deductErr) {
+      // RPC 없을 시 fallback
+      await supabaseClient.from('users').update({ coin_balance: current - cost }).eq('username', username);
     }
 
-    const { error } = await supabaseClient
-      .from('users')
-      .update({ coin_balance: current - cost })
-      .eq('username', username);
-
-    if (error) {
-      alert('포인트 차감 실패: ' + (error.message || error));
-      return;
-    }
+    // 로그 기록: 게임 시작
+    await supabaseClient.from('user_activity_logs').insert({
+      username: username,
+      action: 'game_start',
+      target: gameType,
+      target_type: 'game',
+      details: JSON.stringify({ cost, sessionId: window.miniGameSessionId })
+    });
 
     // 로컬 잔액 반영 + 표시 갱신
-    currentUserCoin = current - cost;
-    if (typeof displayCoinBalance === 'function') {
-      displayCoinBalance();
-    }
+    if (typeof window.syncCoinBalance === 'function') await window.syncCoinBalance();
 
-    // 패널 전환
-    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-    const panel = document.getElementById(cfg.panelId);
-    if (!panel) {
-      alert(`패널을 찾을 수 없습니다: #${cfg.panelId}`);
-      return;
+    // 패널 전환 (View-Swap 방식)
+    if (typeof showPanel === 'function') {
+      showPanel(cfg.panelId);
     }
-    panel.style.display = 'block';
 
     // 게임 런칭
     if (typeof cfg.launch === 'function') {
-      // 패널이 보이도록 만든 후 초기화(캔버스/레이아웃 크기 계산 이슈 방지)
       requestAnimationFrame(() => cfg.launch());
+    }
+
+    // 🎯 일일 퀘스트 업데이트
+    if (typeof updateQuestProgress === 'function') {
+      updateQuestProgress('play_game');
     }
   } catch (e) {
     //console.error(e);
@@ -1213,13 +1553,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function toggleMobileMenu() {
-  document.getElementById('mobile-side-menu').classList.toggle('open');
-  document.getElementById('mobile-overlay').classList.toggle('show');
+  const menu = document.getElementById('mobile-side-menu');
+  const overlay = document.getElementById('mobile-overlay');
+  if (menu) menu.classList.toggle('open');
+  if (overlay) overlay.classList.toggle('show');
 }
 
 function closeMobileMenu() {
-  document.getElementById('mobile-side-menu').classList.remove('open');
-  document.getElementById('mobile-overlay').classList.remove('show');
+  const menu = document.getElementById('mobile-side-menu');
+  const overlay = document.getElementById('mobile-overlay');
+  if (menu) menu.classList.remove('open');
+  if (overlay) overlay.classList.remove('show');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1265,7 +1609,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-let currentDate = new Date();
+window.currentDate = new Date();
 
 function formatYMD(date) {
   return date.toISOString().slice(0, 10).replace(/-/g, '');
@@ -1273,15 +1617,47 @@ function formatYMD(date) {
 
 function updateDateLabels() {
   const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
-  const dateStr = currentDate.toLocaleDateString('ko-KR', options);
-  document.getElementById('timetable-date-label').textContent = dateStr;
-  document.getElementById('meal-date-label').textContent = dateStr;
+  const dateStr = window.currentDate.toLocaleDateString('ko-KR', options);
+
+  const tLabel = document.getElementById('timetable-date-label');
+  const mLabel = document.getElementById('meal-date-label');
+  if (tLabel) tLabel.textContent = dateStr;
+  if (mLabel) mLabel.textContent = dateStr;
+
+  const ymd = `${window.currentDate.getFullYear()}-${String(window.currentDate.getMonth() + 1).padStart(2, '0')}-${String(window.currentDate.getDate()).padStart(2, '0')}`;
+
+  const pairs = [
+    { label: tLabel, picker: document.getElementById('timetableDatePicker') },
+    { label: mLabel, picker: document.getElementById('mealDatePicker') }
+  ];
+
+  pairs.forEach(({ label, picker }) => {
+    if (picker) {
+      if (picker.value !== ymd) picker.value = ymd;
+      if (label && !label.onclick) {
+        label.style.cursor = 'pointer';
+        label.title = '날짜 직접 선택하기';
+        label.onclick = () => {
+          if (typeof picker.showPicker === 'function') picker.showPicker();
+          else picker.click();
+        };
+      }
+    }
+  });
 }
 
 function changeDate(delta) {
-  currentDate.setDate(currentDate.getDate() + delta);
-  loadTimetable();
-  loadMeal();
+  if (delta === 0) {
+    window.currentDate = new Date();
+  } else {
+    window.currentDate.setDate(window.currentDate.getDate() + delta);
+  }
+  updateDateLabels();
+
+  const dateValue = `${window.currentDate.getFullYear()}-${String(window.currentDate.getMonth() + 1).padStart(2, '0')}-${String(window.currentDate.getDate()).padStart(2, '0')}`;
+
+  if (typeof loadTimetableDay === 'function') loadTimetableDay(dateValue);
+  if (typeof loadMeal === 'function') loadMeal(dateValue);
 }
 
 const fileInput = document.getElementById('homework-file');
@@ -1340,7 +1716,11 @@ function initDashboardTop() {
   const num = currentStudentNumber || localStorage.getItem('savedStudentNum') || 0;
   const grd = (currentGrade ?? parseInt(localStorage.getItem('savedGrade') || '0', 10)) || '-';
   const cls = (currentClassNum ?? parseInt(localStorage.getItem('savedClassNum') || '0', 10)) || '-';
-  if ($id('dash-name')) $id('dash-name').textContent = nm;
+  if ($id('dash-name')) {
+    const savedName = localStorage.getItem('savedName') || '학생';
+    const equippedTitle = localStorage.getItem('savedTitle') || '';
+    $id('dash-name').innerHTML = formatUserDisplayName({ name: savedName, equipped_title: equippedTitle });
+  }
   if ($id('dash-role')) {
     const savedRole = localStorage.getItem('savedRole') || 'user';
     $id('dash-role').textContent = savedRole === 'admin' ? '관리자' : '학생';
@@ -1351,6 +1731,12 @@ function initDashboardTop() {
 
   loadRecentNotices3();
   syncStatsAndRender();
+  initDailyQuests(); // 퀘스트 초기화 추가
+
+  // 📅 일정(캘린더) 초기화 추가
+  if (typeof renderScheduleCalendar === 'function') {
+    renderScheduleCalendar();
+  }
 }
 
 async function loadRecentNotices3() {
@@ -1358,91 +1744,203 @@ async function loadRecentNotices3() {
   if (!box) return;
   box.innerHTML = `<div class="notice-item"><div class="meta">불러오는 중…</div></div>`;
 
-  const g = Number(currentGrade);
-  const c = Number(currentClassNum);
+  try {
+    const { safeG, safeC } = getSafeGradeClass();
 
-  let q = supabaseClient.from('notices').select('*');
+    let q = supabaseClient.from('notices').select('*, users(equipped_title)');
 
-  if (currentUserRole === 'admin') {
-    // 0학년 admin → 전체 / N학년 M반 admin → 해당 반만
-    if (g !== 0) {
-      q = q.eq('grade', g).eq('class_num', c);
+    if (currentUserRole === 'admin') {
+      if (safeG !== 0) {
+        q = q.or(`grade.is.null,grade.eq.0,and(grade.eq.${safeG},class_num.eq.${safeC})`);
+      }
+    } else {
+      q = q.or(`grade.is.null,grade.eq.0,and(grade.eq.${safeG},class_num.eq.${safeC})`);
     }
-  } else {
-    // 비관리자 → 전체공지(grade=0) + 본인 반 공지
-    // (⚠️ 이전 코드에서 .neq('writer_role','admin') 때문에 대시보드에 안 떴을 수 있음 → 제거)
-    q = q.or(`grade.eq.0,and(grade.eq.${g},class_num.eq.${c})`);
-  }
 
-  const { data, error } = await q.order('id', { ascending: false }).limit(3);
+    const { data, error } = await q.order('id', { ascending: false }).limit(3);
 
-  if (error) {
-    box.innerHTML = `<div class="notice-item"><div class="meta">공지 불러오기 실패</div></div>`;
-    return;
-  }
-  if (!data || data.length === 0) {
-    box.innerHTML = `<div class="notice-item"><div class="meta">최근 공지가 없습니다.</div></div>`;
-    return;
-  }
+    if (error) {
+      console.error('Dash notice loading error:', error);
+      box.innerHTML = `<div class="notice-item"><div class="meta" style="color:#dc3545;">불러오기 실패: ${error.message}</div></div>`;
+      return;
+    }
 
-  box.innerHTML = '';
-  data.forEach(n => {
-    const preview = (n.content || '').replace(/\n/g, ' ').slice(0, 90);
-    const el = document.createElement('div');
-    el.className = 'notice-item';
-    el.innerHTML = `
-      <div class="title">${n.title || ''}</div>
-      <div class="meta">${n.writer || ''} · ${n.grade}학년 ${n.class_num}반</div>
-      <div class="meta" style="margin-top:4px">${preview}${(n.content || '').length > 90 ? '…' : ''}</div>`;
-    box.appendChild(el);
-  });
+    if (!data || data.length === 0) {
+      box.innerHTML = `<div class="notice-item"><div class="meta">최근 공지가 없습니다.</div></div>`;
+      return;
+    }
+
+    box.innerHTML = '';
+    data.forEach(n => {
+      const preview = (n.content || '').replace(/\n/g, ' ').slice(0, 60);
+      const el = document.createElement('div');
+      el.className = 'notice-item clickable'; // clickable 클래스 추가
+      el.style.cursor = 'pointer'; // 명시적으로 커서 변경
+      el.onclick = () => showPanel('notice-panel');
+
+      const writerTitle = n.users?.equipped_title ? `[${n.users.equipped_title.replace('[칭호]', '').trim()}] ` : '';
+
+      // 기획: 이미지가 있으면 우측에 크게 배치, 없으면 텍스트만 꽉 채움
+      const imgHtml = n.image_url
+        ? `<img src="${n.image_url}" class="notice-thumbnail-large" alt="thumbnail" onclick="openImageModal('${n.image_url}')">`
+        : '';
+
+      el.innerHTML = `
+        <div class="notice-item-inner" style="align-items: center;">
+          <div class="notice-item-text">
+            <div class="title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${n.title || ''}</div>
+            <div class="meta"><span style="color:#6366f1; font-weight:700;">${writerTitle}</span>${n.writer || ''} · ${n.grade}학년 ${n.class_num}반</div>
+            <div class="meta" style="margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${preview}${(n.content || '').length > 60 ? '…' : ''}</div>
+          </div>
+          ${imgHtml}
+        </div>`;
+      box.appendChild(el);
+    });
+  } catch (err) {
+    console.error('Dash notice load exception:', err);
+    if (box) box.innerHTML = `<div class="notice-item"><div class="meta" style="color:#dc3545;">오류 발생</div></div>`;
+  }
 }
+
 
 
 async function syncStatsAndRender() {
   try {
     const username = localStorage.getItem('savedUsername');
+    const NEED = 20;
+
     if (!username) {
-      renderStats({ level: 1, exp: 0, need: 20 });
+      renderStats({ level: 1, exp: 0, point: 0, need: NEED });
       return;
     }
 
     const { data, error } = await supabaseClient
       .from('users')
-      .select('level, exp, coin_balance')
+      .select('level, xp, coin_balance')
       .eq('username', username)
       .single();
 
-    const level = (data && Number.isInteger(data.level)) ? data.level : 1;
-    const exp = (data && Number.isInteger(data.exp)) ? data.exp : 0;
-    const need = 20;
+    if (error) throw error;
 
-    renderStats({ level, exp, need });
+    let level = Number.isFinite(+data?.level) ? +data.level : 1;
+    let exp = Number.isFinite(+data?.xp) ? +data.xp : 0;
+    let point = Number.isFinite(+data?.coin_balance) ? +data.coin_balance : 0;
+
+    // 🆙 레벨업 로직 (20 XP당 1레벨 + 10포인트 보너스)
+    if (exp >= NEED) {
+      const levelUps = Math.floor(exp / NEED);
+      level += levelUps;
+      exp = exp % NEED;
+      const bonus = levelUps * 10;
+      point += bonus;
+
+      // DB 즉시 반영
+      await supabaseClient
+        .from('users')
+        .update({ level, xp: exp, coin_balance: point })
+        .eq('username', username);
+
+      alert(`🎉 레벨 업! 현재 레벨: ${level}\n보너스로 ${bonus}포인트가 지급되었습니다!`);
+    }
+
+    renderStats({ level, exp, point, need: NEED });
   } catch (e) {
-    //console.warn(e);
-    renderStats({ level: 1, exp: 0, need: 20 });
+    console.warn('syncStatsAndRender error:', e);
+    renderStats({ level: 1, exp: 0, point: 0, need: 20 });
   }
 }
 
-async function afterLoginRefreshDashboard() {
-  initDashboardTop();
+/** 🎯 [이관] 일일 액션에 따른 랜덤 XP 보상 지급 (3~10 XP) */
+async function awardDailyXP(action) {
+  const username = localStorage.getItem('savedUsername');
+  if (!username) return;
+
+  try {
+    // 1. 한국 시간 기준 오늘 날짜 생성 (YYYY-MM-DD)
+    const seoulTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+    const today = seoulTime.toISOString().split('T')[0];
+
+    // 2. 오늘 해당 액션으로 보상을 받았는지 확인
+    const { data: existing, error: checkError } = await supabaseClient
+      .from('daily_xp_log_uname')
+      .select('id')
+      .eq('username', username)
+      .eq('action_type', action)
+      .eq('reward_date', today)
+      .maybeSingle();
+
+    if (checkError) {
+      console.warn('일일 보상 로그 조회 중 오류:', checkError);
+      return;
+    }
+
+    if (existing) {
+      console.log(`[XP Skip] '${action}' 보상을 오늘 이미 받았습니다.`);
+      return;
+    }
+
+    // 3. 로그 기록 시도 (동시성 방지를 위해 인서트 시도)
+    const { error: logError } = await supabaseClient
+      .from('daily_xp_log_uname')
+      .insert([{
+        username: username,
+        action_type: action,
+        reward_date: today
+      }]);
+
+    if (logError) {
+      // PK나 Unique 제약조건으로 인해 중복 발생 시 로그 에러 무시 (이미 지급됨)
+      console.log(`[XP Skip] 중복 거래 방지: ${logError.message}`);
+      return;
+    }
+
+    // 4. 랜덤 XP 생성 (3~10)
+    const inc = Math.floor(Math.random() * (10 - 3 + 1) + 3);
+
+    // 5. 현재 사용자 데이터 조회
+    const { data: user, error: userError } = await supabaseClient
+      .from('users')
+      .select('xp')
+      .eq('username', username)
+      .single();
+
+    if (userError || !user) return;
+
+    // 6. DB 업데이트 (XP만 더함. 레벨업은 syncStatsAndRender가 처리함)
+    const { error: updateError } = await supabaseClient
+      .from('users')
+      .update({ xp: (user.xp || 0) + inc })
+      .eq('username', username);
+
+    if (!updateError) {
+      console.log(`[XP Awarded] ${action}: +${inc} XP`);
+      // UI 갱신 및 레벨업 체크
+      syncStatsAndRender();
+    }
+
+  } catch (e) {
+    console.warn('awardDailyXP exception:', e);
+  }
 }
 
-document.addEventListener('DOMContentLoaded', initDashboardTop);
+document.addEventListener('DOMContentLoaded', syncStatsAndRender);
 
-function renderStats({ level, exp, need, point }) {
-  if ($id('lv-num')) $id('lv-num').textContent = level;
+function renderStats({ level, exp, point, need }) {
+  const levelBadge = document.getElementById('lv-num');
+  const expCur = document.getElementById('exp-cur');
+  const expNeed = document.getElementById('exp-need');
+  const fillBar = document.getElementById('lvl-fill');
+  const pointEl = document.getElementById('coin-balance');
+  const shopPointEl = document.getElementById('shop-coin-balance');
 
-  if ($id('coin-balance') && point !== undefined) {
-    $id('coin-balance').textContent = point;
-  }
+  if (levelBadge) levelBadge.textContent = level;
+  if (expCur) expCur.textContent = exp;
+  if (expNeed) expNeed.textContent = need;
+  if (pointEl && typeof point === 'number') pointEl.textContent = point;
+  if (shopPointEl && typeof point === 'number') shopPointEl.textContent = point;
 
-  const cur = Math.max(0, Math.min(exp, need));
-  const pct = need > 0 ? Math.round((cur / need) * 100) : 0;
-
-  if ($id('exp-cur')) $id('exp-cur').textContent = cur;
-  if ($id('exp-need')) $id('exp-need').textContent = need;
-  if ($id('lvl-fill')) $id('lvl-fill').style.width = pct + '%';
+  const pct = Math.max(0, Math.min(100, Math.round((exp / need) * 100)));
+  if (fillBar) fillBar.style.width = pct + '%';
 }
 
 
@@ -1609,14 +2107,22 @@ async function renderScheduleCalendar() {
         cellToSelect.classList.add('selected');
       }
     }
-
   } catch (e) {
-    //console.warn('달력 렌더 오류:', e);
-    grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 8px; color:#ef4444;">달력 데이터를 불러오지 못했습니다.</div>';
+    const grid = document.getElementById('sched-grid');
+    const detailTitle = document.getElementById('sched-detail-title');
+    const detailList = document.getElementById('sched-detail-list');
+    if (grid) grid.innerHTML = '<div style="grid-column: 1 / -1; padding: 8px; color:#ef4444;">달력 데이터를 불러오지 못했습니다.</div>';
     if (detailTitle) detailTitle.textContent = '날짜를 선택하세요';
     if (detailList) detailList.innerHTML = '';
   }
 }
+
+// 📅 일정(캘린더) 월 이동 전역 함수
+window.changeSchedMonth = function (delta) {
+  if (!schedRefDate) schedRefDate = new Date();
+  schedRefDate.setMonth(schedRefDate.getMonth() + delta);
+  renderScheduleCalendar();
+};
 
 function escapeHtml(s = '') {
   return String(s)
@@ -1644,11 +2150,7 @@ function bindScheduleUI() {
   };
 }
 
-async function afterLoginRefreshDashboard() {
-  initDashboardTop();
-  bindScheduleUI();
-  await renderScheduleCalendar();
-}
+// (Consolidated into global afterLoginRefreshDashboard)
 
 async function fetchSchoolEventsMonth(ref) {
 
@@ -1742,7 +2244,7 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
   const elBadge = document.getElementById('badge-day');
   const elList = document.getElementById('timetable');
   const elNotice = document.getElementById('notice');
-  const elPicker = document.getElementById('datePicker');
+  const elPicker = document.getElementById('mealDatePicker');
 
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -1792,9 +2294,9 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
     const sorted = Object.keys(byPeriod).map(Number).sort((a, b) => a - b);
 
     elList.innerHTML = sorted.map(p => `
-            <li style="display:flex;align-items:center;gap:10px;padding:10px 6px;border-top:1px dashed #e9ecef;">
-              <span style="width:58px;min-width:58px;text-align:center;font-weight:700;">${p}교시</span>
-              <span style="font-weight:600;">${byPeriod[p] || ''}</span>
+            <li>
+              <span class="period-badge">${p}</span>
+              <span class="subject-name">${byPeriod[p] || ''}</span>
             </li>
           `).join('');
 
@@ -1846,14 +2348,33 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
     }
   }
 
+  function handleDateChange(dateValue) {
+    if (!dateValue) return;
+
+    const parts = dateValue.split('-');
+    window.currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
+    loadTimetableDay(dateValue);
+
+    if (typeof loadMeal === 'function') loadMeal(dateValue);
+    if (typeof updateDateLabels === 'function') updateDateLabels();
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
-    if (elPicker) {
-      elPicker.value = toInput(seoulNow());
-      elPicker.addEventListener('change', (e) => loadTimetableDay(e.target.value));
-    }
-    loadTimetableDay(elPicker?.value);
+    const defaultDate = toInput(seoulNow());
+    ['timetableDatePicker', 'mealDatePicker'].forEach(id => {
+      const picker = document.getElementById(id);
+      if (picker) {
+        picker.value = defaultDate;
+        picker.addEventListener('change', (e) => handleDateChange(e.target.value));
+      }
+    });
+    loadTimetableDay(defaultDate);
+    if (typeof loadMeal === 'function') loadMeal(defaultDate);
+    if (typeof updateDateLabels === 'function') updateDateLabels();
   });
 
+  window.loadTimetableDay = loadTimetableDay;
   window.reloadTimetableCard = () => loadTimetableDay(elPicker?.value || undefined);
 })();
 
@@ -1884,11 +2405,14 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
         ? `💰 ${Number(u.coin_balance || 0)}`
         : `Lv ${Number(u.level || 1)} (XP ${Number(u.xp || 0)})`;
     const sub = `${u.grade ?? '-'}학년 ${u.class_num ?? '-'}반 · ${u.student_number ?? ''}번`;
+    const titleText = u.equipped_title ? `[${u.equipped_title.replace('[칭호]', '').trim()}] ` : '';
+    const nameWithTitle = `<span style="color:#6366f1; font-weight:700;">${titleText}</span>${escapeHtml(u.name || u.username || '학생')}`;
+
     return `
-            <li style="display:flex;align-items:center;gap:10px;padding:10px;border-top:1px dashed #e9ecef;">
+            <li class="rank-item">
               <div style="width:32px;text-align:center">${medal(rank)}</div>
               <div style="flex:1 1 auto;">
-                <div style="font-weight:700">${escapeHtml(u.name || u.username || '학생')}</div>
+                <div style="font-weight:700">${nameWithTitle}</div>
                 <div style="font-size:.85rem;color:#6b7280">${sub}</div>
               </div>
               <div style="font-weight:700">${right}</div>
@@ -1900,6 +2424,9 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
       metric === 'coin'
         ? `💰 ${Number(u.coin_balance || 0)}`
         : `Lv ${Number(u.level || 1)} (XP ${Number(u.xp || 0)})`;
+    const titleText = u.equipped_title ? `[${u.equipped_title.replace('[칭호]', '').trim()}] ` : '';
+    const nameWithTitle = `<span style="color:#6366f1; font-weight:700;">${titleText}</span>${escapeHtml(u.name || '나')}`;
+
     return `
             <div style="display:flex;align-items:center;gap:10px">
               <div style="font-weight:800">내 순위</div>
@@ -1908,7 +2435,7 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
             <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
               <div style="width:32px;text-align:center">${medal(rank)}</div>
               <div style="flex:1 1 auto;">
-                <div style="font-weight:700">${escapeHtml(u.name || '나')}</div>
+                <div style="font-weight:700">${nameWithTitle}</div>
                 <div style="font-size:.85rem;color:#6b7280">${u.grade ?? '-'}학년 ${u.class_num ?? '-'}반 · ${u.student_number ?? ''}번</div>
               </div>
               <div style="font-weight:700">${right}</div>
@@ -1944,7 +2471,7 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
 
     // ✅ 관리자 여부와 무관하게 항상 같은 기본 쿼리 사용
     let q = supabaseClient.from('users')
-      .select('username,name,grade,class_num,student_number,coin_balance,level,xp,role', { count: 'exact' })
+      .select('username,name,grade,class_num,student_number,coin_balance,level,xp,role,equipped_title', { count: 'exact' })
       .neq('role', 'admin'); // 랭킹에서 관리자 제외 (유지)
 
     // ✅ scope에만 따라 필터
@@ -2032,7 +2559,6 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
     box.innerHTML = `
             <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
               <strong>오늘 급식</strong>
-              <span style="color:#6b7280;font-size:.9rem">${dayLabel}</span>
             </div>
             ${types.map(type => `
               <div style="margin-bottom:8px;">
@@ -2065,90 +2591,11 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
     }
   }
 
-  document.addEventListener("DOMContentLoaded", () => loadMeal());
-  window.reloadMealCard = loadMeal;
-  document.addEventListener('DOMContentLoaded', () => {
-    const box = document.getElementById('meal-box');
-    if (!box) return;
-
-    // 1) 기존 #mealDatePicker가 있으면 재사용
-    let picker = document.getElementById('mealDatePicker');
-
-    // 2) 없으면 bar와 함께 새로 생성
-    if (!picker) {
-      const bar = document.createElement('div');
-      bar.id = 'mealDateBar';
-      bar.style.display = 'flex';
-      bar.style.gap = '8px';
-      bar.style.marginBottom = '8px';
-
-      picker = document.createElement('input');
-      picker.type = 'date';
-      picker.id = 'mealDatePicker';
-
-      bar.appendChild(picker);
-      box.parentNode.insertBefore(bar, box);
-    }
-
-    // 기본값: 서울 기준 오늘 (기존 값이 없을 때만 세팅)
-    const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    if (!picker.value) picker.value = ymd;
-
-    // 날짜 변경 시 해당 일자 급식 로드
-    picker.onchange = () => loadMeal(picker.value);
-  });
+  window.loadMeal = loadMeal;
 })();
 
 
-function renderStats({ level, exp, coin, need }) {
-  const levelBadge = document.getElementById('lv-num');
-  const expCur = document.getElementById('exp-cur');
-  const expNeed = document.getElementById('exp-need');
-  const fillBar = document.getElementById('lvl-fill');
-  const coinEl = document.getElementById('coin-balance');
-
-  if (levelBadge) levelBadge.textContent = level;
-  if (expCur) expCur.textContent = exp;
-  if (expNeed) expNeed.textContent = need;
-  if (expNeed) expNeed.textContent = need;
-  if (coinEl && typeof coin === 'number') coinEl.textContent = coin;
-
-  const shopCoinEl = document.getElementById('shop-coin-balance');
-  if (shopCoinEl && typeof coin === 'number') shopCoinEl.textContent = coin;
-
-  const pct = Math.max(0, Math.min(100, Math.round((exp / need) * 100)));
-  if (fillBar) fillBar.style.width = pct + '%';
-}
-
-async function syncStatsAndRender() {
-  try {
-    const username = localStorage.getItem('savedUsername');
-    const NEED = 20;
-
-    if (!username) {
-      renderStats({ level: 1, exp: 0, coin: 0, need: NEED });
-      return;
-    }
-
-    const { data, error } = await supabaseClient
-      .from('users')
-      .select('level, xp, coin_balance')
-      .eq('username', username)
-      .single();
-
-    if (error) throw error;
-
-    const level = Number.isFinite(+data?.level) ? +data.level : 1;
-    const exp = Number.isFinite(+data?.xp) ? +data.xp : 0;
-    const coin = Number.isFinite(+data?.coin_balance) ? +data.coin_balance : 0;
-
-    renderStats({ level, exp, coin, need: NEED });
-  } catch (e) {
-    console.warn('syncStatsAndRender error:', e);
-    renderStats({ level: 1, exp: 0, coin: 0, need: 20 });
-  }
-}
+// (Removed redundant syncStatsAndRender/renderStats definitions)
 
 window.addEventListener('DOMContentLoaded', () => {
   const savedName = localStorage.getItem('savedName');
@@ -2183,6 +2630,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   localStorage.setItem('savedGrade', user.grade);
   localStorage.setItem('savedClassNum', user.class_num);
 
+  await loadUserInfo(); // 프로필 및 장착 아이템 적용
   setUserInfoInput();
 
   await loadTimetableWeek(user.grade, user.class_num);
@@ -2207,6 +2655,79 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// 컬렉션 정보도 함께 갱신 (프로필 패널이 열려있을 수 있으므로)
+if (typeof loadOwnedCollection === 'function') loadOwnedCollection();
+
+// 간단한 애니메이션 효과 함수 (눈, 벚꽃)
+function startSnowEffect(canvas) {
+  const ctx = canvas.getContext('2d');
+  const particles = Array.from({ length: 50 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 3 + 1,
+    d: Math.random() * 1 + 0.5
+  }));
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.beginPath();
+    particles.forEach(p => {
+      ctx.moveTo(p.x, p.y);
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true);
+    });
+    ctx.fill();
+    update();
+  }
+  function update() {
+    particles.forEach(p => {
+      p.y += Math.pow(p.d, 2) + 1;
+      p.x += Math.sin(p.d);
+      if (p.y > canvas.height) { p.x = Math.random() * canvas.width; p.y = 0; }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function startCherryBlossomEffect(canvas) {
+  const ctx = canvas.getContext('2d');
+  const particles = Array.from({ length: 40 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    s: Math.random() * 1 + 0.5,
+    r: Math.random() * 360,
+    d: Math.random() * 1 + 0.5
+  }));
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.r * Math.PI / 180);
+      ctx.fillStyle = 'rgba(255, 183, 197, 0.8)';
+      ctx.beginPath();
+      // 벚꽃잎 모양
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-10 * p.s, -10 * p.s, -10 * p.s, 10 * p.s, 0, 15 * p.s);
+      ctx.bezierCurveTo(10 * p.s, 10 * p.s, 10 * p.s, -10 * p.s, 0, 0);
+      ctx.fill();
+      ctx.restore();
+    });
+    update();
+  }
+  function update() {
+    particles.forEach(p => {
+      p.y += p.d;
+      p.x += Math.sin(p.r) * 2;
+      p.r += 1;
+      if (p.y > canvas.height) { p.y = -20; p.x = Math.random() * canvas.width; }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
 /** 🔑 임시(비권장): 브라우저에 하드코딩 */
 
 
@@ -2649,6 +3170,32 @@ window.registerAnalyzedText = async function () {
       alert('DB 저장 실패: ' + (error.message || '알 수 없는 오류'));
       return;
     }
+
+    // 🎯 [이관] 수행 평가 등록 시 공지사항으로 자동 복사 (copy_analyzed_docs_to_notices)
+    try {
+      const noticeContent = `[과목] ${subject}\n[평가 날짜] ${date}\n[교시] ${val('af-period')}교시\n[평가 주제] ${topic}`;
+      const { error: syncError } = await supabaseClient
+        .from('notices')
+        .insert([{
+          title: subject + ' 수행',
+          content: noticeContent,
+          image_url: imageUrl,
+          writer: payload.name,
+          username: payload.username,
+          writer_role: 'student',
+          grade: payload.grade,
+          class_num: payload.class_num,
+          date: date
+        }]);
+
+      if (syncError) console.warn('공지사항 동기화 실패:', syncError);
+    } catch (errSync) {
+      console.warn('공지사항 동기화 중 오류:', errSync);
+    }
+
+    // 🎯 [이관] 일일 XP 보상 지급 (수행 평가 등록 시)
+    await awardDailyXP('perform');
+
     alert('등록 완료!');
   } catch (e) {
     console.error(e);
@@ -2670,32 +3217,20 @@ function setupStudentPanel() {
 }
 
 async function loadUserFromDashboardValues() {
-  // ✅ 대시보드에 표시된 값 읽기
-  const name = document.getElementById("dash-name")?.textContent?.trim();
-  const grade = parseInt(document.getElementById("dash-grade")?.textContent?.trim());
-  const classNum = parseInt(document.getElementById("dash-class")?.textContent?.trim());
-  const studentNum = parseInt(document.getElementById("dash-num")?.textContent?.trim());
-
-  console.log("📥 대시보드 값:", { name, grade, classNum, studentNum });
-
-  // ✅ 유효성 검사
-  if (!name || isNaN(grade) || isNaN(classNum) || isNaN(studentNum)) {
-    console.warn("⚠️ 대시보드 정보가 올바르지 않습니다.");
+  const username = localStorage.getItem('savedUsername');
+  if (!username) {
+    console.warn("⚠️ 저장된 사용자 정보가 없습니다.");
     return;
   }
 
-  console.log("🔍 Supabase 쿼리 실행 중...");
+  console.log("🔍 Supabase 쿼리 실행 중 (사용자 정보 채우기)...");
 
   // ✅ Supabase에서 사용자 찾기
   const { data, error } = await supabaseClient
     .from('users')
     .select('*')
-    .eq('name', name)
-    .eq('grade', grade)
-    .eq('class_num', classNum)
-    .eq('student_number', studentNum)
-    .limit(1)
-    .maybeSingle(); // 여러 명 방지 + null 처리 안전하게
+    .eq('username', username)
+    .maybeSingle();
 
   if (error) {
     console.error("❌ 쿼리 에러:", error);
@@ -2990,46 +3525,82 @@ async function loadShopItems() {
   // 이미 구매한 아이템 필터링 제거 (모두 보여주되 버튼만 비활성화)
   // const visibleItems = data.filter(item => !myItemIds.includes(item.id));
 
+  // 2. 보유 수량 집계 및 정렬
+  // item_id별 보유 갯수 계산
+  const myItemCounts = {};
+  myItemIds.forEach(id => {
+    myItemCounts[id] = (myItemCounts[id] || 0) + 1;
+  });
+
+  // 정렬: 보유 안 한 것 우선 (stock 여유 있는 것 우선) -> 가격순
+  data.sort((a, b) => {
+    const aLimit = a.stock || 1;
+    const bLimit = b.stock || 1;
+    const aOwned = myItemCounts[a.id] || 0;
+    const bOwned = myItemCounts[b.id] || 0;
+    const aFull = aOwned >= aLimit;
+    const bFull = bOwned >= bLimit;
+
+    if (aFull !== bFull) return aFull ? 1 : -1;
+    return a.price - b.price;
+  });
+
   listEl.innerHTML = '';
   data.forEach(item => {
-    const isOwned = myItemIds.includes(item.id);
+    const limit = item.stock || 1;
+    const ownedCount = myItemCounts[item.id] || 0;
+    const isFull = ownedCount >= limit;
 
     const itemEl = document.createElement('div');
     itemEl.className = 'shop-item';
-    itemEl.style.border = '1px solid #eee';
-    itemEl.style.borderRadius = '8px';
-    itemEl.style.padding = '1rem';
-    itemEl.style.textAlign = 'center';
-    itemEl.style.background = '#fff';
-    if (isOwned) {
-      itemEl.style.opacity = '0.7';
-      itemEl.style.background = '#f8f9fa';
+    if (isFull) {
+      itemEl.classList.add('owned');
     }
 
-    // 이미지
+    // 프리뷰 (이미지 또는 아이콘)
+    let previewHtml = '';
     if (item.image_url) {
-      itemEl.innerHTML += `<img src="${item.image_url}" alt="${item.name}" style="width:80px;height:80px;object-fit:cover;margin-bottom:0.5rem;border-radius:4px;filter:${isOwned ? 'grayscale(100%)' : 'none'}">`;
+      previewHtml = `<div class="shop-preview" style="background-image: url('${item.image_url}');"></div>`;
     } else {
-      itemEl.innerHTML += `<div style="width:80px;height:80px;background:#f1f3f5;margin:0 auto 0.5rem;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:2rem;filter:${isOwned ? 'grayscale(100%)' : 'none'}">🎁</div>`;
+      const icon = item.name.includes('캐릭터') ? '👤' : '🎁';
+      previewHtml = `<div class="shop-preview"><span style="font-size: 2.3rem;">${icon}</span></div>`;
     }
 
-    // 버튼 HTML 생성
+    // 버튼 및 재고 정보 HTML 생성
     let btnHtml = '';
-    if (isOwned) {
-      btnHtml = `<button disabled style="
-        background:#6c757d;color:white;border:none;padding:0.4rem 1rem;border-radius:4px;cursor:not-allowed;font-size:0.9rem;
-      ">보유중</button>`;
-    } else {
-      btnHtml = `<button class="btn-buy" style="
-        background:#007bff;color:white;border:none;padding:0.4rem 1rem;border-radius:4px;cursor:pointer;font-size:0.9rem;
-      " onclick="buyItem(${item.id}, ${item.price}, '${item.name}')">구매하기</button>`;
+    let stockHtml = '';
+
+    if (limit > 1) {
+      const percent = Math.max(0, Math.min(100, ((limit - ownedCount) / limit) * 100));
+      stockHtml = `
+        <div class="stock-container">
+          <div class="stock-header">
+            <span>남은 수량</span>
+            <span>${limit - ownedCount}/${limit}</span>
+          </div>
+          <div class="stock-bar-bg">
+            <div class="stock-bar-fill" style="width: ${percent}%;"></div>
+          </div>
+        </div>
+      `;
     }
 
-    // 정보
-    itemEl.innerHTML += `
-      <h4 style="margin:0.5rem 0;font-size:1rem;">${item.name}</h4>
-      <p style="color:#666;font-size:0.9rem;margin-bottom:0.5rem;">${item.description || ''}</p>
-      <div style="font-weight:bold;color:${isOwned ? '#6c757d' : '#ff9800'};margin-bottom:0.8rem;">💰 ${item.price} P</div>
+    if (isFull) {
+      btnHtml = `<button class="btn-equipped" disabled>보유 중</button>`;
+    } else {
+      const safeName = (item.name || '이름 없음').replace(/'/g, "\\'");
+      btnHtml = `<button class="btn-buy" onclick="buyItem(${item.id}, ${item.price}, '${safeName}')">구매하기</button>`;
+    }
+
+    // 카드 내부 구성
+    itemEl.innerHTML = `
+      ${previewHtml}
+      <div class="shop-info">
+        <h4>${item.name}</h4>
+        <p class="description">${item.description || '특별한 아이템입니다.'}</p>
+        ${stockHtml}
+        <div class="price-tag">💰 ${item.price.toLocaleString()} P</div>
+      </div>
       ${btnHtml}
     `;
 
@@ -3038,9 +3609,22 @@ async function loadShopItems() {
 }
 
 // ✅ EduBoard 인벤토리 전체 로직 (Supabase 연동 포함)
+let currentInventoryFilter = 'all';
+
+window.filterInventory = function (category) {
+  currentInventoryFilter = category;
+
+  // 버튼 활성화 상태 변경
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent === (category === 'all' ? '전체' : (category === '소비' ? '소비/아이템' : category)));
+  });
+
+  loadInventory();
+};
 
 async function loadInventory() {
   const listEl = document.getElementById('inventory-list');
+  const characterListEl = document.getElementById('character-list');
   if (!listEl) return;
 
   const username = localStorage.getItem('savedUsername');
@@ -3050,12 +3634,31 @@ async function loadInventory() {
   }
 
   listEl.innerHTML = '<p>인벤토리 불러오는 중...</p>';
+  if (characterListEl) characterListEl.innerHTML = '<p>불러오는 중...</p>';
 
   const { data, error } = await supabaseClient
     .from('inventory')
     .select('*')
     .eq('username', username)
     .order('purchased_at', { ascending: false });
+
+  // 1-1. 현재 장착 중인 아이템 정보 가져오기
+  const { data: userData, error: userError } = await supabaseClient
+    .from('users')
+    .select('equipped_title, equipped_border, equipped_effect, equipped_color, avatar_url')
+    .eq('username', username)
+    .maybeSingle();
+
+  // 1-2. 원본 상점 아이템 정보 가져오기 (이미지 및 카테고리 등)
+  const { data: shopItems, error: shopError } = await supabaseClient
+    .from('shop_items')
+    .select('id, image_url');
+
+  const getShopImage = (itemId) => {
+    if (!shopItems) return '';
+    const found = shopItems.find(s => s.id === itemId);
+    return found ? found.image_url : '';
+  };
 
   if (error) {
     console.warn('인벤토리 로드 실패:', error);
@@ -3065,33 +3668,504 @@ async function loadInventory() {
 
   if (!data || data.length === 0) {
     listEl.innerHTML = '<p>보유한 아이템이 없습니다.</p>';
+    if (characterListEl) characterListEl.innerHTML = '<p>보유한 캐릭터가 없습니다.</p>';
     return;
   }
 
   listEl.innerHTML = '';
-  data.forEach(item => {
+  if (characterListEl) characterListEl.innerHTML = '';
+
+  const equippedItems = [
+    userData?.equipped_title,
+    userData?.equipped_border,
+    userData?.equipped_effect,
+    userData?.equipped_color,
+  ].filter(Boolean); // avatar_url 제외 (이름과 형식이 다름)
+
+  const currentAvatarUrl = userData?.avatar_url || '';
+
+  // 1-3. 데이터 가공 (장착 여부 미리 계산 및 필터링)
+  let itemsToRender = data.map(item => {
+    const imgUrl = getShopImage(item.item_id) || '';
+    const itemName = item.item_name || '이름 없음';
+
+    const isEquippedUrl = currentAvatarUrl && imgUrl && currentAvatarUrl === imgUrl;
+    const isEquippedName = equippedItems.includes(itemName) || (currentAvatarUrl === itemName);
+    const isEquipped = isEquippedUrl || isEquippedName;
+
+    return { ...item, imgUrl, itemName, isEquipped };
+  });
+
+  // 필터링 적용
+  if (currentInventoryFilter !== 'all') {
+    if (currentInventoryFilter === '소비') {
+      // '소비/아이템' 선택 시: 칭호, 캐릭터, 꾸미기, 컬러가 포함되지 않은 모든 아이템 + '소비' 포함 아이템
+      itemsToRender = itemsToRender.filter(item => {
+        const name = item.itemName;
+        const isMajorCategory = name.includes('[칭호]') || name.includes('[캐릭터]') || name.includes('[꾸미기]') || name.includes('컬러');
+        return !isMajorCategory || name.includes('소비');
+      });
+    } else {
+      itemsToRender = itemsToRender.filter(item => item.itemName.includes(currentInventoryFilter));
+    }
+  }
+
+  // 정렬 적용: 장착 중인 아이템이 무조건 맨 위로
+  itemsToRender.sort((a, b) => {
+    if (a.isEquipped !== b.isEquipped) return a.isEquipped ? -1 : 1;
+    return new Date(b.purchased_at) - new Date(a.purchased_at); // 나머지는 최신순
+  });
+
+  if (itemsToRender.length === 0) {
+    listEl.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:#888; padding:40px;">'${currentInventoryFilter}' 카테고리에 해당하는 아이템이 없습니다.</p>`;
+    return;
+  }
+
+  itemsToRender.forEach(item => {
+    // 1. 일반 인벤토리 표시 (디자인 통일)
     const itemEl = document.createElement('div');
-    itemEl.style.border = '1px solid #eee';
-    itemEl.style.borderRadius = '8px';
-    itemEl.style.padding = '1rem';
-    itemEl.style.textAlign = 'center';
-    itemEl.style.background = '#fff';
+    itemEl.className = 'shop-item'; // 상점 디자인 클래스 공유
+    itemEl.style.position = 'relative';
 
-    // 아이콘 (임시)
-    itemEl.innerHTML += `<div style="width:60px;height:60px;background:#f8f9fa;margin:0 auto 0.5rem;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:1.5rem;">🎒</div>`;
+    const itemName = item.itemName;
+    const safeItemName = itemName.replace(/'/g, "\\'");
+    const imgUrl = item.imgUrl;
+    const isEquipped = item.isEquipped;
 
-    itemEl.innerHTML += `
-      <h4 style="margin:0.5rem 0;font-size:1rem;">${item.item_name}</h4>
-      <p style="color:#888;font-size:0.8rem;">구매일: ${new Date(item.purchased_at).toLocaleDateString()}</p>
+    let btnHtml = '';
+
+    // 단순 권한/일회성 혹은 장착 불가 아이템 식별
+    const isEquipable = itemName.includes('[칭호]') ||
+      itemName.includes('[꾸미기]') ||
+      itemName.includes('[캐릭터]') ||
+      itemName.includes('컬러');
+
+    if (isEquipable) {
+      if (isEquipped) {
+        btnHtml = `<button class="btn-equipped" onclick="useItem(${item.id}, '${safeItemName}', true, '${imgUrl}')" style="background:#6c757d; cursor:pointer;">장착 해제</button>`;
+        itemEl.style.border = '2px solid #4f46e5'; // 장착 중인 아이템 강조
+      } else {
+        btnHtml = `<button class="btn-buy" onclick="useItem(${item.id}, '${safeItemName}', false, '${imgUrl}')">장착하기</button>`;
+      }
+    } else {
+      btnHtml = `<button class="btn-buy" onclick="useItem(${item.id}, '${safeItemName}', false, '${imgUrl}')" style="background:#10b981;">사용하기</button>`;
+    }
+
+    let previewIconHtml = '';
+    if (imgUrl) {
+      previewIconHtml = `<div class="shop-preview" style="background-image: url('${imgUrl}'); background-size: contain; background-repeat: no-repeat;"></div>`;
+    } else {
+      const icon = isEquipable ? '✨' : '🎒';
+      previewIconHtml = `<div class="shop-preview"><span style="font-size: 2.3rem;">${icon}</span></div>`;
+    }
+
+    itemEl.innerHTML = `
+      ${previewIconHtml}
+      <div class="shop-info">
+        <h4>${itemName}</h4>
+        <p class="description" style="font-size:0.8rem; color:#64748b; margin-top:4px;">구매일: ${new Date(item.purchased_at).toLocaleDateString()}</p>
+      </div>
+      ${btnHtml}
+    `;
+    listEl.appendChild(itemEl);
+
+    // 2. 캐릭터 리스트 표시 (캐릭터 아이템인 경우만)
+    if (characterListEl && itemName.includes('캐릭터')) {
+      const charEl = document.createElement('div');
+      charEl.className = 'character-item';
+      charEl.style.minWidth = '100px';
+      charEl.style.padding = '10px';
+      charEl.style.border = '2px solid #eee';
+      charEl.style.borderRadius = '10px';
+      charEl.style.textAlign = 'center';
+      charEl.style.cursor = 'pointer';
+
+      let charPreview = `<div style="font-size:2rem; margin-bottom:5px;">👤</div>`;
+      if (imgUrl) {
+        charPreview = `<img src="${imgUrl}" style="width:50px; height:50px; object-fit:contain; margin-bottom:5px;" />`;
+      }
+
+      charEl.innerHTML = `
+        ${charPreview}
+        <div style="font-weight:600; font-size:0.85rem;">${item.item_name}</div>
+      `;
+      charEl.onclick = () => selectCharacter(item.item_name, imgUrl);
+      characterListEl.appendChild(charEl);
+    }
+  });
+
+  // 캐릭터 리스트가 비어있으면 안내 문구
+  if (characterListEl && characterListEl.children.length === 0) {
+    characterListEl.innerHTML = '<p style="color:#888;font-size:0.9rem;">사용 가능한 캐릭터가 없습니다. 상점에서 구매해 보세요!</p>';
+  }
+}
+
+// ✅ 아이템 장착/사용 함수
+window.useItem = async function (id, itemName, currentStatus = false, imageUrl = '') {
+  const username = localStorage.getItem('savedUsername');
+  if (!username) return;
+
+  if (itemName.includes('캐릭터')) {
+    await selectCharacter(itemName, imageUrl);
+    return;
+  }
+
+  // 장착형 아이템인지 분류
+  let updateData = {};
+
+  // 현재 유저의 장착 정보를 가져옴
+  const { data: userData, error: userError } = await supabaseClient
+    .from('users')
+    .select('equipped_title, equipped_border, equipped_effect, equipped_color')
+    .eq('username', username)
+    .maybeSingle();
+
+  if (userError) {
+    console.error('유저 정보 로드 실패:', userError);
+    alert('현재 장착 정보를 가져오는 데 실패했습니다.');
+    return;
+  }
+
+  let existingEquippedItem = null;
+  if (itemName.includes('[칭호]')) {
+    existingEquippedItem = userData?.equipped_title;
+  } else if (itemName.includes('테두리')) {
+    existingEquippedItem = userData?.equipped_border;
+  } else if (itemName.includes('효과')) {
+    existingEquippedItem = userData?.equipped_effect;
+  } else if (itemName.includes('컬러')) {
+    existingEquippedItem = userData?.equipped_color;
+  }
+
+  // 칭호 해제 전용 (none) 케이스 처리
+  if (id === 'none' && itemName === 'none') {
+    const { error: unequipErr } = await supabaseClient
+      .from('users')
+      .update({ equipped_title: null })
+      .eq('username', username);
+
+    if (!unequipErr) {
+      alert('✅ 칭호가 해제되었습니다.');
+      await loadUserInfo();
+      await loadInventory();
+    } else {
+      alert('칭호 해제 중 오류가 발생했습니다: ' + unequipErr.message);
+    }
+    return;
+  }
+
+  const isEquipped = existingEquippedItem && existingEquippedItem === itemName;
+  const actionText = isEquipped ? '해제' : '장착';
+
+  if (itemName.includes('[칭호]')) {
+    updateData = { equipped_title: isEquipped ? null : itemName };
+  } else if (itemName.includes('테두리')) {
+    updateData = { equipped_border: isEquipped ? null : itemName };
+  } else if (itemName.includes('효과')) {
+    updateData = { equipped_effect: isEquipped ? null : itemName };
+  } else if (itemName.includes('컬러')) {
+    updateData = { equipped_color: isEquipped ? null : itemName };
+  } else {
+    // 단순 1회용 소비 아이템 (확성기, 버프 등)
+    if (confirm(`'${itemName}'을(를) 사용하시겠습니까? (1회용 아이템은 즉시 소모됩니다)`)) {
+
+      let luckyBoxReward = null;
+
+      // 실제 아이템 효과 처리
+      if (itemName.includes('확성기')) {
+        const msg = prompt('전체 공지사항에 띄울 메시지를 입력하세요:');
+        if (!msg) return;
+        // 나중에 DB notices 테이블이나 실시간 채널 활용 가능
+        alert(`[확성기 발송] ${msg}`);
+      } else if (itemName.includes('경험치 2배')) {
+        // 로컬스토리지나 서버에 버프 만료 시간 기록 가능
+        localStorage.setItem('xp_buff_end', Date.now() + 60 * 60 * 1000);
+        alert('🎉 1시간 동안 획득하는 경험치가 2배가 됩니다!');
+      } else if (itemName.includes('럭키박스')) {
+        // 랜덤 보상 로직
+        const r = Math.random();
+        if (r < 0.4) {
+          luckyBoxReward = { type: 'coin', val: 50000, name: '50,000 P' };
+        } else if (r < 0.7) {
+          luckyBoxReward = { type: 'coin', val: 100000, name: '100,000 P' };
+        } else if (r < 0.9) {
+          luckyBoxReward = { type: 'exp', val: 500, name: '경험치 500' };
+        } else {
+          luckyBoxReward = { type: 'coin', val: 500000, name: '초특급 500,000 P' };
+        }
+
+        alert(`🎁 [럭키박스 당첨] 축하합니다!\n\n${luckyBoxReward.name}을(를) 획득하셨습니다!`);
+
+        if (luckyBoxReward.type === 'coin') {
+          const { error: coinErr } = await supabaseClient.rpc('increment_coin', { x: luckyBoxReward.val, target_user_id: localStorage.getItem('savedUserId') });
+        } else if (luckyBoxReward.type === 'exp') {
+          // 🆙 XP 즉시 추가 및 동기화
+          const { data: uData } = await supabaseClient.from('users').select('xp').eq('username', username).single();
+          const currentXp = Number.isFinite(uData?.xp) ? uData.xp : 0;
+          await supabaseClient.from('users').update({ xp: currentXp + luckyBoxReward.val }).eq('username', username);
+          await syncStatsAndRender();
+        }
+
+        // 🎉 대박 당첨 시 효과 (50만P 또는 경험치 500)
+        if (luckyBoxReward.val >= 500000 || luckyBoxReward.val >= 500) {
+          triggerCelebration();
+        }
+      } else {
+        alert(`'${itemName}' 사용 완료! 효과가 성공적으로 적용되었습니다.`);
+      }
+
+      // 인벤토리에서 아이템 1개 삭제 (소모)
+      await supabaseClient
+        .from('inventory')
+        .delete()
+        .eq('id', id);
+
+      if (window.logActivity) {
+        window.logActivity('item_consume', itemName, 'item', { item_id: id });
+      }
+
+      await loadInventory();
+      await syncStatsAndRender(); // 코인/XP 소모 후 스탯 동기화
+      return;
+    }
+    return;
+  }
+
+  // 장착 처리 확인창 (해제일 때는 묻지 않고 바로 해제)
+  if (!isEquipped && !confirm(`'${itemName}'을(를) ${actionText}하시겠습니까?`)) {
+    return;
+  }
+
+  // DB 업데이트
+  const { error } = await supabaseClient
+    .from('users')
+    .update(updateData)
+    .eq('username', username);
+
+  if (error) {
+    alert(`${actionText} 중 오류가 발생했습니다: ` + error.message);
+    return;
+  }
+
+  // 📝 로그 기록
+  if (window.logActivity) {
+    window.logActivity(isEquipped ? 'item_unequip' : 'item_equip', itemName, 'item', { item_id: id });
+  }
+
+  alert(`✅ '${itemName}' ${actionText} 완료!`);
+
+  // 성공 시 프로필과 UI 바로 새로고침
+  await loadUserInfo();
+  await loadInventory();
+}
+
+// ✅ 캐릭터 선택 함수
+window.selectCharacter = async function (charName, imgUrl = '') {
+  const username = localStorage.getItem('savedUsername');
+  if (!username) return;
+
+  const isNone = charName === 'none' || charName === '';
+  const actionText = isNone ? '해제' : '설정';
+
+  if (!confirm(`'${isNone ? '캐릭터' : charName}'을(를) ${actionText}하시겠습니까?`)) return;
+
+  const statusEl = document.getElementById('collection-status');
+  if (statusEl) statusEl.textContent = `⏳ ${actionText} 중...`;
+
+  const finalAvatar = isNone ? '' : (imgUrl || charName);
+
+  const { error } = await supabaseClient
+    .from('users')
+    .update({ avatar_url: finalAvatar })
+    .eq('username', username);
+
+  if (error) {
+    if (statusEl) statusEl.textContent = `❌ ${actionText} 실패: ` + error.message;
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = `✅ ${isNone ? '캐릭터 해제' : `'${charName}' 캐릭터로 설정`}되었습니다!`;
+
+  // 📝 로그 기록
+  if (window.logActivity) {
+    window.logActivity(isNone ? 'avatar_remove' : 'avatar_change', charName, 'item');
+  }
+
+  if (typeof loadUserInfo === 'function') await loadUserInfo();
+}
+
+/** 🎒 소유한 캐릭터 및 칭호 컬렉션 로드 (프로필 패널용) */
+const DEFAULT_CHARACTERS = [
+  { id: 'def_char_boy', item_name: '[캐릭터] 기본 학생 (남)', imgUrl: 'img/penguin.png' }, // 실제 있는 펭귄으로 대체 혹은 기본 아이콘
+  { id: 'def_char_girl', item_name: '[캐릭터] 기본 학생 (여)', imgUrl: 'img/rabbit.png' }  // 토끼로 대체
+];
+
+/** 🎒 소유한 캐릭터 및 칭호 컬렉션 로드 (프로필 패널용) */
+async function loadOwnedCollection() {
+  const charGrid = document.getElementById('character-list-grid');
+  const titleGrid = document.getElementById('title-list-grid');
+  if (!charGrid || !titleGrid) return;
+
+  const username = localStorage.getItem('savedUsername');
+  if (!username) return;
+
+  // 1. 현재 장착 정보, 인벤토리, 상점 이미지 조인해서 가져오기
+  const [userRes, invRes, shopRes] = await Promise.all([
+    supabaseClient.from('users').select('avatar_url, equipped_title').eq('username', username).maybeSingle(),
+    supabaseClient.from('inventory').select('id, item_id, item_name').eq('username', username),
+    supabaseClient.from('shop_items').select('id, image_url')
+  ]);
+
+  const userData = userRes.data;
+  const inventory = invRes.data || [];
+  const shopItems = shopRes.data || [];
+
+  const currentAvatar = userData?.avatar_url || '';
+  const currentTitle = userData?.equipped_title || '';
+
+  const getShopImage = (itemId) => {
+    const found = shopItems.find(s => s.id === itemId);
+    return found ? found.image_url : '';
+  };
+
+  // 2. 캐릭터와 칭호 분류 (기본 캐릭터 포함)
+  const ownedCharacters = [...DEFAULT_CHARACTERS];
+
+  // 인벤토리 캐릭터 추가 (중복 방지)
+  const inventoryChars = inventory.filter(item => item.item_name.includes('캐릭터'));
+  const charNamesSet = new Set(ownedCharacters.map(c => c.item_name));
+
+  inventoryChars.forEach(c => {
+    if (!charNamesSet.has(c.item_name)) {
+      charNamesSet.add(c.item_name);
+      ownedCharacters.push({ ...c, imgUrl: getShopImage(c.item_id) });
+    }
+  });
+
+  const ownedTitles = inventory.filter(item => item.item_name.includes('칭호'));
+
+  // 3. 캐릭터 렌더링
+  charGrid.innerHTML = '';
+  ownedCharacters.forEach(char => {
+    const el = document.createElement('div');
+    el.className = 'character-select-item';
+
+    const imgUrl = char.imgUrl;
+    // 장착 여부 확인 (이름 또는 URL 매칭)
+    const isEquipped = (currentAvatar === char.item_name) || (currentAvatar === imgUrl && imgUrl !== '');
+    if (isEquipped) el.classList.add('equipped');
+
+    // 👤 대신 원 안에 들어가는 이미지/아이콘 처리
+    let previewHtml = `
+      <div style="width:50px; height:50px; border-radius:50%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; margin-bottom:8px; border:1px solid #e2e8f0; font-size:1.5rem;">
+        👤
+      </div>`;
+
+    if (imgUrl) {
+      previewHtml = `
+        <div style="width:50px; height:50px; border-radius:50%; overflow:hidden; margin-bottom:8px; border:1px solid #e2e8f0;">
+          <img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover;" />
+        </div>`;
+    }
+
+    el.innerHTML = `
+      ${previewHtml}
+      <div style="font-size:0.8rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${char.item_name.replace('[캐릭터]', '').trim()}</div>
     `;
 
-    listEl.appendChild(itemEl);
+    // 클릭 시 장착/해제 토글
+    el.onclick = () => {
+      if (isEquipped) {
+        // 이미 장착된 경우 클릭하면 해제 (기본 상태로)
+        window.selectCharacter('none', '');
+      } else {
+        window.selectCharacter(char.item_name, imgUrl);
+      }
+    };
+    charGrid.appendChild(el);
   });
+
+  // 4. 칭호 렌더링 (칭호 없음 항목 추가)
+  titleGrid.innerHTML = '';
+
+  // 칭호 없음 항목
+  const noneTitleEl = document.createElement('div');
+  noneTitleEl.className = 'title-select-item';
+  const isNoneTitle = !currentTitle || currentTitle === '';
+  if (isNoneTitle) noneTitleEl.classList.add('equipped');
+  noneTitleEl.innerHTML = `<span>칭호 없음</span>`;
+  noneTitleEl.onclick = () => {
+    if (!isNoneTitle) {
+      window.useItem('none', 'none', true);
+    }
+  };
+  titleGrid.appendChild(noneTitleEl);
+
+  ownedTitles.forEach(title => {
+    const el = document.createElement('div');
+    el.className = 'title-select-item';
+    const isEquipped = (currentTitle === title.item_name);
+    if (isEquipped) el.classList.add('equipped');
+
+    el.innerHTML = `<span>${title.item_name.replace('[칭호]', '').trim()}</span>`;
+    el.onclick = () => {
+      window.useItem(title.id, title.item_name, isEquipped);
+    };
+    titleGrid.appendChild(el);
+  });
+}
+window.loadOwnedCollection = loadOwnedCollection;
+
+/** 🎊 보상 획득 축하 효과 */
+function triggerCelebration() {
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.top = '0';
+  container.style.left = '0';
+  container.style.width = '100vw';
+  container.style.height = '100vh';
+  container.style.pointerEvents = 'none';
+  container.style.zIndex = '100000';
+  document.body.appendChild(container);
+
+  for (let i = 0; i < 50; i++) {
+    const p = document.createElement('div');
+    p.style.position = 'absolute';
+    p.style.width = '10px';
+    p.style.height = '10px';
+    p.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+    p.style.left = '50%';
+    p.style.top = '50%';
+    p.style.borderRadius = '2px';
+    container.appendChild(p);
+
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = Math.random() * 10 + 5;
+    let x = 0;
+    let y = 0;
+    let vy = -Math.random() * 15 - 5;
+    let vx = Math.cos(angle) * velocity;
+
+    let lifetime = 0;
+    const anim = setInterval(() => {
+      x += vx;
+      y += vy;
+      vy += 0.5; // 중력
+      p.style.transform = `translate(${x}px, ${y}px) rotate(${lifetime * 10}deg)`;
+      p.style.opacity = 1 - (lifetime / 100);
+      lifetime++;
+      if (lifetime > 100) {
+        clearInterval(anim);
+        p.remove();
+        if (container.children.length === 0) container.remove();
+      }
+    }, 20);
+  }
 }
 
 // ✅ 아이템 구매 함수
 window.buyItem = async function (itemId, price, itemName) {
-  if (!confirm(`'${itemName}'을(를) ${price}포인트에 구매하시겠습니까?`)) return;
+  if (!confirm(`'${itemName}'을(를) ${price} 포인트로 구매하시겠습니까?`)) return;
 
   const username = localStorage.getItem('savedUsername');
   if (!username) {
@@ -3099,29 +4173,47 @@ window.buyItem = async function (itemId, price, itemName) {
     return;
   }
 
-  const { data: existing, error: checkError } = await supabaseClient
+  // 최신 잔액 동기화 시도
+  await syncCoinBalance();
+
+  // 1. 아이템 정보(재고/한도) 및 현재 보유 수량 확인
+  const { data: itemData, error: itemError } = await supabaseClient
+    .from('shop_items')
+    .select('stock')
+    .eq('id', itemId)
+    .maybeSingle();
+
+  if (itemError || !itemData) {
+    alert('아이템 정보를 불러올 수 없습니다.');
+    return;
+  }
+
+  const limit = itemData.stock || 1;
+
+  const { data: existingInventory, error: checkError } = await supabaseClient
     .from('inventory')
     .select('id')
     .eq('username', username)
-    .eq('item_id', itemId)
-    .maybeSingle();
+    .eq('item_id', itemId);
 
   if (checkError) {
     console.warn('인벤토리 확인 중 오류:', checkError);
   }
 
-  if (existing) {
-    alert('이미 보유하고 있는 아이템입니다.');
+  const ownedCount = existingInventory ? existingInventory.length : 0;
+
+  if (ownedCount >= limit) {
+    alert(`이 아이템은 최대 ${limit}개까지만 보유할 수 있습니다.`);
     return;
   }
 
-  if (currentUserCoin < price) {
+  if (window.currentUserCoin < price) {
     alert('포인트가 부족합니다.');
     return;
   }
 
   try {
-    const newBalance = currentUserCoin - price;
+    const newBalance = window.currentUserCoin - price;
     const { error: updateError } = await supabaseClient
       .from('users')
       .update({ coin_balance: newBalance })
@@ -3144,14 +4236,16 @@ window.buyItem = async function (itemId, price, itemName) {
       alert('구매 처리 중 오류가 발생했습니다. (포인트는 차감되었을 수 있음)\n' + insertError.message);
     } else {
       alert('구매가 완료되었습니다!');
-      currentUserCoin = newBalance;
+      window.currentUserCoin = newBalance;
 
-      const coinEl = document.getElementById('coin-balance');
-      const shopCoinEl = document.getElementById('shop-coin-balance');
-      if (coinEl) coinEl.textContent = currentUserCoin;
-      if (shopCoinEl) shopCoinEl.textContent = currentUserCoin;
-
+      syncCoinBalance(); // UI 동기화
       loadInventory?.();
+      await loadShopItems(); // 상점 잔여 수량 즉시 업데이트
+
+      // 📝 로그 기록
+      if (window.logActivity) {
+        window.logActivity('shop_buy', itemName, 'shop_item', { item_id: itemId, price: price });
+      }
     }
   } catch (err) {
     alert(err.message);
@@ -3235,13 +4329,21 @@ async function handleLogout(scope) {
     console.warn('Supabase 로그아웃 오류 (무시 가능):', err);
   }
 
+  // 📝 로그 기록
+  if (window.logActivity) {
+    window.logActivity('logout', localStorage.getItem('savedUsername'), 'user', { scope: scope });
+  }
+
   // 로컬 스토리지 클리어
   localStorage.removeItem('savedUsername');
+  setCookie('savedUsername', '', -1); // 쿠키 삭제
   localStorage.removeItem('savedName');
   localStorage.removeItem('savedStudentNum');
   localStorage.removeItem('savedGrade');
   localStorage.removeItem('savedClassNum');
   localStorage.removeItem('savedRole');
+  localStorage.removeItem('savedUserId');
+  localStorage.removeItem('savedEmail');
 
   alert('로그아웃 되었습니다.');
   location.reload();
@@ -3323,5 +4425,1166 @@ function applyTheme(theme) {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.body.classList.add('theme-dark');
     }
+  }
+}
+
+/** 🔐 개인정보 처리방침 모달 제어 */
+function showPrivacyDetail() {
+  const modal = document.getElementById('privacy-modal');
+  if (modal) modal.style.display = 'flex';
+}
+function closePrivacyDetail() {
+  const modal = document.getElementById('privacy-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+/** 🎮 미니게임 종료 및 목록으로 복귀 */
+
+
+// 전역 노출
+window.showPrivacyDetail = showPrivacyDetail;
+window.closePrivacyDetail = closePrivacyDetail;
+window.exitMiniGame = exitMiniGame;
+
+/** 📢 공지사항 삭제 */
+window.deleteNotice = async function (id, imageUrl) {
+  if (!confirm('정말로 이 공지사항을 삭제하시겠습니까?')) return;
+  try {
+    // 1. 이미지 삭제 (있을 경우)
+    if (imageUrl) {
+      const fileName = imageUrl.split('/').pop();
+      await supabaseClient.storage.from('notice-images').remove([`public/${fileName}`]);
+    }
+    // 2. DB 삭제
+    const { error } = await supabaseClient.from('notices').delete().eq('id', id);
+    if (error) throw error;
+    alert('삭제되었습니다.');
+    loadNotices();
+  } catch (e) { alert('삭제 실패: ' + e.message); }
+};
+
+/** 📢 공지사항 상세 수정 열기 */
+window.openEditNoticeModal = async function (id) {
+  // 모달 안열려있을수 있으니 메뉴 닫기
+  document.querySelectorAll('.notice-menu-dropdown').forEach(el => el.style.display = 'none');
+
+  showLoading();
+  try {
+    const { data: item, error } = await supabaseClient.from('notices').select('*').eq('id', id).single();
+    if (error || !item) {
+      alert('공지사항을 불러오는 중 오류가 발생했습니다.');
+      return;
+    }
+
+    document.getElementById('edit-notice-id').value = item.id;
+    document.getElementById('edit-notice-title').value = item.title;
+    document.getElementById('edit-notice-content').value = item.content;
+    document.getElementById('edit-notice-old-image').value = item.image_url || '';
+
+    const preview = document.getElementById('edit-notice-preview');
+    const removeLabel = document.getElementById('edit-notice-remove-label');
+    if (item.image_url) {
+      preview.innerHTML = `<img src="${item.image_url}" style="max-width:120px; max-height:120px; border-radius:6px; border:1px solid #ddd; display:block;">`;
+      document.getElementById('edit-notice-remove-img').checked = false;
+      if (removeLabel) removeLabel.style.display = 'flex';
+    } else {
+      preview.innerHTML = '<span style="font-size:0.85rem; color:#94a3b8;">등록된 이미지가 없습니다.</span>';
+      document.getElementById('edit-notice-remove-img').checked = false;
+      if (removeLabel) removeLabel.style.display = 'none';
+    }
+
+    document.getElementById('edit-notice-new-image').value = '';
+    document.getElementById('modal-edit-notice').style.display = 'flex';
+  } catch (e) {
+    alert('오류 발생: ' + e.message);
+  } finally {
+    hideLoading();
+  }
+};
+
+window.closeEditNoticeModal = function () {
+  document.getElementById('modal-edit-notice').style.display = 'none';
+};
+
+/** 📢 공지사항 수정 로직 */
+window.submitEditNotice = async function () {
+  const id = document.getElementById('edit-notice-id').value;
+  const newTitle = document.getElementById('edit-notice-title').value.trim();
+  const newContent = document.getElementById('edit-notice-content').value.trim();
+  const isRemoveImg = document.getElementById('edit-notice-remove-img').checked;
+  const fileInput = document.getElementById('edit-notice-new-image');
+  const oldImageUrl = document.getElementById('edit-notice-old-image').value;
+  const btnSubmit = document.getElementById('btn-submit-edit-notice');
+
+  if (!newTitle || !newContent) {
+    alert('제목과 내용을 모두 입력해주세요.');
+    return;
+  }
+
+  btnSubmit.disabled = true;
+  showLoading();
+
+  try {
+    // 1. 기존 데이터 (비교용) 미리 저장
+    const { data: oldData } = await supabaseClient.from('notices').select('*').eq('id', id).single();
+
+    let imageUrl = oldImageUrl;
+
+    // 2. 이미지 처리
+    // 새 이미지 업로드가 있으면
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      const uniqueName = Date.now() + '_' + file.name;
+      const filePath = `public/${uniqueName}`;
+
+      const { error: uploadErr } = await supabaseClient
+        .storage
+        .from('notice-images')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadErr) throw uploadErr;
+
+      const { data: publicData } = supabaseClient
+        .storage
+        .from('notice-images')
+        .getPublicUrl(filePath);
+
+      imageUrl = publicData.publicUrl;
+
+      // 기존 이미지가 있다면 스토리지에서 삭제
+      if (oldImageUrl) {
+        try {
+          const oldFileName = oldImageUrl.split('/').pop();
+          await supabaseClient.storage.from('notice-images').remove([`public/${oldFileName}`]);
+        } catch (e) { console.warn('Old image delete failed', e); }
+      }
+    } else if (isRemoveImg && oldImageUrl) {
+      // 새 그림은 없는데 삭제하겠다고 하면
+      try {
+        const oldFileName = oldImageUrl.split('/').pop();
+        await supabaseClient.storage.from('notice-images').remove([`public/${oldFileName}`]);
+      } catch (e) { console.warn('Old image delete failed', e); }
+      imageUrl = null;
+    }
+
+    // 3. 업데이트 수행 (is_edited 추가)
+    const updateData = {
+      title: newTitle,
+      content: newContent,
+      image_url: imageUrl,
+      // Supabase 테이블에 is_edited 컬럼이 있다는 전제.
+      is_edited: true
+    };
+
+    const { error: updateErr, data: updatedNotice } = await supabaseClient.from('notices').update(updateData).eq('id', id).select().single();
+    if (updateErr) throw updateErr;
+
+    // 4. 관리자 로그 기록 (user_activity_logs)
+    try {
+      const currentUsername = localStorage.getItem('savedUsername');
+      const { data: userData } = await supabaseClient.from('users').select('id, email, username').eq('username', currentUsername).single();
+
+      if (userData) {
+        await supabaseClient.from('user_activity_logs').insert({
+          user_id: userData.id,
+          username: userData.username,
+          email: userData.email,
+          action: 'notice_edit',
+          target: String(id),
+          target_type: 'notice',
+          details: { old: oldData, new: updatedNotice }
+        });
+      }
+    } catch (e) { console.warn('Activity log insert failed', e); }
+
+    alert('수정되었습니다.');
+    closeEditNoticeModal();
+    loadNotices();
+  } catch (e) {
+    alert('수정 실패: ' + e.message);
+  } finally {
+    hideLoading();
+    btnSubmit.disabled = false;
+  }
+};
+
+/** 📁 자료실 수정 시 보관할 새 파일 배열 */
+window.editMaterialPendingFiles = [];
+
+/** 📁 자료실 수정 모달 열기 */
+window.openEditMaterialModal = async function (id) {
+  try {
+    showLoading();
+    window.editMaterialPendingFiles = []; // 초기화
+
+    const { data: item, error } = await supabaseClient.from('homeworks').select('*').eq('id', id).single();
+    if (error) throw error;
+
+    document.getElementById('edit-material-id').value = item.id;
+    document.getElementById('edit-material-title').value = item.title;
+    document.getElementById('edit-material-comment').value = item.comment || '';
+
+    // 공유 범위 설정
+    const scopeSelect = document.getElementById('edit-material-scope');
+    if (scopeSelect && item.share_scope) {
+      scopeSelect.value = item.share_scope;
+    }
+
+    // 진행바 초기화
+    document.getElementById('edit-material-progress-container').style.display = 'none';
+    document.getElementById('upload-progress-bar').style.width = '0%';
+
+    // 파일 그리드 초기화 (기존 파일들 보관용)
+    const gridEl = document.getElementById('edit-material-file-grid');
+    gridEl.innerHTML = '';
+
+    // 보다 정확한 파일 URL 파싱 (문자열인 경우 JSON 파싱 시도)
+    let fileUrls = item.file_url;
+    if (typeof fileUrls === 'string' && fileUrls.startsWith('[')) {
+      try { fileUrls = JSON.parse(fileUrls); } catch (e) { fileUrls = [fileUrls]; }
+    }
+    fileUrls = Array.isArray(fileUrls) ? fileUrls.filter(u => u) : (fileUrls ? [fileUrls] : []);
+
+    window.editMaterialExistingUrls = [...fileUrls]; // 현재 서버에 있는 URL들 보관
+
+    updateEditMaterialGrid();
+    document.getElementById('modal-edit-material').style.display = 'flex';
+
+    // 드래그 앤 드롭 이벤트 바인딩 (한 번만)
+    setupMaterialEditDropzone();
+  } catch (e) {
+    alert('데이터 로드 실패: ' + e.message);
+  } finally {
+    hideLoading();
+  }
+};
+
+/** 📁 자료실 파일 그리드 업데이트 (기존 + 새 파일 통합) */
+window.updateEditMaterialGrid = function () {
+  const gridEl = document.getElementById('edit-material-file-grid');
+  const noFilesMsg = document.getElementById('edit-material-no-files-msg');
+  gridEl.innerHTML = '';
+
+  const totalCount = window.editMaterialExistingUrls.length + window.editMaterialPendingFiles.length;
+
+  if (totalCount === 0) {
+    if (noFilesMsg) {
+      gridEl.appendChild(noFilesMsg);
+      noFilesMsg.style.display = 'block';
+    }
+  } else {
+    if (noFilesMsg) noFilesMsg.style.display = 'none';
+
+    // 1. 기존 파일들 표시
+    window.editMaterialExistingUrls.forEach((url, idx) => {
+      renderFileIcon(gridEl, url, true, idx);
+    });
+
+    // 2. 새로 추가된(대기 중인) 파일들 표시
+    window.editMaterialPendingFiles.forEach((file, idx) => {
+      renderFileIcon(gridEl, file.name, false, idx);
+    });
+  }
+};
+
+/** 📁 파일 아이콘 렌더링 헬퍼 */
+function renderFileIcon(container, data, isExisting, index) {
+  const itemDiv = document.createElement('div');
+  itemDiv.className = 'file-manager-item';
+  itemDiv.style = 'position:relative; background:white; border:1px solid #e2e8f0; border-radius:10px; padding:12px 8px; text-align:center; transition:all 0.2s;';
+
+  const filename = isExisting ? decodeURIComponent(data.split('/').pop() || '파일') : data;
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(filename);
+
+  let iconHtml = '<div style="font-size:1.8rem; margin-bottom:6px;">📄</div>';
+  if (isImage && isExisting) {
+    iconHtml = `<img src="${data}" style="width:100%; height:60px; object-fit:cover; border-radius:6px; margin-bottom:6px; background:#f1f5f9;">`;
+  } else if (isImage && !isExisting) {
+    iconHtml = '<div style="font-size:1.8rem; margin-bottom:6px;">🖼️</div>';
+  }
+
+  const badge = isExisting ? '' : '<span style="position:absolute; top:4px; left:4px; font-size:0.6rem; background:#4f46e5; color:white; padding:1px 4px; border-radius:3px;">NEW</span>';
+
+  itemDiv.innerHTML = `
+    ${badge}
+    ${iconHtml}
+    <div style="font-size:0.75rem; color:#334155; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:4px;" title="${filename}">${filename}</div>
+    <button onclick="${isExisting ? `removeExistingMaterialFile(${index})` : `removePendingMaterialFile(${index})`}" 
+      style="position:absolute; top:-6px; right:-6px; background:#ef4444; color:white; border:none; width:20px; height:20px; border-radius:50%; font-size:0.7rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,0.1);">✕</button>
+  `;
+  container.appendChild(itemDiv);
+}
+
+/** 📁 기존 파일 제거 */
+window.removeExistingMaterialFile = function (idx) {
+  if (!confirm('이 파일을 아예 삭제하시겠습니까? (저장 시 최종 반영)')) return;
+  window.editMaterialExistingUrls.splice(idx, 1);
+  updateEditMaterialGrid();
+};
+
+/** 📁 대기 중인 새 파일 제거 */
+window.removePendingMaterialFile = function (idx) {
+  window.editMaterialPendingFiles.splice(idx, 1);
+  updateEditMaterialGrid();
+};
+
+/** 📁 드래그 앤 드롭 및 클릭 이벤트 설정 */
+function setupMaterialEditDropzone() {
+  const zone = document.getElementById('edit-material-dropzone');
+  const fileInput = document.getElementById('edit-material-new-files');
+
+  if (!zone || zone.dataset.initialized) return;
+
+  zone.onclick = () => fileInput.click();
+
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    zone.style.background = '#f0f4ff';
+    zone.style.borderColor = '#4f46e5';
+  });
+
+  zone.addEventListener('dragleave', () => {
+    zone.style.background = '#fff';
+    zone.style.borderColor = '#e2e8f0';
+  });
+
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.style.background = '#fff';
+    zone.style.borderColor = '#e2e8f0';
+
+    if (e.dataTransfer.files.length > 0) {
+      handleMaterialFiles(e.dataTransfer.files);
+    }
+  });
+
+  fileInput.onchange = (e) => {
+    if (e.target.files.length > 0) {
+      handleMaterialFiles(e.target.files);
+      e.target.value = ''; // 초기화
+    }
+  };
+
+  zone.dataset.initialized = 'true';
+}
+
+/** 📁 선택된 파일들 큐에 추가 */
+function handleMaterialFiles(files) {
+  Array.from(files).forEach(file => {
+    window.editMaterialPendingFiles.push(file);
+  });
+  updateEditMaterialGrid();
+}
+
+/** 📁 자료실 수정 모달 닫기 */
+window.closeEditMaterialModal = function () {
+  document.getElementById('modal-edit-material').style.display = 'none';
+};
+
+/** 📁 자료실 수정 제출 (고급) */
+window.submitEditMaterial = async function () {
+  const id = document.getElementById('edit-material-id').value;
+  const title = document.getElementById('edit-material-title').value;
+  const comment = document.getElementById('edit-material-comment').value;
+  const btnSubmit = document.getElementById('btn-submit-edit-material');
+
+  if (!title) return alert('제목을 입력해 주세요.');
+
+  try {
+    btnSubmit.disabled = true;
+
+    // 1. 기존 데이터 확보 (로그용)
+    const { data: oldData, error: fetchErr } = await supabaseClient.from('homeworks').select('*').eq('id', id).single();
+    if (fetchErr) throw fetchErr;
+
+    const originalUrls = Array.isArray(oldData.file_url) ? oldData.file_url : (oldData.file_url ? [oldData.file_url] : []);
+
+    // 2. 삭제된 파일 스토리지 정리
+    const urlsToDelete = originalUrls.filter(url => !window.editMaterialExistingUrls.includes(url));
+    if (urlsToDelete.length > 0) {
+      const pathsToDelete = urlsToDelete.map(url => {
+        const parts = url.split('/');
+        const bucketIdx = parts.indexOf('homework-files');
+        return parts.slice(bucketIdx + 1).join('/');
+      });
+      await supabaseClient.storage.from('homework-files').remove(pathsToDelete);
+    }
+
+    // 3. 새 파일 업로드 (진행률 표시)
+    const finalFileUrls = [...window.editMaterialExistingUrls];
+
+    if (window.editMaterialPendingFiles.length > 0) {
+      const progContainer = document.getElementById('edit-material-progress-container');
+      const progBar = document.getElementById('upload-progress-bar');
+      const progText = document.getElementById('upload-percent-text');
+      const statusText = document.getElementById('upload-status-text');
+
+      progContainer.style.display = 'block';
+
+      const totalFiles = window.editMaterialPendingFiles.length;
+      for (let i = 0; i < totalFiles; i++) {
+        const file = window.editMaterialPendingFiles[i];
+        statusText.innerText = `업로드 중 (${i + 1}/${totalFiles}): ${file.name}`;
+
+        const ext = file.name.split('.').pop();
+        const path = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+
+        const { data: uploadData, error: upErr } = await supabaseClient.storage.from('homework-files').upload(path, file);
+        if (upErr) throw upErr;
+
+        const { data: publicUrlData } = supabaseClient.storage.from('homework-files').getPublicUrl(uploadData.path);
+        finalFileUrls.push(publicUrlData.publicUrl);
+
+        const percent = Math.round(((i + 1) / totalFiles) * 100);
+        progBar.style.width = `${percent}%`;
+        progText.innerText = `${percent}%`;
+      }
+    }
+
+    // 4. DB 업데이트
+    const updateData = {
+      title,
+      comment,
+      file_url: finalFileUrls,
+      share_scope: document.getElementById('edit-material-scope')?.value || 'class',
+      is_edited: true
+    };
+
+    const { error: updateErr } = await supabaseClient.from('homeworks').update(updateData).eq('id', id);
+    if (updateErr) throw updateErr;
+
+    // 5. 활동 로그 기록
+    await supabaseClient.from('user_activity_logs').insert({
+      username: localStorage.getItem('savedUsername'),
+      email: (await supabaseClient.auth.getUser()).data.user?.email,
+      action: 'material_edit',
+      target: title,
+      target_type: 'material',
+      details: {
+        old: { title: oldData.title, comment: oldData.comment, file_url: oldData.file_url },
+        new: updateData
+      }
+    });
+
+    alert('수정이 완료되었습니다.');
+    closeEditMaterialModal();
+    loadMaterials();
+  } catch (e) {
+    alert('수정 실패: ' + e.message);
+  } finally {
+    btnSubmit.disabled = false;
+    const pCont = document.getElementById('edit-material-progress-container');
+    if (pCont) pCont.style.display = 'none';
+  }
+};
+
+/** 📁 자료실 수정 모달 닫기 */
+window.closeEditMaterialModal = function () {
+  document.getElementById('modal-edit-material').style.display = 'none';
+};
+
+/** 📁 자료실 자료 삭제 */
+window.deleteMaterial = async function (id) {
+  if (!confirm('정말로 이 자료를 삭제하시겠습니까?')) return;
+  try {
+    showLoading();
+    // 로그용 및 스토리지 삭제용 데이터 확보
+    const { data: item, error: fetchErr } = await supabaseClient
+      .from('homeworks')
+      .select('title, file_url')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr) throw fetchErr;
+
+    // 1. Storage 파일들 삭제
+    const rawUrls = item.file_url;
+    let fileUrls = [];
+    if (Array.isArray(rawUrls)) fileUrls = rawUrls;
+    else if (typeof rawUrls === 'string' && rawUrls.startsWith('[')) {
+      try { fileUrls = JSON.parse(rawUrls); } catch (e) { fileUrls = [rawUrls]; }
+    } else if (rawUrls) fileUrls = [rawUrls];
+
+    fileUrls = fileUrls.filter(u => u && u !== '[]');
+
+    const paths = fileUrls.map(url => {
+      const parts = url.split('/');
+      const idx = parts.indexOf('homework-files');
+      return parts.slice(idx + 1).join('/');
+    }).filter(p => p);
+
+    if (paths.length > 0) {
+      await supabaseClient.storage.from('homework-files').remove(paths);
+    }
+    // 2. DB 삭제
+    const { error } = await supabaseClient.from('homeworks').delete().eq('id', id);
+    if (error) throw error;
+
+    // 3. 로그 기록
+    await supabaseClient.from('user_activity_logs').insert({
+      username: localStorage.getItem('savedUsername'),
+      email: (await supabaseClient.auth.getUser()).data.user?.email,
+      action: 'material_delete',
+      target: item?.title || `ID:${id}`,
+      target_type: 'material'
+    });
+
+    alert('자료가 삭제되었습니다.');
+    loadMaterials();
+  } catch (e) {
+    alert('삭제 실패: ' + e.message);
+  } finally {
+    hideLoading();
+  }
+};
+
+// --- 환경 설정 및 보안 함수들 ---
+
+async function handlePasswordReset() {
+  const email = document.getElementById('profile-email')?.value;
+  if (!email) {
+    alert('프로필 이메일 정보가 없습니다. 먼저 저장해 주세요.');
+    return;
+  }
+  if (!confirm(`${email}로 비밀번호 재설정 메일을 보내시겠습니까?`)) return;
+  try {
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+    alert('재설정 메일이 발송되었습니다.');
+  } catch (e) { alert('발송 실패: ' + e.message); }
+}
+
+function handleAccountDelete() {
+  alert('계정 삭제 요청 기능은 아직 준비 중입니다. 관리자에게 문의하세요.');
+}
+
+function savePreferences() {
+  const pref = {
+    notice: document.getElementById('pref-notice')?.checked,
+    homework: document.getElementById('pref-homework')?.checked,
+    push: document.getElementById('pref-push')?.checked,
+    theme: document.getElementById('pref-theme')?.value,
+    lang: document.getElementById('pref-lang')?.value
+  };
+  localStorage.setItem('eduBoard_preferences', JSON.stringify(pref));
+  applyTheme(pref.theme);
+  const status = document.getElementById('pref-status');
+  if (status) {
+    status.innerText = '✅ 설정이 저장되었습니다.';
+    setTimeout(() => status.innerText = '', 2000);
+  }
+}
+
+function loadPreferences() {
+  const saved = localStorage.getItem('eduBoard_preferences');
+  if (!saved) return;
+  try {
+    const pref = JSON.parse(saved);
+    if (document.getElementById('pref-notice')) document.getElementById('pref-notice').checked = !!pref.notice;
+    if (document.getElementById('pref-homework')) document.getElementById('pref-homework').checked = !!pref.homework;
+    if (document.getElementById('pref-push')) document.getElementById('pref-push').checked = !!pref.push;
+    if (document.getElementById('pref-theme')) document.getElementById('pref-theme').value = pref.theme || 'light';
+    if (document.getElementById('pref-lang')) document.getElementById('pref-lang').value = pref.lang || 'ko';
+    applyTheme(pref.theme);
+  } catch (e) { }
+}
+
+function applyTheme(theme) {
+  document.body.classList.remove('theme-dark');
+  if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.body.classList.add('theme-dark');
+  }
+}
+
+// 로그아웃 (기존 함수 보강)
+async function handleLogout(scope = 'local') {
+  if (!confirm('로그아웃 하시겠습니까?')) return;
+  try {
+    await supabaseClient.auth.signOut({ scope });
+    localStorage.clear();
+    location.reload();
+  } catch (e) { alert('로그아웃 중 오류: ' + e.message); }
+}
+
+async function handlePasswordReset() {
+  const username = localStorage.getItem('savedUsername');
+  const email = localStorage.getItem('savedEmail');
+  if (!email) {
+    alert('등록된 이메일 정보를 찾을 수 없습니다.');
+    return;
+  }
+  if (!confirm(`${email} 주소로 비밀번호 재설정 메일을 보내시겠습니까?`)) return;
+
+  try {
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/index.html?type=recovery'
+    });
+    if (error) throw error;
+    alert('비밀번호 재설정 메일이 발송되었습니다. 이메일을 확인해주세요.');
+  } catch (e) {
+    alert('메일 발송 오류: ' + e.message);
+  }
+}
+
+async function handleAccountDelete() {
+  const username = localStorage.getItem('savedUsername');
+  if (!username) return;
+
+  const reason = prompt('계정 삭제 사유를 입력해주세요 (선택사항):');
+  if (reason === null) return; // 취소
+
+  if (!confirm('정말로 계정 삭제를 요청하시겠습니까? 삭제된 계정은 복구할 수 없습니다.')) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from('deletion_requests')
+      .insert([{
+        username,
+        reason,
+        requested_at: new Date().toISOString()
+      }]);
+
+    if (error) throw error;
+    alert('계정 삭제 요청이 접수되었습니다. 관리자 확인 후 처리될 예정입니다.');
+    handleLogout('local');
+  } catch (e) {
+    alert('삭제 요청 중 오류: ' + e.message);
+  }
+}
+
+// 초기 로드 시 실행 및 이벤트 바인딩
+document.addEventListener('DOMContentLoaded', () => {
+  loadPreferences();
+  document.getElementById('btn-session-logout')?.addEventListener('click', () => handleLogout('local'));
+  document.getElementById('btn-session-global-logout')?.addEventListener('click', () => handleLogout('global'));
+  document.getElementById('btn-password-reset')?.addEventListener('click', handlePasswordReset);
+  document.getElementById('btn-account-delete')?.addEventListener('click', handleAccountDelete);
+  document.getElementById('btn-pref-save')?.addEventListener('click', savePreferences);
+  document.getElementById('btn-pref-reset')?.addEventListener('click', () => {
+    if (!confirm('모든 설정을 초기화하시겠습니까?')) return;
+    localStorage.removeItem('eduBoard_preferences');
+    loadPreferences();
+    alert('초기화되었습니다.');
+  });
+
+  // 브라우저 알림 권한 체크 및 실시간 리스너 설정
+  if (document.getElementById('pref-notice')?.checked || document.getElementById('pref-push')?.checked) {
+    setupRealtimeNotifications();
+  }
+});
+
+function loadPreferences() {
+  const prefs = JSON.parse(localStorage.getItem('eduBoard_preferences') || '{}');
+
+  if ($id('pref-notice')) $id('pref-notice').checked = prefs.notice !== false;
+  if ($id('pref-homework')) $id('pref-homework').checked = prefs.homework !== false;
+  if ($id('pref-push')) $id('pref-push').checked = prefs.push === true;
+  if ($id('pref-theme')) $id('pref-theme').value = prefs.theme || 'system';
+  if ($id('pref-lang')) $id('pref-lang').value = prefs.lang || 'ko';
+
+  applyTheme(prefs.theme || 'system');
+}
+
+function savePreferences() {
+  const prefs = {
+    notice: $id('pref-notice')?.checked,
+    homework: $id('pref-homework')?.checked,
+    push: $id('pref-push')?.checked,
+    theme: $id('pref-theme')?.value,
+    lang: $id('pref-lang')?.value
+  };
+
+  localStorage.setItem('eduBoard_preferences', JSON.stringify(prefs));
+  applyTheme(prefs.theme);
+
+  if (prefs.notice || prefs.push) {
+    requestNotificationPermission();
+    setupRealtimeNotifications();
+  }
+
+  alert('환경 설정이 저장되었습니다.');
+}
+
+function applyTheme(theme) {
+  if (theme === 'dark') {
+    document.body.classList.add('dark-mode');
+  } else if (theme === 'light') {
+    document.body.classList.remove('dark-mode');
+  } else {
+    // system
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  }
+}
+
+async function requestNotificationPermission() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+    await Notification.requestPermission();
+  }
+}
+
+let noticeSubscription = null;
+function setupRealtimeNotifications() {
+  if (noticeSubscription) return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+  noticeSubscription = supabaseClient
+    .channel('public:notices')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notices' }, payload => {
+      if ($id('pref-notice')?.checked) {
+        new Notification("📢 새 공지사항", {
+          body: payload.new.title,
+          icon: "/img/logo.png" // 실제 아이콘 경로 확인 필요
+        });
+      }
+    })
+    .subscribe();
+}
+
+/** 🔄 로그인 후 대시보드 및 데이터 쇄신 */
+window.afterLoginRefreshDashboard = async function () {
+  initDashboardTop();
+  loadNotices();
+  loadMaterials();
+  syncCoinBalance();
+  if (typeof bindScheduleUI === 'function') bindScheduleUI();
+  if (typeof window.syncStatsAndRender === 'function') {
+    window.syncStatsAndRender();
+  }
+};
+
+/** 💰 포인트 잔액 동기화 (UI 및 전역 변수) */
+window.syncCoinBalance = async function () {
+  const username = localStorage.getItem('savedUsername');
+  if (!username || !window.supabaseClient) return;
+
+  try {
+    const { data: user, error } = await supabaseClient
+      .from('users')
+      .select('coin_balance')
+      .eq('username', username)
+      .single();
+
+    if (user) {
+      const balance = user.coin_balance || 0;
+      window.currentUserCoin = balance; // 전역 변수 동기화
+
+      // UI 요소들 업데이트
+      ['coin-balance', 'shop-coin-balance'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = balance.toLocaleString();
+      });
+    }
+  } catch (e) { }
+};
+
+// 랭킹 필터 자동 업데이트 연결
+document.addEventListener('DOMContentLoaded', () => {
+  ['rank-metric', 'rank-scope'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', () => {
+      if (typeof window.syncStatsAndRender === 'function') {
+        window.syncStatsAndRender();
+      }
+    });
+  });
+  document.getElementById('rank-refresh')?.addEventListener('click', () => {
+    if (typeof window.syncStatsAndRender === 'function') {
+      window.syncStatsAndRender();
+    }
+  });
+
+  // 📅 일정(캘린더) 내비게이션 바인딩은 이제 onclick 전역 함수(changeSchedMonth)로 처리됩니다.
+
+  // 기타 정보 버튼 바인딩
+  document.getElementById('btn-go-notices')?.addEventListener('click', () => showPanel('notice-panel'));
+  document.getElementById('btn-go-help')?.addEventListener('click', () => alert('도움말 및 FAQ 페이지는 준비 중입니다. 1:1 문의는 관리자에게 메세지를 남겨주세요.'));
+  document.getElementById('btn-check-updates')?.addEventListener('click', () => alert('현재 최신 버전을 사용 중입니다. (v1.09-stable)'));
+});
+/** 🎯 Daily Quest Logic (Supabase-driven) */
+
+// 📅 한국 시간(KST) 기준 YYYY-MM-DD 가져오기
+function getTodayKST() {
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const kst = new Date(utc + (9 * 60 * 60 * 1000));
+
+  const y = kst.getFullYear();
+  const m = String(kst.getMonth() + 1).padStart(2, '0');
+  const d = String(kst.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+async function initDailyQuests() {
+  const listEl = $id('daily-quest-list');
+  if (!listEl) return;
+
+  const username = localStorage.getItem('savedUsername');
+  if (!username) return;
+
+  const today = getTodayKST();
+  console.log('Quest Init for Date:', today);
+
+  try {
+    // 1. 오늘의 퀘스트가 이미 할당되었는지 확인
+    let { data: myQuests, error } = await supabaseClient
+      .from('user_daily_quests')
+      .select('*, quests(*)')
+      .eq('username', username)
+      .eq('assigned_date', today);
+
+    if (error) throw error;
+
+    // 2. 할당된 퀘스트가 없으면 무작위로 3개 할당
+    if (!myQuests || myQuests.length === 0) {
+      const { data: allQuests } = await supabaseClient.from('quests').select('*');
+      if (!allQuests || allQuests.length === 0) return;
+
+      const shuffled = [...allQuests].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, 3);
+
+      const insertData = selected.map(q => ({
+        username,
+        quest_id: q.id,
+        assigned_date: today,
+        current_value: 0,
+        status: 'assigned'
+      }));
+
+      const { data: inserted, error: insErr } = await supabaseClient
+        .from('user_daily_quests')
+        .insert(insertData)
+        .select('*, quests(*)');
+
+      if (insErr) throw insErr;
+      myQuests = inserted;
+    }
+
+    renderDailyQuests(myQuests);
+  } catch (err) {
+    console.error('Quest Loading Error:', err);
+    listEl.innerHTML = '<p style="font-size:0.8rem; color:#dc3545; text-align:center;">퀘스트를 불러오는 중 오류가 발생했습니다.</p>';
+  }
+}
+
+function renderDailyQuests(userQuests) {
+  const listEl = $id('daily-quest-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+
+  userQuests.forEach(uq => {
+    const q = uq.quests;
+    if (!q) return;
+
+    const pct = Math.min(100, Math.round((uq.current_value / q.target_value) * 100));
+    const isCompleted = uq.status === 'completed' || uq.status === 'rewarded';
+    const isRewarded = uq.status === 'rewarded';
+
+    const item = document.createElement('div');
+    item.className = 'quest-item';
+
+    let actionBtn = '';
+    if (isRewarded) {
+      actionBtn = `<span class="quest-completed-badge">✅ 수령완료</span>`;
+    } else if (isCompleted) {
+      actionBtn = `<button class="quest-claim-btn" onclick="claimQuestReward('${uq.id}')">보상 받기</button>`;
+    } else {
+      actionBtn = `<span class="quest-percent">${pct}%</span>`;
+    }
+
+    item.innerHTML = `
+      <div class="quest-top">
+        <span class="quest-title">${q.title}</span>
+        <span class="quest-reward">+${q.reward_coin}포인트 / +${q.reward_xp}XP</span>
+      </div>
+      <div class="quest-progress-bg">
+        <div class="quest-progress-fill" style="width: ${pct}%"></div>
+      </div>
+      <div class="quest-bottom">
+        <span style="font-size:0.7rem; color:#94a3b8;">(${uq.current_value}/${q.target_value})</span>
+        ${actionBtn}
+      </div>
+    `;
+    listEl.appendChild(item);
+  });
+}
+
+async function updateQuestProgress(questType, increment = 1) {
+  const username = localStorage.getItem('savedUsername');
+  if (!username) return;
+  const today = getTodayKST();
+
+  console.log(`Quest Progress Update Attempt: ${questType} (assign_date: ${today})`);
+
+  try {
+    const { data: uqs, error } = await supabaseClient
+      .from('user_daily_quests')
+      .select('*, quests(*)')
+      .eq('username', username)
+      .eq('assigned_date', today)
+      .eq('status', 'assigned');
+
+    if (error) {
+      console.error('Quest Progress Error (DB):', error);
+      return;
+    }
+
+    if (!uqs || uqs.length === 0) {
+      console.log('No matching assigned quests found for today.');
+      return;
+    }
+
+    console.log('Active Quests for Today:', uqs.map(uq => uq.quests?.quest_type));
+
+    const target = uqs.find(item => item.quests && item.quests.quest_type === questType);
+    if (!target) {
+      console.log(`No quest found for type: ${questType}`);
+      return;
+    }
+
+    console.log(`Matching Quest Found: ${target.quests.title}. Updating progress...`);
+
+    const newValue = target.current_value + increment;
+    const newStatus = newValue >= target.quests.target_value ? 'completed' : 'assigned';
+
+    await supabaseClient
+      .from('user_daily_quests')
+      .update({ current_value: newValue, status: newStatus })
+      .eq('id', target.id);
+
+    // 대시보드인 경우 또는 대시보드로 돌아갈 때를 대비해 DOM이 있으면 업데이트
+    const listEl = document.getElementById('daily-quest-list');
+    if (listEl) {
+      const { data: updated } = await supabaseClient
+        .from('user_daily_quests')
+        .select('*, quests(*)')
+        .eq('username', username)
+        .eq('assigned_date', today);
+      if (updated) renderDailyQuests(updated);
+    }
+  } catch (e) {
+    console.error('Quest Update Error:', e);
+  }
+}
+
+async function claimQuestReward(userQuestId) {
+  const btn = event?.target;
+  if (btn) btn.disabled = true;
+
+  try {
+    const { data: uq, error } = await supabaseClient
+      .from('user_daily_quests')
+      .select('*, quests(*)')
+      .eq('id', userQuestId)
+      .single();
+
+    if (error || !uq || uq.status !== 'completed') return;
+
+    const { data: user } = await supabaseClient.from('users').select('coin_balance, xp').eq('username', uq.username).single();
+    if (user) {
+      console.log('User stats before reward:', user);
+      await supabaseClient.from('users').update({
+        coin_balance: (user.coin_balance || 0) + uq.quests.reward_coin,
+        xp: (user.xp || 0) + uq.quests.reward_xp
+      }).eq('username', uq.username);
+    }
+
+    await supabaseClient
+      .from('user_daily_quests')
+      .update({ status: 'rewarded' })
+      .eq('id', userQuestId);
+
+    alert(`🎉 보상이 지급되었습니다! (+${uq.quests.reward_coin}포인트, +${uq.quests.reward_xp}XP)`);
+
+    syncStatsAndRender(); // 먼저 스탯 갱신
+    initDailyQuests();    // 퀘스트 UI 갱신
+  } catch (e) {
+    console.error('Claim Reward Error:', e);
+    alert('보상을 받는 중 오류가 발생했습니다.');
+    if (btn) btn.disabled = false;
+  }
+}
+
+window.claimQuestReward = claimQuestReward;
+window.updateQuestProgress = updateQuestProgress;
+
+// ✅ 유저 정보 및 장착 아이템 로드 & UI 적용
+window.loadUserInfo = async function () {
+  const username = localStorage.getItem('savedUsername');
+  if (!username) return;
+
+  try {
+    const { data: user, error } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .maybeSingle();
+
+    if (error || !user) return;
+
+    // 기본 정보 DOM 업데이트
+    const dashName = document.getElementById('dash-name');
+    const headerName = document.getElementById('profile-name-display');
+    const dashRole = document.getElementById('dash-role');
+    const dashAvatar = document.getElementById('dash-avatar');
+    const headerAvatar = document.getElementById('header-avatar');
+    const headerAvatarMobile = document.getElementById('header-avatar-mobile');
+    const sideMenuName = document.getElementById('side-menu-name');
+    const sideMenuAvatar = document.getElementById('side-menu-avatar');
+
+    // 대시보드 학급 정보 엘리먼트
+    const dashGrade = document.getElementById('dash-grade');
+    const dashClass = document.getElementById('dash-class');
+    const dashNum = document.getElementById('dash-num');
+
+    // 미리보기 엘리먼트
+    const previewName = document.getElementById('profile-preview-name');
+    const previewTitle = document.getElementById('profile-preview-title');
+    const previewAvatar = document.getElementById('profile-preview-avatar');
+    const previewSchool = document.getElementById('profile-preview-school');
+    const previewGrade = document.getElementById('profile-preview-grade');
+    const previewClass = document.getElementById('profile-preview-class');
+
+    const nameHtml = formatUserDisplayName(user);
+    const cleanTitle = user.equipped_title ? user.equipped_title.replace('[칭호]', '').trim() : '칭호 없음';
+    let titleStyle = 'font-size:0.85rem; font-weight:700; margin-right:6px; color:#6366f1;';
+    if (user.equipped_title && (user.equipped_title.includes('rainbow') || (user.equipped_color && user.equipped_color.includes('무지개')))) {
+      titleStyle += 'background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent;';
+    }
+
+    if (dashName) dashName.innerHTML = nameHtml;
+    if (headerName) headerName.innerHTML = nameHtml;
+    if (sideMenuName) sideMenuName.innerHTML = nameHtml;
+
+    // 대시보드 학급 정보 업데이트
+    if (dashGrade) dashGrade.textContent = user.grade || '-';
+    if (dashClass) dashClass.textContent = user.class_num || '-';
+    if (dashNum) dashNum.textContent = user.student_number || '0';
+
+    // 미리보기 업데이트
+    if (previewName) previewName.textContent = user.name;
+    if (previewTitle) {
+      previewTitle.innerHTML = user.equipped_title ? `[${cleanTitle}]` : '칭호 없음';
+      previewTitle.style.cssText = user.equipped_title ? titleStyle : 'color:#94a3b8; font-weight:normal; font-size:0.85rem;';
+    }
+    if (previewSchool) previewSchool.textContent = '봉담중학교';
+    if (previewGrade) previewGrade.textContent = user.grade || '-';
+    if (previewClass) previewClass.textContent = user.class_num || '-';
+
+    // ✅ 로컬 스토리지 데이터 동기화 (초기 로딩용)
+    localStorage.setItem('savedTitle', user.equipped_title || '');
+    localStorage.setItem('savedGrade', user.grade || '');
+    localStorage.setItem('savedClassNum', user.class_num || '');
+
+    if (dashRole) dashRole.textContent = user.role === 'admin' ? '관리자' : '학생';
+
+    // 대시보드 및 헤더 아바타 업데이트 (인스타 스타일)
+    updateAvatarUI(dashAvatar, user.avatar_url, user.character_icon || '👤');
+    updateAvatarUI(headerAvatar, user.avatar_url, user.character_icon || '👤');
+    updateAvatarUI(headerAvatarMobile, user.avatar_url, user.character_icon || '👤');
+    updateAvatarUI(sideMenuAvatar, user.avatar_url, user.character_icon || '👤');
+    updateAvatarUI(previewAvatar, user.avatar_url, user.character_icon || '👤');
+
+    // 경험치 바 및 기타 스탯 업데이트
+    const expCur = document.getElementById('exp-cur');
+    const expNeed = document.getElementById('exp-need');
+    const lvlFill = document.getElementById('lvl-fill');
+    const lvNum = document.getElementById('lv-num');
+
+    if (lvNum) lvNum.innerText = user.level || 1;
+    if (expCur) expCur.innerText = user.exp || 0;
+    const nextExp = (user.level || 1) * 20;
+    if (expNeed) expNeed.innerText = nextExp;
+    if (lvlFill) {
+      const percent = Math.min(100, ((user.exp || 0) / nextExp) * 100);
+      lvlFill.style.width = percent + '%';
+    }
+
+    // 포인트 업데이트
+    const coinBalance = document.getElementById('coin-balance');
+    if (coinBalance) coinBalance.innerText = (user.coin_balance || 0).toLocaleString();
+
+    // ✅ 프로필 설정 필드 채우기 (새로 추가)
+    const pName = document.getElementById('profile-name');
+    const pUsername = document.getElementById('profile-username');
+    const pUsernameOrigin = document.getElementById('profile-username-origin');
+    const pEmail = document.getElementById('profile-email');
+    const pGrade = document.getElementById('profile-grade');
+    const pClass = document.getElementById('profile-class');
+    const pNumber = document.getElementById('profile-number');
+
+    if (pName) pName.value = user.name || "";
+    if (pUsername) pUsername.value = user.username || "";
+    if (pUsernameOrigin) pUsernameOrigin.value = user.username || "";
+    if (pEmail) pEmail.value = user.email || "";
+    if (pGrade) pGrade.value = user.grade || "";
+    if (pClass) pClass.value = user.class_num || "";
+    if (pNumber) pNumber.value = user.student_number || "";
+
+    // 화면 효과 적용 (눈내림, 벚꽃 등)
+    let effectContainer = document.getElementById('global-screen-effect');
+    if (!effectContainer) {
+      effectContainer = document.createElement('div');
+      effectContainer.id = 'global-screen-effect';
+      effectContainer.style.position = 'fixed';
+      effectContainer.style.top = '0';
+      effectContainer.style.left = '0';
+      effectContainer.style.width = '100vw';
+      effectContainer.style.height = '100vh';
+      effectContainer.style.pointerEvents = 'none';
+      effectContainer.style.zIndex = '99999';
+      document.body.appendChild(effectContainer);
+    }
+
+    effectContainer.innerHTML = ''; // 초기화
+    if (user.equipped_effect) {
+      if (user.equipped_effect.includes('눈내림')) {
+        const canvas = document.createElement('canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        effectContainer.appendChild(canvas);
+        if (typeof startSnowEffect === 'function') startSnowEffect(canvas);
+      } else if (user.equipped_effect.includes('벚꽃')) {
+        const canvas = document.createElement('canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        effectContainer.appendChild(canvas);
+        if (typeof startCherryBlossomEffect === 'function') startCherryBlossomEffect(canvas);
+      }
+    }
+
+    // 컬렉션 정보 갱신
+    if (typeof loadOwnedCollection === 'function') loadOwnedCollection();
+
+  } catch (err) {
+    console.error('Error loading user info:', err);
+  }
+};
+
+// 👤 아바타 UI 업데이트 함수 (인스타 스타일 원형)
+function updateAvatarUI(container, avatarUrl, defaultEmoji) {
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (avatarUrl && avatarUrl.trim() !== '') {
+    const img = document.createElement('img');
+    img.src = avatarUrl;
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    img.style.borderRadius = '50%';
+    container.appendChild(img);
+  } else {
+    // 이미지가 없을 경우 캐릭터 아이콘(이모지) 표시
+    container.innerText = defaultEmoji || '👤';
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+    container.style.fontSize = container.id === 'dash-avatar' ? '2.5rem' : '1.2rem';
+    container.style.background = '#f1f5f9';
+    container.style.borderRadius = '50%';
   }
 }

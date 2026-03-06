@@ -131,9 +131,32 @@ async function addUser() {
 async function bulkApplyRole() {
     const role = $('#bulk-role').value; if (!role) return toast('일괄 권한을 선택하세요');
     const ids = [...$$('.row-check:checked')].map(i => i.dataset.username); if (!ids.length) return;
+    if (!confirm(`${ids.length}명의 권한을 '${role}'(으)로 일괄 변경할까요?`)) return;
     const { error } = await sb.from('users').update({ role }).in('username', ids);
     if (error) { console.error(error); return toast('일괄 변경 실패'); }
     toast(`일괄 변경 완료 (${ids.length}명)`); logAction('role_bulk_update', { targets: ids, role }); loadUsers();
+}
+async function bulkGivePoints() {
+    const ids = [...$$('.row-check:checked')].map(i => i.dataset.username);
+    if (!ids.length) return;
+    const raw = prompt(`${ids.length}명에게 지급할 포인트를 입력하세요:`, '100');
+    const amount = parseInt(raw, 10);
+    if (isNaN(amount) || amount <= 0) return toast('올바른 포인트를 입력하세요');
+
+    if (!confirm(`${ids.length}명에게 각각 ${amount}P를 지급할까요?`)) return;
+
+    // Supabase RPC if exists, or batch update loop
+    for (const chunk of chunked(ids, 50)) {
+        const { data, error: getErr } = await sb.from('users').select('username, coin_balance').in('username', chunk);
+        if (getErr) continue;
+        const updates = data.map(u => ({ username: u.username, coin_balance: (u.coin_balance || 0) + amount }));
+        const { error: upErr } = await sb.from('users').upsert(updates);
+        if (upErr) console.error('Bulk point error for chunk', upErr);
+    }
+
+    toast(`일괄 지급 완료 (${ids.length}명)`);
+    logAction('coin_bulk_given', { targets: ids, amount });
+    loadUsers();
 }
 async function promote() {
     if (!confirm('신학기 자동 승급(1→2, 2→3)을 실행할까요?')) return;
@@ -192,43 +215,88 @@ async function getIP() {
     }
 }
 
+let logDataCache = [];
 async function loadLogs() {
     try {
         const { data, error } = await sb
             .from('user_activity_logs')
-            .select('action, username, email, target, target_type, created_at')
+            .select('action, username, email, target, target_type, created_at, details')
             .order('created_at', { ascending: false })
-            .limit(50);
+            .limit(100);
 
-        const ul = $('#log-list');
-        ul.innerHTML = '';
-
-        if (error || !data?.length) {
-            $('#log-empty').classList.remove('hidden');
-            return;
-        }
-
-        $('#log-empty').classList.add('hidden');
-
-        for (const r of data) {
-            const when = new Date(r.created_at).toLocaleString();
-            const li = document.createElement('li');
-            li.innerHTML = `
-            <div class="p-2 rounded border dark:border-gray-700">
-              <div class="text-xs text-gray-500">${when}</div>
-              <div class="text-sm">
-                <b>${r.username || r.email || '-'}</b>
-                → <span class="font-mono">${r.target || '-'}</span>
-                <span class="ml-1 text-xs text-gray-400">${r.target_type || ''}</span>
-              </div>
-              <div class="text-xs text-blue-600 dark:text-blue-400">${r.action}</div>
-            </div>`;
-            ul.appendChild(li);
-        }
+        if (error) throw error;
+        logDataCache = data || [];
+        renderLogsUI();
     } catch (e) {
         console.error('loadLogs 오류', e);
         $('#log-empty').classList.remove('hidden');
     }
+}
+
+function renderLogsUI() {
+    const ul = $('#log-list');
+    ul.innerHTML = '';
+
+    const filterUser = $('#log-search-user').value.trim().toLowerCase();
+    const filterAction = $('#log-search-action').value.trim().toLowerCase();
+
+    const filtered = logDataCache.filter(r => {
+        const uMatch = !filterUser || (r.username || r.email || '').toLowerCase().includes(filterUser);
+        const aMatch = !filterAction || (r.action || '').toLowerCase().includes(filterAction);
+        return uMatch && aMatch;
+    });
+
+    if (!filtered.length) {
+        $('#log-empty').classList.remove('hidden');
+        return;
+    }
+
+    $('#log-empty').classList.add('hidden');
+
+    for (const r of filtered) {
+        const when = new Date(r.created_at).toLocaleString();
+        const li = document.createElement('li');
+        let detailsBtn = '';
+        if (r.details) {
+            const safeDetails = escapeHtml(JSON.stringify(r.details, null, 2));
+            detailsBtn = `<button class="text-xs text-indigo-600 hover:underline mt-1 view-log-detail" data-details="${safeDetails}">내역 보기</button>`;
+        }
+        li.innerHTML = `
+        <div class="p-2 rounded border dark:border-gray-700 flex justify-between items-start">
+          <div>
+            <div class="text-xs text-gray-500">${when}</div>
+            <div class="text-sm">
+              <b>${r.username || r.email || '-'}</b>
+              → <span class="font-mono">${r.target || '-'}</span>
+              <span class="ml-1 text-xs text-gray-400">${r.target_type || ''}</span>
+            </div>
+            <div class="text-xs text-blue-600 dark:text-blue-400 font-semibold">${r.action}</div>
+          </div>
+          <div>
+            ${detailsBtn}
+          </div>
+        </div>`;
+        ul.appendChild(li);
+    }
+
+    document.querySelectorAll('.view-log-detail').forEach(btn => {
+        btn.onclick = function () {
+            const detailsJson = this.getAttribute('data-details');
+            document.getElementById('log-detail-content').textContent = detailsJson;
+            openModal('#modal-log-detail');
+        };
+    });
+}
+
+// XSS 방지를 위한 유틸리티 함수
+function escapeHtml(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 // ===== CSV =====
@@ -338,6 +406,11 @@ $('#rows').onclick = async (e) => {
 };
 $('#check-all').onchange = (e) => { $$('.row-check').forEach(i => i.checked = e.target.checked); updateSelectionUI(); };
 $('#bulk-apply').onclick = bulkApplyRole;
+$('#bulk-point').onclick = bulkGivePoints;
+
+// 로그 검색 실시간 반영
+$('#log-search-user').oninput = renderLogsUI;
+$('#log-search-action').oninput = renderLogsUI;
 
 // 툴바
 $('#refresh').onclick = loadUsers;
@@ -360,6 +433,7 @@ $('#add-submit').onclick = addUser;
 
 $('#open-logs').onclick = () => { openModal('#modal-logs'); loadLogs(); };
 $$('#modal-logs [data-close]').forEach(b => b.onclick = () => closeModal('#modal-logs'));
+$$('#modal-log-detail [data-close]').forEach(b => b.onclick = () => closeModal('#modal-log-detail'));
 $('#refresh-logs').onclick = loadLogs;
 
 // 정렬
@@ -367,16 +441,140 @@ document.querySelectorAll('th.sortable').forEach(th => {
     th.onclick = () => { const key = th.dataset.sort; sortDir = (sortKey === key && sortDir === 'asc') ? 'desc' : 'asc'; sortKey = key; apply(); };
 });
 
+// ===== Shop Management Logic =====
+const tabUsers = $('#tab-users'), tabShop = $('#tab-shop');
+const secUsers = [$('#section-stats'), $('#section-toolbar'), $('#section-users')];
+const secShop = $('#section-shop');
+
+tabUsers.onclick = () => {
+    tabUsers.className = 'text-sm font-bold text-blue-600';
+    tabShop.className = 'text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors';
+    secUsers.forEach(s => s?.classList.remove('hidden'));
+    secShop.classList.add('hidden');
+    $('#bulk-drawer').classList.add('hidden');
+};
+
+tabShop.onclick = () => {
+    tabShop.className = 'text-sm font-bold text-blue-600';
+    tabUsers.className = 'text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors';
+    secUsers.forEach(s => s?.classList.add('hidden'));
+    secShop.classList.remove('hidden');
+    $('#bulk-drawer').classList.add('hidden');
+    loadShopItemsAdmin();
+};
+
+async function loadShopItemsAdmin() {
+    const { data, error } = await sb.from('shop_items').select('*').order('id', { ascending: true });
+    if (error) { console.error(error); return toast('상점 아이템 로드 실패'); }
+    const tb = $('#shop-rows'); tb.innerHTML = '';
+    $('#shop-empty').classList.toggle('hidden', !!data?.length);
+
+    (data || []).forEach(item => {
+        const tr = document.createElement('tr');
+        const imgHtml = item.image_url
+            ? `<div class="w-10 h-10 rounded border bg-cover bg-center" style="background-image:url('${item.image_url}')"></div>`
+            : `<div class="w-10 h-10 rounded border bg-gray-100 flex items-center justify-center text-xs text-gray-400">No Img</div>`;
+
+        tr.innerHTML = `
+          <td class="text-center font-mono text-xs text-gray-400">${item.id}</td>
+          <td>
+            <div class="flex items-center gap-3">
+              ${imgHtml}
+              <span class="font-semibold">${escapeHtml(item.name)}</span>
+            </div>
+          </td>
+          <td class="text-center text-amber-600 font-bold">${(item.price || 0).toLocaleString()}</td>
+          <td class="text-center">${item.stock || 1}</td>
+          <td class="text-gray-500 text-xs truncate max-w-[300px]">${escapeHtml(item.description || '-')}</td>
+          <td class="text-center">
+            <div class="flex justify-center gap-2">
+              <button class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors edit-shop" data-id="${item.id}">수정</button>
+              <button class="text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors del-shop" data-id="${item.id}">삭제</button>
+            </div>
+          </td>`;
+        tb.appendChild(tr);
+    });
+}
+
+// 상점 아이템 추가/수정
+$('#open-add-shop').onclick = () => {
+    $('#shop-modal-title').textContent = '🛒 새 아이템 추가';
+    $('#shop-id').value = '';
+    $('#shop-name').value = '';
+    $('#shop-price').value = '';
+    $('#shop-image').value = '';
+    $('#shop-stock').value = '1';
+    $('#shop-desc').value = '';
+    openModal('#modal-shop');
+};
+
+$('#shop-submit').onclick = async () => {
+    const id = $('#shop-id').value;
+    const p = {
+        name: $('#shop-name').value.trim(),
+        price: Number($('#shop-price').value || 0),
+        image_url: $('#shop-image').value.trim() || null,
+        stock: Number($('#shop-stock').value || 1),
+        description: $('#shop-desc').value.trim() || null
+    };
+
+    if (!p.name) return toast('아이템 이름을 입력하세요');
+
+    let error;
+    if (id) {
+        const { error: e } = await sb.from('shop_items').update(p).eq('id', id);
+        error = e;
+    } else {
+        const { error: e } = await sb.from('shop_items').insert([p]);
+        error = e;
+    }
+
+    if (error) { console.error(error); return toast('저장 실패: ' + error.message); }
+    toast(id ? '수정 완료' : '추가 완료');
+    logAction(id ? 'shop_item_update' : 'shop_item_create', p);
+    closeModal('#modal-shop');
+    loadShopItemsAdmin();
+};
+
+$('#shop-rows').onclick = async (e) => {
+    const editBtn = e.target.closest('.edit-shop');
+    const delBtn = e.target.closest('.del-shop');
+
+    if (editBtn) {
+        const id = editBtn.dataset.id;
+        const { data, error } = await sb.from('shop_items').select('*').eq('id', id).maybeSingle();
+        if (error || !data) return toast('정보 로드 실패');
+
+        $('#shop-modal-title').textContent = '📝 아이템 수정';
+        $('#shop-id').value = data.id;
+        $('#shop-name').value = data.name;
+        $('#shop-price').value = data.price;
+        $('#shop-image').value = data.image_url || '';
+        $('#shop-stock').value = data.stock || 1;
+        $('#shop-desc').value = data.description || '';
+        openModal('#modal-shop');
+    }
+
+    if (delBtn) {
+        const id = delBtn.dataset.id;
+        if (!confirm('정말 이 아이템을 삭제할까요?')) return;
+        const { error } = await sb.from('shop_items').delete().eq('id', id);
+        if (error) { console.error(error); return toast('삭제 실패'); }
+        toast('삭제 완료');
+        logAction('shop_item_delete', { item_id: id });
+        loadShopItemsAdmin();
+    }
+};
+
+$$('#modal-shop [data-close]').forEach(b => b.onclick = () => closeModal('#modal-shop'));
+
 // 초기 로드
 document.addEventListener('DOMContentLoaded', async () => { await loadUsers(); });
 
 let targetUserForCoin = null;
 $('#coin-submit').onclick = async () => {
-    const raw = $('#coin-amount')?.value?.trim();  // ✅ 먼저 정의
-    console.log('입력값:', raw);
-    console.log('지급 대상:', targetUserForCoin); // 👈 여기 추가
-
-    const amount = parseInt(raw, 10);              // ✅ 그 다음 사용
+    const raw = $('#coin-amount')?.value?.trim();
+    const amount = parseInt(raw, 10);
 
     if (!targetUserForCoin || !raw || isNaN(amount) || amount <= 0) {
         return toast('지급할 포인트를 올바르게 입력하세요');
