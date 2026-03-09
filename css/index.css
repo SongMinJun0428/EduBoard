@@ -8,7 +8,7 @@
     header {
       background: #fff;
       border-bottom: 1px solid #dee2e6;
-      padding: 0.75rem 2rem;
+      padding: 0.15rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -16,10 +16,9 @@
     }
 
     .header-avatar-container {
-      width: 32px;
-      height: 32px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
-      overflow: hidden;
       background: #f1f5f9;
       display: flex;
       align-items: center;
@@ -27,6 +26,41 @@
       border: 2px solid white;
       box-shadow: 0 0 0 1px #dbdbdb;
       flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ✅ 무지개 테두리 애니메이션 (원 회전) */
+    .profile-border-rainbow::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border-radius: 50%;
+      background: conic-gradient(#ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000);
+      z-index: -1;
+      animation: spin-rainbow 8s linear infinite;
+    }
+
+    @keyframes spin-rainbow {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* 상단 헤더 아바타 전용: 테두리를 얇게 (2px) */
+    .header-avatar-container.profile-border-golden::before,
+    .header-avatar-container.profile-border-rainbow::before {
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
     }
 
     .mobile-side-menu.open {
@@ -1179,8 +1213,9 @@
       place-items: center;
       font-size: 56px;
       box-shadow: 0 6px 18px rgba(79, 70, 229, .15);
-      overflow: hidden;
       border: 3px solid #fff;
+      position: relative;
+      z-index: 1;
     }
 
     /* 🏷️ 프로필 설정 미리보기 박스 */
@@ -1206,9 +1241,41 @@
       justify-content: center;
       font-size: 40px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      overflow: hidden;
       border: 2px solid #fff;
       flex-shrink: 0;
+      position: relative;
+      /* 테두리 효과를 위해 추가 */
+      z-index: 1;
+      /* 테두리 효과를 위해 추가 */
+    }
+
+    /* ✅ 프로필 황금 테두리 효과 */
+    .profile-border-golden::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #fcd34d, #f59e0b, #fbbf24, #d97706, #fcd34d);
+      background-size: 200% 200%;
+      z-index: -1;
+      animation: rotate-golden-border 3s linear infinite;
+    }
+
+    @keyframes rotate-golden-border {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
     }
 
     .preview-info {
@@ -1802,7 +1869,8 @@
       border-radius: 10px;
       font-size: 12px;
       font-weight: 800;
-      box-shadow: 0 6px 14px rgba(124, 58, 237, .25)
+      box-shadow: 0 6px 14px rgba(124, 58, 237, .25);
+      z-index: 10;
     }
 
     /* 🕒 주간 시간표(나의 시간표) 프리미엄 카드 디자인 */
@@ -2988,57 +3056,86 @@
     }
 
     /* Collection Management (Profile Panel) */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #cbd5e1;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+      margin: 4px 0;
+    }
+
     .character-select-item {
-      border: 2px solid #f1f5f9;
-      border-radius: 12px;
-      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 10px;
       text-align: center;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      background: #fff;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       position: relative;
     }
 
     .character-select-item:hover {
       border-color: #cbd5e1;
-      transform: translateY(-2px);
-      background: #f8fafc;
+      transform: translateY(-3px);
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
     .character-select-item.equipped {
-      border-color: #10b981;
-      background: #ecfdf5;
-      box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+      border: 2px solid #4f46e5;
+      background: #eef2ff;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.12);
+      padding: 9px;
     }
 
     .character-select-item.equipped::after {
-      content: '✅ 장착됨';
+      content: '✔ 장착됨';
       position: absolute;
       top: -10px;
-      right: -5px;
-      background: #10b981;
+      right: -8px;
+      background: linear-gradient(135deg, #4f46e5, #3730a3);
       color: #fff;
       font-size: 0.65rem;
-      padding: 2px 6px;
-      border-radius: 10px;
-      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+      letter-spacing: -0.02em;
     }
 
     .title-select-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 16px;
-      background: #f8fafc;
+      padding: 12px 18px;
+      background: #fff;
       border: 1px solid #e2e8f0;
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.9rem;
+      color: #334155;
     }
 
     .title-select-item:hover {
-      background: #f1f5f9;
+      background: #f8fafc;
       border-color: #cbd5e1;
+      transform: translateX(3px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
     }
 
     .title-select-item.equipped {
@@ -3046,18 +3143,19 @@
       border-color: #4f46e5;
       color: #3730a3;
       font-weight: 700;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
     }
 
     .title-select-item.equipped::after {
-      content: '장착 중';
-      font-size: 0.7rem;
-      background: #4f46e5;
-      align-items: center;
-      padding: 14px 18px;
-      background: rgba(255, 255, 255, 0.5);
-      border-radius: 16px;
-      border: 1px solid rgba(0, 0, 0, 0.03);
-      transition: all 0.2s;
+      content: '✔ 장착됨';
+      font-size: 0.65rem;
+      color: #fff;
+      background: linear-gradient(135deg, #4f46e5, #3730a3);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
     }
 
     body.dark-mode .notification-item {
@@ -3088,6 +3186,81 @@
     .noti-desc {
       font-size: 0.8rem;
       color: #64748b;
+    }
+
+    /* =========================================
+       💬 대화실 (Chat) & Premium Color
+    ========================================= */
+    .chat-msg-row {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 8px;
+      max-width: 80%;
+    }
+
+    .chat-msg-row.mine {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .chat-msg-row.other {
+      align-self: flex-start;
+      align-items: flex-start;
+    }
+
+    .chat-username {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 4px;
+      padding: 0 4px;
+    }
+
+    .chat-bubble {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      background: #fff;
+      color: #333;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      word-break: break-all;
+    }
+
+    .chat-msg-row.mine .chat-bubble {
+      background: #4f46e5;
+      color: #fff;
+      border-color: #4f46e5;
+      border-bottom-right-radius: 2px;
+    }
+
+    .chat-msg-row.other .chat-bubble {
+      border-bottom-left-radius: 2px;
+    }
+
+    /* 프리미엄 채팅 컬러 (이름 & 말풍선) */
+    .premium-chat-username {
+      background: linear-gradient(45deg, #f59e0b, #ec4899, #8b5cf6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 900;
+      text-shadow: 0 0 5px rgba(236, 72, 153, 0.3);
+    }
+
+    .chat-msg-row.premium-chat .chat-bubble {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(236, 72, 153, 0.1));
+      border: 1px solid rgba(236, 72, 153, 0.3);
+      color: #1e293b;
+      font-weight: 500;
+    }
+
+    .chat-msg-row.mine.premium-chat .chat-bubble {
+      background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+      color: white;
+      border: none;
+      box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
     }
 
     /* 🌙 Refined Dark Mode (Charcoal/Navy) */

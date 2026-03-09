@@ -357,6 +357,11 @@ async function addNotice() {
     const { error } = await supabaseClient.from('notices').insert([newNotice]);
     if (error) throw error;
 
+    // 🎯 [Logging] 활동 로그 기록
+    if (window.logActivity) {
+      window.logActivity('notice_create', title, 'notice', { content: content, image_url: imageUrl });
+    }
+
     // 🎯 [이관] 일일 XP 보상 지급 (notice 등록 시)
     await awardDailyXP('notice');
 
@@ -380,9 +385,13 @@ function formatUserDisplayName(user) {
   if (!user) return '사용자';
   let nameHtml = user.name;
   if (user.equipped_title) {
-    let titleStyle = 'font-size:0.85rem; font-weight:700; margin-right:6px; color:#6366f1;'; // 기본 인디고
+    let titleStyle = 'font-size:0.85rem; font-weight:700; margin-right:6px;';
     if (user.equipped_title.includes('rainbow') || (user.equipped_color && user.equipped_color.includes('무지개'))) {
       titleStyle += 'background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent;';
+    } else if (user.equipped_color) {
+      titleStyle += `color: ${user.equipped_color};`;
+    } else {
+      titleStyle += 'color: #6366f1;'; // 기본 인디고
     }
     const cleanTitle = user.equipped_title.replace('[칭호]', '').trim();
     nameHtml = `<span style="${titleStyle}">[${cleanTitle}]</span> ${user.name}`;
@@ -430,7 +439,7 @@ async function loadNotices() {
   try {
     const { safeG, safeC } = getSafeGradeClass();
 
-    let query = supabaseClient.from('notices').select('*, users(equipped_title)');
+    let query = supabaseClient.from('notices').select('*, users(equipped_title, equipped_color)');
 
     if (currentUserRole === 'admin') {
       if (safeG !== 0) {
@@ -462,8 +471,12 @@ async function loadNotices() {
     data.forEach(item => {
       const safeTitle = escapeHtml(item.title);
       const writerTitle = item.users?.equipped_title ? `[${item.users.equipped_title.replace('[칭호]', '').trim()}] ` : '';
+      const writerColor = item.users?.equipped_color || '#6366f1';
       const safeWriter = escapeHtml(item.writer);
       const safeContent = (item.content || '').split('\n').map(line => escapeHtml(line)).join('<br>');
+
+      const titleSpanStyle = `font-size:0.8rem; font-weight:700; margin-left:8px; color:${writerColor};`;
+      const writerTitleHtml = writerTitle ? `<span style="${titleSpanStyle}">${writerTitle}</span>` : '';
 
       const div = document.createElement('div');
       div.style.borderBottom = '1px solid #ddd';
@@ -492,7 +505,7 @@ async function loadNotices() {
                            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
                              <strong>${safeTitle}</strong>
                              ${editedBadge}
-                             <span style="font-size:0.8rem;color:#6366f1;font-weight:700;margin-left:8px;">${writerTitle}</span>
+                             ${writerTitleHtml}
                              <span style="font-size:0.8rem;color:#888;">${safeWriter}</span>
                            </div>
                            ${adminBtns}
@@ -664,6 +677,14 @@ async function submitHomework() {
 
     if (insertError) throw insertError;
 
+    // 🎯 [Logging] 활동 로그 기록
+    if (window.logActivity) {
+      window.logActivity('material_create', title, 'material', {
+        file_count: insertRecords.length,
+        scope: scope
+      });
+    }
+
     alert('업로드 완료!');
     statusEl.style.color = 'green';
     statusEl.textContent = `✅ 총 ${insertRecords.length}개 파일 업로드 완료!`;
@@ -689,7 +710,7 @@ async function loadMaterials() {
   try {
     const { safeG, safeC } = getSafeGradeClass();
 
-    let query = supabaseClient.from('homeworks').select('*, users(equipped_title)');
+    let query = supabaseClient.from('homeworks').select('*, users(equipped_title, equipped_color)');
 
     if (currentUserRole !== 'admin') {
       // 권한 필터: 전교(school/null/0), 같은 학년(grade), 또는 같은 반(class)
@@ -715,10 +736,10 @@ async function loadMaterials() {
     data.forEach(item => {
       const safeTitle = escapeHtml(item.title);
       const writerTitle = item.users?.equipped_title ? `[${item.users.equipped_title.replace('[칭호]', '').trim()}] ` : '';
+      const writerColor = item.users?.equipped_color || '#6366f1';
       const safeName = escapeHtml(item.name);
-      const safeComment = escapeHtml(item.comment || '');
 
-      const titleLine = `📌 ${safeTitle} (<span style="color:#6366f1;font-weight:700;">${writerTitle}</span>${item.grade}학년 ${item.class_num}반 ${item.student_number}번 ${safeName})`;
+      const titleLine = `📌 ${safeTitle} (<span style="color:${writerColor};font-weight:700;">${writerTitle}</span>${item.grade}학년 ${item.class_num}반 ${item.student_number}번 ${safeName})`;
       const editedBadge = item.is_edited ? '<span style="font-size:0.75rem; color:#94a3b8; background:#f1f5f9; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:normal;">(수정됨)</span>' : '';
       const scopeTag = `<span style="font-size:.8rem;color:#6b7280; margin-left:8px;">· 범위: ${item.share_scope === 'class' ? '같은 반' : item.share_scope === 'grade' ? '같은 학년' : '전교'}</span>`;
 
@@ -920,18 +941,8 @@ function updateBottomNav(panelId) {
   }
 }
 
-supabaseClient.auth.getSession().then(async ({ data: { session } }) => {
-  if (session) {
-    const { data: user } = await supabaseClient
-      .from('users')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
-    if (user) currentUserRole = user.role;
-  } else {
-    showLogin();
-  }
-});
+// Redundant session check removed. Initialization is handled in the main DOMContentLoaded listener.
+
 
 function norm(s = '') {
   return String(s)
@@ -1707,7 +1718,7 @@ function closeImageModal() {
 
 function $id(id) { return document.getElementById(id) }
 
-function initDashboardTop() {
+async function initDashboardTop() {
   const d = new Date(); const w = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
   if ($id('dash-notice-date')) $id('dash-notice-date').textContent =
     `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${w})`;
@@ -1729,15 +1740,16 @@ function initDashboardTop() {
   if ($id('dash-grade')) $id('dash-grade').textContent = grd;
   if ($id('dash-class')) $id('dash-class').textContent = cls;
 
-  loadRecentNotices3();
-  syncStatsAndRender();
-  initDailyQuests(); // 퀘스트 초기화 추가
+  await loadRecentNotices3();
+  await syncStatsAndRender();
+  await initDailyQuests(); // 퀘스트 초기화 완료를 기다림
 
   // 📅 일정(캘린더) 초기화 추가
   if (typeof renderScheduleCalendar === 'function') {
     renderScheduleCalendar();
   }
 }
+
 
 async function loadRecentNotices3() {
   const box = $id('dash-notice-list');
@@ -1923,7 +1935,8 @@ async function awardDailyXP(action) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', syncStatsAndRender);
+// Redundant listener removed.
+
 
 function renderStats({ level, exp, point, need }) {
   const levelBadge = document.getElementById('lv-num');
@@ -2597,19 +2610,19 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
 
 // (Removed redundant syncStatsAndRender/renderStats definitions)
 
-window.addEventListener('DOMContentLoaded', () => {
-  const savedName = localStorage.getItem('savedName');
-  const savedNum = localStorage.getItem('savedStudentNum');
-  if (savedName && savedNum) {
-    currentUserName = savedName;
-    currentStudentNumber = savedNum;
-    setUserInfoInput();
-  }
-});
+// Consolidated into the main initialization block below.
+
 
 window.addEventListener('DOMContentLoaded', async () => {
+  // 1. 세션 복구 및 기본 데이터 로드
   const savedUsername = localStorage.getItem('savedUsername');
-  if (!savedUsername) { showLogin(); return; }
+  if (!savedUsername) {
+    showLogin();
+    return;
+  }
+
+  // Supabase 세션 확인 (레이스 컨디션 방지)
+  const { data: { session } } = await supabaseClient.auth.getSession();
 
   const { data: user, error } = await supabaseClient
     .from('users')
@@ -2617,29 +2630,137 @@ window.addEventListener('DOMContentLoaded', async () => {
     .eq('username', savedUsername)
     .maybeSingle();
 
-  if (error || !user) { showLogin(); return; }
+  if (error || !user) {
+    console.warn('User not found or error, showing login.');
+    showLogin();
+    return;
+  }
 
+  // 2. 전역 변수 설정
   currentUserRole = user.role || 'user';
   currentGrade = user.grade;
   currentClassNum = user.class_num;
   currentUserName = user.name;
   currentStudentNumber = user.student_number;
 
+  // 3. 로컬 스토리지 동기화
   localStorage.setItem('savedName', user.name);
   localStorage.setItem('savedStudentNum', user.student_number);
   localStorage.setItem('savedGrade', user.grade);
   localStorage.setItem('savedClassNum', user.class_num);
 
-  await loadUserInfo(); // 프로필 및 장착 아이템 적용
+  // 4. UI 및 데이터 로드 (순차 실행)
+  await loadUserInfo();
   setUserInfoInput();
-
   await loadTimetableWeek(user.grade, user.class_num);
   await loadCoinBalance();
-  showMain();
-  loadNotices();
 
-  afterLoginRefreshDashboard();
+  showMain();
+
+  // 5. 대시보드 및 기타 데이터 최종 갱신
+  await afterLoginRefreshDashboard();
+
+  // 6. 확성기(브로드캐스트) 리스너 시작
+  listenForBroadcasts();
 });
+
+// =========================================
+// 📢 확성기 (전역 브로드캐스트) 시스템
+// =========================================
+async function sendBroadcast() {
+  const inputEl = document.getElementById('broadcast-input');
+  if (!inputEl) return;
+  const message = inputEl.value.trim();
+
+  if (!message) {
+    alert('메시지를 입력해주세요.');
+    return;
+  }
+
+  if (message.length > 50) {
+    alert('메시지는 50자를 초과할 수 없습니다.');
+    return;
+  }
+
+  const username = localStorage.getItem('savedUsername');
+  const name = localStorage.getItem('savedName') || username;
+  if (!username) return;
+
+  try {
+    const { data: user } = await supabaseClient
+      .from('users')
+      .select('permissions')
+      .eq('username', username)
+      .single();
+
+    if (!user || !user.permissions || !user.permissions.includes('loudspeaker')) {
+      alert('확성기 권한이 없습니다.');
+      return;
+    }
+
+    // 이전에 보낸 시간이 있으면 쿨타임(예: 30초) 체크를 위해 로컬 스토리지 사용 가능
+    const lastTime = localStorage.getItem('lastBroadcastTime');
+    if (lastTime && Date.now() - parseInt(lastTime) < 30000) {
+      alert('너무 자주 보낼 수 없습니다. 30초 후 다시 시도해주세요.');
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from('broadcasts')
+      .insert({ sender_name: name, message: message });
+
+    if (error) {
+      console.error('Broadcast Error:', error);
+      alert('메시지 전송에 실패했습니다.');
+      return;
+    }
+
+    localStorage.setItem('lastBroadcastTime', Date.now());
+    inputEl.value = '';
+    alert('✅ 확성기 알림이 전체에게 발송되었습니다!');
+
+  } catch (err) {
+    console.error(err);
+    alert('오류 발생: ' + err.message);
+  }
+}
+window.sendBroadcast = sendBroadcast;
+
+let broadcastSubscription = null;
+function listenForBroadcasts() {
+  if (broadcastSubscription) return; // 이미 실행 중
+
+  broadcastSubscription = supabaseClient
+    .channel('public:broadcasts')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'broadcasts' }, payload => {
+      showBroadcastBanner(payload.new.sender_name, payload.new.message);
+    })
+    .subscribe();
+}
+
+function showBroadcastBanner(sender, message) {
+  const banner = document.getElementById('global-broadcast-banner');
+  const senderEl = document.getElementById('broadcast-sender');
+  const msgEl = document.getElementById('broadcast-message');
+
+  if (!banner || !senderEl || !msgEl) return;
+
+  senderEl.textContent = `[${escapeHtml(sender)}님의 알림]`;
+  msgEl.textContent = escapeHtml(message);
+
+  // 시작 애니메이션
+  banner.style.display = 'block';
+  banner.style.animation = 'slideDown 0.5s ease-out forwards';
+
+  // 7초 후 닫기
+  setTimeout(() => {
+    banner.style.animation = 'slideUp 0.5s ease-in forwards';
+    setTimeout(() => {
+      banner.style.display = 'none';
+      banner.style.animation = '';
+    }, 500); // 닫히는 애니메이션 지속시간
+  }, 7000);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   const profileButton = document.getElementById('profile-button');
@@ -2660,7 +2781,7 @@ document.addEventListener('DOMContentLoaded', () => {
 if (typeof loadOwnedCollection === 'function') loadOwnedCollection();
 
 // 간단한 애니메이션 효과 함수 (눈, 벚꽃)
-function startSnowEffect(canvas) {
+function startSnowEffect(canvas, isAccumulate = false) {
   const ctx = canvas.getContext('2d');
   const particles = Array.from({ length: 50 }, () => ({
     x: Math.random() * canvas.width,
@@ -2668,6 +2789,7 @@ function startSnowEffect(canvas) {
     r: Math.random() * 3 + 1,
     d: Math.random() * 1 + 0.5
   }));
+  let settled = [];
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -2676,6 +2798,12 @@ function startSnowEffect(canvas) {
       ctx.moveTo(p.x, p.y);
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true);
     });
+    if (isAccumulate) {
+      settled.forEach(p => {
+        ctx.moveTo(p.x, p.y);
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2, true);
+      });
+    }
     ctx.fill();
     update();
   }
@@ -2683,25 +2811,38 @@ function startSnowEffect(canvas) {
     particles.forEach(p => {
       p.y += Math.pow(p.d, 2) + 1;
       p.x += Math.sin(p.d);
-      if (p.y > canvas.height) { p.x = Math.random() * canvas.width; p.y = 0; }
+
+      let limit = isAccumulate ? canvas.height - Math.random() * 20 : canvas.height;
+      if (p.y > limit) {
+        if (isAccumulate) {
+          settled.push({ x: p.x, y: p.y, r: p.r });
+          if (settled.length > 300) settled.shift(); // limit settled particles
+        }
+        p.x = Math.random() * canvas.width;
+        p.y = isAccumulate ? -10 : 0;
+      }
     });
     requestAnimationFrame(draw);
   }
   draw();
 }
 
-function startCherryBlossomEffect(canvas) {
+function startCherryBlossomEffect(canvas, isAccumulate = false) {
   const ctx = canvas.getContext('2d');
   const particles = Array.from({ length: 40 }, () => ({
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
     s: Math.random() * 1 + 0.5,
     r: Math.random() * 360,
-    d: Math.random() * 1 + 0.5
+    d: Math.random() * 1 + 0.5,
+    angle: Math.random() * 100, // 좌우 살랑거림 각도
+    swaySpeed: Math.random() * 0.02 + 0.01 // 흔들림 속도 (아주 천천히)
   }));
+  let settled = [];
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    particles.forEach(p => {
+    let toDraw = isAccumulate ? [...particles, ...settled] : particles;
+    toDraw.forEach(p => {
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.r * Math.PI / 180);
@@ -2719,9 +2860,89 @@ function startCherryBlossomEffect(canvas) {
   function update() {
     particles.forEach(p => {
       p.y += p.d;
-      p.x += Math.sin(p.r) * 2;
-      p.r += 1;
-      if (p.y > canvas.height) { p.y = -20; p.x = Math.random() * canvas.width; }
+      // 부드러운 좌우 흔들림 적용
+      p.x += Math.sin(p.angle) * 1.5;
+      p.angle += p.swaySpeed;
+      // 자연스러운 천천히 회전
+      p.r += 0.5;
+
+      let limit = isAccumulate ? canvas.height - Math.random() * 30 : canvas.height;
+      if (p.y > limit) {
+        if (isAccumulate) {
+          settled.push({ x: p.x, y: p.y, s: p.s, r: p.r });
+          if (settled.length > 200) settled.shift(); // 최대 200개 제한
+        }
+        p.y = isAccumulate ? -20 : -20;
+        p.x = Math.random() * canvas.width;
+      }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function startStarEffect(canvas, isAccumulate = false) {
+  const ctx = canvas.getContext('2d');
+  const particles = Array.from({ length: 40 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    s: Math.random() * 2 + 1, // 크기
+    r: Math.random() * 360,   // 회전 각도
+    d: Math.random() * 1.5 + 0.5, // 떨어지는 속도
+    rotSpeed: (Math.random() - 0.5) * 4 // 회전 속도
+  }));
+  let settled = [];
+
+  function drawStar(cx, cy, spikes, outerRadius, innerRadius) {
+    let rot = Math.PI / 2 * 3;
+    let x = cx;
+    let y = cy;
+    let step = Math.PI / spikes;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerRadius);
+    for (let i = 0; i < spikes; i++) {
+      x = cx + Math.cos(rot) * outerRadius;
+      y = cy + Math.sin(rot) * outerRadius;
+      ctx.lineTo(x, y);
+      rot += step;
+      x = cx + Math.cos(rot) * innerRadius;
+      y = cy + Math.sin(rot) * innerRadius;
+      ctx.lineTo(x, y);
+      rot += step;
+    }
+    ctx.lineTo(cx, cy - outerRadius);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let toDraw = isAccumulate ? [...particles, ...settled] : particles;
+    toDraw.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.r * Math.PI / 180);
+      ctx.fillStyle = 'rgba(255, 215, 0, 0.8)'; // 금색 별
+      drawStar(0, 0, 5, 5 * p.s, 2 * p.s);
+      ctx.restore();
+    });
+    update();
+  }
+  function update() {
+    particles.forEach(p => {
+      p.y += p.d;
+      p.x += Math.sin(p.y / 50) * 0.5; // 살짝 흔들림
+      p.r += p.rotSpeed;
+
+      let limit = isAccumulate ? canvas.height - Math.random() * 20 : canvas.height;
+      if (p.y > limit) {
+        if (isAccumulate) {
+          settled.push({ x: p.x, y: p.y, s: p.s, r: p.r });
+          if (settled.length > 200) settled.shift(); // 바닥에 쌓임
+        }
+        p.y = isAccumulate ? -20 : -20;
+        p.x = Math.random() * canvas.width;
+      }
     });
     requestAnimationFrame(draw);
   }
@@ -2739,6 +2960,12 @@ async function fileToBase64Optimized(file, maxW = 1800, maxH = 1800, type = 'ima
     fr.onerror = rej;
     fr.readAsDataURL(file);
   });
+
+  // ✅ GIF 파일인 경우 압축/리사이징 없이 원본 그대로 반환 (움짤 유지)
+  if (file.type === 'image/gif') {
+    return dataUrl;
+  }
+
   const img = await new Promise((res, rej) => {
     const i = new Image();
     i.onload = () => res(i);
@@ -3633,8 +3860,13 @@ async function loadInventory() {
     return;
   }
 
-  listEl.innerHTML = '<p>인벤토리 불러오는 중...</p>';
-  if (characterListEl) characterListEl.innerHTML = '<p>불러오는 중...</p>';
+  const role = localStorage.getItem('savedRole');
+
+  // 관리자 전용 동기화 버튼 표시 제어
+  const adminSyncBtn = document.getElementById('admin-sync-btn');
+  if (adminSyncBtn) {
+    adminSyncBtn.style.display = role === 'admin' ? 'block' : 'none';
+  }
 
   const { data, error } = await supabaseClient
     .from('inventory')
@@ -3800,6 +4032,72 @@ async function loadInventory() {
   }
 }
 
+// ✅ 관리자 전용: 모든 아이템 인벤토리 동기화
+window.syncAdminInventory = async function () {
+  const username = localStorage.getItem('savedUsername');
+  const role = localStorage.getItem('savedRole');
+  if (role !== 'admin' || !username) {
+    alert('관리자만 사용 가능합니다.');
+    return;
+  }
+
+  if (!confirm('모든 상점 아이템을 인벤토리에 추가하시겠습니까?\n(이미 보유한 아이템은 제외됩니다)')) return;
+
+  showLoading();
+  try {
+    // 1. 모든 상점 아이템 조회
+    const { data: allItems, error: shopErr } = await supabaseClient
+      .from('shop_items')
+      .select('*');
+    if (shopErr) throw shopErr;
+
+    // 2. 내 현재 인벤토리 조회
+    const { data: myItems, error: invErr } = await supabaseClient
+      .from('inventory')
+      .select('item_id')
+      .eq('username', username);
+    if (invErr) throw invErr;
+
+    const myItemIdSet = new Set(myItems.map(i => i.item_id));
+
+    // 3. 없는 아이템 필터링 및 인서트 준비
+    const toInsert = allItems
+      .filter(item => !myItemIdSet.has(item.id))
+      .map(item => ({
+        username: username,
+        item_id: item.id,
+        item_name: item.name,
+        price: 0, // 관리자 지급분
+        purchased_at: new Date().toISOString()
+      }));
+
+    if (toInsert.length === 0) {
+      alert('이미 모든 아이템을 보유하고 있습니다.');
+      return;
+    }
+
+    // 4. 대량 인서트
+    const { error: insertErr } = await supabaseClient
+      .from('inventory')
+      .insert(toInsert);
+
+    if (insertErr) throw insertErr;
+
+    alert(`✅ ${toInsert.length}개의 아이템이 인벤토리에 추가되었습니다!`);
+
+    // UI 갱신
+    if (typeof loadInventory === 'function') await loadInventory();
+    if (typeof loadUserInfo === 'function') await loadUserInfo();
+    if (typeof loadOwnedCollection === 'function') await loadOwnedCollection();
+
+  } catch (err) {
+    console.error('Admin sync error:', err);
+    alert('아이템 추가 중 오류가 발생했습니다: ' + err.message);
+  } finally {
+    hideLoading();
+  }
+};
+
 // ✅ 아이템 장착/사용 함수
 window.useItem = async function (id, itemName, currentStatus = false, imageUrl = '') {
   const username = localStorage.getItem('savedUsername');
@@ -3837,19 +4135,25 @@ window.useItem = async function (id, itemName, currentStatus = false, imageUrl =
     existingEquippedItem = userData?.equipped_color;
   }
 
-  // 칭호 해제 전용 (none) 케이스 처리
-  if (id === 'none' && itemName === 'none') {
+  // 장착 해제 전용 (none) 케이스 처리
+  if (id === 'none') {
+    if (itemName.includes('칭호')) updateData = { equipped_title: null, equipped_color: null };
+    else if (itemName.includes('테두리')) updateData = { equipped_border: null };
+    else if (itemName.includes('효과')) updateData = { equipped_effect: null };
+    else if (itemName.includes('컬러') || itemName.includes('배경')) updateData = { equipped_color: null };
+    else updateData = { equipped_title: null, equipped_color: null }; // 기본 하위 호환
+
     const { error: unequipErr } = await supabaseClient
       .from('users')
-      .update({ equipped_title: null })
+      .update(updateData)
       .eq('username', username);
 
     if (!unequipErr) {
-      alert('✅ 칭호가 해제되었습니다.');
+      alert(`✅ 장착이 해제되었습니다.`);
       await loadUserInfo();
       await loadInventory();
     } else {
-      alert('칭호 해제 중 오류가 발생했습니다: ' + unequipErr.message);
+      alert('장착 해제 중 오류가 발생했습니다: ' + unequipErr.message);
     }
     return;
   }
@@ -3858,12 +4162,26 @@ window.useItem = async function (id, itemName, currentStatus = false, imageUrl =
   const actionText = isEquipped ? '해제' : '장착';
 
   if (itemName.includes('[칭호]')) {
-    updateData = { equipped_title: isEquipped ? null : itemName };
+    if (isEquipped) {
+      updateData = { equipped_title: null, equipped_color: null };
+    } else {
+      // 칭호의 색상 정보를 가져오기 위해 shop_items 조회
+      const { data: shopItem } = await supabaseClient
+        .from('shop_items')
+        .select('effect_data')
+        .eq('name', itemName.replace('[칭호]', '').trim())
+        .maybeSingle();
+
+      updateData = {
+        equipped_title: itemName,
+        equipped_color: shopItem?.effect_data || null
+      };
+    }
   } else if (itemName.includes('테두리')) {
     updateData = { equipped_border: isEquipped ? null : itemName };
   } else if (itemName.includes('효과')) {
     updateData = { equipped_effect: isEquipped ? null : itemName };
-  } else if (itemName.includes('컬러')) {
+  } else if (itemName.includes('컬러') || itemName.includes('배경')) {
     updateData = { equipped_color: isEquipped ? null : itemName };
   } else {
     // 단순 1회용 소비 아이템 (확성기, 버프 등)
@@ -3996,14 +4314,18 @@ window.selectCharacter = async function (charName, imgUrl = '') {
 
 /** 🎒 소유한 캐릭터 및 칭호 컬렉션 로드 (프로필 패널용) */
 const DEFAULT_CHARACTERS = [
-  { id: 'def_char_boy', item_name: '[캐릭터] 기본 학생 (남)', imgUrl: 'img/penguin.png' }, // 실제 있는 펭귄으로 대체 혹은 기본 아이콘
-  { id: 'def_char_girl', item_name: '[캐릭터] 기본 학생 (여)', imgUrl: 'img/rabbit.png' }  // 토끼로 대체
+  { id: 'def_char_boy', item_name: '[캐릭터] 기본 학생 (남)', imgUrl: 'img/nanobanana_boy_student_1772911376788.png' },
+  { id: 'def_char_girl', item_name: '[캐릭터] 기본 학생 (여)', imgUrl: 'img/nanobanana_girl_student_1772911391592.png' }
 ];
 
 /** 🎒 소유한 캐릭터 및 칭호 컬렉션 로드 (프로필 패널용) */
 async function loadOwnedCollection() {
   const charGrid = document.getElementById('character-list-grid');
   const titleGrid = document.getElementById('title-list-grid');
+  const borderGrid = document.getElementById('border-list-grid');
+  const effectGrid = document.getElementById('effect-list-grid');
+  const colorGrid = document.getElementById('color-list-grid');
+
   if (!charGrid || !titleGrid) return;
 
   const username = localStorage.getItem('savedUsername');
@@ -4011,7 +4333,7 @@ async function loadOwnedCollection() {
 
   // 1. 현재 장착 정보, 인벤토리, 상점 이미지 조인해서 가져오기
   const [userRes, invRes, shopRes] = await Promise.all([
-    supabaseClient.from('users').select('avatar_url, equipped_title').eq('username', username).maybeSingle(),
+    supabaseClient.from('users').select('avatar_url, equipped_title, equipped_border, equipped_effect, equipped_color').eq('username', username).maybeSingle(),
     supabaseClient.from('inventory').select('id, item_id, item_name').eq('username', username),
     supabaseClient.from('shop_items').select('id, image_url')
   ]);
@@ -4022,6 +4344,9 @@ async function loadOwnedCollection() {
 
   const currentAvatar = userData?.avatar_url || '';
   const currentTitle = userData?.equipped_title || '';
+  const currentBorder = userData?.equipped_border || '';
+  const currentEffect = userData?.equipped_effect || '';
+  const currentColor = userData?.equipped_color || '';
 
   const getShopImage = (itemId) => {
     const found = shopItems.find(s => s.id === itemId);
@@ -4042,7 +4367,10 @@ async function loadOwnedCollection() {
     }
   });
 
-  const ownedTitles = inventory.filter(item => item.item_name.includes('칭호'));
+  const ownedTitles = inventory.filter(item => item.item_name.includes('칭호') && !item.item_name.includes('테두리') && !item.item_name.includes('효과') && !item.item_name.includes('컬러') && !item.item_name.includes('배경'));
+  const ownedBorders = inventory.filter(item => item.item_name.includes('테두리'));
+  const ownedEffects = inventory.filter(item => item.item_name.includes('효과'));
+  const ownedColors = inventory.filter(item => item.item_name.includes('컬러') || item.item_name.includes('배경'));
 
   // 3. 캐릭터 렌더링
   charGrid.innerHTML = '';
@@ -4076,7 +4404,6 @@ async function loadOwnedCollection() {
     // 클릭 시 장착/해제 토글
     el.onclick = () => {
       if (isEquipped) {
-        // 이미 장착된 경우 클릭하면 해제 (기본 상태로)
         window.selectCharacter('none', '');
       } else {
         window.selectCharacter(char.item_name, imgUrl);
@@ -4085,34 +4412,40 @@ async function loadOwnedCollection() {
     charGrid.appendChild(el);
   });
 
-  // 4. 칭호 렌더링 (칭호 없음 항목 추가)
-  titleGrid.innerHTML = '';
+  // 공통 목록 렌더링 헬퍼 함수
+  const renderList = (gridEl, items, currentEquipped, emptyLabel, stripTag) => {
+    if (!gridEl) return;
+    gridEl.innerHTML = '';
 
-  // 칭호 없음 항목
-  const noneTitleEl = document.createElement('div');
-  noneTitleEl.className = 'title-select-item';
-  const isNoneTitle = !currentTitle || currentTitle === '';
-  if (isNoneTitle) noneTitleEl.classList.add('equipped');
-  noneTitleEl.innerHTML = `<span>칭호 없음</span>`;
-  noneTitleEl.onclick = () => {
-    if (!isNoneTitle) {
-      window.useItem('none', 'none', true);
-    }
-  };
-  titleGrid.appendChild(noneTitleEl);
-
-  ownedTitles.forEach(title => {
-    const el = document.createElement('div');
-    el.className = 'title-select-item';
-    const isEquipped = (currentTitle === title.item_name);
-    if (isEquipped) el.classList.add('equipped');
-
-    el.innerHTML = `<span>${title.item_name.replace('[칭호]', '').trim()}</span>`;
-    el.onclick = () => {
-      window.useItem(title.id, title.item_name, isEquipped);
+    const noneEl = document.createElement('div');
+    noneEl.className = 'title-select-item';
+    const isNone = !currentEquipped || currentEquipped === '';
+    if (isNone) noneEl.classList.add('equipped');
+    noneEl.innerHTML = `<span>${emptyLabel} 없음</span>`;
+    noneEl.onclick = () => {
+      if (!isNone) window.useItem('none', `[${emptyLabel}] 없음`, true);
     };
-    titleGrid.appendChild(el);
-  });
+    gridEl.appendChild(noneEl);
+
+    items.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'title-select-item';
+      const isEquipped = (currentEquipped === item.item_name);
+      if (isEquipped) el.classList.add('equipped');
+
+      let displayName = item.item_name;
+      stripTag.forEach(tag => { displayName = displayName.replace(tag, '').trim(); });
+
+      el.innerHTML = `<span>${displayName}</span>`;
+      el.onclick = () => window.useItem(item.id, item.item_name, isEquipped);
+      gridEl.appendChild(el);
+    });
+  };
+
+  renderList(titleGrid, ownedTitles, currentTitle, '칭호', ['[칭호]']);
+  renderList(borderGrid, ownedBorders, currentBorder, '테두리', ['[칭호]', '[테두리]']);
+  renderList(effectGrid, ownedEffects, currentEffect, '효과', ['[칭호]', '[효과]']);
+  renderList(colorGrid, ownedColors, currentColor, '컬러', ['[칭호]', '[컬러]', '[배경]']);
 }
 window.loadOwnedCollection = loadOwnedCollection;
 
@@ -4179,7 +4512,7 @@ window.buyItem = async function (itemId, price, itemName) {
   // 1. 아이템 정보(재고/한도) 및 현재 보유 수량 확인
   const { data: itemData, error: itemError } = await supabaseClient
     .from('shop_items')
-    .select('stock')
+    .select('stock, item_type, effect_data')
     .eq('id', itemId)
     .maybeSingle();
 
@@ -4231,6 +4564,32 @@ window.buyItem = async function (itemId, price, itemName) {
         purchased_at: new Date().toISOString()
       }]);
 
+    // 3. 아이템 타입별 추가 처리 (칭호/권한)
+    if (itemData.item_type === 'title') {
+      const { error: titleErr } = await supabaseClient
+        .from('users')
+        .update({
+          equipped_title: `[칭호] ${itemName}`,
+          equipped_color: itemData.effect_data || null
+        })
+        .eq('username', username);
+      if (titleErr) console.warn('칭호 자동 장착 실패:', titleErr);
+    } else if (itemData.item_type === 'permission') {
+      // 권한 부여 로직: users 테이블의 permissions (jsonb/text[]) 컬럼에 추가한다고 가정
+      // 만약 컬럼이 없으면 여기서 에러가 날 수 있으나, 요청에 따라 구현
+      try {
+        const { data: u } = await supabaseClient.from('users').select('permissions').eq('username', username).single();
+        let perms = u?.permissions || [];
+        if (!Array.isArray(perms)) perms = [];
+        if (!perms.includes(itemData.effect_data)) {
+          perms.push(itemData.effect_data);
+          await supabaseClient.from('users').update({ permissions: perms }).eq('username', username);
+        }
+      } catch (pErr) {
+        console.warn('권한 부여 실패 (컬럼 부재 가능성):', pErr);
+      }
+    }
+
     if (insertError) {
       console.error('인벤토리 추가 실패:', insertError);
       alert('구매 처리 중 오류가 발생했습니다. (포인트는 차감되었을 수 있음)\n' + insertError.message);
@@ -4240,11 +4599,12 @@ window.buyItem = async function (itemId, price, itemName) {
 
       syncCoinBalance(); // UI 동기화
       loadInventory?.();
+      await loadUserInfo(); // 칭호 등 유저 정보 즉시 갱신
       await loadShopItems(); // 상점 잔여 수량 즉시 업데이트
 
       // 📝 로그 기록
       if (window.logActivity) {
-        window.logActivity('shop_buy', itemName, 'shop_item', { item_id: itemId, price: price });
+        window.logActivity('shop_buy', itemName, 'shop_item', { item_id: itemId, price: price, type: itemData.item_type });
       }
     }
   } catch (err) {
@@ -4458,6 +4818,12 @@ window.deleteNotice = async function (id, imageUrl) {
     // 2. DB 삭제
     const { error } = await supabaseClient.from('notices').delete().eq('id', id);
     if (error) throw error;
+
+    // 🎯 [Logging] 활동 로그 기록
+    if (window.logActivity) {
+      window.logActivity('notice_delete', `ID:${id}`, 'notice');
+    }
+
     alert('삭제되었습니다.');
     loadNotices();
   } catch (e) { alert('삭제 실패: ' + e.message); }
@@ -4579,23 +4945,10 @@ window.submitEditNotice = async function () {
     const { error: updateErr, data: updatedNotice } = await supabaseClient.from('notices').update(updateData).eq('id', id).select().single();
     if (updateErr) throw updateErr;
 
-    // 4. 관리자 로그 기록 (user_activity_logs)
-    try {
-      const currentUsername = localStorage.getItem('savedUsername');
-      const { data: userData } = await supabaseClient.from('users').select('id, email, username').eq('username', currentUsername).single();
-
-      if (userData) {
-        await supabaseClient.from('user_activity_logs').insert({
-          user_id: userData.id,
-          username: userData.username,
-          email: userData.email,
-          action: 'notice_edit',
-          target: String(id),
-          target_type: 'notice',
-          details: { old: oldData, new: updatedNotice }
-        });
-      }
-    } catch (e) { console.warn('Activity log insert failed', e); }
+    // 4. 활동 로그 기록 (window.logActivity로 표준화)
+    if (window.logActivity) {
+      window.logActivity('notice_edit', String(id), 'notice', { old: oldData, new: updatedNotice });
+    }
 
     alert('수정되었습니다.');
     closeEditNoticeModal();
@@ -4853,18 +5206,13 @@ window.submitEditMaterial = async function () {
     const { error: updateErr } = await supabaseClient.from('homeworks').update(updateData).eq('id', id);
     if (updateErr) throw updateErr;
 
-    // 5. 활동 로그 기록
-    await supabaseClient.from('user_activity_logs').insert({
-      username: localStorage.getItem('savedUsername'),
-      email: (await supabaseClient.auth.getUser()).data.user?.email,
-      action: 'material_edit',
-      target: title,
-      target_type: 'material',
-      details: {
+    // 5. 활동 로그 기록 (window.logActivity로 표준화)
+    if (window.logActivity) {
+      window.logActivity('material_edit', title, 'material', {
         old: { title: oldData.title, comment: oldData.comment, file_url: oldData.file_url },
         new: updateData
-      }
-    });
+      });
+    }
 
     alert('수정이 완료되었습니다.');
     closeEditMaterialModal();
@@ -4920,14 +5268,10 @@ window.deleteMaterial = async function (id) {
     const { error } = await supabaseClient.from('homeworks').delete().eq('id', id);
     if (error) throw error;
 
-    // 3. 로그 기록
-    await supabaseClient.from('user_activity_logs').insert({
-      username: localStorage.getItem('savedUsername'),
-      email: (await supabaseClient.auth.getUser()).data.user?.email,
-      action: 'material_delete',
-      target: item?.title || `ID:${id}`,
-      target_type: 'material'
-    });
+    // 3. 로그 기록 (window.logActivity로 표준화)
+    if (window.logActivity) {
+      window.logActivity('material_delete', item?.title || `ID:${id}`, 'material');
+    }
 
     alert('자료가 삭제되었습니다.');
     loadMaterials();
@@ -5147,13 +5491,13 @@ function setupRealtimeNotifications() {
 
 /** 🔄 로그인 후 대시보드 및 데이터 쇄신 */
 window.afterLoginRefreshDashboard = async function () {
-  initDashboardTop();
-  loadNotices();
-  loadMaterials();
-  syncCoinBalance();
+  await initDashboardTop();
+  await loadNotices();
+  await loadMaterials();
+  await syncCoinBalance();
   if (typeof bindScheduleUI === 'function') bindScheduleUI();
   if (typeof window.syncStatsAndRender === 'function') {
-    window.syncStatsAndRender();
+    await window.syncStatsAndRender();
   }
 };
 
@@ -5481,12 +5825,12 @@ window.loadUserInfo = async function () {
 
     if (dashRole) dashRole.textContent = user.role === 'admin' ? '관리자' : '학생';
 
-    // 대시보드 및 헤더 아바타 업데이트 (인스타 스타일)
-    updateAvatarUI(dashAvatar, user.avatar_url, user.character_icon || '👤');
-    updateAvatarUI(headerAvatar, user.avatar_url, user.character_icon || '👤');
-    updateAvatarUI(headerAvatarMobile, user.avatar_url, user.character_icon || '👤');
-    updateAvatarUI(sideMenuAvatar, user.avatar_url, user.character_icon || '👤');
-    updateAvatarUI(previewAvatar, user.avatar_url, user.character_icon || '👤');
+    // 대시보드 및 헤더 아바타 업데이트 (인스타 스타일, 황금 테두리 지원)
+    updateAvatarUI(dashAvatar, user.avatar_url, user.character_icon || '👤', user);
+    updateAvatarUI(headerAvatar, user.avatar_url, user.character_icon || '👤', user);
+    updateAvatarUI(headerAvatarMobile, user.avatar_url, user.character_icon || '👤', user);
+    updateAvatarUI(sideMenuAvatar, user.avatar_url, user.character_icon || '👤', user);
+    updateAvatarUI(previewAvatar, user.avatar_url, user.character_icon || '👤', user);
 
     // 경험치 바 및 기타 스탯 업데이트
     const expCur = document.getElementById('exp-cur');
@@ -5541,33 +5885,68 @@ window.loadUserInfo = async function () {
 
     effectContainer.innerHTML = ''; // 초기화
     if (user.equipped_effect) {
+      const isAccumulate = user.equipped_effect.includes('쌓임');
       if (user.equipped_effect.includes('눈내림')) {
         const canvas = document.createElement('canvas');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         effectContainer.appendChild(canvas);
-        if (typeof startSnowEffect === 'function') startSnowEffect(canvas);
+        if (typeof startSnowEffect === 'function') startSnowEffect(canvas, isAccumulate);
       } else if (user.equipped_effect.includes('벚꽃')) {
         const canvas = document.createElement('canvas');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         effectContainer.appendChild(canvas);
-        if (typeof startCherryBlossomEffect === 'function') startCherryBlossomEffect(canvas);
+        if (typeof startCherryBlossomEffect === 'function') startCherryBlossomEffect(canvas, isAccumulate);
+      } else if (user.equipped_effect.includes('별')) {
+        const canvas = document.createElement('canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        effectContainer.appendChild(canvas);
+        if (typeof startStarEffect === 'function') startStarEffect(canvas, isAccumulate);
+      }
+    }
+
+    // ✅ 확성기 UI 표시 여부 제어
+    const broadcastSection = document.getElementById('broadcast-panel-section');
+    if (broadcastSection) {
+      if (user.permissions && user.permissions.includes('loudspeaker')) {
+        broadcastSection.style.display = 'flex';
+      } else {
+        broadcastSection.style.display = 'none';
       }
     }
 
     // 컬렉션 정보 갱신
     if (typeof loadOwnedCollection === 'function') loadOwnedCollection();
 
+    // 대화실 초기화 (유저 정보 기반)
+    if (typeof initChat === 'function') initChat();
+
   } catch (err) {
     console.error('Error loading user info:', err);
   }
 };
 
-// 👤 아바타 UI 업데이트 함수 (인스타 스타일 원형)
-function updateAvatarUI(container, avatarUrl, defaultEmoji) {
+// 👤 아바타 UI 업데이트 함수 (인스타 스타일 원형, 테두리 지원)
+function updateAvatarUI(container, avatarUrl, defaultEmoji, userObj = null) {
   if (!container) return;
   container.innerHTML = '';
+
+  // 황금, 무지개 테두리 효과 초기화
+  container.classList.remove('profile-border-golden');
+  container.classList.remove('profile-border-rainbow');
+
+  // 부모 컨테이너의 overflow 속성에 의해 애니메이션이 잘리는 현상 방지
+  container.style.overflow = 'visible';
+
+  if (userObj && userObj.equipped_border) {
+    if (userObj.equipped_border.includes('황금')) {
+      container.classList.add('profile-border-golden');
+    } else if (userObj.equipped_border.includes('무지개')) {
+      container.classList.add('profile-border-rainbow');
+    }
+  }
 
   if (avatarUrl && avatarUrl.trim() !== '') {
     const img = document.createElement('img');
@@ -5576,6 +5955,9 @@ function updateAvatarUI(container, avatarUrl, defaultEmoji) {
     img.style.height = '100%';
     img.style.objectFit = 'cover';
     img.style.borderRadius = '50%';
+    // 이미지가 테두리를 덮어씌오지 않도록 z-index 설정
+    img.style.position = 'relative';
+    img.style.zIndex = '2';
     container.appendChild(img);
   } else {
     // 이미지가 없을 경우 캐릭터 아이콘(이모지) 표시
@@ -5586,5 +5968,101 @@ function updateAvatarUI(container, avatarUrl, defaultEmoji) {
     container.style.fontSize = container.id === 'dash-avatar' ? '2.5rem' : '1.2rem';
     container.style.background = '#f1f5f9';
     container.style.borderRadius = '50%';
+    container.style.position = 'relative';
+    container.style.zIndex = '2';
   }
+}
+
+// ==========================================
+// 💬 Real-time Chat Room & Premium Color
+// ==========================================
+let chatSubscription = null;
+
+async function initChat() {
+  const msgContainer = document.getElementById('chat-messages-container');
+  const chatForm = document.getElementById('chat-form');
+  const chatInput = document.getElementById('chat-input');
+
+  if (!msgContainer || !chatForm) return;
+
+  // 1. Initial Load (fetch last 50 messages)
+  const { data, error } = await supabaseClient
+    .from('chat_messages')
+    .select('*, users(equipped_color)')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (data) {
+    // Keep the welcome message, then append history
+    const welcomeMsg = msgContainer.innerHTML;
+    msgContainer.innerHTML = welcomeMsg;
+    [...data].reverse().forEach(msg => appendChatMessage(msg));
+  }
+
+  // 2. Chat form Submit Event
+  chatForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const text = chatInput.value.trim();
+    if (!text || !currentUser || !currentUser.username) return;
+
+    // UI clear first for better UX
+    chatInput.value = '';
+
+    const { error: insertErr } = await supabaseClient
+      .from('chat_messages')
+      .insert({ username: window.currentUserName, message: text });
+
+    if (insertErr) {
+      console.error("Chat send error:", insertErr);
+      alert("메시지 전송에 실패했습니다.");
+    }
+  };
+
+  // 3. Real-time Subscription
+  if (!chatSubscription) {
+    chatSubscription = supabaseClient.channel('public:chat_messages')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, async (payload) => {
+        const rawMsg = payload.new;
+        // Fetch the sender's current equipped_color to determine if they're premium
+        const { data: uData } = await supabaseClient
+          .from('users')
+          .select('equipped_color')
+          .eq('username', rawMsg.username)
+          .maybeSingle();
+
+        const msg = {
+          ...rawMsg,
+          users: uData ? { equipped_color: uData.equipped_color } : null
+        };
+        appendChatMessage(msg);
+      })
+      .subscribe();
+  }
+}
+
+function appendChatMessage(msg) {
+  const msgContainer = document.getElementById('chat-messages-container');
+  if (!msgContainer) return;
+
+  const isMine = (currentUser && currentUser.username === msg.username);
+  const userColor = (msg.users && msg.users.equipped_color) ? msg.users.equipped_color : '';
+  const isPremium = userColor.includes('컬러'); // '[컬러] 프리미엄 채팅 컬러' 등
+
+  const row = document.createElement('div');
+  row.className = `chat-msg-row ${isMine ? 'mine' : 'other'} ${isPremium ? 'premium-chat' : ''}`;
+
+  // Always render username for premium layout compatibility
+  const nameHtml = `<div class="chat-username ${isPremium ? 'premium-chat-username' : ''}" ${isMine && !isPremium ? 'style="display:none;"' : ''}>${msg.username}</div>`;
+
+  // Sanitize message to prevent XSS
+  const safeMessage = msg.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  row.innerHTML = `
+    ${nameHtml}
+    <div class="chat-bubble">${safeMessage}</div>
+  `;
+  msgContainer.appendChild(row);
+
+  // Scroll to bottom
+  msgContainer.scrollTop = msgContainer.scrollHeight;
 }

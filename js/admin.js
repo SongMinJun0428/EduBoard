@@ -12,475 +12,792 @@ const chunked = (a, n) => { const o = []; for (let i = 0; i < a.length; i += n)o
 const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
 // ===== Theme/Auth =====
-(async () => { const { data: { user } } = await sb.auth.getUser(); $('#me').textContent = user?.email || ''; })();
-const root = document.documentElement; (localStorage.getItem('theme') === 'dark') && root.classList.add('dark');
-$('#theme').onclick = () => { root.classList.toggle('dark'); localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light'); };
-$('#signout').onclick = async () => { await sb.auth.signOut(); location.href = './index.html'; };
+(async () => {
+    const { data: { user } } = await sb.auth.getUser();
+    if ($('#me')) $('#me').textContent = user?.email || '';
+    const root = document.documentElement;
+    (localStorage.getItem('theme') === 'dark') && root.classList.add('dark');
 
-// ===== State =====
-let all = [], view = [], page = 1, pageSize = 50, sortKey = 'grade', sortDir = 'asc';
+    $('#theme').onclick = () => {
+        root.classList.toggle('dark');
+        localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light');
+    };
+    $('#signout').onclick = async () => {
+        await sb.auth.signOut();
+        location.href = './index.html';
+    };
 
-// ===== Load & Stats =====
-async function loadUsers() {
-    let q = sb.from('users').select('username,name,grade,class_num,student_number,role,email,level,xp,coin_balance').limit(5000);
-    const g = $('#f-grade').value, c = $('#f-class').value, r = $('#f-role').value;
-    if (g) q = q.eq('grade', Number(g)); if (c) q = q.eq('class_num', Number(c)); if (r) q = q.eq('role', r);
-    const { data, error } = await q; if (error) { console.error(error); return toast('사용자 로드 실패'); }
-    all = data || [];
-    apply();
-    renderStats();
-}
-function renderStats() {
-    const total = all.length;
-    const byRole = all.reduce((m, u) => (m[u.role] = (m[u.role] || 0) + 1, m), {});
-    const classes = new Set(all.filter(u => u.grade && u.class_num).map(u => `${u.grade}-${u.class_num}`)).size;
-    const grades = all.map(u => u.grade).filter(Boolean);
-    const avg = grades.length ? (grades.reduce((a, b) => a + b, 0) / grades.length).toFixed(1) : '-';
-    $('#stat-total').textContent = total.toLocaleString();
-    $('#stat-student').textContent = (byRole.student || 0).toLocaleString();
-    $('#stat-teacher').textContent = (byRole.teacher || 0).toLocaleString();
-    $('#stat-admin').textContent = (byRole.admin || 0).toLocaleString();
-    $('#stat-classes').textContent = classes.toLocaleString();
-    $('#stat-avg-grade').textContent = avg;
-}
+    // ===== State =====
+    let all = [], view = [], page = 1, pageSize = 50, sortKey = 'grade', sortDir = 'asc';
 
-// ===== Filter / Sort / Paging =====
-function apply() {
-    const kw = $('#search').value.trim().toLowerCase();
-    view = all.filter(u => {
-        if (!kw) return true;
-        return (u.name || '').toLowerCase().includes(kw)
-            || String(u.student_number || '').includes(kw)
-            || (u.username || '').toLowerCase().includes(kw);
-    });
-    const cmp = (a, b) => (a < b ? -1 : (a > b ? 1 : 0));
-    view.sort((a, b) => {
-        let r = (sortDir === 'asc' ? 1 : -1) * cmp(a[sortKey] ?? '', b[sortKey] ?? '');
-        if (r !== 0) return r;
-        for (const k of ['grade', 'class_num', 'student_number', 'name']) { if (k === sortKey) continue; const t = cmp(a[k] ?? '', b[k] ?? ''); if (t !== 0) return t; }
-        return 0;
-    });
-    pageSize = Number($('#page-size').value || 50);
-    const total = view.length, pages = Math.max(1, Math.ceil(total / pageSize)); if (page > pages) page = pages;
-    render(view.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize));
-    $('#page-info').textContent = `총 ${total.toLocaleString()}명 · ${page}/${pages}페이지`;
-    $('#empty').classList.toggle('hidden', total > 0);
-    updateSelectionUI();
-}
-function render(list) {
-    const tb = $('#rows'); tb.innerHTML = '';
-    for (const u of list) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
+    // ===== Initialization Check =====
+    // Since this script is at the bottom of the body, we can initialize immediately.
+    // However, if we're in an async IIFE, we just await the necessary data.
+
+    // ===== Load & Stats =====
+    async function loadUsers() {
+        let q = sb.from('users').select('username,name,grade,class_num,student_number,role,email,level,xp,coin_balance').limit(5000);
+        const g = $('#f-grade')?.value, c = $('#f-class')?.value, r = $('#f-role')?.value;
+        if (g) q = q.eq('grade', Number(g)); if (c) q = q.eq('class_num', Number(c)); if (r) q = q.eq('role', r);
+        const { data, error } = await q; if (error) { console.error(error); return toast('사용자 로드 실패'); }
+        all = data || [];
+        apply();
+        renderStats();
+    }
+
+    async function renderStats() {
+        const total = all.length;
+        const totalCoins = all.reduce((sum, u) => sum + (u.coin_balance || 0), 0);
+        const maxLevel = all.length ? Math.max(...all.map(u => u.level || 1)) : 1;
+        const classes = new Set(all.filter(u => u.grade && u.class_num).map(u => `${u.grade}-${u.class_num}`)).size;
+
+        // 24h Logs
+        const yesterday = new Date(Date.now() - 86400000).toISOString();
+        const { count: logCount } = await sb.from('user_activity_logs').select('*', { count: 'exact', head: true }).gt('created_at', yesterday);
+
+        // Shop Items
+        const { count: shopCount } = await sb.from('shop_items').select('*', { count: 'exact', head: true });
+
+        $('#stat-total').textContent = total.toLocaleString();
+        $('#stat-total-coins').textContent = totalCoins.toLocaleString();
+        $('#stat-max-level').textContent = maxLevel.toLocaleString();
+        $('#stat-recent-logs').textContent = (logCount || 0).toLocaleString();
+        $('#stat-shop-items').textContent = (shopCount || 0).toLocaleString();
+        $('#stat-classes').textContent = classes.toLocaleString();
+    }
+
+    // ===== DB 익스플로러 =====
+    let currentDBTable = 'users';
+    async function loadDBTable(tableName) {
+        currentDBTable = tableName;
+        const { data, error } = await sb.from(tableName).select('*').limit(100);
+        if (error) return toast('DB 로드 실패: ' + error.message);
+        renderDBTable(data);
+    }
+
+    function renderDBTable(data) {
+        const thead = $('#db-thead'), tbody = $('#db-tbody');
+        thead.innerHTML = ''; tbody.innerHTML = '';
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="100" class="text-center py-10 text-gray-400">데이터가 없습니다.</td></tr>'; return; }
+
+        const cols = Object.keys(data[0]);
+        thead.parentElement.classList.add('db-table'); // 전전 단계의 table 태그에 직접 추가
+        const hr = document.createElement('tr');
+        hr.innerHTML = cols.map(c => `<th class="whitespace-nowrap">${c}</th>`).join('') + '<th class="w-10"></th>';
+        thead.appendChild(hr);
+
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = cols.map(c => {
+                const val = row[c];
+                const isID = c === 'id' || c === 'username';
+                const strVal = escapeHtml(String(val ?? ''));
+                return `<td><input value="${strVal}" title="${strVal}" 
+                        ${isID ? 'readonly' : ''} 
+                        data-col="${c}" data-pk="${row.id || row.username}"></td>`;
+            }).join('') + `<td class="text-center px-1"><button class="text-red-500 hover:text-red-700 font-bold db-del-row" data-pk="${row.id || row.username}">×</button></td>`;
+
+            tbody.appendChild(tr);
+        });
+
+
+        // 실시간 수정 이벤트 (Blur 시 저장)
+        const inputs = Array.from(tbody.querySelectorAll('input'));
+        inputs.forEach((input, index) => {
+            input.onblur = async () => {
+                const pk = input.dataset.pk, col = input.dataset.col, val = input.value;
+                const original = data.find(r => (rowIdOrUser(r) == pk))[col];
+                if (String(original ?? '') === val) return;
+
+                const pkCol = data[0].username !== undefined ? 'username' : 'id';
+                const { error } = await sb.from(currentDBTable).update({ [col]: val }).eq(pkCol, pk);
+                if (error) { toast('수정 실패'); input.value = original; }
+                else { toast('수정됨'); logAction('db_direct_edit', { table: currentDBTable, pk, col, val }); }
+            };
+
+            // ⌨️ 키보드 네비게이션 (한셀/엑셀 스타일)
+            input.onkeydown = (e) => {
+                const rowCount = data.length;
+                const colCount = cols.length;
+                const r = Math.floor(index / colCount);
+                const c = index % colCount;
+
+                let nextIndex = -1;
+                if (e.key === 'ArrowRight') nextIndex = index + 1;
+                if (e.key === 'ArrowLeft') nextIndex = index - 1;
+                if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) nextIndex = index + colCount;
+                if (e.key === 'ArrowUp' || (e.key === 'Enter' && e.shiftKey)) nextIndex = index - colCount;
+
+                if (nextIndex >= 0 && nextIndex < inputs.length) {
+                    // 수평 이동 시 행 경계 체크 (ArrowRight/Left만)
+                    if (e.key === 'ArrowRight' && c === colCount - 1) return;
+                    if (e.key === 'ArrowLeft' && c === 0) return;
+
+                    e.preventDefault();
+                    inputs[nextIndex].focus();
+                    if (!inputs[nextIndex].readOnly) inputs[nextIndex].select();
+                }
+            };
+        });
+
+
+        tbody.querySelectorAll('.db-del-row').forEach(btn => {
+            btn.onclick = async () => {
+                if (!confirm('정말 삭제할까요?')) return;
+                const pk = btn.dataset.pk;
+                const pkCol = data[0].username !== undefined ? 'username' : 'id';
+                const { error } = await sb.from(currentDBTable).delete().eq(pkCol, pk);
+                if (error) toast('삭제 실패');
+                else { toast('삭제 완료'); loadDBTable(currentDBTable); }
+            };
+        });
+    }
+    function rowIdOrUser(r) { return r.id !== undefined ? r.id : r.username; }
+
+    // ===== Tabs =====
+    const tabUsers = $('#tab-users'), tabShop = $('#tab-shop'), tabDB = $('#tab-db');
+    // secUsers and secShop are already defined elsewhere or should only be defined once.
+    // Let's use a unified set of sections.
+    const secUsers = [$('#section-stats'), $('#section-toolbar'), $('#section-users')];
+    const secShop = $('#section-shop');
+    const secDB = $('#section-db');
+
+    function clearTabs() {
+        [tabUsers, tabShop, tabDB].forEach(t => t.classList.remove('active'));
+        [...secUsers, secShop, secDB].forEach(s => s?.classList.add('hidden'));
+        $('#bulk-drawer').classList.add('hidden');
+    }
+
+    tabUsers.onclick = () => {
+        clearTabs();
+        tabUsers.classList.add('active');
+        secUsers.forEach(s => s?.classList.remove('hidden'));
+    };
+    tabShop.onclick = () => {
+        clearTabs();
+        tabShop.classList.add('active');
+        secShop.classList.remove('hidden');
+        loadShopItemsAdmin();
+    };
+    tabDB.onclick = () => {
+        clearTabs();
+        tabDB.classList.add('active');
+        secDB.classList.remove('hidden');
+        loadDBTable($('#db-table-select').value);
+    };
+
+    $('#db-table-select').onchange = (e) => loadDBTable(e.target.value);
+    $('#db-refresh').onclick = () => loadDBTable($('#db-table-select').value);
+
+
+
+    // ===== Actions & Initialization =====
+    await loadUsers(); // Call immediately within the initialization flow
+
+
+    function apply() {
+        const kw = $('#search').value.trim().toLowerCase();
+        view = all.filter(u => {
+            if (!kw) return true;
+            return (u.name || '').toLowerCase().includes(kw)
+                || String(u.student_number || '').includes(kw)
+                || (u.username || '').toLowerCase().includes(kw);
+        });
+        const cmp = (a, b) => (a < b ? -1 : (a > b ? 1 : 0));
+        view.sort((a, b) => {
+            let r = (sortDir === 'asc' ? 1 : -1) * cmp(a[sortKey] ?? '', b[sortKey] ?? '');
+            if (r !== 0) return r;
+            for (const k of ['grade', 'class_num', 'student_number', 'name']) { if (k === sortKey) continue; const t = cmp(a[k] ?? '', b[k] ?? ''); if (t !== 0) return t; }
+            return 0;
+        });
+        pageSize = Number($('#page-size').value || 50);
+        const total = view.length, pages = Math.max(1, Math.ceil(total / pageSize)); if (page > pages) page = pages;
+        render(view.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize));
+        $('#page-info').textContent = `총 ${total.toLocaleString()}명 · ${page}/${pages}페이지`;
+        $('#empty').classList.toggle('hidden', total > 0);
+        updateSelectionUI();
+    }
+    function render(list) {
+        const tb = $('#rows'); tb.innerHTML = '';
+        for (const u of list) {
+            const tr = document.createElement('tr');
+            tr.className = 'group hover:bg-slate-50 transition-colors';
+            tr.innerHTML = `
           <td class="text-center"><input type="checkbox" class="row-check" data-username="${u.username}"></td>
-          <td class="font-medium">${u.name ?? '-'}</td>
+          <td class="font-medium text-left">${u.name ?? '-'}</td>
+          <td class="text-left font-mono text-xs text-slate-400">${u.username ?? '-'}</td>
           <td class="text-center">${u.grade ?? '-'}</td>
           <td class="text-center">${u.class_num ?? '-'}</td>
           <td class="text-center">${u.student_number ?? '-'}</td>
           <td>
-            <div class="flex items-center gap-2">
-              <span>${roleBadge(u.role)}</span>
-              <select class="rounded border px-2 py-1 text-xs dark:bg-gray-900" data-role="${u.username}">
+            <div class="flex items-center gap-1">
+              <select class="rounded border px-1.5 py-1 text-xs dark:bg-gray-900 border-slate-200 w-24" data-role-select="${u.username}">
                 ${['admin', 'teacher', 'class_admin', 'student', 'user'].map(r => `<option ${u.role === r ? 'selected' : ''}>${r}</option>`).join('')}
               </select>
+              <button class="btn btn-primary h-7 px-2 text-[10px] shrink-0 quick-save-role" data-username="${u.username}">저장</button>
             </div>
           </td>
-          <td class="text-center">${u.level ?? '-'}</td>
-          <td class="text-center">${u.xp ?? '-'}</td>
-          <td class="text-center">${u.coin_balance ?? '-'}</td>
+          <td class="text-center font-mono">${u.level ?? '-'}</td>
+          <td class="text-center font-mono">${u.xp ?? '-'}</td>
+          <td class="text-center font-mono text-blue-600 font-bold">${(u.coin_balance ?? 0).toLocaleString()}</td>
           <td class="text-center">
-            <button class="btn text-xs" data-menu="${u.username}">⋯</button>
+            <button class="btn h-7 text-xs bg-slate-50 border-slate-200 group-hover:bg-white" data-menu="${u.username}">관리 ⋯</button>
           </td>`;
-        tb.appendChild(tr);
-    }
-}
 
-// ===== Actions =====
-async function updateRole(username, role) {
-    const { error } = await sb.from('users').update({ role }).eq('username', username);
-    if (error) { console.error(error); return toast('권한 저장 실패'); }
-    toast('권한 저장 완료'); logAction('role_update', { target: username, role });
-}
-async function deleteUser(username) {
-    if (!confirm(`${username} 계정을 삭제할까요?`)) return;
-    const { error } = await sb.from('users').delete().eq('username', username);
-    if (error) { console.error(error); return toast('삭제 실패'); }
-    toast('삭제 완료'); logAction('user_delete', { target: username }); loadUsers();
-}
-async function addUser() {
-    const p = {
-        username: $('#add-username').value.trim(),
-        name: $('#add-name').value.trim(),
-        email: $('#add-email').value.trim() || null,
-        grade: Number($('#add-grade').value || 0) || null,
-        class_num: Number($('#add-class').value || 0) || null,
-        student_number: Number($('#add-number').value || 0) || null,
-        role: $('#add-role').value
+            // 빠른 저장 이벤트
+            tr.querySelector('.quick-save-role').onclick = (e) => {
+                const btn = e.target;
+                const username = btn.dataset.username;
+                const role = tr.querySelector(`[data-role-select="${username}"]`).value;
+                updateRole(username, role);
+            };
 
-
-    };
-    const pw = $('#add-password').value.trim(); if (pw) p.password = pw;
-    if (!p.username || !p.name) return toast('아이디와 이름은 필수');
-    const { error } = await sb.from('users').insert(p);
-    if (error) { console.error(error); return toast('추가 실패'); }
-    toast('추가 완료'); logAction('user_create', p);
-    closeModal('#modal-add');
-    ['#add-username', '#add-name', '#add-email', '#add-grade', '#add-class', '#add-number', '#add-password'].forEach(s => $(s).value = ''); $('#add-role').value = 'student';
-    loadUsers();
-}
-async function bulkApplyRole() {
-    const role = $('#bulk-role').value; if (!role) return toast('일괄 권한을 선택하세요');
-    const ids = [...$$('.row-check:checked')].map(i => i.dataset.username); if (!ids.length) return;
-    if (!confirm(`${ids.length}명의 권한을 '${role}'(으)로 일괄 변경할까요?`)) return;
-    const { error } = await sb.from('users').update({ role }).in('username', ids);
-    if (error) { console.error(error); return toast('일괄 변경 실패'); }
-    toast(`일괄 변경 완료 (${ids.length}명)`); logAction('role_bulk_update', { targets: ids, role }); loadUsers();
-}
-async function bulkGivePoints() {
-    const ids = [...$$('.row-check:checked')].map(i => i.dataset.username);
-    if (!ids.length) return;
-    const raw = prompt(`${ids.length}명에게 지급할 포인트를 입력하세요:`, '100');
-    const amount = parseInt(raw, 10);
-    if (isNaN(amount) || amount <= 0) return toast('올바른 포인트를 입력하세요');
-
-    if (!confirm(`${ids.length}명에게 각각 ${amount}P를 지급할까요?`)) return;
-
-    // Supabase RPC if exists, or batch update loop
-    for (const chunk of chunked(ids, 50)) {
-        const { data, error: getErr } = await sb.from('users').select('username, coin_balance').in('username', chunk);
-        if (getErr) continue;
-        const updates = data.map(u => ({ username: u.username, coin_balance: (u.coin_balance || 0) + amount }));
-        const { error: upErr } = await sb.from('users').upsert(updates);
-        if (upErr) console.error('Bulk point error for chunk', upErr);
+            tb.appendChild(tr);
+        }
     }
 
-    toast(`일괄 지급 완료 (${ids.length}명)`);
-    logAction('coin_bulk_given', { targets: ids, amount });
-    loadUsers();
-}
-async function promote() {
-    if (!confirm('신학기 자동 승급(1→2, 2→3)을 실행할까요?')) return;
-    const { error } = await sb.rpc('promote_students_safe', {}); // 있으면 사용
-    if (!error) { toast('승급 완료'); logAction('promote', { via: 'rpc' }); return loadUsers(); }
-    const { data, error: e2 } = await sb.from('users').select('username,grade').eq('role', 'student').limit(5000);
-    if (e2) { console.error(e2); return toast('승급 실패'); }
-    const ups = data.map(u => ({ username: u.username, grade: (u.grade >= 1 && u.grade <= 2) ? u.grade + 1 : u.grade }));
-    for (const c of chunked(ups, 200)) { const { error: e3 } = await sb.from('users').upsert(c); if (e3) console.error(e3); }
-    toast('승급 완료'); logAction('promote', { count: ups.length }); loadUsers();
-}
-async function resetByUsername(username) {
-    const { data, error } = await sb.from('users').select('email').eq('username', username).maybeSingle();
-    if (error || !data?.email) return toast('이메일이 없습니다');
-    if (USE_SUPABASE_RESET_EMAIL) {
-        const { error: e2 } = await sb.auth.resetPasswordForEmail(data.email, { redirectTo: location.origin + '/reset.html' });
-        if (e2) { console.error(e2); return toast('메일 전송 실패'); }
-        toast('재설정 메일 전송'); logAction('password_reset_email', { target: username });
-    } else {
-        const temp = randTemp(); const { error: e3 } = await sb.from('users').update({ password: temp }).eq('username', username);
-        if (e3) { console.error(e3); return toast('임시 비번 실패'); }
-        toast(`임시 비번: ${temp}`); logAction('password_temp_set', { target: username });
+    // ===== Actions =====
+    async function updateRole(username, role) {
+        const { error } = await sb.from('users').update({ role }).eq('username', username);
+        if (error) { console.error(error); return toast('권한 저장 실패'); }
+        toast('권한 저장 완료'); logAction('role_update', { target: username, role });
+        renderStats();
     }
-}
+    async function deleteUser(username) {
+        if (!confirm(`${username} 계정을 삭제할까요?`)) return;
+        const { error } = await sb.from('users').delete().eq('username', username);
+        if (error) { console.error(error); return toast('삭제 실패'); }
+        toast('삭제 완료'); logAction('user_delete', { target: username }); loadUsers();
+    }
+    async function addUser() {
+        const p = {
+            username: $('#add-username').value.trim(),
+            name: $('#add-name').value.trim(),
+            email: $('#add-email').value.trim() || null,
+            grade: Number($('#add-grade').value || 0) || null,
+            class_num: Number($('#add-class').value || 0) || null,
+            student_number: Number($('#add-number').value || 0) || null,
+            role: $('#add-role').value
 
-// ===== Logs (optional) =====
-async function logAction(action, details = {}) {
-    try {
-        const { data: { user } } = await sb.auth.getUser();
 
-        const payload = {
-            user_id: user?.id || null,
-            username: user?.user_metadata?.username || null,
-            email: user?.email || null,
-            action,
-            target: details?.target || null,
-            target_type: details?.target_type || null,
-            details,
-            ip_address: await getIP(),               // IP 가져오기
-            user_agent: navigator.userAgent || null
+        };
+        const pw = $('#add-password').value.trim(); if (pw) p.password = pw;
+        if (!p.username || !p.name) return toast('아이디와 이름은 필수');
+        const { error } = await sb.from('users').insert(p);
+        if (error) { console.error(error); return toast('추가 실패'); }
+        toast('추가 완료'); logAction('user_create', p);
+        closeModal('#modal-add');
+        ['#add-username', '#add-name', '#add-email', '#add-grade', '#add-class', '#add-number', '#add-password'].forEach(s => $(s).value = ''); $('#add-role').value = 'student';
+        loadUsers();
+        renderStats();
+    }
+    async function bulkApplyRole() {
+        const role = $('#bulk-role').value; if (!role) return toast('일괄 권한을 선택하세요');
+        const ids = [...$$('.row-check:checked')].map(i => i.dataset.username); if (!ids.length) return;
+        if (!confirm(`${ids.length}명의 권한을 '${role}'(으)로 일괄 변경할까요?`)) return;
+        const { error } = await sb.from('users').update({ role }).in('username', ids);
+        if (error) { console.error(error); return toast('일괄 변경 실패'); }
+        toast(`일괄 변경 완료 (${ids.length}명)`); logAction('role_bulk_update', { targets: ids, role }); loadUsers();
+    }
+    async function bulkGivePoints() {
+        const ids = [...$$('.row-check:checked')].map(i => i.dataset.username);
+        if (!ids.length) return;
+        const raw = prompt(`${ids.length}명에게 지급할 포인트를 입력하세요:`, '100');
+        const amount = parseInt(raw, 10);
+        if (isNaN(amount) || amount <= 0) return toast('올바른 포인트를 입력하세요');
+
+        if (!confirm(`${ids.length}명에게 각각 ${amount}P를 지급할까요?`)) return;
+
+        // Supabase RPC if exists, or batch update loop
+        for (const chunk of chunked(ids, 50)) {
+            const { data, error: getErr } = await sb.from('users').select('username, coin_balance').in('username', chunk);
+            if (getErr) continue;
+            const updates = data.map(u => ({ username: u.username, coin_balance: (u.coin_balance || 0) + amount }));
+            const { error: upErr } = await sb.from('users').upsert(updates);
+            if (upErr) console.error('Bulk point error for chunk', upErr);
+        }
+
+        toast(`일괄 지급 완료 (${ids.length}명)`);
+        logAction('coin_bulk_given', { targets: ids, amount });
+        loadUsers();
+    }
+    async function promote() {
+        if (!confirm('신학기 자동 승급(1→2, 2→3)을 실행할까요?\n(학생 권한인 사용자만 학년이 1씩 올라갑니다)')) return;
+
+        // 1. RPC 시도
+        const { error: rpcError } = await sb.rpc('promote_students_safe', {});
+        if (!rpcError) {
+            toast('자동 승급 완료 (RPC)');
+            logAction('promote', { via: 'rpc' });
+            await loadUsers();
+            return;
+        }
+
+        // 2. Fallback: 클라이언트 사이드 일괄 업데이트
+        toast('일괄 승급 처리 중...');
+        const { data, error: e2 } = await sb.from('users').select('username,grade').eq('role', 'student').limit(5000);
+        if (e2) { console.error(e2); return toast('데이터 로드 실패: ' + e2.message); }
+
+        if (!data || data.length === 0) return toast('승급할 학생이 없습니다.');
+
+        const ups = data.filter(u => u.grade && !isNaN(parseInt(u.grade)))
+            .map(u => {
+                const current = parseInt(u.grade, 10);
+                return {
+                    username: u.username,
+                    grade: (current >= 1 && current <= 2) ? current + 1 : current
+                };
+            });
+
+        if (ups.length === 0) return toast('유효한 학년 정보가 있는 학생이 없습니다.');
+
+        let successCount = 0;
+        for (const c of chunked(ups, 100)) {
+            const { error: e3 } = await sb.from('users').upsert(c);
+            if (e3) {
+                console.error('Batch error:', e3);
+            } else {
+                successCount += c.length;
+            }
+        }
+
+        toast(`자동 승급 완료 (${successCount}명)`);
+        logAction('promote', { count: successCount, total: ups.length });
+        await loadUsers();
+        renderStats();
+    }
+    async function resetByUsername(username) {
+        const { data, error } = await sb.from('users').select('email').eq('username', username).maybeSingle();
+        if (error || !data?.email) return toast('이메일이 없습니다');
+        if (USE_SUPABASE_RESET_EMAIL) {
+            const { error: e2 } = await sb.auth.resetPasswordForEmail(data.email, { redirectTo: location.origin + '/reset.html' });
+            if (e2) { console.error(e2); return toast('메일 전송 실패'); }
+            toast('재설정 메일 전송'); logAction('password_reset_email', { target: username });
+        } else {
+            const temp = randTemp(); const { error: e3 } = await sb.from('users').update({ password: temp }).eq('username', username);
+            if (e3) { console.error(e3); return toast('임시 비번 실패'); }
+            toast(`임시 비번: ${temp}`); logAction('password_temp_set', { target: username });
+        }
+    }
+
+    async function openEditModal(username) {
+        const { data, error } = await sb.from('users').select('*').eq('username', username).maybeSingle();
+        if (error || !data) return toast('사용자 정보를 가져올 수 없습니다.');
+
+        $('#edit-username').value = data.username;
+        $('#edit-name').value = data.name || '';
+        $('#edit-email').value = data.email || '';
+        $('#edit-grade').value = data.grade || '';
+        $('#edit-class').value = data.class_num || '';
+        $('#edit-number').value = data.student_number || '';
+        $('#edit-level').value = data.level || 1;
+        $('#edit-xp').value = data.xp || 0;
+        $('#edit-coin').value = data.coin_balance || 0;
+
+        openModal('#modal-edit');
+    }
+
+    async function updateUserInfo() {
+        const username = $('#edit-username').value;
+        const p = {
+            name: $('#edit-name').value.trim(),
+            email: $('#edit-email').value.trim() || null,
+            grade: Number($('#edit-grade').value) || null,
+            class_num: Number($('#edit-class').value) || null,
+            student_number: Number($('#edit-number').value) || null,
+            level: Number($('#edit-level').value) || 1,
+            xp: Number($('#edit-xp').value) || 0,
+            coin_balance: Number($('#edit-coin').value) || 0
         };
 
-        await sb.from('user_activity_logs').insert(payload);
-    } catch (e) {
-        console.error('logAction 오류', e);
-    }
-}
+        if (!p.name) return toast('이름은 필수 항목입니다.');
 
-async function getIP() {
-    try {
-        const res = await fetch('https://api.ipify.org?format=json');
-        const json = await res.json();
-        return json.ip || null;
-    } catch {
-        return null;
-    }
-}
+        const { error } = await sb.from('users').update(p).eq('username', username);
+        if (error) { console.error(error); return toast('정보 수정 실패'); }
 
-let logDataCache = [];
-async function loadLogs() {
-    try {
-        const { data, error } = await sb
-            .from('user_activity_logs')
-            .select('action, username, email, target, target_type, created_at, details')
-            .order('created_at', { ascending: false })
-            .limit(100);
-
-        if (error) throw error;
-        logDataCache = data || [];
-        renderLogsUI();
-    } catch (e) {
-        console.error('loadLogs 오류', e);
-        $('#log-empty').classList.remove('hidden');
-    }
-}
-
-function renderLogsUI() {
-    const ul = $('#log-list');
-    ul.innerHTML = '';
-
-    const filterUser = $('#log-search-user').value.trim().toLowerCase();
-    const filterAction = $('#log-search-action').value.trim().toLowerCase();
-
-    const filtered = logDataCache.filter(r => {
-        const uMatch = !filterUser || (r.username || r.email || '').toLowerCase().includes(filterUser);
-        const aMatch = !filterAction || (r.action || '').toLowerCase().includes(filterAction);
-        return uMatch && aMatch;
-    });
-
-    if (!filtered.length) {
-        $('#log-empty').classList.remove('hidden');
-        return;
+        toast('정보 수정 완료');
+        logAction('user_info_update', { target: username, ...p });
+        closeModal('#modal-edit');
+        loadUsers();
     }
 
-    $('#log-empty').classList.add('hidden');
+    // ===== Logs (optional) =====
+    async function logAction(action, details = {}) {
+        try {
+            const { data: { user } } = await sb.auth.getUser();
 
-    for (const r of filtered) {
-        const when = new Date(r.created_at).toLocaleString();
-        const li = document.createElement('li');
-        let detailsBtn = '';
-        if (r.details) {
-            const safeDetails = escapeHtml(JSON.stringify(r.details, null, 2));
-            detailsBtn = `<button class="text-xs text-indigo-600 hover:underline mt-1 view-log-detail" data-details="${safeDetails}">내역 보기</button>`;
+            const payload = {
+                user_id: user?.id || null,
+                username: user?.user_metadata?.username || null,
+                email: user?.email || null,
+                action,
+                target: details?.target || null,
+                target_type: details?.target_type || null,
+                details,
+                ip_address: await getIP(),               // IP 가져오기
+                user_agent: navigator.userAgent || null
+            };
+
+            await sb.from('user_activity_logs').insert(payload);
+        } catch (e) {
+            console.error('logAction 오류', e);
         }
-        li.innerHTML = `
-        <div class="p-2 rounded border dark:border-gray-700 flex justify-between items-start">
-          <div>
-            <div class="text-xs text-gray-500">${when}</div>
-            <div class="text-sm">
-              <b>${r.username || r.email || '-'}</b>
-              → <span class="font-mono">${r.target || '-'}</span>
-              <span class="ml-1 text-xs text-gray-400">${r.target_type || ''}</span>
+    }
+
+    async function getIP() {
+        try {
+            const res = await fetch('https://api.ipify.org?format=json');
+            const json = await res.json();
+            return json.ip || null;
+        } catch {
+            return null;
+        }
+    }
+
+    let logDataCache = [];
+    async function loadLogs() {
+        try {
+            const { data, error } = await sb
+                .from('user_activity_logs')
+                .select('action, username, email, target, target_type, created_at, details')
+                .order('created_at', { ascending: false })
+                .limit(100);
+
+            if (error) throw error;
+            logDataCache = data || [];
+            renderLogsUI();
+        } catch (e) {
+            console.error('loadLogs 오류', e);
+            $('#log-empty').classList.remove('hidden');
+        }
+    }
+
+    const LOG_ACTION_MAP = {
+        'login': '로그인',
+        'signup': '회원가입',
+        'buy': '아이템 구매',
+        'use': '아이템 사용',
+        'game_reward': '게임 보상 획득',
+        'coin_given': '포인트 지급',
+        'coin_bulk_given': '일괄 포인트 지급',
+        'role_update': '권한 변경',
+        'role_bulk_update': '일괄 권한 변경',
+        'user_create': '사용자 생성',
+        'user_delete': '사용자 삭제',
+        'user_info_update': '사용자 정보 수정',
+        'password_reset_email': '비밀번호 재설정 메일',
+        'password_temp_set': '임시 비밀번호 설정',
+        'promote': '신학기 자동 승급',
+        'db_direct_edit': 'DB 직접 수정',
+        'shop_item_create': '상점 아이템 추가',
+        'shop_item_update': '상점 아이템 수정',
+        'shop_item_delete': '상점 아이템 삭제'
+    };
+
+    function renderLogsUI() {
+        const ul = $('#log-list');
+        ul.innerHTML = '';
+
+        const filterUser = $('#log-search-user').value.trim().toLowerCase();
+        const filterAction = $('#log-search-action').value.trim().toLowerCase();
+
+        const filtered = logDataCache.filter(r => {
+            const uMatch = !filterUser || (r.username || r.email || '').toLowerCase().includes(filterUser);
+            const aMatch = !filterAction || (r.action || '').toLowerCase().includes(filterAction);
+            return uMatch && aMatch;
+        });
+
+        $('#log-empty').classList.add('hidden');
+        if (!filtered.length) {
+            $('#log-empty').classList.remove('hidden');
+            return;
+        }
+
+        for (const r of filtered) {
+            const when = new Date(r.created_at).toLocaleString('ko-KR', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+            });
+            const actionText = LOG_ACTION_MAP[r.action] || r.action;
+
+            let detailSummary = '';
+            if (r.details) {
+                const d = r.details;
+                if (r.action === 'coin_given' || r.action === 'coin_bulk_given') {
+                    detailSummary = `<span class="text-amber-600 font-bold">+${(d.amount || 0).toLocaleString()}P</span>`;
+                } else if (r.action === 'buy' || r.action === 'use') {
+                    detailSummary = `<span class="text-indigo-600 font-bold">[${d.item_name || d.name || '아이템'}]</span>`;
+                } else if (r.action === 'game_reward') {
+                    detailSummary = `<span class="text-green-600 font-bold">+${(d.amount || 0).toLocaleString()}P (${d.session_id || '게임'})</span>`;
+                } else if (r.action === 'role_update' || r.action === 'role_bulk_update') {
+                    detailSummary = `<span class="text-slate-500">(${d.role || d.new_role || ''})</span>`;
+                }
+            }
+
+            const li = document.createElement('li');
+            const safeDetails = escapeHtml(JSON.stringify(r.details, null, 2));
+
+            li.innerHTML = `
+        <div class="p-6 rounded-xl border bg-white dark:bg-gray-950 dark:border-gray-800 flex justify-between items-center group hover:border-indigo-300 transition-all shadow-sm hover:shadow-md min-h-[6rem]">
+
+          <div class="flex items-center gap-6 flex-1 min-w-0">
+            <div class="text-[10px] text-gray-400 font-mono w-32 shrink-0 border-r dark:border-gray-800 pr-4">${when}</div>
+
+            <div class="flex flex-col gap-0.5 min-w-[120px] shrink-0">
+              <span class="font-bold text-sm text-gray-700 dark:text-gray-200 truncate">${r.username || 'unknown'}</span>
+              <span class="text-[10px] text-gray-400 truncate opacity-70">${r.email || ''}</span>
             </div>
-            <div class="text-xs text-blue-600 dark:text-blue-400 font-semibold">${r.action}</div>
+
+            <div class="flex items-center gap-4 flex-grow min-w-0">
+               <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-[10px] uppercase font-bold text-slate-500 shrink-0 tracking-tight">${actionText}</span>
+               <div class="detail-summary text-xs text-slate-500 break-words">${detailSummary}</div>
+            </div>
+
+            ${r.target ? `<div class="text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-900/40 px-3 py-1.5 rounded border border-dashed shrink-0 max-w-[200px] break-all">대상: ${r.target}</div>` : ''}
           </div>
-          <div>
-            ${detailsBtn}
+
+          <div class="ml-6 shrink-0">
+            <button class="btn btn-ghost btn-sm h-9 w-9 p-0 opacity-0 group-hover:opacity-100 transition-opacity view-log-detail" data-details="${safeDetails}" title="상세 내역">
+                <svg viewBox="0 0 24 24" fill="none" class="w-5 h-5 text-slate-400"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
           </div>
         </div>`;
-        ul.appendChild(li);
+
+            ul.appendChild(li);
+        }
+
+        document.querySelectorAll('.view-log-detail').forEach(btn => {
+            btn.onclick = function () {
+                const detailsJson = this.getAttribute('data-details');
+                document.getElementById('log-detail-content').textContent = detailsJson;
+                openModal('#modal-log-detail');
+            };
+        });
     }
 
-    document.querySelectorAll('.view-log-detail').forEach(btn => {
-        btn.onclick = function () {
-            const detailsJson = this.getAttribute('data-details');
-            document.getElementById('log-detail-content').textContent = detailsJson;
-            openModal('#modal-log-detail');
-        };
+    // XSS 방지를 위한 유틸리티 함수
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // ===== CSV =====
+    function toCSV(rows) {
+        const esc = v => ('"' + String(v ?? '').replace(/"/g, '""') + '"');
+        const head = ['username', 'name', 'grade', 'class_num', 'student_number', 'role', 'email'];
+        return [head.join(',')].concat(rows.map(r => [r.username, r.name, r.grade, r.class_num, r.student_number, r.role, r.email].map(esc).join(','))).join('\n');
+    }
+    function download(name, text) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = name; document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove(); }
+    function parseCSV(text) {
+        const lines = text.replace(/\r/g, '').split('\n').filter(Boolean); const header = lines.shift().split(',').map(h => h.trim());
+        return lines.map(line => {
+            const cols = splitCSV(line); const o = {}; header.forEach((h, i) => o[h] = cols[i]);
+            if (o.grade) o.grade = Number(o.grade); if (o.class_num) o.class_num = Number(o.class_num); if (o.student_number) o.student_number = Number(o.student_number); return o;
+        });
+    }
+    function splitCSV(line) {
+        const out = []; let cur = '', inq = false; for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inq = !inq; } else if (ch === ',' && !inq) { out.push(cur); cur = ''; } else cur += ch;
+        }
+        out.push(cur); return out.map(s => s.trim());
+    }
+
+    // ===== UI helpers & Events =====
+    function openModal(id) { $(id).classList.add('open'); }
+    function closeModal(id) { $(id).classList.remove('open'); }
+    function togglePopover(el) { el.classList.toggle('open'); }
+    function updateSelectionUI() {
+        const cnt = [...$$('.row-check:checked')].length;
+        $('#sel-count').textContent = cnt; $('#bulk-drawer').classList.toggle('hidden', cnt === 0);
+        $('#check-all').checked = !!cnt && [...$$('.row-check')].every(i => i.checked);
+    }
+
+    // 필터/검색/페이징
+    $('#f-grade').onchange = () => { page = 1; loadUsers(); };
+    $('#f-class').onchange = () => { page = 1; loadUsers(); };
+    $('#f-role').onchange = () => { page = 1; loadUsers(); };
+    $('#search').oninput = () => { page = 1; apply(); };
+    $('#page-size').onchange = () => { page = 1; apply(); };
+    $('#prev').onclick = () => { if (page > 1) { page--; apply(); } };
+    $('#next').onclick = () => { const pages = Math.max(1, Math.ceil(view.length / pageSize)); if (page < pages) { page++; apply(); } };
+
+    // ✅ 행 작업: 전역 컨텍스트 메뉴(포털)
+    let ctxUser = null;
+    function openCtx(btn, username) {
+        ctxUser = username;
+        const el = document.getElementById('ctx');
+        el.style.left = '0px'; el.style.top = '0px';
+        el.classList.add('open');
+
+        const r = btn.getBoundingClientRect();
+        const pad = 8;
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const mw = el.offsetWidth, mh = el.offsetHeight || 180;
+
+        let top = r.bottom + pad;
+        let left = Math.min(vw - mw - pad, Math.max(pad, r.left));
+        if (top + mh + pad > vh) { top = r.top - mh - pad; }
+        if (top < pad) top = pad;
+        if (left < pad) left = pad;
+
+        el.style.left = `${left}px`;
+        el.style.top = `${top}px`;
+    }
+    function closeCtx() { const el = document.getElementById('ctx'); el.classList.remove('open'); ctxUser = null; }
+
+    // 버튼/배경 클릭으로 열고 닫기
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-menu]');
+        if (btn) {
+            const current = document.getElementById('ctx');
+            if (current.classList.contains('open') && ctxUser === btn.dataset.menu) { closeCtx(); return; }
+            openCtx(btn, btn.dataset.menu);
+        } else if (!e.target.closest('#ctx')) {
+            closeCtx();
+
+        }
     });
-}
+    window.addEventListener('scroll', closeCtx, { passive: true });
+    window.addEventListener('resize', closeCtx);
 
-// XSS 방지를 위한 유틸리티 함수
-function escapeHtml(text) {
-    if (!text) return '';
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
+    // 전역 메뉴 항목 클릭
+    document.getElementById('ctx').addEventListener('click', (e) => {
+        const act = e.target.closest('[data-ctx]')?.dataset.ctx;
+        if (!act || !ctxUser) return;
+        if (act === 'save') {
+            const sel = document.querySelector(`select[data-role="${ctxUser}"]`);
+            if (sel) updateRole(ctxUser, sel.value);
+        } else if (act === 'edit') {
+            openEditModal(ctxUser);
+        } else if (act === 'reset') {
+            resetByUsername(ctxUser);
+        } else if (act === 'del') {
+            deleteUser(ctxUser);
+        }
+        else if (act === 'coin') {
+            targetUserForCoin = ctxUser;
+            closeCtx();
+            openModal('#modal-coin');
+        }
 
-// ===== CSV =====
-function toCSV(rows) {
-    const esc = v => ('"' + String(v ?? '').replace(/"/g, '""') + '"');
-    const head = ['username', 'name', 'grade', 'class_num', 'student_number', 'role', 'email'];
-    return [head.join(',')].concat(rows.map(r => [r.username, r.name, r.grade, r.class_num, r.student_number, r.role, r.email].map(esc).join(','))).join('\n');
-}
-function download(name, text) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = name; document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove(); }
-function parseCSV(text) {
-    const lines = text.replace(/\r/g, '').split('\n').filter(Boolean); const header = lines.shift().split(',').map(h => h.trim());
-    return lines.map(line => {
-        const cols = splitCSV(line); const o = {}; header.forEach((h, i) => o[h] = cols[i]);
-        if (o.grade) o.grade = Number(o.grade); if (o.class_num) o.class_num = Number(o.class_num); if (o.student_number) o.student_number = Number(o.student_number); return o;
+        closeCtx();
     });
-}
-function splitCSV(line) {
-    const out = []; let cur = '', inq = false; for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inq = !inq; } else if (ch === ',' && !inq) { out.push(cur); cur = ''; } else cur += ch;
-    }
-    out.push(cur); return out.map(s => s.trim());
-}
 
-// ===== UI helpers & Events =====
-function openModal(id) { $(id).classList.add('open'); }
-function closeModal(id) { $(id).classList.remove('open'); }
-function togglePopover(el) { el.classList.toggle('open'); }
-function updateSelectionUI() {
-    const cnt = [...$$('.row-check:checked')].length;
-    $('#sel-count').textContent = cnt; $('#bulk-drawer').classList.toggle('hidden', cnt === 0);
-    $('#check-all').checked = !!cnt && [...$$('.row-check')].every(i => i.checked);
-}
+    // 테이블 내부 체크/버튼
+    $('#rows').onclick = async (e) => {
+        const chk = e.target.closest('.row-check'); if (chk) { updateSelectionUI(); }
+    };
+    $('#check-all').onchange = (e) => { $$('.row-check').forEach(i => i.checked = e.target.checked); updateSelectionUI(); };
+    $('#bulk-apply').onclick = bulkApplyRole;
+    $('#bulk-point').onclick = bulkGivePoints;
 
-// 필터/검색/페이징
-$('#f-grade').onchange = () => { page = 1; loadUsers(); };
-$('#f-class').onchange = () => { page = 1; loadUsers(); };
-$('#f-role').onchange = () => { page = 1; loadUsers(); };
-$('#search').oninput = () => { page = 1; apply(); };
-$('#page-size').onchange = () => { page = 1; apply(); };
-$('#prev').onclick = () => { if (page > 1) { page--; apply(); } };
-$('#next').onclick = () => { const pages = Math.max(1, Math.ceil(view.length / pageSize)); if (page < pages) { page++; apply(); } };
+    // 로그 검색 실시간 반영
+    $('#log-search-user').oninput = renderLogsUI;
+    $('#log-search-action').oninput = renderLogsUI;
 
-// ✅ 행 작업: 전역 컨텍스트 메뉴(포털)
-let ctxUser = null;
-function openCtx(btn, username) {
-    ctxUser = username;
-    const el = document.getElementById('ctx');
-    el.style.left = '0px'; el.style.top = '0px';
-    el.classList.add('open');
+    // 툴바
+    $('#refresh').onclick = loadUsers;
+    $('#promote').onclick = promote;
+    $('#more-btn').onclick = () => togglePopover($('#more'));
+    $('#open-logs').onclick = () => openModal('#modal-logs');
 
-    const r = btn.getBoundingClientRect();
-    const pad = 8;
-    const vw = window.innerWidth, vh = window.innerHeight;
-    const mw = el.offsetWidth, mh = el.offsetHeight || 180;
+    // ✅ 관리자 아이템 전체 동기화 (본인)
+    $('#admin-sync-all').onclick = async () => {
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) { alert('로그인이 필요합니다.'); return; }
 
-    let top = r.bottom + pad;
-    let left = Math.min(vw - mw - pad, Math.max(pad, r.left));
-    if (top + mh + pad > vh) { top = r.top - mh - pad; }
-    if (top < pad) top = pad;
-    if (left < pad) left = pad;
+        const { data: userData } = await sb.from('users').select('username').eq('email', user.email).maybeSingle();
+        const username = userData?.username;
+        if (!username) { alert('사용자 정보를 찾을 수 없습니다.'); return; }
 
-    el.style.left = `${left}px`;
-    el.style.top = `${top}px`;
-}
-function closeCtx() { const el = document.getElementById('ctx'); el.classList.remove('open'); ctxUser = null; }
+        if (!confirm('모든 상점 아이템을 인벤토리에 추가하시겠습니까? (본인 계정 기준)')) return;
 
-// 버튼/배경 클릭으로 열고 닫기
-document.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-menu]');
-    if (btn) {
-        const current = document.getElementById('ctx');
-        if (current.classList.contains('open') && ctxUser === btn.dataset.menu) { closeCtx(); return; }
-        openCtx(btn, btn.dataset.menu);
-    } else if (!e.target.closest('#ctx')) {
-        closeCtx();
+        try {
+            const { data: allItems } = await sb.from('shop_items').select('id, name');
+            const { data: myItems } = await sb.from('inventory').select('item_id').eq('username', username);
+            const myItemIdSet = new Set(myItems.map(i => i.item_id));
 
-    }
-});
-window.addEventListener('scroll', closeCtx, { passive: true });
-window.addEventListener('resize', closeCtx);
+            const toInsert = allItems
+                .filter(item => !myItemIdSet.has(item.id))
+                .map(item => ({
+                    username: username,
+                    item_id: item.id,
+                    item_name: item.name,
+                    price: 0,
+                    purchased_at: new Date().toISOString()
+                }));
 
-// 전역 메뉴 항목 클릭
-document.getElementById('ctx').addEventListener('click', (e) => {
-    const act = e.target.closest('[data-ctx]')?.dataset.ctx;
-    if (!act || !ctxUser) return;
-    if (act === 'save') {
-        const sel = document.querySelector(`select[data-role="${ctxUser}"]`);
-        if (sel) updateRole(ctxUser, sel.value);
-    } else if (act === 'reset') {
-        resetByUsername(ctxUser);
-    } else if (act === 'del') {
-        deleteUser(ctxUser);
-    }
-    else if (act === 'coin') {
-        targetUserForCoin = ctxUser;
-        closeCtx();
-        openModal('#modal-coin');
-    }
+            if (toInsert.length === 0) {
+                toast('이미 모든 아이템을 보유하고 있습니다.');
+                return;
+            }
 
-    closeCtx();
-});
+            const { error } = await sb.from('inventory').insert(toInsert);
+            if (error) throw error;
 
-// 테이블 내부 체크/버튼
-$('#rows').onclick = async (e) => {
-    const chk = e.target.closest('.row-check'); if (chk) { updateSelectionUI(); }
-};
-$('#check-all').onchange = (e) => { $$('.row-check').forEach(i => i.checked = e.target.checked); updateSelectionUI(); };
-$('#bulk-apply').onclick = bulkApplyRole;
-$('#bulk-point').onclick = bulkGivePoints;
+            toast(`✅ ${toInsert.length}개의 아이템이 추가되었습니다.`);
+        } catch (err) {
+            console.error(err);
+            alert('오류 발생: ' + err.message);
+        }
+    };
 
-// 로그 검색 실시간 반영
-$('#log-search-user').oninput = renderLogsUI;
-$('#log-search-action').oninput = renderLogsUI;
+    document.addEventListener('click', (e) => { if (!e.target.closest('#more-btn') && !e.target.closest('#more')) $('#more').classList.remove('open'); });
 
-// 툴바
-$('#refresh').onclick = loadUsers;
-$('#promote').onclick = promote;
-$('#more-btn').onclick = () => togglePopover($('#more'));
-document.addEventListener('click', (e) => { if (!e.target.closest('#more-btn') && !e.target.closest('#more')) $('#more').classList.remove('open'); });
+    // CSV
+    $('#csv-out').onclick = () => download('users_export.csv', toCSV(view));
+    $('#csv-in').onchange = async (e) => {
+        const f = e.target.files?.[0]; if (!f) return; const rows = parseCSV(await f.text()); const good = rows.filter(r => r.username && r.name);
+        for (const c of chunked(good, 200)) { const { error } = await sb.from('users').upsert(c); if (error) console.error(error); }
+        toast(`CSV 업로드 완료 (${good.length}명)`); e.target.value = ''; loadUsers();
+    };
 
-// CSV
-$('#csv-out').onclick = () => download('users_export.csv', toCSV(view));
-$('#csv-in').onchange = async (e) => {
-    const f = e.target.files?.[0]; if (!f) return; const rows = parseCSV(await f.text()); const good = rows.filter(r => r.username && r.name);
-    for (const c of chunked(good, 200)) { const { error } = await sb.from('users').upsert(c); if (error) console.error(error); }
-    toast(`CSV 업로드 완료 (${good.length}명)`); e.target.value = ''; loadUsers();
-};
+    // 모달
+    $('#open-add').onclick = () => openModal('#modal-add');
+    $$('#modal-add [data-close]').forEach(b => b.onclick = () => closeModal('#modal-add'));
+    $('#add-submit').onclick = addUser;
 
-// 모달
-$('#open-add').onclick = () => openModal('#modal-add');
-$$('#modal-add [data-close]').forEach(b => b.onclick = () => closeModal('#modal-add'));
-$('#add-submit').onclick = addUser;
+    $('#open-logs').onclick = () => { openModal('#modal-logs'); loadLogs(); };
+    $$('#modal-logs [data-close]').forEach(b => b.onclick = () => closeModal('#modal-logs'));
+    $$('#modal-log-detail [data-close]').forEach(b => b.onclick = () => closeModal('#modal-log-detail'));
+    $('#refresh-logs').onclick = loadLogs;
 
-$('#open-logs').onclick = () => { openModal('#modal-logs'); loadLogs(); };
-$$('#modal-logs [data-close]').forEach(b => b.onclick = () => closeModal('#modal-logs'));
-$$('#modal-log-detail [data-close]').forEach(b => b.onclick = () => closeModal('#modal-log-detail'));
-$('#refresh-logs').onclick = loadLogs;
+    $$('#modal-edit [data-close]').forEach(b => b.onclick = () => closeModal('#modal-edit'));
+    $('#edit-submit').onclick = updateUserInfo;
 
-// 정렬
-document.querySelectorAll('th.sortable').forEach(th => {
-    th.onclick = () => { const key = th.dataset.sort; sortDir = (sortKey === key && sortDir === 'asc') ? 'desc' : 'asc'; sortKey = key; apply(); };
-});
+    // 정렬
+    document.querySelectorAll('th.sortable').forEach(th => {
+        th.onclick = () => { const key = th.dataset.sort; sortDir = (sortKey === key && sortDir === 'asc') ? 'desc' : 'asc'; sortKey = key; apply(); };
+    });
 
-// ===== Shop Management Logic =====
-const tabUsers = $('#tab-users'), tabShop = $('#tab-shop');
-const secUsers = [$('#section-stats'), $('#section-toolbar'), $('#section-users')];
-const secShop = $('#section-shop');
+    // ===== Shop Management Logic (Tab switching is handled above) =====
+    async function loadShopItemsAdmin() {
+        const { data, error } = await sb.from('shop_items').select('*').order('id', { ascending: true });
+        if (error) { console.error(error); return toast('상점 아이템 로드 실패'); }
+        const tb = $('#shop-rows'); tb.innerHTML = '';
+        $('#shop-empty').classList.toggle('hidden', !!data?.length);
 
-tabUsers.onclick = () => {
-    tabUsers.className = 'text-sm font-bold text-blue-600';
-    tabShop.className = 'text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors';
-    secUsers.forEach(s => s?.classList.remove('hidden'));
-    secShop.classList.add('hidden');
-    $('#bulk-drawer').classList.add('hidden');
-};
+        (data || []).forEach(item => {
+            const tr = document.createElement('tr');
+            const imgHtml = item.image_url
+                ? `<div class="w-10 h-10 rounded border bg-cover bg-center" style="background-image:url('${item.image_url}')"></div>`
+                : `<div class="w-10 h-10 rounded border bg-gray-100 flex items-center justify-center text-xs text-gray-400">No Img</div>`;
 
-tabShop.onclick = () => {
-    tabShop.className = 'text-sm font-bold text-blue-600';
-    tabUsers.className = 'text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors';
-    secUsers.forEach(s => s?.classList.add('hidden'));
-    secShop.classList.remove('hidden');
-    $('#bulk-drawer').classList.add('hidden');
-    loadShopItemsAdmin();
-};
-
-async function loadShopItemsAdmin() {
-    const { data, error } = await sb.from('shop_items').select('*').order('id', { ascending: true });
-    if (error) { console.error(error); return toast('상점 아이템 로드 실패'); }
-    const tb = $('#shop-rows'); tb.innerHTML = '';
-    $('#shop-empty').classList.toggle('hidden', !!data?.length);
-
-    (data || []).forEach(item => {
-        const tr = document.createElement('tr');
-        const imgHtml = item.image_url
-            ? `<div class="w-10 h-10 rounded border bg-cover bg-center" style="background-image:url('${item.image_url}')"></div>`
-            : `<div class="w-10 h-10 rounded border bg-gray-100 flex items-center justify-center text-xs text-gray-400">No Img</div>`;
-
-        tr.innerHTML = `
+            tr.innerHTML = `
           <td class="text-center font-mono text-xs text-gray-400">${item.id}</td>
           <td>
             <div class="flex items-center gap-3">
               ${imgHtml}
-              <span class="font-semibold">${escapeHtml(item.name)}</span>
+              <div class="flex flex-col">
+                <span class="font-semibold">${escapeHtml(item.name)}</span>
+                <span class="text-[10px] text-gray-400 uppercase font-bold">${item.item_type || 'normal'}</span>
+              </div>
             </div>
           </td>
           <td class="text-center text-amber-600 font-bold">${(item.price || 0).toLocaleString()}</td>
@@ -492,118 +809,124 @@ async function loadShopItemsAdmin() {
               <button class="text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors del-shop" data-id="${item.id}">삭제</button>
             </div>
           </td>`;
-        tb.appendChild(tr);
-    });
-}
+            tb.appendChild(tr);
+        });
+    }
 
-// 상점 아이템 추가/수정
-$('#open-add-shop').onclick = () => {
-    $('#shop-modal-title').textContent = '🛒 새 아이템 추가';
-    $('#shop-id').value = '';
-    $('#shop-name').value = '';
-    $('#shop-price').value = '';
-    $('#shop-image').value = '';
-    $('#shop-stock').value = '1';
-    $('#shop-desc').value = '';
-    openModal('#modal-shop');
-};
-
-$('#shop-submit').onclick = async () => {
-    const id = $('#shop-id').value;
-    const p = {
-        name: $('#shop-name').value.trim(),
-        price: Number($('#shop-price').value || 0),
-        image_url: $('#shop-image').value.trim() || null,
-        stock: Number($('#shop-stock').value || 1),
-        description: $('#shop-desc').value.trim() || null
+    // 상점 아이템 추가/수정
+    $('#open-add-shop').onclick = () => {
+        $('#shop-modal-title').textContent = '🛒 새 아이템 추가';
+        $('#shop-id').value = '';
+        $('#shop-name').value = '';
+        $('#shop-price').value = '';
+        $('#shop-type').value = 'normal';
+        $('#shop-effect').value = '';
+        $('#shop-image').value = '';
+        $('#shop-stock').value = '1';
+        $('#shop-desc').value = '';
+        openModal('#modal-shop');
     };
 
-    if (!p.name) return toast('아이템 이름을 입력하세요');
+    $('#shop-submit').onclick = async () => {
+        const id = $('#shop-id').value;
+        const p = {
+            name: $('#shop-name').value.trim(),
+            price: Number($('#shop-price').value || 0),
+            item_type: $('#shop-type').value,
+            effect_data: $('#shop-effect').value.trim() || null,
+            image_url: $('#shop-image').value.trim() || null,
+            stock: Number($('#shop-stock').value || 1),
+            description: $('#shop-desc').value.trim() || null
+        };
 
-    let error;
-    if (id) {
-        const { error: e } = await sb.from('shop_items').update(p).eq('id', id);
-        error = e;
-    } else {
-        const { error: e } = await sb.from('shop_items').insert([p]);
-        error = e;
-    }
+        if (!p.name) return toast('아이템 이름을 입력하세요');
 
-    if (error) { console.error(error); return toast('저장 실패: ' + error.message); }
-    toast(id ? '수정 완료' : '추가 완료');
-    logAction(id ? 'shop_item_update' : 'shop_item_create', p);
-    closeModal('#modal-shop');
-    loadShopItemsAdmin();
-};
+        let error;
+        if (id) {
+            const { error: e } = await sb.from('shop_items').update(p).eq('id', id);
+            error = e;
+        } else {
+            const { error: e } = await sb.from('shop_items').insert([p]);
+            error = e;
+        }
 
-$('#shop-rows').onclick = async (e) => {
-    const editBtn = e.target.closest('.edit-shop');
-    const delBtn = e.target.closest('.del-shop');
-
-    if (editBtn) {
-        const id = editBtn.dataset.id;
-        const { data, error } = await sb.from('shop_items').select('*').eq('id', id).maybeSingle();
-        if (error || !data) return toast('정보 로드 실패');
-
-        $('#shop-modal-title').textContent = '📝 아이템 수정';
-        $('#shop-id').value = data.id;
-        $('#shop-name').value = data.name;
-        $('#shop-price').value = data.price;
-        $('#shop-image').value = data.image_url || '';
-        $('#shop-stock').value = data.stock || 1;
-        $('#shop-desc').value = data.description || '';
-        openModal('#modal-shop');
-    }
-
-    if (delBtn) {
-        const id = delBtn.dataset.id;
-        if (!confirm('정말 이 아이템을 삭제할까요?')) return;
-        const { error } = await sb.from('shop_items').delete().eq('id', id);
-        if (error) { console.error(error); return toast('삭제 실패'); }
-        toast('삭제 완료');
-        logAction('shop_item_delete', { item_id: id });
+        if (error) { console.error(error); return toast('저장 실패: ' + error.message); }
+        toast(id ? '수정 완료' : '추가 완료');
+        logAction(id ? 'shop_item_update' : 'shop_item_create', p);
+        closeModal('#modal-shop');
         loadShopItemsAdmin();
-    }
-};
+        renderStats();
+    };
 
-$$('#modal-shop [data-close]').forEach(b => b.onclick = () => closeModal('#modal-shop'));
+    $('#shop-rows').onclick = async (e) => {
+        const editBtn = e.target.closest('.edit-shop');
+        const delBtn = e.target.closest('.del-shop');
 
-// 초기 로드
-document.addEventListener('DOMContentLoaded', async () => { await loadUsers(); });
+        if (editBtn) {
+            const id = editBtn.dataset.id;
+            const { data, error } = await sb.from('shop_items').select('*').eq('id', id).maybeSingle();
+            if (error || !data) return toast('정보 로드 실패');
 
-let targetUserForCoin = null;
-$('#coin-submit').onclick = async () => {
-    const raw = $('#coin-amount')?.value?.trim();
-    const amount = parseInt(raw, 10);
+            $('#shop-modal-title').textContent = '📝 아이템 수정';
+            $('#shop-id').value = data.id;
+            $('#shop-name').value = data.name;
+            $('#shop-price').value = data.price;
+            $('#shop-type').value = data.item_type || 'normal';
+            $('#shop-effect').value = data.effect_data || '';
+            $('#shop-image').value = data.image_url || '';
+            $('#shop-stock').value = data.stock || 1;
+            $('#shop-desc').value = data.description || '';
+            openModal('#modal-shop');
+        }
 
-    if (!targetUserForCoin || !raw || isNaN(amount) || amount <= 0) {
-        return toast('지급할 포인트를 올바르게 입력하세요');
-    }
+        if (delBtn) {
+            const id = delBtn.dataset.id;
+            if (!confirm('정말 이 아이템을 삭제할까요?')) return;
+            const { error } = await sb.from('shop_items').delete().eq('id', id);
+            if (error) { console.error(error); return toast('삭제 실패'); }
+            toast('삭제 완료');
+            logAction('shop_item_delete', { item_id: id });
+            loadShopItemsAdmin();
+            renderStats();
+        }
+    };
 
-    const { data, error: getError } = await sb.from('users')
-        .select('coin_balance')
-        .eq('username', targetUserForCoin)
-        .maybeSingle();
+    $$('#modal-shop [data-close]').forEach(b => b.onclick = () => closeModal('#modal-shop'));
 
-    if (getError || !data) return toast('유저 정보를 불러올 수 없습니다');
+    let targetUserForCoin = null;
+    $('#coin-submit').onclick = async () => {
+        const raw = $('#coin-amount')?.value?.trim();
+        const amount = parseInt(raw, 10);
 
-    const newBalance = (data.coin_balance || 0) + amount;
+        if (!targetUserForCoin || !raw || isNaN(amount) || amount <= 0) {
+            return toast('지급할 포인트를 올바르게 입력하세요');
+        }
 
-    const { error: updateError } = await sb.from('users')
-        .update({ coin_balance: newBalance })
-        .eq('username', targetUserForCoin);
+        const { data, error: getError } = await sb.from('users')
+            .select('coin_balance')
+            .eq('username', targetUserForCoin)
+            .maybeSingle();
 
-    if (updateError) {
-        console.error(updateError);
-        return toast('포인트 지급 실패');
-    }
+        if (getError || !data) return toast('유저 정보를 불러올 수 없습니다');
 
-    toast(`포인트 ${amount} 지급 완료`);
-    logAction('coin_given', { target: targetUserForCoin, amount });
-    closeModal('#modal-coin');
-    $('#coin-amount').value = '';
-    targetUserForCoin = null;
-    loadUsers();
-};
+        const newBalance = (data.coin_balance || 0) + amount;
 
-$$('#modal-coin [data-close]').forEach(b => b.onclick = () => closeModal('#modal-coin'));
+        const { error: updateError } = await sb.from('users')
+            .update({ coin_balance: newBalance })
+            .eq('username', targetUserForCoin);
+
+        if (updateError) {
+            console.error(updateError);
+            return toast('포인트 지급 실패');
+        }
+
+        toast(`포인트 ${amount} 지급 완료`);
+        logAction('coin_given', { target: targetUserForCoin, amount });
+        closeModal('#modal-coin');
+        $('#coin-amount').value = '';
+        targetUserForCoin = null;
+        loadUsers();
+    };
+
+    $$('#modal-coin [data-close]').forEach(b => b.onclick = () => closeModal('#modal-coin'));
+})();
