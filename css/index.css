@@ -1329,11 +1329,83 @@
       background: #fff
     }
 
+    /* 🛡️ 프로필 화면 전용 카드 래퍼 (2단 그리드) */
+    .profile-grid-wrapper {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+      margin-top: 20px;
+    }
+
+    /* 🎨 모던 입력 폼 스타일 (내 설정용) */
+    .profile-grid-wrapper .accent-card {
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid #f1f5f9;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    }
+
+    .profile-grid-wrapper .accent-body {
+      padding: 20px;
+    }
+
+    .profile-grid-wrapper label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 6px;
+      margin-top: 12px;
+    }
+
+    .profile-grid-wrapper input[type="text"],
+    .profile-grid-wrapper input[type="password"],
+    .profile-grid-wrapper input[type="email"],
+    .profile-grid-wrapper select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+      font-size: 0.95rem;
+      color: #1e293b;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    .profile-grid-wrapper input[readonly] {
+      background: #f1f5f9;
+      color: #64748b;
+      cursor: not-allowed;
+    }
+
+    .profile-grid-wrapper input:focus,
+    .profile-grid-wrapper select:focus {
+      outline: none;
+      border-color: #6366f1;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .profile-grid-wrapper .nav-btn,
+    .profile-grid-wrapper button {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
     .p-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #a78bfa
+      background: #a78bfa;
     }
 
     /* Accent Header Styles */
@@ -1349,17 +1421,15 @@
     }
 
     .accent-head {
-      padding: 12px 16px;
+      padding: 14px 20px;
       display: flex;
       justify-content: space-between;
-      /* 양쪽 끝으로 다시 배치하여 다른 카드와 통일 */
       align-items: center;
       border-bottom: 1px solid rgba(0, 0, 0, 0.03);
       flex-wrap: wrap;
       min-height: 52px;
       border-top-left-radius: 20px;
       border-top-right-radius: 20px;
-      /* 헤더 높이 명시적으로 고정하여 통일성 강화 */
       box-sizing: border-box;
     }
 
@@ -1373,19 +1443,18 @@
     .accent-title-box {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .accent-head h3 {
       margin: 0;
-      font-size: 0.95rem;
-      /* Slightly smaller to fit 2-col */
+      font-size: 1.05rem;
       font-weight: 800;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
       white-space: nowrap;
-      color: #6d28d9;
+      color: #1e293b;
     }
 
     #timetable-date-label,
@@ -1486,7 +1555,7 @@
 
     /* Themes */
     .theme-indigo-head {
-      background: #f0f4ff;
+      background: #f0f5ff;
     }
 
     .theme-indigo-head .accent-bar {
@@ -1502,7 +1571,35 @@
     }
 
     .theme-purple-head .accent-bar {
-      background: #7c3aed;
+      background: #9333ea;
+    }
+
+    .theme-purple-head h3 {
+      color: #7e22ce;
+    }
+
+    .theme-rose-head {
+      background: #fff1f2;
+    }
+
+    .theme-rose-head .accent-bar {
+      background: #f43f5e;
+    }
+
+    .theme-rose-head h3 {
+      color: #e11d48;
+    }
+
+    .theme-orange-head {
+      background: #fff7ed;
+    }
+
+    .theme-orange-head .accent-bar {
+      background: #f97316;
+    }
+
+    .theme-orange-head h3 {
+      color: #ea580c;
     }
 
     .theme-purple-head h3 {
@@ -3193,50 +3290,69 @@
     ========================================= */
     .chat-msg-row {
       display: flex;
-      flex-direction: column;
-      margin-bottom: 8px;
-      max-width: 80%;
+      flex-direction: row;
+      margin-bottom: 12px;
+      max-width: 85%;
+      gap: 10px;
     }
 
     .chat-msg-row.mine {
       align-self: flex-end;
-      align-items: flex-end;
+      flex-direction: row-reverse;
     }
 
     .chat-msg-row.other {
       align-self: flex-start;
-      align-items: flex-start;
+    }
+
+    .chat-content {
+      display: flex;
+      flex-direction: column;
+      max-width: calc(100% - 46px);
+    }
+
+    .chat-content.mine-content {
+      align-items: flex-end;
     }
 
     .chat-username {
-      font-size: 0.75rem;
+      font-size: 0.85rem;
       font-weight: 700;
-      color: #64748b;
+      color: #475569;
       margin-bottom: 4px;
       padding: 0 4px;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .chat-title {
+      color: #6366f1;
+      font-weight: 800;
     }
 
     .chat-bubble {
       padding: 10px 14px;
-      border-radius: 12px;
+      border-radius: 16px;
       font-size: 0.95rem;
       line-height: 1.4;
       background: #fff;
-      color: #333;
+      color: #334155;
       border: 1px solid #e2e8f0;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
       word-break: break-all;
+      position: relative;
     }
 
     .chat-msg-row.mine .chat-bubble {
       background: #4f46e5;
       color: #fff;
       border-color: #4f46e5;
-      border-bottom-right-radius: 2px;
+      border-top-right-radius: 4px;
     }
 
     .chat-msg-row.other .chat-bubble {
-      border-bottom-left-radius: 2px;
+      border-top-left-radius: 4px;
     }
 
     /* 프리미엄 채팅 컬러 (이름 & 말풍선) */

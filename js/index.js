@@ -50,6 +50,11 @@ function syncPersistentSession() {
 }
 syncPersistentSession();
 
+// 전역 폼 제출 방지 (엔터 키 리다이렉트 버그 해결)
+document.addEventListener('submit', (e) => {
+  e.preventDefault();
+}, true);
+
 const KOR_SUBJECTS = [
   '국어', '수학', '영어', '과학', '사회', '역사', '도덕', '기술', '가정', '정보', '음악', '미술', '체육',
   '통합', '자율', '창체', '자율활동', '동아리', '진로', '한문', '스포츠'
@@ -439,7 +444,7 @@ async function loadNotices() {
   try {
     const { safeG, safeC } = getSafeGradeClass();
 
-    let query = supabaseClient.from('notices').select('*, users(equipped_title, equipped_color)');
+    let query = supabaseClient.from('notices').select('*');
 
     if (currentUserRole === 'admin') {
       if (safeG !== 0) {
@@ -453,6 +458,21 @@ async function loadNotices() {
     }
 
     const { data, error } = await query.order('id', { ascending: false }).limit(20);
+
+    // [No-Join Refactor] Fetch users separately to avoid PGRST200
+    if (data && data.length > 0) {
+      const usernames = [...new Set(data.filter(i => i.username).map(i => i.username))];
+      if (usernames.length > 0) {
+        const { data: userData } = await supabaseClient
+          .from('users')
+          .select('username, name, equipped_title, equipped_color')
+          .in('username', usernames);
+
+        const userMap = {};
+        userData?.forEach(u => { userMap[u.username] = u; });
+        data.forEach(item => { item.users = userMap[item.username] || null; });
+      }
+    }
 
     if (error) {
       console.error('Notice loading error:', error);
@@ -710,7 +730,7 @@ async function loadMaterials() {
   try {
     const { safeG, safeC } = getSafeGradeClass();
 
-    let query = supabaseClient.from('homeworks').select('*, users(equipped_title, equipped_color)');
+    let query = supabaseClient.from('homeworks').select('*');
 
     if (currentUserRole !== 'admin') {
       // 권한 필터: 전교(school/null/0), 같은 학년(grade), 또는 같은 반(class)
@@ -723,6 +743,21 @@ async function loadMaterials() {
       console.error('Material loading error:', error);
       if (listEl) listEl.innerHTML = `<li style="text-align:center; padding:2rem; color:#dc3545;">자료 로딩 실패: ${error.message}</li>`;
       return;
+    }
+
+    // [No-Join Refactor] Fetch users separately to avoid PGRST200 error
+    if (data && data.length > 0) {
+      const usernames = [...new Set(data.filter(i => i.username).map(i => i.username))];
+      if (usernames.length > 0) {
+        const { data: userData } = await supabaseClient
+          .from('users')
+          .select('username, name, equipped_title, equipped_color')
+          .in('username', usernames);
+
+        const userMap = {};
+        userData?.forEach(u => { userMap[u.username] = u; });
+        data.forEach(item => { item.users = userMap[item.username] || null; });
+      }
     }
 
     if (!listEl) return;
@@ -759,6 +794,8 @@ async function loadMaterials() {
         `;
       }
 
+      const rawComment = item.description || item.content || item.comment || '';
+      const safeComment = escapeHtml(rawComment);
       const commentHtml = safeComment
         ? `<p style="margin:6px 0; color:#4b5563;">💬 ${safeComment.split('\n').join('<br>')}</p>`
         : '';
@@ -1286,12 +1323,7 @@ function canUserSeeMaterial(item) {
 
 function setUserInfoInput() {
   const inputEl = document.getElementById('homework-userinfo');
-  const nameEl = document.getElementById('profile-name-display');
-  const mobileNameEl = document.getElementById('mobile-user-name');
-
   if (inputEl) inputEl.value = `${currentStudentNumber}번 ${currentUserName}`;
-  if (nameEl) nameEl.textContent = currentUserName;
-  if (mobileNameEl) mobileNameEl.textContent = currentUserName;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1618,6 +1650,26 @@ document.addEventListener('DOMContentLoaded', () => {
       closeMobileMenu();
     });
   }
+
+  // 로그인 필드 엔터 키 처리
+  const loginUser = document.getElementById('loginUsername');
+  const loginPass = document.getElementById('loginPassword');
+  if (loginUser) {
+    loginUser.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        loginDirect();
+      }
+    });
+  }
+  if (loginPass) {
+    loginPass.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        loginDirect();
+      }
+    });
+  }
 });
 
 window.currentDate = new Date();
@@ -1759,7 +1811,7 @@ async function loadRecentNotices3() {
   try {
     const { safeG, safeC } = getSafeGradeClass();
 
-    let q = supabaseClient.from('notices').select('*, users(equipped_title)');
+    let q = supabaseClient.from('notices').select('*');
 
     if (currentUserRole === 'admin') {
       if (safeG !== 0) {
@@ -1770,6 +1822,21 @@ async function loadRecentNotices3() {
     }
 
     const { data, error } = await q.order('id', { ascending: false }).limit(3);
+
+    // [No-Join Refactor] Fetch users separately to avoid PGRST200
+    if (data && data.length > 0) {
+      const usernames = [...new Set(data.filter(i => i.username).map(i => i.username))];
+      if (usernames.length > 0) {
+        const { data: userData } = await supabaseClient
+          .from('users')
+          .select('username, name, equipped_title, equipped_color')
+          .in('username', usernames);
+
+        const userMap = {};
+        userData?.forEach(u => { userMap[u.username] = u; });
+        data.forEach(item => { item.users = userMap[item.username] || null; });
+      }
+    }
 
     if (error) {
       console.error('Dash notice loading error:', error);
@@ -1791,6 +1858,8 @@ async function loadRecentNotices3() {
       el.onclick = () => showPanel('notice-panel');
 
       const writerTitle = n.users?.equipped_title ? `[${n.users.equipped_title.replace('[칭호]', '').trim()}] ` : '';
+      const writerColor = n.users?.equipped_color || '#6366f1';
+      const writerName = n.users?.name || n.writer || '익명';
 
       // 기획: 이미지가 있으면 우측에 크게 배치, 없으면 텍스트만 꽉 채움
       const imgHtml = n.image_url
@@ -1801,7 +1870,7 @@ async function loadRecentNotices3() {
         <div class="notice-item-inner" style="align-items: center;">
           <div class="notice-item-text">
             <div class="title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${n.title || ''}</div>
-            <div class="meta"><span style="color:#6366f1; font-weight:700;">${writerTitle}</span>${n.writer || ''} · ${n.grade}학년 ${n.class_num}반</div>
+            <div class="meta"><span style="color:${writerColor}; font-weight:700;">${writerTitle}</span>${writerName} · ${n.grade}학년 ${n.class_num}반</div>
             <div class="meta" style="margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${preview}${(n.content || '').length > 60 ? '…' : ''}</div>
           </div>
           ${imgHtml}
@@ -5985,32 +6054,56 @@ async function initChat() {
 
   if (!msgContainer || !chatForm) return;
 
+  // 채팅을 새로 열 때마다 날짜 구분선 상태 초기화
+  lastRenderedDate = null;
+
   // 1. Initial Load (fetch last 50 messages)
   const { data, error } = await supabaseClient
     .from('chat_messages')
-    .select('*, users(equipped_color)')
+    .select('*')
     .order('created_at', { ascending: false })
     .limit(50);
 
-  if (data) {
-    // Keep the welcome message, then append history
-    const welcomeMsg = msgContainer.innerHTML;
-    msgContainer.innerHTML = welcomeMsg;
+  if (error) {
+    console.error("Chat history load error:", error);
+    msgContainer.innerHTML = '<div style="text-align: center; color: #dc3545; font-size: 0.85rem; padding: 20px;">대화 내역을 불러오지 못했습니다. (권한 또는 연결 문제)</div>';
+    return;
+  }
+
+  // [No-Join Refactor] Fetch users separately to avoid PGRST200
+  if (data && data.length > 0) {
+    const usernames = [...new Set(data.filter(i => i.username).map(i => i.username))];
+    const { data: userData } = await supabaseClient
+      .from('users')
+      .select('username, equipped_color, avatar_url, equipped_title, name, grade, class_num, student_number')
+      .in('username', usernames);
+
+    const userMap = {};
+    userData?.forEach(u => { userMap[u.username] = u; });
+    data.forEach(item => { item.users = userMap[item.username] || null; });
+  }
+
+  if (data && data.length > 0) {
+    // 기존 메시지들 비우기 (중복 추가 방지)
+    msgContainer.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 20px;">대화실에 오신 것을 환영합니다! 바른말 고운말을 사용해 주세요.</div>';
     [...data].reverse().forEach(msg => appendChatMessage(msg));
+  } else {
+    msgContainer.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 20px;">첫 번째 메시지를 남겨보세요! ✨</div>';
   }
 
   // 2. Chat form Submit Event
   chatForm.onsubmit = async (e) => {
     e.preventDefault();
     const text = chatInput.value.trim();
-    if (!text || !currentUser || !currentUser.username) return;
+    const savedUserId = localStorage.getItem('savedUsername');
+    if (!text || !savedUserId) return;
 
     // UI clear first for better UX
     chatInput.value = '';
 
     const { error: insertErr } = await supabaseClient
       .from('chat_messages')
-      .insert({ username: window.currentUserName, message: text });
+      .insert({ username: savedUserId, message: text });
 
     if (insertErr) {
       console.error("Chat send error:", insertErr);
@@ -6018,51 +6111,174 @@ async function initChat() {
     }
   };
 
-  // 3. Real-time Subscription
+  // 3. Real-time Subscription (이미 있는 경우 재구독 방지)
   if (!chatSubscription) {
     chatSubscription = supabaseClient.channel('public:chat_messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, async (payload) => {
         const rawMsg = payload.new;
-        // Fetch the sender's current equipped_color to determine if they're premium
-        const { data: uData } = await supabaseClient
-          .from('users')
-          .select('equipped_color')
-          .eq('username', rawMsg.username)
-          .maybeSingle();
-
-        const msg = {
-          ...rawMsg,
-          users: uData ? { equipped_color: uData.equipped_color } : null
-        };
+        const { data: uData } = await supabaseClient.from('users').select('equipped_color, avatar_url, equipped_title, name, grade, class_num, student_number').eq('username', rawMsg.username).maybeSingle();
+        const msg = { ...rawMsg, users: uData ? { ...uData } : null };
         appendChatMessage(msg);
       })
       .subscribe();
   }
+
+  // 4. 하단 이동 버튼 기능 (Scroll to bottom)
+  const scrollBtn = document.getElementById('chat-scroll-bottom');
+  if (scrollBtn && msgContainer) {
+    msgContainer.addEventListener('scroll', () => {
+      // 위로 300px 이상 올리면 버튼 노출
+      if (msgContainer.scrollHeight - msgContainer.scrollTop - msgContainer.clientHeight > 300) {
+        scrollBtn.style.display = 'flex';
+      } else {
+        scrollBtn.style.display = 'none';
+      }
+    });
+    scrollBtn.onclick = () => {
+      msgContainer.scrollTo({ top: msgContainer.scrollHeight, behavior: 'smooth' });
+    };
+  }
 }
+
+let lastRenderedDate = null;
 
 function appendChatMessage(msg) {
   const msgContainer = document.getElementById('chat-messages-container');
   if (!msgContainer) return;
 
-  const isMine = (currentUser && currentUser.username === msg.username);
-  const userColor = (msg.users && msg.users.equipped_color) ? msg.users.equipped_color : '';
-  const isPremium = userColor.includes('컬러'); // '[컬러] 프리미엄 채팅 컬러' 등
+  // 날짜 구분선 추가 (카카오톡 스타일)
+  if (msg.created_at) {
+    const curDate = new Date(msg.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    if (lastRenderedDate !== curDate) {
+      const dateSep = document.createElement('div');
+      dateSep.className = 'chat-date-separator';
+      dateSep.innerHTML = `<span class="chat-date-text">${curDate}</span>`;
+      msgContainer.appendChild(dateSep);
+      lastRenderedDate = curDate;
+    }
+  }
+
+  const savedUserId = localStorage.getItem('savedUsername');
+  const isMine = (savedUserId === msg.username);
+
+  // 사용자 정보 파싱 (null 안전성 확보)
+  const uInfo = msg.users || {};
+  const userColor = uInfo.equipped_color || '';
+  const isPremium = userColor.includes('컬러');
+
+  // 프사, 기본 이름, 학년/반/번호, 칭호 정보 추출
+  const avatarUrl = uInfo.avatar_url || '';
+  const grade = Number(uInfo.grade) > 0 ? `${uInfo.grade}학년 ` : '';
+  const classNum = Number(uInfo.class_num) > 0 ? `${uInfo.class_num}반 ` : '';
+  const studentNum = Number(uInfo.student_number) > 0 ? `${uInfo.student_number}번 ` : '';
+  const realName = uInfo.name || msg.username;
+  const gradeClassInfo = (grade || classNum || studentNum) ? `(${grade}${classNum}${studentNum.trim()})` : '';
+
+  // 칭호 처리
+  const rawTitle = uInfo.equipped_title || '';
+  const cleanTitle = rawTitle.replace('[칭호]', '').trim();
+  const titleHtml = cleanTitle ? `<span class="chat-title">[${cleanTitle}]</span> ` : '';
+
+  // 시간 포맷팅 (오전/오후 H:MM)
+  let timeStr = '';
+  if (msg.created_at) {
+    const d = new Date(msg.created_at);
+    timeStr = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: 'numeric', hour12: true }).format(d);
+  }
+  const timeHtml = timeStr ? `<div class="chat-time" style="font-size:0.75rem; color:#94a3b8; margin: 0 4px; align-self:flex-end;">${timeStr}</div>` : '';
 
   const row = document.createElement('div');
   row.className = `chat-msg-row ${isMine ? 'mine' : 'other'} ${isPremium ? 'premium-chat' : ''}`;
 
-  // Always render username for premium layout compatibility
-  const nameHtml = `<div class="chat-username ${isPremium ? 'premium-chat-username' : ''}" ${isMine && !isPremium ? 'style="display:none;"' : ''}>${msg.username}</div>`;
+  // 전체 표시용 이름 문자열
+  const displayName = `${titleHtml}${realName} <span style="font-size:0.75rem; color:#64748b; font-weight:normal;">${gradeClassInfo}</span>`;
+
+  // 프사 클릭 이벤트 (상세 프로필 보기)
+  const openProfileDetail = () => {
+    const modal = document.getElementById('chat-profile-modal');
+    if (!modal) return;
+    document.getElementById('cp-name').textContent = realName;
+    document.getElementById('cp-title').textContent = cleanTitle ? `[${cleanTitle}]` : '';
+    document.getElementById('cp-info').textContent = `${grade}${classNum}${studentNum}`;
+
+    const cpAvatar = document.getElementById('cp-avatar');
+    const cpPlaceholder = document.getElementById('cp-avatar-placeholder');
+    if (avatarUrl) {
+      cpAvatar.src = avatarUrl;
+      cpAvatar.style.display = 'block';
+      cpPlaceholder.style.display = 'none';
+    } else {
+      cpAvatar.style.display = 'none';
+      cpPlaceholder.style.display = 'block';
+    }
+
+    // 언급하기 버튼 연동
+    const mentBtn = document.getElementById('cp-action-mention');
+    if (mentBtn) {
+      mentBtn.onclick = () => {
+        const input = document.getElementById('chat-input');
+        input.value = `[@${realName}] ` + input.value;
+        input.focus();
+        modal.style.display = 'none';
+      };
+    }
+
+    modal.style.display = 'flex';
+  };
+
+  // 프사 HTML 생성
+  const avatarHtml = `
+    <div class="chat-avatar" style="width: 40px; height: 40px; border-radius: 15px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; cursor:pointer;" onclick="this.dispatchEvent(new CustomEvent('open-profile'))">
+      ${avatarUrl ? `<img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">` : '<span style="font-size:1.5rem;">👤</span>'}
+    </div>
+  `;
 
   // Sanitize message to prevent XSS
   const safeMessage = msg.message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-  row.innerHTML = `
-    ${nameHtml}
-    <div class="chat-bubble">${safeMessage}</div>
-  `;
+  // 답글 달기 (Reply) 기능 클릭 이벤트 처리용 HTML
+  const replyActionStr = `onclick="const input = document.getElementById('chat-input'); input.value = '[@${realName}] ' + input.value; input.focus();" title="클릭하여 답글 달기" style="cursor:pointer;"`;
+
+  // 카카오톡 스타일: 프사, 이름(칭호 포함) 정보, 말풍선, 그리고 시간
+  if (isMine) {
+    // 내 메시지: 노란색 말풍선 (#fee500)
+    row.innerHTML = `
+      ${timeHtml}
+      <div class="chat-content mine-content">
+        <div class="chat-username" style="font-size:0.85rem; margin-bottom:4px; margin-right:4px; font-weight:600; color:#334155; display:flex; justify-content:flex-end; align-items:center;">
+          ${displayName}
+        </div>
+        <div class="chat-bubble ${isPremium ? 'premium-bubble' : ''}" style="background:${isPremium && userColor ? userColor : '#fee500'}; color:#000; border:none; border-radius: 15px 0 15px 15px; padding: 10px 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); line-height:1.4;" ${replyActionStr}>${safeMessage}</div>
+      </div>
+      ${avatarHtml}
+    `;
+  } else {
+    // 상대방 메시지: 흰색 말풍선
+    row.innerHTML = `
+      ${avatarHtml}
+      <div class="chat-content">
+        <div class="chat-username" style="font-size:0.85rem; margin-bottom:4px; margin-left:4px; font-weight:600; color:#334155;">
+          ${displayName}
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <div class="chat-bubble ${isPremium ? 'premium-bubble' : ''}" style="background:${isPremium && userColor ? userColor : '#fff'}; color:#000; border:none; border-radius: 0 15px 15px 15px; padding: 10px 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); line-height:1.4;" ${replyActionStr}>${safeMessage}</div>
+          ${timeHtml}
+        </div>
+      </div>
+    `;
+  }
+
   msgContainer.appendChild(row);
 
-  // Scroll to bottom
-  msgContainer.scrollTop = msgContainer.scrollHeight;
+  // 이벤트 리스너 등록 (프사 클릭)
+  const avatarEl = row.querySelector('.chat-avatar');
+  if (avatarEl) avatarEl.addEventListener('open-profile', openProfileDetail);
+
+  // 스마트 자동 스크롤: 내가 보냈거나, 이미 바달 근처(250px 이내)일 때만 스크롤
+  const threshold = 250;
+  const isAtBottom = (msgContainer.scrollHeight - msgContainer.scrollTop - msgContainer.clientHeight) <= (row.clientHeight + threshold);
+
+  if (isMine || isAtBottom) {
+    msgContainer.scrollTo({ top: msgContainer.scrollHeight, behavior: 'smooth' });
+  }
 }
