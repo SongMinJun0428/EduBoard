@@ -843,172 +843,174 @@
           </div>
         </div>
 
-        <!-- 📌 기본 프로필 관리 -->
-        <div class="accent-card glass-card">
-          <div class="accent-head theme-indigo-head">
-            <div class="accent-title-box">
-              <div class="accent-bar"></div>
-              <h3>📌 기본 프로필 관리</h3>
-            </div>
-          </div>
-          <div class="accent-body">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div>
-                <label>이름</label>
-                <input id="profile-name" type="text" placeholder="홍길동">
-              </div>
-              <div>
-                <label>아이디</label>
-                <input id="profile-username" type="text" placeholder="영어/숫자만">
-                <input type="hidden" id="profile-username-origin">
-              </div>
-            </div>
-
-            <label>이메일</label>
-            <input id="profile-email" type="email" placeholder="example@school.kr">
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-              <div>
-                <label>학년</label>
-                <input id="profile-grade" type="text" readonly style="background:#f1f5f9;">
-              </div>
-              <div>
-                <label>반</label>
-                <input id="profile-class" type="text" readonly style="background:#f1f5f9;">
-              </div>
-              <div>
-                <label>번호</label>
-                <input id="profile-number" type="text" readonly style="background:#f1f5f9;">
-              </div>
-            </div>
-
-            <div class="nav-pill-box" style="margin-top: 16px;">
-              <button id="btn-profile-save" class="nav-btn"
-                style="background:#4f46e5; color:#fff; border:none; padding:8px 16px;">💾 프로필 저장</button>
-              <button id="btn-profile-refresh" class="nav-btn">🔄 새로고침</button>
-            </div>
-            <div id="profile-status" style="margin-top:8px; font-size:0.85rem; font-weight:700; color:#4f46e5;"></div>
-          </div>
+        <h2 style="margin-top: 24px; margin-bottom: 5px;">😎 내 설정</h2>
+        <div style="color: #64748b; font-size: 0.9rem; margin-bottom: 20px;">
+          프로필 사진은 대시보드나 테마 메뉴에서 변경할 수 있습니다.
         </div>
 
-        <!-- 🔐 비밀번호 변경 -->
-        <div class="accent-card glass-card">
-          <div class="accent-head theme-rose-head">
-            <div class="accent-title-box">
-              <div class="accent-bar"></div>
-              <h3>🔐 비밀번호 변경</h3>
-            </div>
-          </div>
-          <div class="accent-body">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div>
-                <label>새 비밀번호</label>
-                <input id="profile-newpass" type="password" placeholder="8자 이상 권장">
-              </div>
-              <div>
-                <label>새 비밀번호 확인</label>
-                <input id="profile-newpass2" type="password" placeholder="새 비밀번호 확인">
+        <div class="profile-grid-wrapper">
+          <!-- 📌 기본 프로필 관리 -->
+          <div class="accent-card glass-card">
+            <div class="accent-head theme-indigo-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>📌 기본 프로필 관리</h3>
               </div>
             </div>
-            <button id="btn-profile-pass" style="background: #e11d48; margin-top: 16px;">비밀번호 변경하기</button>
-            <div id="profile-pass-status" style="margin-top:8px; font-size:0.85rem; font-weight:700; color:#e11d48;">
-            </div>
-          </div>
-        </div>
-
-        <!-- 📌 계정/보안 -->
-        <div class="accent-card glass-card">
-          <div class="accent-head theme-purple-head">
-            <div class="accent-title-box">
-              <div class="accent-bar"></div>
-              <h3>🛡️ 계정 및 보안 기술</h3>
-            </div>
-          </div>
-          <div class="accent-body">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <button id="btn-session-logout" style="background:#64748b; font-size:0.9rem;">현재 기기 로그아웃</button>
-              <button id="btn-session-global-logout" style="background:#475569; font-size:0.9rem;">모든 기기 로그아웃</button>
-              <button id="btn-password-reset" style="background:#7c3aed; font-size:0.9rem;">비밀번호 재설정 메일</button>
-              <button id="btn-account-delete" style="background:#ef4444; font-size:0.9rem;">계정 삭제 요청</button>
-            </div>
-          </div>
-        </div>
-
-
-
-        <!-- 📌 알림/환경 설정 -->
-        <div class="accent-card">
-          <div class="accent-head theme-orange-head">
-            <div class="accent-title-box">
-              <div class="accent-bar"></div>
-              <h3>⚙️ 알림 및 환경 설정</h3>
-            </div>
-          </div>
-          <div class="accent-body">
-            <div class="notification-group">
-              <div class="notification-item">
-                <div class="noti-info">
-                  <div class="noti-title">공지 알림</div>
-                  <div class="noti-desc">새 공지 등록 시 실시간 브라우저 알림</div>
+            <div class="accent-body">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
+                <div>
+                  <label>이름</label>
+                  <input id="profile-name" type="text" placeholder="홍길동">
                 </div>
-                <label class="switch">
-                  <input id="pref-notice" type="checkbox">
-                  <span class="slider round"></span>
-                </label>
-              </div>
-
-              <div class="notification-item">
-                <div class="noti-info">
-                  <div class="noti-title">숙제/과제 알림</div>
-                  <div class="noti-desc">마감 전 리마인더</div>
+                <div>
+                  <label>아이디</label>
+                  <input id="profile-username" type="text" placeholder="영어/숫자만" readonly
+                    style="background:#f1f5f9; cursor:not-allowed;">
+                  <input type="hidden" id="profile-username-origin">
                 </div>
-                <label class="switch">
-                  <input id="pref-homework" type="checkbox" checked>
-                  <span class="slider round"></span>
-                </label>
               </div>
 
-              <div class="notification-item">
-                <div class="noti-info">
-                  <div class="noti-title">푸시 알림</div>
-                  <div class="noti-desc">브라우저 푸시(지원 브라우저)</div>
+              <div style="margin-bottom: 12px;">
+                <label>이메일</label>
+                <input id="profile-email" type="email" placeholder="example@school.kr">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div>
+                  <label>학년</label>
+                  <input id="profile-grade" type="text" readonly>
                 </div>
-                <label class="switch">
-                  <input id="pref-push" type="checkbox">
-                  <span class="slider round"></span>
-                </label>
+                <div>
+                  <label>반</label>
+                  <input id="profile-class" type="text" readonly>
+                </div>
+                <div>
+                  <label>번호</label>
+                  <input id="profile-number" type="text" readonly>
+                </div>
               </div>
-            </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-              <div>
-                <label>테마</label>
-                <select id="pref-theme">
-                  <option value="light">밝은 모드</option>
-                  <option value="dark">어두운 모드</option>
-                  <option value="system">시스템 기본</option>
-                </select>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: auto;">
+                <button id="btn-profile-save" style="background:#6366f1; color:#fff; border:none;">💾 프로필 저장</button>
+                <button id="btn-profile-refresh" style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0;">🔄
+                  새로고침</button>
               </div>
-              <div>
-                <label>언어</label>
-                <select id="pref-lang">
-                  <option value="ko">한국어</option>
-                  <option value="en">English</option>
-                </select>
-              </div>
+              <div id="profile-status"
+                style="margin-top:8px; font-size:0.85rem; font-weight:700; color:#4f46e5; text-align:center;"></div>
             </div>
+          </div>
 
-            <div class="nav-pill-box" style="margin-top: 16px;">
-              <button id="btn-pref-save" class="nav-btn"
-                style="background:#f59e0b; color:#fff; border:none; padding:8px 16px;">환경 저장</button>
-              <button id="btn-pref-reset" class="nav-btn">기본값으로</button>
+          <!-- 🔐 비밀번호 변경 -->
+          <div class="accent-card glass-card">
+            <div class="accent-head theme-rose-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>🔐 비밀번호 변경</h3>
+              </div>
             </div>
-            <div id="pref-status" class="small-muted"></div>
+            <div class="accent-body">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                <div>
+                  <label>새 비밀번호</label>
+                  <input id="profile-newpass" type="password" placeholder="8자 이상 권장">
+                </div>
+                <div>
+                  <label>새 비밀번호 확인</label>
+                  <input id="profile-newpass2" type="password" placeholder="새 비밀번호 확인">
+                </div>
+              </div>
+              <button id="btn-profile-pass" style="background: #e11d48; color: #fff; border: none; width: 100%;">비밀번호
+                변경하기</button>
+              <div id="profile-pass-status"
+                style="margin-top:8px; font-size:0.85rem; font-weight:700; color:#e11d48; text-align:center;"></div>
+            </div>
+          </div>
+
+          <!-- 📌 계정/보안 -->
+          <div class="accent-card glass-card">
+            <div class="accent-head theme-purple-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>🛡️ 계정 및 보안 기술</h3>
+              </div>
+            </div>
+            <div class="accent-body" style="display: flex; align-items: center;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%;">
+                <button id="btn-session-logout" style="background:#64748b; color:#fff; border:none;">현재 기기
+                  로그아웃</button>
+                <button id="btn-session-global-logout" style="background:#334155; color:#fff; border:none;">모든 기기 로그아웃
+                  📱</button>
+                <button id="btn-password-reset" style="background:#8b5cf6; color:#fff; border:none;">비밀번호 재설정
+                  메일</button>
+                <button id="btn-account-delete" style="background:#ef4444; color:#fff; border:none;">계정 삭제 요청</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 📌 알림/환경 설정 -->
+          <div class="accent-card">
+            <div class="accent-head theme-orange-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>⚙️ 알림 및 환경 설정</h3>
+              </div>
+            </div>
+            <div class="accent-body">
+              <div class="notification-group" style="margin-bottom: 16px;">
+                <div class="notification-item">
+                  <div class="noti-info">
+                    <div class="noti-title" style="font-weight: 700; font-size: 0.95rem;">공지 알림</div>
+                    <div class="noti-desc" style="color: #64748b; font-size:0.85rem;">새 공지 등록 시 실시간 브라우저 알림</div>
+                  </div>
+                  <label class="switch">
+                    <input id="pref-notice" type="checkbox">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+
+                <div class="notification-item" style="margin-top: 12px;">
+                  <div class="noti-info">
+                    <div class="noti-title" style="font-weight: 700; font-size: 0.95rem;">숙제/과제 알림</div>
+                    <div class="noti-desc" style="color: #64748b; font-size:0.85rem;">마감 전 리마인더</div>
+                  </div>
+                  <label class="switch">
+                    <input id="pref-homework" type="checkbox" checked>
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div>
+                  <label>테마</label>
+                  <select id="pref-theme">
+                    <option value="light">밝은 모드</option>
+                    <option value="dark">어두운 모드</option>
+                    <option value="system">시스템 기본</option>
+                  </select>
+                </div>
+                <div>
+                  <label>언어</label>
+                  <select id="pref-lang">
+                    <option value="ko">한국어</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <button id="btn-pref-save" style="background:#f97316; color:#fff; border:none;">환경 저장</button>
+                <button id="btn-pref-reset"
+                  style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0;">기본값으로</button>
+              </div>
+              <div id="pref-status" class="small-muted" style="text-align:center; margin-top:8px;"></div>
+            </div>
           </div>
         </div>
 
         <!-- 📌 기타 정보 -->
-        <div class="accent-card" style="grid-column: 1 / -1;">
+        <div class="accent-card" style="margin-top: 24px;">
           <div class="accent-head theme-indigo-head">
             <div class="accent-title-box">
               <div class="accent-bar"></div>
@@ -1016,13 +1018,19 @@
             </div>
           </div>
           <div class="accent-body">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-              <button id="btn-go-notices" style="background:#64748b; font-size:0.9rem;">공지/이벤트 바로가기</button>
-              <button id="btn-go-help" style="background:#64748b; font-size:0.9rem;">도움말/FAQ/1:1 문의</button>
-              <button id="btn-check-updates" style="background:#64748b; font-size:0.9rem;">업데이트 확인</button>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button id="btn-go-notices"
+                style="background:#f1f5f9; color:#475569; border:none; padding:10px 20px; border-radius:8px; font-weight:600;">공지/이벤트
+                바로가기</button>
+              <button id="btn-go-help"
+                style="background:#f1f5f9; color:#475569; border:none; padding:10px 20px; border-radius:8px; font-weight:600;">도움말/FAQ/1:1
+                문의</button>
+              <button id="btn-check-updates"
+                style="background:#f1f5f9; color:#475569; border:none; padding:10px 20px; border-radius:8px; font-weight:600;">업데이트
+                확인</button>
             </div>
             <div id="app-version" style="margin-top:16px; font-size:0.8rem; color:#94a3b8; text-align:right;">EduBoard
-              v1.09-stable | © 2026 Song MinJunx</div>
+              v1.09-stable | © 2026 Song MinJun</div>
           </div>
         </div>
       </div>
@@ -1035,12 +1043,12 @@
             <div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding: 20px;">대화실에 오신 것을 환영합니다! 바른말
               고운말을 사용해 주세요.</div>
           </div>
-          <form id="chat-form" style="display: flex; gap: 10px;">
-            <input type="text" id="chat-input" placeholder="메시지를 입력하세요..."
-              style="flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; outline: none; transition: border-color 0.2s;"
+          <form id="chat-form" style="display: flex; gap: 10px; align-items: stretch;">
+            <input type="text" id="chat-input" placeholder="메시지를 입력하세요 (한국어/이모티콘 지원)..."
+              style="flex: 1; margin-bottom: 0; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; outline: none; transition: border-color 0.2s;"
               required>
             <button type="submit"
-              style="padding: 12px 24px; background: #6366f1; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s;">전송</button>
+              style="width: auto; margin-bottom: 0; padding: 12px 24px; background: #6366f1; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s;">전송</button>
           </form>
         </div>
       </div>
@@ -1336,7 +1344,8 @@
           <div class="accent-bar"></div>
           <h3>🧮 4 = 10 퍼즐</h3>
         </div>
-        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> / 10
+        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+          10
         </div>
       </div>
       <div class="game-body">
@@ -1361,14 +1370,16 @@
           <div class="accent-bar"></div>
           <h3>🧠 수학 계산 왕</h3>
         </div>
-        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> / 10
+        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+          10
         </div>
       </div>
       <div class="game-body">
         <p class="description">제한 시간 30초! 최대한 많은 문제를 정답을 맞히세요!</p>
         <div
           style="background:#f8fafc; padding:24px; border-radius:16px; margin-bottom:20px; text-align:center; border: 1px solid #f1f5f9; width: 100%; max-width: 500px; box-sizing: border-box;">
-          <div id="math-timer" style="font-size:1rem; color:#ef4444; font-weight:800; margin-bottom:12px;">⏱ 남은 시간: 30초
+          <div id="math-timer" style="font-size:1rem; color:#ef4444; font-weight:800; margin-bottom:12px;">⏱ 남은 시간:
+            30초
           </div>
           <div id="math-question" style="font-size:2.8rem; font-weight:900; color:#1e293b; letter-spacing: 2px;">? + ?
           </div>
@@ -1390,7 +1401,8 @@
           <div class="accent-bar"></div>
           <h3>🧩 미로 탈출</h3>
         </div>
-        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> / 10
+        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+          10
         </div>
       </div>
       <div class="game-body">
@@ -1408,7 +1420,8 @@
           <div class="accent-bar"></div>
           <h3>🧱 Falling Blocks</h3>
         </div>
-        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> / 10
+        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+          10
         </div>
       </div>
       <div class="game-body">
@@ -1426,7 +1439,8 @@
           <div class="accent-bar"></div>
           <h3>⚡ Reaction Test</h3>
         </div>
-        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> / 10
+        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+          10
         </div>
       </div>
       <div class="game-body">
@@ -1451,7 +1465,8 @@
           <div class="accent-bar"></div>
           <h3>🐦 점프 피하기</h3>
         </div>
-        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> / 10
+        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+          10
         </div>
       </div>
       <div class="game-body">
@@ -1470,7 +1485,8 @@
           <div class="accent-bar"></div>
           <h3>🎨 색상 맞추기</h3>
         </div>
-        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> / 10
+        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+          10
         </div>
       </div>
       <div class="game-body">
@@ -1497,7 +1513,8 @@
           <div class="accent-bar"></div>
           <h3>🔢 숫자 기억력</h3>
         </div>
-        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> / 10
+        <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+          10
         </div>
       </div>
       <div class="game-body">
@@ -1693,7 +1710,8 @@
             </div>
 
             <div style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid #e2e8f0;">
-              <label style="display:block; font-size:0.9rem; font-weight:700; color:#475569; margin-bottom:8px;">🖼️ 이미지
+              <label style="display:block; font-size:0.9rem; font-weight:700; color:#475569; margin-bottom:8px;">🖼️
+                이미지
                 관리</label>
 
               <div id="edit-notice-preview" style="margin-bottom:8px;"></div>
@@ -1743,7 +1761,8 @@
           <div style="display:flex; flex-direction:column; gap:16px;">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
               <div>
-                <label style="display:block; font-size:0.9rem; font-weight:700; color:#1e293b; margin-bottom:6px;">👥 공유
+                <label style="display:block; font-size:0.9rem; font-weight:700; color:#1e293b; margin-bottom:6px;">👥
+                  공유
                   범위</label>
                 <select id="edit-material-scope"
                   style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.95rem; background:white;">
@@ -1768,7 +1787,8 @@
             </div>
 
             <div>
-              <label style="display:block; font-size:0.9rem; font-weight:700; color:#1e293b; margin-bottom:10px;">📁 파일
+              <label style="display:block; font-size:0.9rem; font-weight:700; color:#1e293b; margin-bottom:10px;">📁
+                파일
                 관리</label>
 
               <!-- 파일 매니저 컨테이너 -->
@@ -1802,7 +1822,8 @@
                   style="padding:12px; display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:8px; max-height:240px; overflow-y:auto;">
                   <!-- JS에서 동적 삽입 -->
                   <p id="edit-material-no-files-msg"
-                    style="grid-column:1/-1; text-align:center; color:#94a3b8; font-size:0.85rem; padding:20px;">첨부된 파일이
+                    style="grid-column:1/-1; text-align:center; color:#94a3b8; font-size:0.85rem; padding:20px;">첨부된
+                    파일이
                     없습니다.</p>
                 </div>
               </div>
