@@ -100,15 +100,15 @@ a {
     overflow: hidden; /* Lock viewport from scrolling */
 }
 
-/* Background Gradients */
+/* Background Gradients (Optimized for performance) */
 .bg-blur {
     position: absolute;
     filter: blur(80px);
     z-index: -1;
     border-radius: 50%;
-    opacity: 0.6;
-    animation: float 30s ease-in-out infinite; /* Slower animation to reduce lag */
-    will-change: transform; /* Hint to browsers for smoother performance */
+    opacity: 0.4;
+    will-change: transform;
+    transform: translateZ(0); /* Force GPU acceleration */
 }
 
 .bg-blur-1 {
@@ -117,7 +117,6 @@ a {
     width: 50vw;
     height: 50vw;
     background: radial-gradient(circle, var(--primary-color), transparent 70%);
-    animation-delay: 0s;
 }
 
 .bg-blur-2 {
@@ -126,24 +125,15 @@ a {
     width: 60vw;
     height: 60vw;
     background: radial-gradient(circle, var(--secondary-color), transparent 70%);
-    animation-delay: -5s;
 }
+/* Removed bg-blur-3 to reduce layers */
 
-.bg-blur-3 {
-    top: 40%;
-    left: 40%;
-    width: 40vw;
-    height: 40vw;
-    background: radial-gradient(circle, var(--accent-color), transparent 70%);
-    opacity: 0.4;
-    animation-delay: -10s;
-}
-
-/* Glass Main Panel */
+/* Glass Main Panel (Reduced blur for performance) */
 .glass-panel {
     background: var(--bg-glass);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transform: translateZ(0); /* HW Acceleration */
     border: 1px solid var(--border-glass);
     border-radius: var(--border-radius-lg);
     box-shadow: 
@@ -196,7 +186,7 @@ a {
 }
 
 .btn-secondary {
-    background: var(--bg-glass-card);
+    background: rgba(255, 255, 255, 0.4);
     border: 1px solid var(--border-glass);
     color: var(--text-main);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);

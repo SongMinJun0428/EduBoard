@@ -288,15 +288,27 @@ ${qaContext}
         const top3Tags = state.getAllTopTags(3);
         const mainResult = this.calculateMainType(state.tagCounts);
         const categorySummaries = this.generateCategorySummaries(state);
+        const traits = this.calculateTraits(state.tagCounts);
         
-        // Initial screen now shows base results; AI is triggered by button
-        const aiSentences = []; 
+        // Prepare choice review data
+        const choiceReview = QUESTIONS.map(q => {
+            const ans = state.answers[q.id];
+            return {
+                id: q.id,
+                title: q.title,
+                selectedOption: ans ? ans.selectedOption : null,
+                choice: ans ? (ans.selectedOption === 'A' ? q.optionA : q.optionB) : "미선택",
+                reason: ans ? ans.reason : "이유를 적지 않았어요"
+            };
+        });
 
         return {
             topTags: top3Tags,
             mainType: mainResult.type,
             categorySummaries,
-            aiSentences
+            traits,
+            choiceReview,
+            aiSentences: []
         };
     }
 };
