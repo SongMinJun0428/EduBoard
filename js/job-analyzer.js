@@ -94,18 +94,63 @@ const Analyzer = {
 
 
     /**
+     * Calculates secondary personality traits based on tag mapping
+     */
+    calculateTraits(tagCounts) {
+        const mapping = {
+            "창의성": ["창의", "발상", "기획", "예술", "아이디어"],
+            "분석력": ["분석", "논리", "데이터", "정확성", "체계"],
+            "리더십": ["리더", "영향력", "책임", "결단", "표현"],
+            "사교성": ["사람", "소통", "협업", "관계", "팀워크"],
+            "공감력": ["사람", "공감", "교육", "배려", "지원"],
+            "전문성": ["기술", "전문성", "깊이", "장인", "실행"],
+            "독립성": ["독립", "개인이", "집중", "자유", "탐색"],
+            "안정성": ["안정", "규칙", "정착", "지속성", "현실"],
+            "의미 추구": ["의미", "보람", "사회가치", "기여", "만족"],
+            "성장욕": ["성장", "도전", "변화", "성취", "열정"]
+        };
+
+        const traits = [];
+        for (const [trait, tags] of Object.entries(mapping)) {
+            let score = 0;
+            tags.forEach(tag => {
+                score += (tagCounts[tag] || 0);
+            });
+            // Normalize: 8-10 tags = 100%
+            const percent = Math.min(100, Math.round((score / 8) * 100));
+            traits.push({ name: trait, value: percent });
+        }
+        return traits;
+    },
+
+    /**
      * Compiles all results cleanly for the UI
      */
     compileFinalResult(state) {
         const top3Tags = state.getAllTopTags(3);
         const mainResult = this.calculateMainType(state.tagCounts);
         const categorySummaries = this.generateCategorySummaries(state);
+        const traits = this.calculateTraits(state.tagCounts);
         const aiSentences = this.generateAISentences(state, mainResult.type);
+
+        // Prepare choice review data
+        const choiceReview = QUESTIONS.map(q => {
+            const ans = state.answers[q.id];
+            return {
+                id: q.id,
+                title: q.title,
+                selectedOption: ans ? ans.selectedOption : null,
+                choice: ans ? (ans.selectedOption === 'A' ? q.optionA : q.optionB) : "미선택",
+                reason: ans ? ans.reason : "이유를 적지 않았어요"
+            };
+        });
 
         return {
             topTags: top3Tags,
             mainType: mainResult.type,
             categorySummaries,
+            traits,
+            choiceReview,
             aiSentences
         };
     },

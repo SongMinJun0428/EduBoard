@@ -61,6 +61,10 @@ body {
     height: 100vh;
     overflow: hidden;
     transition: background-color var(--transition-normal);
+    scrollbar-width: none; /* Firefox */
+}
+body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -103,7 +107,8 @@ a {
     z-index: -1;
     border-radius: 50%;
     opacity: 0.6;
-    animation: float 15s ease-in-out infinite;
+    animation: float 30s ease-in-out infinite; /* Slower animation to reduce lag */
+    will-change: transform; /* Hint to browsers for smoother performance */
 }
 
 .bg-blur-1 {
@@ -137,14 +142,13 @@ a {
 /* Glass Main Panel */
 .glass-panel {
     background: var(--bg-glass);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-glass);
     border-radius: var(--border-radius-lg);
     box-shadow: 
         0 4px 6px -1px rgba(0, 0, 0, 0.05),
-        0 20px 25px -5px rgba(0, 0, 0, 0.05),
-        inset 0 0 20px rgba(255, 255, 255, 0.5);
+        0 20px 25px -5px rgba(0, 0, 0, 0.05);
     width: 100%;
     max-width: 800px;
     height: 100%;
@@ -156,14 +160,11 @@ a {
     overflow-x: hidden;
     position: relative;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    scrollbar-width: none; /* Firefox */
 }
 
 .glass-panel::-webkit-scrollbar {
-    width: 6px;
-}
-.glass-panel::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
+    display: none; /* Chrome, Safari, Edge */
 }
 
 /* ==========================================================================
@@ -234,17 +235,50 @@ a {
     50% { transform: translateY(-5px) scale(1.02); }
 }
 
-/* Scrollbar */
+/* Scrollbar (Hidden globally per user request) */
 ::-webkit-scrollbar {
-    width: 8px;
+    display: none;
 }
-::-webkit-scrollbar-track {
-    background: transparent;
+* {
+    scrollbar-width: none;
 }
-::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
-}
-.theme-dark ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+
+/* ==========================================================================
+   Mobile Optimization
+   ========================================================================== */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px; /* Reduced from default ~16px */
+    }
+    
+    h1 { font-size: 1.8rem !important; }
+    h2 { font-size: 1.5rem !important; }
+    h3 { font-size: 1.2rem !important; }
+    
+    .glass-panel {
+        max-height: 95vh;
+        border-radius: var(--border-radius-md);
+    }
+    
+    .btn {
+        padding: 12px 20px !important;
+        font-size: 0.95rem !important;
+    }
+    
+    .final-screen h1 {
+        font-size: 2.2rem !important;
+    }
+    
+    .question-screen h2 {
+        font-size: 1.4rem !important;
+    }
+    
+    /* Grid layout adjustments */
+    .question-screen div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .final-screen div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
 }
