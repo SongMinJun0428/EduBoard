@@ -4,17 +4,20 @@
 const UI = {
     container: document.getElementById('main-content'),
 
-    renderView(html, isFade = true) {
+    renderView(html, isFade = true, onComplete = null) {
         if (!isFade) {
             this.container.innerHTML = html;
+            if (onComplete) onComplete();
             return;
         }
 
         const oldContent = this.container.innerHTML;
-        if (!oldContent) {
+        // If it's just the initial loader, replace it immediately to avoid race conditions
+        if (!oldContent || oldContent.includes('class="loader"')) {
             this.container.innerHTML = html;
             const children = Array.from(this.container.children);
             children.forEach(child => child.classList.add('fade-in-up'));
+            if (onComplete) onComplete();
             return;
         }
 
@@ -30,6 +33,7 @@ const UI = {
             if (newView && newView.classList) {
                 newView.classList.add('slide-in-right');
             }
+            if (onComplete) onComplete();
         }, 150);
     },
 
@@ -46,8 +50,10 @@ const UI = {
                 </div>
             </div>
         `;
-        this.renderView(html);
-        document.getElementById('btn-start').addEventListener('click', onStart);
+        this.renderView(html, true, () => {
+            const btn = document.getElementById('btn-start');
+            if (btn) btn.addEventListener('click', onStart);
+        });
     },
 
     renderConfigScreen(onSave) {
@@ -84,14 +90,17 @@ const UI = {
                 </div>
             </div>
         `;
-        this.renderView(html);
-
-        document.getElementById('btn-save-cfg').addEventListener('click', () => {
-            const name = document.getElementById('cfg-name').value || "사용자";
-            const grade = document.getElementById('cfg-grade').value;
-            const provider = document.getElementById('cfg-api-provider').value;
-            const api = document.getElementById('cfg-api').value.trim();
-            onSave(name, grade, 'short', 'solo', api, provider);
+        this.renderView(html, true, () => {
+            const btn = document.getElementById('btn-save-cfg');
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    const name = document.getElementById('cfg-name').value || "사용자";
+                    const grade = document.getElementById('cfg-grade').value;
+                    const provider = document.getElementById('cfg-api-provider').value;
+                    const api = document.getElementById('cfg-api').value.trim();
+                    onSave(name, grade, 'short', 'solo', api, provider);
+                });
+            }
         });
     },
 
@@ -109,8 +118,10 @@ const UI = {
                 </div>
             </div>
         `;
-        this.renderView(html);
-        document.getElementById('btn-start-cat').addEventListener('click', onNext);
+        this.renderView(html, true, () => {
+            const btn = document.getElementById('btn-start-cat');
+            if (btn) btn.addEventListener('click', onNext);
+        });
     },
 
     renderQuestionScreen(category, question, progress, onAnswer) {
@@ -155,62 +166,58 @@ const UI = {
             </div>
         `;
         
-        this.renderView(html);
+        this.renderView(html, true, () => {
+            let selectedOption = null;
+            let selectedTags = null;
 
-        // Binding reasoning logic inside UI handler
-        let selectedOption = null;
-        let selectedTags = null;
+            const attachReasoning = (option, tags) => {
+                selectedOption = option;
+                selectedTags = tags;
 
-        const attachReasoning = (option, tags) => {
-            selectedOption = option;
-            selectedTags = tags;
-
-            const btnA = document.getElementById('opt-a');
-            const btnB = document.getElementById('opt-b');
-            
-            // Highlight selected with border and shadow
-            [btnA, btnB].forEach(b => {
-                b.style.borderColor = 'transparent';
-                b.style.background = 'var(--bg-glass-card)';
-                b.style.opacity = '0.5';
-            });
-
-            const selected = option === 'A' ? btnA : btnB;
-            selected.style.borderColor = 'var(--primary-color)';
-            selected.style.background = '#ffffff';
-            selected.style.opacity = '1';
-            selected.style.boxShadow = '0 10px 25px -5px rgba(99, 102, 241, 0.2)';
-
-            // Render reason input directly below if it doesn't exist
-            if (!document.getElementById('reason-container')) {
-                const reasonHtml = `
-                    <div id="reason-container" class="fade-in-up" style="margin-top: 10px; margin-bottom: 25px; background: #ffffff; padding: 30px; border-radius: var(--border-radius-md); border: 1px solid var(--border-glass); box-shadow: var(--glass-shadow);">
-                        <label style="display:block; margin-bottom: 15px; font-size: 1.1rem; font-weight: 800; color: var(--text-main);">나는 왜 이 선택을 했나요?</label>
-                        <textarea id="reason-input" rows="3" placeholder="예: 새로운 것을 배우고 도전할 때 에너지가 생기기 때문입니다." style="width: 100%; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; resize:none; font-family:inherit; font-size: 1rem; line-height: 1.6; color: var(--text-main); outline:none; transition: all 0.3s;"></textarea>
-                        <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-                            <span style="font-size: 0.85rem; color: var(--text-muted);">* 정성껏 적을수록 AI 리포트가 정확해집니다.</span>
-                            <button id="btn-submit-reason" class="btn btn-primary" style="padding: 12px 30px; border-radius: 10px;">다음 질문 <i class="fas fa-arrow-right"></i></button>
-                        </div>
-                    </div>
-                `;
+                const btnA = document.getElementById('opt-a');
+                const btnB = document.getElementById('opt-b');
                 
-                const container = document.getElementById('reason-mount');
-                container.innerHTML = reasonHtml;
-
-                document.getElementById('btn-submit-reason').addEventListener('click', () => {
-                    let reason = document.getElementById('reason-input').value.trim();
-                    if (!reason && state.user.grade !== '기타') {
-                        alert('이유를 한 글자라도 입력해 주세요!\n여러분의 생각이 진로 분석에 반영됩니다.');
-                        return;
-                    }
-                    if (!reason) reason = "(이유 미작성)";
-                    onAnswer(selectedOption, selectedTags, reason);
+                [btnA, btnB].forEach(b => {
+                    b.style.borderColor = 'transparent';
+                    b.style.background = 'var(--bg-glass-card)';
+                    b.style.opacity = '0.5';
                 });
-            }
-        };
 
-        document.getElementById('opt-a').addEventListener('click', () => attachReasoning('A', question.tagsA));
-        document.getElementById('opt-b').addEventListener('click', () => attachReasoning('B', question.tagsB));
+                const selected = option === 'A' ? btnA : btnB;
+                selected.style.borderColor = 'var(--primary-color)';
+                selected.style.background = '#ffffff';
+                selected.style.opacity = '1';
+                selected.style.boxShadow = '0 10px 25px -5px rgba(99, 102, 241, 0.2)';
+
+                if (!document.getElementById('reason-container')) {
+                    const reasonHtml = `
+                        <div id="reason-container" class="fade-in-up" style="margin-top: 10px; margin-bottom: 25px; background: #ffffff; padding: 30px; border-radius: var(--border-radius-md); border: 1px solid var(--border-glass); box-shadow: var(--glass-shadow);">
+                            <label style="display:block; margin-bottom: 15px; font-size: 1.1rem; font-weight: 800; color: var(--text-main);">나는 왜 이 선택을 했나요?</label>
+                            <textarea id="reason-input" rows="3" placeholder="예: 새로운 것을 배우고 도전할 때 에너지가 생기기 때문입니다." style="width: 100%; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; resize:none; font-family:inherit; font-size: 1rem; line-height: 1.6; color: var(--text-main); outline:none; transition: all 0.3s;"></textarea>
+                            <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                                <span style="font-size: 0.85rem; color: var(--text-muted);">* 정성껏 적을수록 AI 리포트가 정확해집니다.</span>
+                                <button id="btn-submit-reason" class="btn btn-primary" style="padding: 12px 30px; border-radius: 10px;">다음 질문 <i class="fas fa-arrow-right"></i></button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const mountPoint = document.getElementById('reason-mount');
+                    if (mountPoint) {
+                        mountPoint.innerHTML = reasonHtml;
+                        document.getElementById('btn-submit-reason').addEventListener('click', () => {
+                            let reason = document.getElementById('reason-input').value.trim();
+                            if (!reason) reason = "(이유 미작성)";
+                            onAnswer(selectedOption, selectedTags, reason);
+                        });
+                    }
+                }
+            };
+
+            const optA = document.getElementById('opt-a');
+            const optB = document.getElementById('opt-b');
+            if (optA) optA.addEventListener('click', () => attachReasoning('A', question.tagsA));
+            if (optB) optB.addEventListener('click', () => attachReasoning('B', question.tagsB));
+        });
     },
 
     renderIntermediateSummary(category, topTags, onNext) {
@@ -227,8 +234,10 @@ const UI = {
                 </div>
             </div>
         `;
-        this.renderView(html);
-        document.getElementById('btn-next-cat').addEventListener('click', onNext);
+        this.renderView(html, true, () => {
+            const btn = document.getElementById('btn-next-cat');
+            if (btn) btn.addEventListener('click', onNext);
+        });
     },
 
     renderAnalyzingScreen() {
@@ -256,7 +265,6 @@ const UI = {
 
         const html = `
             <div class="view active final-screen" style="padding: 60px 40px; overflow-y:auto; scrollbar-width: none;">
-                
                 <!-- Hero Section -->
                 <div style="text-align:center; margin-bottom: 60px;" class="delay-100">
                     <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 10px; font-weight: 600;">${user.name} 님의 결과분석</p>
@@ -318,21 +326,23 @@ const UI = {
             </div>
         `;
         
-        this.renderView(html);
-        document.getElementById('btn-restart').addEventListener('click', onRestart);
-        
-        const btnAnalyze = document.getElementById('btn-deep-analyze');
-        if (btnAnalyze) {
-            btnAnalyze.addEventListener('click', () => {
-                const container = document.getElementById('ai-report-container');
-                container.innerHTML = `
-                    <div style="padding: 40px; text-align:center;">
-                        <div class="spinner" style="border-width: 4px; width: 40px; height: 40px; margin-bottom: 15px;"></div>
-                        <p style="font-weight:600; color:var(--primary-color);">AI가 학생의 답변을 정독하며<br>심층 에세이를 작성하고 있습니다 (약 10~20초 소요)...</p>
-                    </div>
-                `;
-                onDeepAnalyze(container);
-            });
-        }
+        this.renderView(html, true, () => {
+            const btnRestart = document.getElementById('btn-restart');
+            if (btnRestart) btnRestart.addEventListener('click', onRestart);
+            
+            const btnAnalyze = document.getElementById('btn-deep-analyze');
+            if (btnAnalyze) {
+                btnAnalyze.addEventListener('click', () => {
+                    const container = document.getElementById('ai-report-container');
+                    container.innerHTML = `
+                        <div style="padding: 40px; text-align:center;">
+                            <div class="spinner" style="border-width: 4px; width: 40px; height: 40px; margin-bottom: 15px;"></div>
+                            <p style="font-weight:600; color:var(--primary-color);">AI가 학생의 답변을 정독하며<br>심층 에세이를 작성하고 있습니다 (약 10~20초 소요)...</p>
+                        </div>
+                    `;
+                    onDeepAnalyze(container);
+                });
+            }
+        });
     }
 };
