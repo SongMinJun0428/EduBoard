@@ -12,12 +12,18 @@
     --grad-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     --grad-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%);
     
-    /* Backgrounds & Glassmorphism (More refined) */
+    /* Glassmorphism & Effects (Enhanced) */
     --bg-page: #f8fafc;
     --bg-glass: rgba(255, 255, 255, 0.85);
     --bg-glass-card: rgba(255, 255, 255, 0.6);
     --border-glass: rgba(255, 255, 255, 0.5);
     --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+    --glass-heavy: rgba(255, 255, 255, 0.9);
+    
+    /* Mesh Gradients */
+    --mesh-dark: radial-gradient(at 0% 0%, hsla(242,100%,70%,1) 0, transparent 50%), 
+                 radial-gradient(at 50% 0%, hsla(320,100%,50%,1) 0, transparent 50%), 
+                 radial-gradient(at 100% 0%, hsla(180,100%,50%,1) 0, transparent 50%);
     
     /* Text Colors */
     --text-main: #1e293b;
@@ -140,21 +146,29 @@ a {
         0 4px 6px -1px rgba(0, 0, 0, 0.05),
         0 20px 25px -5px rgba(0, 0, 0, 0.05);
     width: 100%;
-    max-width: 800px;
+    max-width: 840px;
     height: 100%;
-    max-height: 85vh;
+    max-height: 92vh;
     margin: auto;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.15);
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    scrollbar-width: none; /* Firefox */
 }
 
 .glass-panel::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Edge */
+    display: block;
+    width: 6px;
+}
+.glass-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+.glass-panel::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.2);
+    border-radius: 10px;
 }
 
 /* ==========================================================================
@@ -225,12 +239,89 @@ a {
     50% { transform: translateY(-5px) scale(1.02); }
 }
 
-/* Scrollbar (Hidden globally per user request) */
-::-webkit-scrollbar {
-    display: none;
+/* ==========================================================================
+   Premium Result Screen Styles
+   ========================================================================== */
+.result-card-premium {
+    background: var(--bg-glass-card);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--border-radius-md);
+    padding: 25px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-* {
-    scrollbar-width: none;
+
+.result-card-premium:hover {
+    transform: translateY(-5px);
+    background: #ffffff;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.05);
+}
+
+.dark-mode-card {
+    background: #1a1a1a;
+    background-image: var(--mesh-dark);
+    background-blend-mode: overlay;
+    color: white;
+    border-radius: 20px;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.trait-bar-premium {
+    height: 12px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+}
+
+.trait-fill-vibrant {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+    border-radius: 20px;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+    transition: width 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.shimmer-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.shimmer-btn::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0) 40%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0) 60%,
+        transparent 100%
+    );
+    transform: rotate(25deg);
+    animation: shimmer-btn 4s infinite;
+}
+
+@keyframes shimmer-btn {
+    0% { transform: translateX(-150%) rotate(25deg); }
+    100% { transform: translateX(150%) rotate(25deg); }
+}
+
+/* Scrollbar (Restored) */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.05);
+    border-radius: 10px;
 }
 
 /* ==========================================================================
@@ -238,37 +329,80 @@ a {
    ========================================================================== */
 @media (max-width: 768px) {
     body {
-        font-size: 14px; /* Reduced from default ~16px */
+        font-size: 14px;
+        overscroll-behavior-y: none; /* Prevent rubber-banding */
     }
     
-    h1 { font-size: 1.8rem !important; }
-    h2 { font-size: 1.5rem !important; }
-    h3 { font-size: 1.2rem !important; }
+    .app-container {
+        padding: 10px;
+        min-height: 100vh;
+        display: block; /* Avoid flex centering issues on small mobile */
+    }
     
     .glass-panel {
-        max-height: 95vh;
+        width: 100%;
+        max-height: none; /* Allow full height on mobile */
         border-radius: var(--border-radius-md);
+        margin: 5px 0;
     }
     
+    .view {
+        padding: 30px 20px !important;
+    }
+    
+    h1 { font-size: 1.8rem !important; margin-bottom: 20px !important; letter-spacing: -0.5px; }
+    h2 { font-size: 1.45rem !important; line-height: 1.3; }
+    h3 { font-size: 1.2rem !important; }
+    
     .btn {
-        padding: 12px 20px !important;
-        font-size: 0.95rem !important;
+        padding: 15px 20px !important;
+        font-size: 1rem !important;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
     
     .final-screen h1 {
         font-size: 2.2rem !important;
     }
     
-    .question-screen h2 {
-        font-size: 1.4rem !important;
+    /* Result Screen Polish */
+    .dark-mode-card {
+        padding: 30px 20px !important;
+        margin-bottom: 25px !important;
     }
     
-    /* Grid layout adjustments */
-    .question-screen div[style*="grid-template-columns: 1fr 1fr"] {
-        grid-template-columns: 1fr !important;
+    .dark-mode-card h2 {
+        font-size: 1.8rem !important;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
     }
     
-    .final-screen div[style*="grid-template-columns: 1fr 1fr"] {
+    .dark-mode-card p {
+        font-size: 1.05rem !important;
+        text-align: left;
+    }
+
+    #ai-report-container {
+        padding: 40px 20px !important;
+        border-radius: 20px !important;
+    }
+
+    /* Stack grid columns on mobile */
+    .question-screen div[style*="grid-template-columns: 1fr 1fr"],
+    .final-screen div[style*="grid-template-columns: 1fr 1fr"],
+    .final-screen div[style*="display: grid; grid-template-columns: 1fr 1fr"],
+    .final-screen div[style*="display:grid; grid-template-columns: 1fr 1fr"],
+    div[style*="grid-template-columns: repeat(2"] {
         grid-template-columns: 1fr !important;
+        gap: 15px !important;
+    }
+
+    /* Option Card Polish */
+    .option-card {
+        padding: 20px !important;
+        min-height: auto !important;
     }
 }

@@ -4,25 +4,45 @@ const Analyzer = {
      * Determines the main Result Type based on tag counts
      */
     calculateMainType(tagCounts) {
-        let maxScore = -1;
+        let maxNormalizedScore = -1;
         let topType = RESULT_TYPES[0];
 
+        // 1. Calculate max possible scores for each type to normalize
+        const typeMaxScores = {};
         RESULT_TYPES.forEach(rt => {
-            let score = 0;
+            let totalMax = 0;
+            QUESTIONS.forEach(q => {
+                let countA = 0;
+                let countB = 0;
+                rt.keywords.forEach(kw => {
+                    if (q.tagsA && q.tagsA.includes(kw)) countA++;
+                    if (q.tagsB && q.tagsB.includes(kw)) countB++;
+                });
+                totalMax += Math.max(countA, countB);
+            });
+            typeMaxScores[rt.id] = (totalMax || 1);
+        });
+
+        // 2. Calculate normalized scores
+        RESULT_TYPES.forEach(rt => {
+            let rawScore = 0;
             rt.keywords.forEach(kw => {
                 if (tagCounts[kw]) {
-                    score += tagCounts[kw];
+                    rawScore += tagCounts[kw];
                 }
             });
-            if (score > maxScore) {
-                maxScore = score;
+            
+            const normalizedScore = rawScore / typeMaxScores[rt.id];
+            
+            if (normalizedScore > maxNormalizedScore) {
+                maxNormalizedScore = normalizedScore;
                 topType = rt;
             }
         });
 
         return {
             type: topType,
-            score: maxScore
+            score: Math.round(maxNormalizedScore * 100)
         };
     },
 
@@ -98,16 +118,16 @@ const Analyzer = {
      */
     calculateTraits(tagCounts) {
         const mapping = {
-            "창의성": ["창의", "발상", "기획", "예술", "아이디어"],
-            "분석력": ["분석", "논리", "데이터", "정확성", "체계"],
-            "리더십": ["리더", "영향력", "책임", "결단", "표현"],
-            "사교성": ["사람", "소통", "협업", "관계", "팀워크"],
-            "공감력": ["사람", "공감", "교육", "배려", "지원"],
-            "전문성": ["기술", "전문성", "깊이", "장인", "실행"],
-            "독립성": ["독립", "개인이", "집중", "자유", "탐색"],
-            "안정성": ["안정", "규칙", "정착", "지속성", "현실"],
-            "의미 추구": ["의미", "보람", "사회가치", "기여", "만족"],
-            "성장욕": ["성장", "도전", "변화", "성취", "열정"]
+            "창의성": ["창의", "발상", "기획", "예술", "통찰", "아이디어", "새로움"],
+            "분석력": ["분석", "논리", "데이터", "정확성", "체계", "꼼꼼함", "이성"],
+            "리더십": ["리더", "영향력", "책임", "결단", "주도", "명예", "성공"],
+            "사교성": ["사람", "소통", "협업", "관계", "팀워크", "인정"],
+            "공감력": ["사람", "공감", "교육", "배려", "지원", "보람", "의미"],
+            "전문성": ["기술", "전문성", "깊이", "장인", "실행", "강점", "확정"],
+            "독립성": ["독립", "개인", "집중", "자유", "탐색", "이동", "유연성"],
+            "안정성": ["안정", "규칙", "정착", "지속성", "현실", "보호", "예측가능", "생계"],
+            "의미 추구": ["의미", "보람", "사회가치", "기여", "만족", "내면", "행복"],
+            "성장욕": ["성장", "도전", "변화", "성취", "열정", "흥미", "경험"]
         };
 
         const traits = [];
@@ -116,8 +136,9 @@ const Analyzer = {
             tags.forEach(tag => {
                 score += (tagCounts[tag] || 0);
             });
-            // Normalize: 8-10 tags = 100%
-            const percent = Math.min(100, Math.round((score / 8) * 100));
+            // Normalize: Adjusted divisor from 8 to 12 to provide more varied results
+            // (Stability tags are very common, so 8 was reaching 100% too easily)
+            const percent = Math.min(100, Math.round((score / 12) * 100));
             traits.push({ name: trait, value: percent });
         }
         return traits;
@@ -196,30 +217,67 @@ ${qaContext}
             ];
 
             if (provider === 'gemini') {
-                const geminiKey = (apiKey && apiKey !== 'hardcoded') ? apiKey : "AIzaSyB5u83XsNfw-QidE5BA3z6CjlHjjxPMfGk";
-                const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash-001'];
+                const geminiKey = (apiKey && apiKey !== 'hardcoded') ? apiKey : "AIzaSyDqcCPtLZkB6vv4gJoEvp7CfbHmTfI0SN8";
+                // Upgraded to latest Gemini models (including 2.5 and 3.0 per request)
+                const models = ['gemini-2.5-flash', 'gemini-3.0-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite-preview-02-05', 'gemini-1.5-flash', 'gemini-1.5-pro'];
                 
                 for (const modelName of models) {
                     try {
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
-                        console.log(`[Gemini API Request] URL: ${url}`);
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                                system_instruction: { parts: [{ text: "당신은 청소년 진로 멘토입니다. 절대 '질문 14', '문항 4'와 같은 번호로 답변을 지칭하지 말고, 해당 문항의 '내용'을 요약하여 자연스럽게 언급하십시오." }] },
-                                contents: [{ parts: [{ text: promptStr }] }] 
-                            })
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`Model ${modelName} failed: ${response.status}`);
+                        const versions = ['v1beta', 'v1'];
+                        for (const apiVer of versions) {
+                            try {
+                                const url = `https://generativelanguage.googleapis.com/${apiVer}/models/${modelName}:generateContent?key=${geminiKey}`;
+                                console.log(`[Gemini API Request] Model: ${modelName}, Version: ${apiVer}`);
+                                
+                                // Standardized payload for all versions
+                                const fullPrompt = `신분: 진로 전문가 멘토
+미션: 학생의 답변 데이터를 기반으로 2000자 이상의 매우 긴 분석 리포트 작성
+지침: 
+1. 답변 내용(이유)을 하나하나 정성스럽게 분석하고 절대 질문 번호를 쓰지 말 것.
+2. 학생의 답변이 '테스트'용 데이터처럼 반복적일지라도, 상상력을 발휘하여 학생의 잠재력을 극대화하여 칭찬하고 에세이 형식으로 매우 길게 쓸 것.
+3. 분석 중간에 끊기지 않도록 끝까지 완성할 것.
+
+내용:
+${promptStr}`;
+
+                                const payload = { 
+                                    contents: [{ parts: [{ text: fullPrompt }] }],
+                                    generationConfig: {
+                                        temperature: 0.9,
+                                        maxOutputTokens: 4000,
+                                    }
+                                };
+
+                                // System instruction for v1beta as a secondary layer
+                                if (apiVer === 'v1beta') {
+                                    payload.system_instruction = { 
+                                        parts: [{ text: "당신은 청소년 진로 멘토입니다. 학생의 답변을 기반으로 매우 길고 따뜻한 분석 리포트를 작성하세요." }] 
+                                    };
+                                }
+
+                                const response = await fetch(url, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                });
+                                
+                                if (!response.ok) {
+                                    const errorData = await response.json().catch(() => ({}));
+                                    console.warn(`Gemini API Error (${apiVer}/${modelName}): ${response.status}`, errorData);
+                                    continue; 
+                                }
+                                
+                                const data = await response.json();
+                                if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+                                    text = data.candidates[0].content.parts[0].text;
+                                    success = true;
+                                    break; 
+                                }
+                            } catch (vErr) {
+                                console.warn(`Version ${apiVer} for ${modelName} failed:`, vErr);
+                            }
                         }
-                        
-                        const data = await response.json();
-                        text = data.candidates[0].content.parts[0].text;
-                        success = true;
-                        break; // success!
+                        if (success) break;
                     } catch (err) {
                         lastError = err.message;
                         console.warn(`Gemini Model ${modelName} failed, trying next...`);
@@ -227,7 +285,7 @@ ${qaContext}
                 }
                 
                 if (!success) {
-                    throw new Error(`Gemini 모든 모델 호출 실패 (마지막 에러: ${lastError})`);
+                    throw new Error(`Gemini 최신 모델 호출 실패 (마지막 에러: ${lastError})`);
                 }
             } else {
                 // OpenAI Loop (as before)
@@ -238,7 +296,7 @@ ${qaContext}
                         { role: "system", content: "당신은 청소년 학생들을 진심으로 사랑하고, 그들의 사소한 메모 하나에서도 엄청난 잠재력을 발견해 주는 최고의 진로 멘토입니다. 매우 길고 따뜻하며 논리적인 장문의 분석 글을 씁니다. 절대 '질문 14', '문항 4'와 같은 번호로 답변을 지칭하지 마세요. 대신 해당 문항의 '내용'을 요약하여 자연스럽게 언급하십시오." },
                         { role: "user", content: promptStr }
                     ],
-                    max_tokens: 1500,
+                    max_tokens: 3000,
                     temperature: 0.7
                 };
 
@@ -274,8 +332,8 @@ ${qaContext}
                 }
             }
             
-            const sentences = text.split('\n').filter(s => s.trim().length > 0);
-            return [`💡 <b>[실제 AI(OpenAI) 심층 분석 리포트]</b><br><br><div style="text-align:left; line-height:1.75; font-size:1.05rem;">` + sentences.join('<br><br>') + `</div>`];
+            const providerName = provider === 'gemini' ? 'Gemini 2.0' : 'GPT-4o';
+            return [`✨ <b>[실제 AI(${providerName}) 심층 분석 리포트]</b><br><br><div style="text-align:left; line-height:1.8; font-size:1.05rem; white-space: pre-wrap;">` + text + `</div>`];
         } catch(e) {
             console.error('AI API Error:', e);
             const fallback = this.generateAISentences(state, topType);

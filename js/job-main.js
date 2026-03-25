@@ -67,15 +67,20 @@ class AppController {
                 },
                 async (container) => { // onDeepAnalyze (Click handler)
                     try {
-                        const sentences = await Analyzer.generateRealAISentences(state, finalResult.mainType);
-                        container.innerHTML = sentences.join('<br><br>');
+                        const resultText = await Analyzer.generateRealAISentences(state, finalResult.mainType);
+                        container.innerHTML = `
+                            <div style="position:relative; z-index: 2; text-align:left; line-height:2.0; font-size: 1.1rem; white-space: pre-wrap; color: rgba(255,255,255,0.95); animation: fade-in 1s ease-out;">
+                                ${resultText}
+                            </div>
+                        `;
                     } catch(err) {
                         console.error(err);
                         container.innerHTML = `
-                            <div style="padding: 20px; color: #d32f2f; background: #ffebee; border-radius: 8px;">
-                                ⚠️ AI 분석 중 오류가 발생했습니다.<br>
-                                사유: ${err.message}<br><br>
-                                <button onclick="location.reload()" class="btn btn-secondary" style="padding: 8px 15px; font-size: 0.9rem;">새로고침 후 다시 시도</button>
+                            <div style="position:relative; z-index: 2; padding: 30px; color: #fecaca; background: rgba(220, 38, 38, 0.1); border-radius: 16px; border: 1px solid rgba(220, 38, 38, 0.2); text-align:center;">
+                                <div style="font-size: 2.5rem; margin-bottom: 20px;">⚠️</div>
+                                <h4 style="margin-bottom: 10px; font-weight: 800;">AI 분석 중 오류가 발생했습니다.</h4>
+                                <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 20px;">사유: ${err.message}</p>
+                                <button onclick="location.reload()" class="btn btn-primary" style="padding: 10px 25px; font-size: 0.9rem;">새로고침 후 다시 시도</button>
                             </div>
                         `;
                     }
