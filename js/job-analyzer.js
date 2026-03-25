@@ -130,15 +130,31 @@ const Analyzer = {
             "성장욕": ["성장", "도전", "변화", "성취", "열정", "흥미", "경험"]
         };
 
+        // Pre-calculate max possible scores for each trait to normalize
+        const traitMaxScores = {};
+        for (const [trait, tags] of Object.entries(mapping)) {
+            let totalMax = 0;
+            QUESTIONS.forEach(q => {
+                let countA = 0;
+                let countB = 0;
+                tags.forEach(t => {
+                    if (q.tagsA && q.tagsA.includes(t)) countA++;
+                    if (q.tagsB && q.tagsB.includes(t)) countB++;
+                });
+                totalMax += Math.max(countA, countB);
+            });
+            traitMaxScores[trait] = (totalMax || 1);
+        }
+
         const traits = [];
         for (const [trait, tags] of Object.entries(mapping)) {
             let score = 0;
             tags.forEach(tag => {
                 score += (tagCounts[tag] || 0);
             });
-            // Normalize: Adjusted divisor from 8 to 12 to provide more varied results
-            // (Stability tags are very common, so 8 was reaching 100% too easily)
-            const percent = Math.min(100, Math.round((score / 12) * 100));
+            
+            // Normalize based on actual max possible score
+            const percent = Math.min(100, Math.round((score / traitMaxScores[trait]) * 100));
             traits.push({ name: trait, value: percent });
         }
         return traits;
@@ -219,7 +235,7 @@ ${qaContext}
             if (provider === 'gemini') {
                 const geminiKey = (apiKey && apiKey !== 'hardcoded') ? apiKey : "AIzaSyDqcCPtLZkB6vv4gJoEvp7CfbHmTfI0SN8";
                 // Upgraded to latest Gemini models (including 2.5 and 3.0 per request)
-                const models = ['gemini-2.5-flash', 'gemini-3.0-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite-preview-02-05', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+                const models = ['gemini-2.5-flash', 'gemini-3.0-flash', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'];
                 
                 for (const modelName of models) {
                     try {
@@ -243,8 +259,8 @@ ${promptStr}`;
                                 const payload = { 
                                     contents: [{ parts: [{ text: fullPrompt }] }],
                                     generationConfig: {
-                                        temperature: 0.9,
-                                        maxOutputTokens: 4000,
+                                        temperature: 0.8,
+                                        maxOutputTokens: 8000,
                                     }
                                 };
 
@@ -296,7 +312,7 @@ ${promptStr}`;
                         { role: "system", content: "당신은 청소년 학생들을 진심으로 사랑하고, 그들의 사소한 메모 하나에서도 엄청난 잠재력을 발견해 주는 최고의 진로 멘토입니다. 매우 길고 따뜻하며 논리적인 장문의 분석 글을 씁니다. 절대 '질문 14', '문항 4'와 같은 번호로 답변을 지칭하지 마세요. 대신 해당 문항의 '내용'을 요약하여 자연스럽게 언급하십시오." },
                         { role: "user", content: promptStr }
                     ],
-                    max_tokens: 3000,
+                    max_tokens: 6000,
                     temperature: 0.7
                 };
 
