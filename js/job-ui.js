@@ -410,7 +410,7 @@ const UI = {
 
                 <!-- 2. AI DEEP REPORT (Premium Shimmer) -->
                 <div class="delay-400" id="report-view-anchor" style="margin-bottom: 60px;">
-                    <div id="ai-report-container" style="background: #1a1a1a; padding: 60px 40px; border-radius: 28px; color: white; text-align:center; position:relative; overflow:visible; box-shadow: 0 40px 80px -15px rgba(0,0,0,0.4); min-height: 400px; transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);">
+                    <div id="ai-report-container" style="background: #1a1a1a; padding: 70px 50px; border-radius: 28px; color: white; text-align:center; position:relative; overflow:visible; box-shadow: 0 40px 80px -15px rgba(0,0,0,0.4); min-height: 400px; transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);">
                         <div style="position:absolute; top:0; left:0; right:0; bottom:0; background: var(--mesh-dark); opacity: 0.5; z-index: 1; border-radius: 28px;"></div>
                         <div style="position:relative; z-index: 2;">
                             <h3 style="font-size: 2.2rem; margin-bottom: 18px; font-weight: 900; letter-spacing: -1px;">✨ 2026 AI 전문가 심층 리포트</h3>
@@ -436,7 +436,7 @@ const UI = {
                 </div>
 
                 <!-- Footer Actions -->
-                <div style="text-align:center; padding-top: 50px; border-top: 2px solid #eee;" class="delay-500">
+                <div style="text-align:center; padding-top: 50px; border-top: 2px solid #eee; margin-bottom: 80px;" class="delay-500">
                     <button id="btn-restart" class="btn btn-secondary" style="margin-right: 15px; padding: 15px 40px;">다시 시작하기</button>
                     <button id="btn-print" class="btn btn-primary" style="padding: 15px 40px;"><i class="fas fa-print"></i> 결과 PDF 저장 / 인쇄</button>
                 </div>

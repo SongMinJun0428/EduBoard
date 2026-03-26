@@ -334,20 +334,21 @@ a {
     }
     
     .app-container {
-        padding: 10px;
-        min-height: 100vh;
-        display: block; /* Avoid flex centering issues on small mobile */
+        padding: 16px;
+        min-height: 100dvh;
+        display: flex;
+        align-items: flex-start;
     }
     
     .glass-panel {
         width: 100%;
-        max-height: none; /* Allow full height on mobile */
+        max-height: 88vh; /* Respect mobile browser bars */
         border-radius: var(--border-radius-md);
-        margin: 5px 0;
+        margin: auto 0;
     }
     
     .view {
-        padding: 30px 20px !important;
+        padding: 30px 20px 120px 20px !important; /* Massive bottom padding for buttons */
     }
     
     h1 { font-size: 1.8rem !important; margin-bottom: 20px !important; letter-spacing: -0.5px; }

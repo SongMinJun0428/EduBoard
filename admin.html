@@ -11,6 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Supabase v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <meta name="color-scheme" content="light dark" />
@@ -552,7 +553,7 @@
 
   <!-- 진로 결과 상세 모달 -->
   <div id="modal-job-detail" class="modal">
-    <div class="w-full max-w-2xl rounded-2xl border bg-white dark:bg-gray-800 p-6 shadow-2xl">
+    <div class="w-full max-w-[90vw] lg:max-w-6xl m-6 sm:m-10 rounded-3xl border bg-white dark:bg-gray-800 p-8 sm:p-12 shadow-2xl" style="max-width: 1200px !important;">
       <div class="flex items-center justify-between mb-6 pb-4 border-b">
         <h3 class="text-xl font-bold flex items-center gap-2">
             <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>
@@ -590,6 +591,7 @@
     </div>
   </div>
 
+  <script src="js/job-data.js?v=3"></script>
   <script src="js/admin.js"></script>
   <div id="toast"></div>
 </body>

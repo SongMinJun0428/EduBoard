@@ -87,12 +87,18 @@ class AppController {
                     top_tags: finalResult.topTags.join(', '),
                     details: {
                         summaries: finalResult.categorySummaries.map(s => s.summary).join(' | '),
-                        categoryReasons: state.categoryReasons
+                        categoryReasons: state.categoryReasons,
+                        answers: state.answers // Detailed choices
                     }
                 };
-                window.sb.from('career_test_results').insert([resultData]).then(({error}) => {
+
+                let savedResultId = null;
+                window.sb.from('career_test_results').insert([resultData]).select('id').single().then(({data, error}) => {
                     if (error) console.warn("Supabase Save Result Error:", error.message);
-                    else console.log("Result saved to career_test_results.");
+                    else {
+                        savedResultId = data.id;
+                        console.log("Result saved to career_test_results. ID:", savedResultId);
+                    }
                 });
 
             UI.renderFinalResult(finalResult, state.user, 
@@ -106,6 +112,21 @@ class AppController {
                         
                         // Sync result to make it available for Print/PDF
                         finalResult.aiSentences = Array.isArray(resultText) ? resultText : [resultText];
+
+                        // Update AI report in DB
+                        if (savedResultId) {
+                            const aiReportText = finalResult.aiSentences.join('\n\n');
+                            // Create a stable copy of current details to prevent loss
+                            const finalDetails = JSON.parse(JSON.stringify(resultData.details || {}));
+                            finalDetails.ai_report = aiReportText;
+
+                            window.sb.from('career_test_results').update({
+                                details: finalDetails
+                            }).eq('id', savedResultId).then(({error}) => {
+                                if (error) console.warn("Supabase AI Update Error:", error.message);
+                                else console.log("AI Report synced to DB with full details.");
+                            });
+                        }
 
                         container.innerHTML = `
                             <div id="ai-report-text-content" style="position:relative; z-index: 2; text-align:left; line-height:2.0; font-size: 1.1rem; white-space: pre-wrap; color: rgba(255,255,255,0.95); animation: fade-in 1s ease-out;">

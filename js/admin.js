@@ -143,49 +143,124 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         if (!content) return;
         
         let reasonsHtml = '';
-        if (d.categoryReasons) {
-            reasonsHtml = Object.entries(d.categoryReasons)
+        let reasonsObj = d.categoryReasons;
+        if (typeof reasonsObj === 'string') {
+            try { reasonsObj = JSON.parse(reasonsObj); } catch(e) { console.error("Reasons parse error", e); }
+        }
+
+        if (reasonsObj) {
+            reasonsHtml = Object.entries(reasonsObj)
                 .sort((a,b) => (parseInt(a[0].split('_').pop()) || 0) - (parseInt(b[0].split('_').pop()) || 0))
                 .map(([key, text]) => {
                     const cnt = parseInt(key.split('_').pop()) || 0;
                     return `
-                        <div class="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
-                            <div class="text-xs font-bold text-indigo-500 mb-1">[ ${cnt-4} ~ ${cnt}번 질문 ] 신중 답변</div>
-                            <div class="text-sm line-height-relaxed">${escapeHtml(text || '입력 없음')}</div>
+                        <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                            <div class="text-xs font-bold text-indigo-500 mb-2 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+                                [ ${cnt-4} ~ ${cnt}번 질문 ] 신중 답변
+                            </div>
+                            <div class="text-sm leading-relaxed italic text-gray-700 dark:text-gray-300">"${escapeHtml(text || '입력 없음')}"</div>
                         </div>
                     `;
                 }).join('');
         }
 
+        let answersHtml = '';
+        const questionsSource = (typeof QUESTIONS !== 'undefined') ? QUESTIONS : (window.QUESTIONS || []);
+        
+        let answersObj = d.answers;
+        if (typeof answersObj === 'string') {
+            try { answersObj = JSON.parse(answersObj); } catch(e) { console.error("Answers parse error", e); }
+        }
+
+        if (answersObj && questionsSource.length > 0) {
+            answersHtml = Object.entries(answersObj).map(([qid, ans]) => {
+                const fullQ = questionsSource.find(q => q.id === qid);
+                const qTitle = fullQ ? fullQ.title : qid;
+                const choice = ans.selectedOption === 'A' ? 'A' : 'B';
+                const chosenText = fullQ ? (choice === 'A' ? fullQ.optionA : fullQ.optionB) : '';
+
+                return `
+                    <div class="p-3 border-b border-gray-50 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 transition-colors">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-mono text-[10px] text-gray-400 font-bold uppercase tracking-tighter">${qid}</span>
+                            <span class="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold border border-indigo-100 dark:border-indigo-800/50">선택: ${choice}</span>
+                        </div>
+                        <div class="text-xs font-bold text-gray-700 dark:text-gray-200 mb-1 leading-snug">${escapeHtml(qTitle)}</div>
+                        <div class="text-[11px] text-gray-500 italic mb-2">"${escapeHtml(chosenText)}"</div>
+                        <div class="flex flex-wrap gap-1">
+                            ${(ans.tags || []).map(t => `<span class="text-[9px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 rounded">${t}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         content.innerHTML = `
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl">
-                    <div class="text-[10px] font-bold text-blue-500 uppercase mb-1">학생 정보</div>
-                    <div class="font-bold text-lg">${escapeHtml(row.name || '익명')}</div>
-                    <div class="text-sm text-blue-600">${row.grade}학년</div>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <!-- Left Column: Info & Summary (8 cols) -->
+                <div class="lg:col-span-8 space-y-12">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-blue-50/50 dark:bg-blue-900/20 p-6 rounded-3xl border border-blue-100 dark:border-blue-800/30">
+                            <div class="text-[10px] font-bold text-blue-500 uppercase mb-2 tracking-widest opacity-70">학생 기본 정보</div>
+                            <div class="font-black text-2xl text-blue-900 dark:text-blue-100 mb-1">${escapeHtml(row.name || '익명')}</div>
+                            <div class="text-sm text-blue-600 font-semibold">${row.grade}학년 · ID: ${row.username}</div>
+                        </div>
+                        <div class="bg-indigo-50/50 dark:bg-indigo-900/20 p-6 rounded-3xl border border-indigo-100 dark:border-indigo-800/30">
+                            <div class="text-[10px] font-bold text-indigo-500 uppercase mb-2 tracking-widest opacity-70">분석된 성향</div>
+                            <div class="font-black text-2xl text-indigo-700 dark:text-indigo-400 mb-1">"${escapeHtml(row.main_type || '-')}"</div>
+                            <div class="text-xs text-indigo-500 font-bold truncate" title="${row.top_tags}">${escapeHtml(row.top_tags || '-')}</div>
+                        </div>
+                    </div>
+
+                    ${d.ai_report ? `
+                    <div class="space-y-4">
+                        <h4 class="text-base font-black flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                            <i class="fas fa-magic text-purple-600"></i>
+                            AI 전문가 심층 분석 리포트
+                        </h4>
+                        <div class="max-w-4xl text-sm bg-purple-50/20 dark:bg-purple-900/10 border border-purple-100/50 dark:border-purple-800/30 p-8 rounded-3xl leading-loose font-normal text-gray-800 dark:text-gray-200 shadow-inner overflow-hidden">
+                            ${d.ai_report}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="space-y-4">
+                        <h4 class="text-base font-black flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                            <i class="fas fa-chart-pie text-indigo-600"></i>
+                            영역별 세부 지표 분석
+                        </h4>
+                        <div class="max-w-4xl text-sm bg-white dark:bg-gray-800 border-2 border-gray-50 dark:border-gray-700 p-8 rounded-3xl leading-relaxed shadow-sm">
+                            ${(d.summaries || '요약 정보 없음').split(' | ').map(s => `
+                                <div class="flex gap-4 mb-4 last:mb-0">
+                                    <span class="text-indigo-600 mt-1"><i class="fas fa-check-circle"></i></span>
+                                    <div class="text-gray-700 dark:text-gray-300 font-medium">${escapeHtml(s)}</div>
+                                </div>`).join('')}
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h4 class="text-base font-black flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                            <i class="fas fa-pen-nib text-indigo-600"></i>
+                            신중 보강 답변 (가치관 서술)
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${reasonsHtml || '<p class="text-gray-400 text-sm italic p-4">기록된 이유가 없습니다.</p>'}
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl">
-                    <div class="text-[10px] font-bold text-indigo-500 uppercase mb-1">주요 유형</div>
-                    <div class="font-bold text-lg text-indigo-700 dark:text-indigo-400">"${escapeHtml(row.main_type || '-')}"</div>
-                    <div class="text-sm truncate" title="${row.top_tags}">${escapeHtml(row.top_tags || '-')}</div>
-                </div>
-            </div>
-            <div class="space-y-3">
-                <h4 class="text-sm font-bold flex items-center gap-2">
-                    <span class="w-1.5 h-4 bg-indigo-500 rounded-full"></span>
-                    영역별 분석 요약
-                </h4>
-                <div class="text-sm bg-white dark:bg-gray-800 border p-4 rounded-xl leading-relaxed">
-                    ${escapeHtml(d.summaries || '요약 정보 없음').split(' | ').map(s => `• ${s}`).join('<br>')}
-                </div>
-            </div>
-            <div class="space-y-3">
-                <h4 class="text-sm font-bold flex items-center gap-2">
-                    <span class="w-1.5 h-4 bg-indigo-500 rounded-full"></span>
-                    신중 단계 답변 (5문항당 기록)
-                </h4>
-                <div class="grid gap-2">
-                    ${reasonsHtml || '<p class="text-gray-400 text-sm">기록된 이유가 없습니다.</p>'}
+
+                <!-- Right Column: Raw Answers (4 cols) -->
+                <div class="lg:col-span-4 space-y-6">
+                     <h4 class="text-base font-black flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                        <i class="fas fa-list-check text-slate-500"></i>
+                        문항별 선택 내역
+                    </h4>
+                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-3xl border-2 border-white dark:border-gray-800 overflow-hidden shadow-sm">
+                        <div class="max-h-[800px] overflow-y-auto px-2 py-2 custom-scrollbar">
+                             ${answersHtml || '<p class="p-8 text-center text-gray-400 text-xs italic">내역 없음</p>'}
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
