@@ -132,9 +132,25 @@ class AppState {
         this.tagCounts = {};
         this.categoryReasons = {};
         
+        const personalities = [
+            ['성장', '도전', '창의', '리더십', '경험'], // The Challenger
+            ['안정', '현실', '현실', '현실', '규칙', '분석'], // The Realist
+            ['공감', '사람', '소통', '보람', '협업'], // The Supporter
+            ['기술', '전문성', '집중', '독립', '논리'] // The Specialist
+        ];
+        const biasTags = personalities[Math.floor(Math.random() * personalities.length)];
+
         QUESTIONS.forEach((q, idx) => {
-            const options = ['A', 'B'];
-            const selected = options[Math.floor(Math.random() * options.length)];
+            // Check which option matches the bias more
+            let scoreA = 0; let scoreB = 0;
+            if (q.tagsA) q.tagsA.forEach(t => { if (biasTags.includes(t)) scoreA++; });
+            if (q.tagsB) q.tagsB.forEach(t => { if (biasTags.includes(t)) scoreB++; });
+
+            let selected = 'A';
+            if (scoreA > scoreB) selected = (Math.random() < 0.8) ? 'A' : 'B';
+            else if (scoreB > scoreA) selected = (Math.random() < 0.8) ? 'B' : 'A';
+            else selected = (Math.random() < 0.5) ? 'A' : 'B';
+
             const tags = selected === 'A' ? q.tagsA : q.tagsB;
             const chosenText = selected === 'A' ? q.optionA : q.optionB;
             

@@ -78,28 +78,36 @@ class AppController {
             // Get base results (tags, type, etc.)
             const finalResult = await Analyzer.compileFinalResultAsync(state);
             
-            // Log to Supabase user_activity_logs
-                const resultData = {
-                    username: localStorage.getItem('savedUsername') || 'anonymous',
-                    name: state.user.name,
-                    grade: state.user.grade,
-                    main_type: finalResult.mainType.name,
-                    top_tags: finalResult.topTags.join(', '),
-                    details: {
-                        summaries: finalResult.categorySummaries.map(s => s.summary).join(' | '),
-                        categoryReasons: state.categoryReasons,
-                        answers: state.answers // Detailed choices
-                    }
-                };
+            // Log to Supabase user_activity_logs (Await the save to prevent race conditions)
+            const resultData = {
+                username: localStorage.getItem('savedUsername') || 'anonymous',
+                name: state.user.name,
+                grade: state.user.grade,
+                main_type: finalResult.mainType.name,
+                top_tags: finalResult.topTags.join(', '),
+                details: {
+                    summaries: finalResult.categorySummaries.map(s => s.summary).join(' | '),
+                    categoryReasons: state.categoryReasons,
+                    answers: state.answers
+                }
+            };
 
-                let savedResultId = null;
-                window.sb.from('career_test_results').insert([resultData]).select('id').single().then(({data, error}) => {
-                    if (error) console.warn("Supabase Save Result Error:", error.message);
-                    else {
-                        savedResultId = data.id;
-                        console.log("Result saved to career_test_results. ID:", savedResultId);
-                    }
-                });
+            // Return a promise for the save operation and execute it immediately
+            console.log("Saving result to Supabase...");
+            const savePromise = window.sb.from('career_test_results')
+                .insert([resultData])
+                .select('id')
+                .single();
+            
+            // Handle initial save errors early
+            savePromise.then(({data, error}) => {
+                if (error) {
+                    console.error("Supabase Save Error Details:", error);
+                    // Critical for debugging: show if table or column is missing
+                } else {
+                    console.log("Base result saved successfully. ID:", data?.id);
+                }
+            });
 
             UI.renderFinalResult(finalResult, state.user, 
                 () => { // onRestart
@@ -107,25 +115,40 @@ class AppController {
                     this.start();
                 },
                 async (container) => { // onDeepAnalyze (Click handler)
+                    // 1. Check if reasoning is enough (Pedagogical Check)
+                    const totalReasonLength = state.categoryReasons ? Object.values(state.categoryReasons).join('').length : 0;
+                    if (totalReasonLength < 20) {
+                        alert("분석을 위해 답변 이유를 조금 더 자세히 적어주세요! (각 단계별 이유를 합쳐 최소 20자 이상 필요합니다)");
+                        return;
+                    }
+
+                    const loadingInterval = UI.renderDeepAnalyzeProgress(container);
+
                     try {
                         const resultText = await Analyzer.generateRealAISentences(state, finalResult.mainType);
                         
-                        // Sync result to make it available for Print/PDF
+                        // Clear loading animation immediately
+                        if (loadingInterval) clearInterval(loadingInterval);
+                        
+                        // Sync result to result object
                         finalResult.aiSentences = Array.isArray(resultText) ? resultText : [resultText];
 
-                        // Update AI report in DB
-                        if (savedResultId) {
+                        // Ensure initial save is finished before updating
+                        const { data: savedData, error: saveError } = await savePromise;
+                        
+                        if (!saveError && savedData) {
                             const aiReportText = finalResult.aiSentences.join('\n\n');
-                            // Create a stable copy of current details to prevent loss
                             const finalDetails = JSON.parse(JSON.stringify(resultData.details || {}));
                             finalDetails.ai_report = aiReportText;
 
-                            window.sb.from('career_test_results').update({
+                            const { error: updateError } = await window.sb.from('career_test_results').update({
                                 details: finalDetails
-                            }).eq('id', savedResultId).then(({error}) => {
-                                if (error) console.warn("Supabase AI Update Error:", error.message);
-                                else console.log("AI Report synced to DB with full details.");
-                            });
+                            }).eq('id', savedData.id);
+                            
+                            if (updateError) console.warn("AI Report sync error:", updateError.message);
+                            else console.log("AI Report successfully synced to DB.");
+                        } else if (saveError) {
+                            console.warn("Could not sync AI report because initial save failed:", saveError.message);
                         }
 
                         container.innerHTML = `

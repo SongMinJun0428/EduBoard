@@ -67,6 +67,7 @@ const UI = {
                 <div class="form-group delay-300" style="margin-bottom: 30px;">
                     <label style="display:block; margin-bottom: 10px; font-weight:600;">학년/소속</label>
                     <select id="cfg-grade" style="width: 100%; padding: 12px; border-radius:8px; border: 1px solid var(--border-glass); background: rgba(255,255,255,0.5);">
+                        <option value="" disabled selected>학년을 선택해 주세요</option>
                         <option value="초등">초등학생</option>
                         <option value="중등">중학생</option>
                         <option value="고등">고등학생</option>
@@ -75,11 +76,11 @@ const UI = {
                     </select>
                 </div>
                 <div class="form-group delay-400" style="margin-bottom: 25px;">
-                    <label style="display:block; margin-bottom: 12px; font-weight:700; color:var(--primary-color); font-size: 1.1rem;">✨ AI(Gemini) 무료 분석 엔진 탑재 완료</label>
+                    <label style="display:block; margin-bottom: 12px; font-weight:700; color:var(--primary-color); font-size: 1.1rem;">✨ 차세대 AI(Gemini 3 / 2.5 Flash) 엔진 탑재</label>
                     <div style="background: rgba(255,255,255,0.6); padding: 15px; border-radius: 12px; border: 1px solid var(--border-glass);">
                         <p style="font-size: 0.95rem; color:var(--text-main); line-height: 1.6; margin:0;">
-                            구글 제미나이 1.5 무료 키가 엔진에 내장되었습니다.<br>
-                            결제나 인증 없이 전 문항 AI 에세이 분석을 바로 이용할 수 있습니다.
+                            최신 구글 제미나이 3 / 2.5 Flash 엔진이 적용되었습니다.<br>
+                            결제나 인증 없이 전 문항 AI 심층 분석 리포트를 바로 이용할 수 있습니다.
                         </p>
                     </div>
                     <input type="hidden" id="cfg-api-provider" value="gemini">
@@ -95,12 +96,18 @@ const UI = {
             if (btn) {
                 btn.addEventListener('click', () => {
                     const name = document.getElementById('cfg-name').value.trim();
+                    const grade = document.getElementById('cfg-grade').value;
+
                     if (!name) {
                         alert("성함을 입력해 주세요! 본인 확인을 위해 필요합니다.");
                         document.getElementById('cfg-name').focus();
                         return;
                     }
-                    const grade = document.getElementById('cfg-grade').value;
+                    if (!grade) {
+                        alert("학년/소속을 선택해 주세요!");
+                        document.getElementById('cfg-grade').focus();
+                        return;
+                    }
                     const provider = document.getElementById('cfg-api-provider').value;
                     const api = document.getElementById('cfg-api').value.trim();
                     onSave(name, grade, 'short', 'solo', api, provider);
@@ -250,10 +257,11 @@ const UI = {
                 <div class="delay-400" style="max-width: 600px; margin: 0 auto; width: 100%; text-align: left; background: #ffffff; padding: 20px; border-radius: 20px; border: 2px solid var(--primary-color); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);">
                     <label style="display:block; margin-bottom: 10px; font-size: 1rem; font-weight: 800; color: var(--text-main);">위 5가지 가치를 선택한 결정적인 이유는 무엇인가요?</label>
                     <textarea id="cat-reason-input" rows="3" placeholder="예: 평소에 사람들과 소통하는 것을 좋아하고, 도전적인 목표를 달성할 때 보람을 느끼기 때문입니다." style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; resize:none; font-family:inherit; font-size: 0.95rem; line-height: 1.5; color: var(--text-main); outline:none;"></textarea>
+                    <div id="char-count" style="text-align:right; font-size:0.75rem; color:#94a3b8; margin-top:5px; font-weight:600;">(0 / 10자 이상 권장)</div>
                     
                     <div style="display:flex; flex-direction: column; align-items: center; margin-top: 15px;">
                         <span style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">※ 이 답변은 최종 AI 분석 리포트의 핵심 자료가 됩니다!</span>
-                        <button id="btn-next-cat" class="btn btn-primary" style="padding: 12px 30px; font-size: 1.05rem; width: 100%; max-width: 300px;">다음 라운드로 넘어가기 <i class="fas fa-arrow-right"></i></button>
+                        <button id="btn-next-cat" class="btn btn-primary" style="padding: 12px 30px; font-size: 1.05rem; width: 100%; max-width: 300px; opacity: 0.5;">다음 라운드로 넘어가기 <i class="fas fa-arrow-right"></i></button>
                     </div>
                 </div>
             </div>
@@ -267,6 +275,12 @@ const UI = {
             if (textarea) {
                 textarea.addEventListener('input', (e) => {
                     const val = e.target.value.trim();
+                    const countElem = document.getElementById('char-count');
+                    if (countElem) {
+                        countElem.innerText = `(${val.length} / 10자 이상 권장)`;
+                        countElem.style.color = val.length >= 10 ? 'var(--primary-color)' : '#94a3b8';
+                    }
+
                     if (val.length >= 10) {
                         btn.disabled = false;
                         btn.style.opacity = '1';
@@ -451,15 +465,28 @@ const UI = {
             if (btnAnalyze) {
                 btnAnalyze.addEventListener('click', () => {
                     const container = document.getElementById('ai-report-container');
-                    container.innerHTML = `
-                        <div style="padding: 40px; text-align:center;">
-                            <div class="spinner" style="border-width: 4px; width: 40px; height: 40px; margin-bottom: 15px; border-top-color: white;"></div>
-                            <p style="font-weight:700; color:white;">AI가 학생의 고뇌와 흔적을 읽고 있습니다... (약 15초 소요)</p>
-                        </div>
-                    `;
+                    this.renderDeepAnalyzeProgress(container);
                     onDeepAnalyze(container);
                 });
             }
+
+            // Trigger sparkle reveal
+            setTimeout(() => {
+                const overlay = document.getElementById("sparkle-overlay");
+                if (overlay) this.createSparkles(overlay);
+            }, 500);
+
+            // Trigger sparkle reveal after a short delay
+            setTimeout(() => {
+                const overlay = document.getElementById('sparkle-overlay');
+                if (overlay) this.createSparkles(overlay);
+            }, 500);
+
+            // Trigger sparkle reveal after a short delay
+            setTimeout(() => {
+                const overlay = document.getElementById('sparkle-overlay');
+                if (overlay) this.createSparkles(overlay);
+            }, 500);
 
             const btnPrint = document.getElementById('btn-print');
             if (btnPrint) {
@@ -626,5 +653,98 @@ const UI = {
         `);
         printWindow.document.close();
     }
-};
+,
+    renderDeepAnalyzeProgress(container) {
+        let step = 0;
+        const messages = [
+            "학습님의 고유한 강점을 분석하는 중입니다...",
+            "20년 경력의 진로 멘토가 리포트를 작성하고 있어요.",
+            "맞춤형 진로 키워드를 추출하고 있습니다.",
+            "가장 따뜻하고 정확한 조언을 정리하고 있어요!",
+            "잠시후, 세상에 하나뿐인 리포트가 개봉됩니다."
+        ];
 
+        container.innerHTML = `
+            <div class="ai-loading-box" style="padding: 2.5rem 1.5rem; text-align: center; position:relative; z-index:10;">
+                <div class="premium-loader"></div>
+
+                <p id="ai-loading-msg" style="margin-top: 25px; font-size: 1.1rem; color: white; font-weight: 700; height: 1.5em; transition: all 0.5s;">
+                    ${messages[0]}
+                </p>
+                <div class="progress-track" style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 20px; overflow: hidden;">
+                    <div id="ai-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); transition: width 0.3s ease;"></div>
+                </div>
+            </div>
+        `;
+
+        const msgElem = document.getElementById('ai-loading-msg');
+        const barElem = document.getElementById('ai-progress-bar');
+        
+        const interval = setInterval(() => {
+            step++;
+            if (step < 95) {
+                if (barElem) barElem.style.width = step + '%';
+                if (step % 20 === 0 && msgElem) {
+                    msgElem.style.opacity = 0;
+                    setTimeout(() => {
+                        if (msgElem) {
+                            msgElem.innerText = messages[Math.floor(step / 20) % messages.length];
+                            msgElem.style.opacity = 1;
+                        }
+                    }, 500);
+                }
+            }
+            if (step >= 100) clearInterval(interval);
+        }, 300);
+
+        return interval;
+    },
+
+    injectSparkleCSS() {
+        if (document.getElementById('job-sparkle-style')) return;
+        const style = document.createElement('style');
+        style.id = 'job-sparkle-style';
+        style.innerHTML = `
+            @keyframes sparkle {
+                0% { transform: scale(0) rotate(0deg); opacity: 0; }
+                50% { transform: scale(1) rotate(180deg); opacity: 1; }
+                100% { transform: scale(0) rotate(360deg); opacity: 0; }
+            }
+            .sparkle {
+                position: absolute; width: 25px; height: 25px;
+                background: white;
+                clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+                animation: sparkle 1.5s ease-in-out infinite; z-index: 100; pointer-events: none;
+                filter: drop-shadow(0 0 5px rgba(255,255,255,0.8));
+            }
+            .premium-loader {
+                width: 60px; height: 60px; border: 4px solid rgba(255,255,255,0.1);
+                border-top: 4px solid #6366f1;
+                border-bottom: 4px solid #a855f7;
+                border-radius: 50%; animation: spin 1.5s linear infinite; margin: 0 auto;
+            }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+            @keyframes shake {
+                10%, 90% { transform: translate3d(-1px, 0, 0); }
+                20%, 80% { transform: translate3d(2px, 0, 0); }
+                30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+                40%, 60% { transform: translate3d(3px, 0, 0); }
+            }
+        `;
+        document.head.appendChild(style);
+    },
+
+    createSparkles(target) {
+        for (let i = 0; i < 20; i++) {
+            const s = document.createElement('div');
+            s.className = 'sparkle';
+            s.style.left = Math.random() * 100 + '%';
+            s.style.top = Math.random() * 100 + '%';
+            s.style.animationDelay = Math.random() * 1.5 + 's';
+            s.style.transform = `scale(${0.5 + Math.random()})`;
+            target.appendChild(s);
+            setTimeout(() => s.remove(), 3000);
+        }
+    }
+};

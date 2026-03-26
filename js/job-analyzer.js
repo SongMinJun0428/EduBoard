@@ -1,4 +1,4 @@
-const Analyzer = {
+window.Analyzer = {
     
     /**
      * Determines the main Result Type based on tag counts
@@ -23,7 +23,7 @@ const Analyzer = {
             typeMaxScores[rt.id] = (totalMax || 1);
         });
 
-        // 2. Calculate normalized scores
+        // 2. Find the type with the highest normalized score
         RESULT_TYPES.forEach(rt => {
             let rawScore = 0;
             rt.keywords.forEach(kw => {
@@ -31,9 +31,7 @@ const Analyzer = {
                     rawScore += tagCounts[kw];
                 }
             });
-            
             const normalizedScore = rawScore / typeMaxScores[rt.id];
-            
             if (normalizedScore > maxNormalizedScore) {
                 maxNormalizedScore = normalizedScore;
                 topType = rt;
@@ -53,7 +51,7 @@ const Analyzer = {
         return CATEGORIES.map(cat => {
             const topTags = state.getTopTagsForCategory(cat.id, 2);
             let tagsText = topTags.join(', ');
-            if (topTags.length === 0) tagsText = "다양한 가치";
+            if (topTags.length === 0) tagsText = "\ub2f9\uc2e0\uc758 \uac00\uce58";
             
             return {
                 id: cat.id,
@@ -69,305 +67,179 @@ const Analyzer = {
     generateAISentences(state, topType) {
         const sentences = [];
         const topOverall = state.getAllTopTags(3);
-        const tag1 = topOverall[0] || "가치";
-        const tag2 = topOverall[1] || "의미";
+        const tag1 = topOverall[0] || "\uac00\uce58";
+        const tag2 = topOverall[1] || "\uc601\uc5ed";
 
-        // Sentence 1: Core Value
-        sentences.push(`당신은 직업을 선택할 때 무엇보다도 '${tag1}'과(와) '${tag2}'을(를) 중요하게 고려하는 편입니다.`);
+        sentences.push(`\ub2f9\uc2e0\uc758 \uc9c1\uc5c5 \uc120\ud0dd\uc5d0 \uc788\uc5b4 \ubb34\uc5c7\ubcf4\ub2e4\ub3c4 '${tag1}'\uacfc '${tag2}'\ub97c \uc911\uc694\ud558\uac8c \uace0\ub824\ud558\ub294 \ud3b8\uc785\ub2c8\ub2e4.`);
 
-        // Sentence 2: Match with specific keywords
-        if (topOverall.includes("협업") || topOverall.includes("사람") || topOverall.includes("소통")) {
-            sentences.push("혼자만의 몰입보다는 협력과 상호작용이 있는 환경에서 큰 동기부여를 받을 가능성이 높습니다.");
-        } else if (topOverall.includes("독립") || topOverall.includes("집중") || topOverall.includes("분석")) {
-            sentences.push("팀 단위의 복잡한 소통보다는, 독립적으로 상황을 분석하고 통제할 수 있는 환경을 선호합니다.");
+        if (topOverall.includes("\ud611\ub825") || topOverall.includes("\uc0ac\ub78c") || topOverall.includes("\uc18c\ud1b5")) {
+            sentences.push("\ud63c\uc790\ub9cc\uc758 \ubaa8\uc785\ubcf4\ub2e4\ub294 \ud611\ub825\uacfc \uc0c1\ud638\uc791\uc6a9\uc774 \uc788\ub294 \ud658\uacbd\uc5d0\uc11c \ub354 \ub3d9\uae30\ubd80\uc5ec\ub97c \ubc1b\uc744 \uac00\ub2a5\uc131\uc774 \uc788\uc2b5\ub2c8\ub2e4.");
+        } else if (topOverall.includes("\ub3c5\ub9bd") || topOverall.includes("\uc9d1\uc911") || topOverall.includes("\ubd84\uc11d")) {
+            sentences.push("\uc77c\ub2e8\uc740 \ubcf5\uc7a1\ud55c \uc18c\ud1b5\ubcf4\ub2e4\ub294 \ub3c5\ub9bd\uc801\uc73c\ub85c \uc0c1\ud669\uc744 \ubd84\uc11d\ud558\uace0 \ud574\uacb0\ucc45\uc744 \ucc3e\ub294 \ud658\uacbd\uc744 \uc120\ud638\ud569\ub2c8\ub2e4.");
         }
 
-        if (topOverall.includes("성장") || topOverall.includes("도전")) {
-            sentences.push("또한 안정적인 현실에 안주하기보다, 끊임없이 새로운 목표를 향해 도전할 때 가장 빛나는 유형입니다.");
-        } else if (topOverall.includes("안정") || topOverall.includes("규칙")) {
-            sentences.push("불확실한 변화보다는 예측 가능하고 체계적인 환경에서 안정감을 느끼며 역량을 발휘합니다.");
+        if (topOverall.includes("\uc131\uc7a5") || topOverall.includes("\ub3c4\uc804")) {
+            sentences.push("\uc0c1\ub2f9\ud55c \uc548\uc815\uc801\uc778 \ud604\uc2e4\uc5d0 \uc548\uc8fc\ud558\uae30\ubcf4\ub2e4, \uc0c8\ub85c\uc6b4 \ubaa9\ud45c\ub97c \ud5a5\ud574 \ub3c4\uc804\ud560 \ub54c \uac00\uc7a5 \ube5b\ub098\ub294 \uc720\ud615\ub2cc\ub2c8\ub2e4.");
+        } else if (topOverall.includes("\uc548\uc815") || topOverall.includes("\uaddc\ucc59")) {
+            sentences.push("\ubd88\ud655\uc2e4\ud55c \ubcc0\uc218\ubcf4\ub2e4\ub294 \uc608\uce21 \uac00\ub2a5\ud55c \ucccc\uacc4\uc801\uc778 \ud658\uacbd\uc5d0\uc11c \uc548\uc815\uac10\uc744 \ub210\ub07c\uba70 \uc2e4\ub825\uc744 \ubc1c\ud718\ud569\ub2c8\ub2e4.");
         }
 
-        // Sentence 3: Career Design Connection
-        sentences.push(`따라서 진로를 정할 때는 "${topType.keywords[0]}" 중심의 역할과 "${topType.keywords[1]}" 환경을 종합적으로 검토해보는 것이 좋습니다.`);
+        sentences.push(`\ub530\ub77c\uc11c \uc9c1\uc5c5\uc744 \uc815\ud560 \ub54c\ub294 "${topType.keywords[0]}" \uc911\uc2ec\uc758 \ud65c\ub3d9\uc774\ub098 "${topType.keywords[1]}" \ud658\uacbd\uc744 \uc885\ud569\uc801\uc73c\ub85c \uac80\ud1a0\ud574\ubcf4\ub294 \uac83\uc774 \uc88b\uc2b5\ub2c8\ub2e4.`);
 
-        // Analyze user's written reasons
         const allReasons = Object.values(state.answers).map(ans => ans.reason).join(' ');
         const customWords = [];
-        if (/돈|연봉|수입|급여|경제/.test(allReasons)) customWords.push('현실적인 금전 보상');
-        if (/재미|즐겁|행복|흥미/.test(allReasons)) customWords.push('스스로 느끼는 일의 재미');
-        if (/안정|편안|정착|루틴/.test(allReasons)) customWords.push('예측 가능한 안정감');
-        if (/성장|배움|발전|경험/.test(allReasons)) customWords.push('개인의 꾸준한 성장');
-        if (/사람|소통|관계|친구/.test(allReasons)) customWords.push('사람들과의 긍정적인 관계');
-        if (/워라밸|시간|휴식|퇴근|여유/.test(allReasons)) customWords.push('일과 삶의 균형(워라밸)');
-        if (/가족|부모|자녀/.test(allReasons)) customWords.push('소중한 가족과의 시간');
+        if (/\uae08\uc81c|\uc218\uc785|\uae09\uc5ec/i.test(allReasons)) customWords.push('\ud604\uc2e4\uc801\uc778 \uae08\uc81c \ubcf4\uc0c1');
+        if (/\uc131\uc7a5|\ubc1c\uc804|\uacbd\ud5d8/i.test(allReasons)) customWords.push('\uc790\uae30\uc131\uc7a5\uacfc \uc131\ucde8');
+        if (/\uc548\uc815|\ub8e8\ud2f4|\ubcf4\uc7a5/i.test(allReasons)) customWords.push('\uc548\uc815\uc801\uc778 \uc0dd\ud65c');
+        if (/\uc0ac\ub78c|\uad00\uacc4|\uc18c\ud1b5/i.test(allReasons)) customWords.push('\uc778\uac04\uad00\uacc4\uc640 \uc870\ud654');
+        if (/\uc6cc\ub77c\ubca8|\uc5ec\uac00|\uade0\ud615/i.test(allReasons)) customWords.push('\uc77c\uacfc \uc0b6\uc758 \uade0\ud615');
         
         if (customWords.length > 0) {
-            // Deduplicate and take top 3
             const uniqueWords = [...new Set(customWords)].slice(0, 3);
-            sentences.push(`💡 <b>[핵심 키워드 결합 분석]</b><br>직접 적어주신 소중한 고민의 흔적들을 짚어보니, <b>'${uniqueWords.join(`', '`)}'</b>에 대한 깊은 가치관을 엿볼 수 있었습니다. 이 부분은 훗날 어떤 직업을 택하든 스스로를 지탱해 줄 훌륭한 기준점이 될 것입니다!`);
+            sentences.push(`\u2728 <b>[\ud575\uc2ec \ud0a4\uc6cc\ub4dc \uacb0\ud569 \ubd84\uc11d]</b><br>\uc9c1\uc811 \uc801\uc5b4\uc8fc\uc2e0 \uc18c\uc911\ud55c \uace0\ubbfc\uc758 \ud754\uc801\uc744 \uc9da\uc5b4\ubcf4\ub2e4, <b>'${uniqueWords.join(`', '`)}'</b>\uc5d0 \ub300\ud574 \uae4a\uc740 \uac00\uce58\ub97c \ub440\uace0 \uc788\uc74c\uc744 \ubcfc \uc218 \uc788\uc5c8\uc2b5\ub2c8\ub2e4. \uc774 \ubd84\ubd84\uc740 \ud6d7\ub0a0 \uc5b4\ub5a4 \uc9c1\uc5c5\uc744 \ud0dd\ud558\ub4e0 \uc2a4\uc2a4\ub85c\ub97c \uc9c0\ud0f1\ud574 \uc904 \uc911\uc694\ud55c \uae30\uc900\uc774 \ub420 \uac83\uc785\ub2c8\ub2e4!`);
         }
-
         return sentences;
     },
 
-
-
-    /**
-     * Calculates secondary personality traits based on tag mapping
-     */
     calculateTraits(tagCounts) {
+        // User requested 10 specific traits
         const mapping = {
-            "창의성": ["창의", "발상", "기획", "예술", "통찰", "아이디어", "새로움"],
-            "분석력": ["분석", "논리", "데이터", "정확성", "체계", "꼼꼼함", "이성"],
-            "리더십": ["리더", "영향력", "책임", "결단", "주도", "명예", "성공"],
-            "사교성": ["사람", "소통", "협업", "관계", "팀워크", "인정"],
-            "공감력": ["사람", "공감", "교육", "배려", "지원", "보람", "의미"],
-            "전문성": ["기술", "전문성", "깊이", "장인", "실행", "강점", "확정"],
-            "독립성": ["독립", "개인", "집중", "자유", "탐색", "이동", "유연성"],
-            "안정성": ["안정", "규칙", "정착", "지속성", "현실", "보호", "예측가능", "생계"],
-            "의미 추구": ["의미", "보람", "사회가치", "기여", "만족", "내면", "행복"],
-            "성장욕": ["성장", "도전", "변화", "성취", "열정", "흥미", "경험"]
+            "\ucc3d\uc758\uc131": ["\ucc3d\uc758", "\ubc1c\uc0c1", "\uc0c1\uc0c1\ub825", "\uc608\uc220"],
+            "\ubd84\uc11d\ub825": ["\ubd84\uc11d", "\ub17c\ub9ac", "\ub370\uc774\ud130", "\uc815\ud655\uc131", "\ucccc\uacc4"],
+            "\ub9ac\ub354\uc2ed": ["\ub9ac\ub354\uc2ed", "\uc601\ud5a5\ub825", "\ucc45\uc784", "\ubb34\ub300", "\ub9ac\ub354"],
+            "\uc0ac\uad50\uc131": ["\uc18c\ud1b5", "\ud611\uc5c5", "\ud300\uc6cc\ud06c", "\uc0ac\ub78c", "\uad00\uacc4"],
+            "\uacf5\uac10\ub825": ["\uacf5\uac10", "\ubc30\ub824", "\uc9c0\uc6d0", "\ub098\ub214", "\ubcf4\ub78c"],
+            "\uc804\ubb38\uc131": ["\uae30\uc220", "\uc804\ubb38\uc131", "\uae4a\uc774", "\uc644\uc131", "\uc7a5\uc778"],
+            "\ub3c5\ub9bd\uc131": ["\ub3c5\ub9bd", "\uac1c\uc778", "\uc9d1\uc911", "\uc790\uc720", "\uc9fc\ub3c4"],
+            "\uc548\uc815\uc131": ["\uc548\uc815", "\uaddc\ucc59", "\uc815\ucc29", "\ubcf4\uc548", "\ubcf4\uc99d", "\uc9c0\uc18d"],
+            "\uc758\ubbf8 \ucd94\uad6c": ["\uc758\ubbf8", "\uc0ac\ud68c\uac00\uce58", "\uae30\uc5ec", "\uc9c4\uc815\uc131", "\uac00\uce58"],
+            "\uc131\uc7a5\uc695": ["\uc131\uc7a5", "\ub3c4\uc804", "\ubcc0\ud654", "\uc131\ucde8", "\ub3c4\uc57d", "\uc5f4\uc815"]
         };
 
-        // Pre-calculate max possible scores for each trait to normalize
-        const traitMaxScores = {};
-        for (const [trait, tags] of Object.entries(mapping)) {
+        const traits = [];
+        for (const [traitName, tags] of Object.entries(mapping)) {
+            // 1. Calculate max possible score
             let totalMax = 0;
             QUESTIONS.forEach(q => {
-                let countA = 0;
-                let countB = 0;
+                let countA = 0; let countB = 0;
                 tags.forEach(t => {
                     if (q.tagsA && q.tagsA.includes(t)) countA++;
                     if (q.tagsB && q.tagsB.includes(t)) countB++;
                 });
                 totalMax += Math.max(countA, countB);
             });
-            traitMaxScores[trait] = (totalMax || 1);
-        }
+            const traitMax = totalMax || 1;
 
-        const traits = [];
-        for (const [trait, tags] of Object.entries(mapping)) {
+            // Calculate actual score with base activity for 'professional' look
             let score = 0;
-            tags.forEach(tag => {
-                score += (tagCounts[tag] || 0);
-            });
+            tags.forEach(t => { score += (tagCounts[t] || 0); });
             
-            // Normalize based on actual max possible score
-            const percent = Math.min(100, Math.round((score / traitMaxScores[trait]) * 100));
-            traits.push({ name: trait, value: percent });
+            // 3. Normalize with Laplace Smoothing (Avoid absolute 0%, like MBTI/Psychometric tests)
+            // Current Score + 1 / Max Possible + 2
+            const smoothedRatio = (score + 0.5) / (traitMax + 1);
+            const percent = Math.min(95, Math.max(15, Math.round(smoothedRatio * 100)));
+            traits.push({ name: traitName, value: percent });
         }
         return traits;
     },
 
-    /**
-     * Compiles all results cleanly for the UI
-     */
     compileFinalResult(state) {
         const top3Tags = state.getAllTopTags(3);
         const mainResult = this.calculateMainType(state.tagCounts);
         const categorySummaries = this.generateCategorySummaries(state);
         const traits = this.calculateTraits(state.tagCounts);
         const aiSentences = this.generateAISentences(state, mainResult.type);
-
-        // Prepare choice review data
         const choiceReview = QUESTIONS.map(q => {
             const ans = state.answers[q.id];
             return {
-                id: q.id,
-                title: q.title,
-                selectedOption: ans ? ans.selectedOption : null,
-                choice: ans ? (ans.selectedOption === 'A' ? q.optionA : q.optionB) : "미선택",
-                reason: ans ? ans.reason : "이유를 적지 않았어요"
+                id: q.id, title: q.title, selectedOption: ans ? ans.selectedOption : null,
+                choice: ans ? (ans.selectedOption === 'A' ? q.optionA : q.optionB) : "\ubbf8\uc120\ud0dd",
+                reason: ans ? ans.reason : "\uc774\uc720\ub97c \uc801\uc9c0 \uc54a\uc558\uc5b4\uc694"
             };
         });
-
-        return {
-            topTags: top3Tags,
-            mainType: mainResult.type,
-            categorySummaries,
-            traits,
-            choiceReview,
-            aiSentences
-        };
+        return { topTags: top3Tags, mainType: mainResult.type, categorySummaries, traits, choiceReview, aiSentences };
     },
 
     async generateRealAISentences(state, topType) {
         try {
             const apiKey = state.user.apiKey;
             const provider = state.user.apiProvider || 'gemini';
-            
             let qaContext = "";
             CATEGORIES.forEach((cat) => {
-                qaContext += `--- [${cat.title}] 파트 ---\n`;
-                const qList = state.categoryQuestions[cat.id];
-                qList.forEach(q => {
+                qaContext += `--- [\u200b${cat.title}\u200b] \ud30c\ud2b8 ---\n`;
+                if (!state.categoryQuestions[cat.id]) return;
+                state.categoryQuestions[cat.id].forEach(q => {
                     const ans = state.answers[q.id];
                     if (ans) {
                         const chosenText = ans.selectedOption === 'A' ? q.optionA : q.optionB;
-                        qaContext += `- 선택: ${chosenText}\n`;
+                        qaContext += `- \uc120\ud0dd: ${chosenText}\n`;
                     }
                 });
-                const relevantReasons = Object.keys(state.categoryReasons)
-                    .filter(key => key.startsWith(cat.id))
-                    .map(key => state.categoryReasons[key]);
-                const reasonText = relevantReasons.length > 0 ? relevantReasons.join(' / ') : "이유 미작성";
-                qaContext += `=> 위 가치들을 선택한 핵심 이유들: ${reasonText}\n\n`;
+                const relevantReasons = Object.keys(state.categoryReasons).filter(key => key.startsWith(cat.id)).map(key => state.categoryReasons[key]);
+                const reasonText = relevantReasons.length > 0 ? relevantReasons.join(' / ') : "\uc774\uc720 \ubbf8\uc791\uc131";
+                qaContext += `=> \uac00\uce58\ub4e4 \uc120\ud0dd \uc774\uc720: ${reasonText}\n\n`;
             });
 
-            const topTags = state.getAllTopTags(3).join(', ');
-            
-            const promptStr = `학생의 진로 밸런스 게임 결과입니다.
-가치관 키워드: ${topTags}
-결과 유형: ${topType.name} (${topType.desc})
-
-[학생의 파트별 선택 및 종합 이유 전체 응답]
-${qaContext}
-이 데이터를 바탕으로 이 학생을 위한 [심도 있고 아주 자세한 진로 상담 에세이]를 한 편 작성해 주세요. 
-단순한 3줄 요약이 아닙니다. 학생의 수많은 고뇌와 답변을 하나하나 짚어보며 전문가로서 깊이 있는 통찰을 담아 매우 정성스럽고 긴 글을 써주셔야 합니다.
-
-글은 자연스럽게 다음 세 가지 섹션을 포함하도록 내용이 이어져야 합니다 (제목을 써주셔도 좋습니다):
-1. 내면과 가치관 심층 분석: 학생이 작성한 이유들을 구체적으로 읽어보고, 어떤 가치에 움직이는 사람인지 묘사해 주세요. 이때 절대로 '질문 14', '문항 4' 같이 번호로만 언급하지 마세요. 대신 해당 질문의 '내용'을 자연스럽게 언급해야 합니다. (예: '안정적인 직장보다 도전을 선택하셨던 문항에서...', '보상보다 재미를 추구하는 모습에서...' 등)
-2. 잠재된 강점 조명: 학생이 지닌 특별한 사고방식이나 태도를 크게 칭찬하며 본인만의 강점을 발견해 주세요. 
-3. 맞춤형 진로 조언: 이 학생의 성향에 어울리는 구체적인 직업 환경이나 직무의 성격, 앞으로 고민해 볼 방향을 따뜻하게 조언해 주세요.`;
-
-            let text = "";
-            let success = false;
-            let lastError = "";
-
-            const apiKeys = [
-                "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",
-                "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"
-            ];
-
+            let text = ""; let lastError = ""; let success = false;
             if (provider === 'gemini') {
-                const geminiKey = (window.AI_CONFIG && window.AI_CONFIG.apiUrl && !window.AI_CONFIG.apiUrl.startsWith('http')) 
-                                    ? window.AI_CONFIG.apiUrl 
-                                    : ((apiKey && apiKey !== 'hardcoded') ? apiKey : "AIzaSyDqcCPtLZkB6vv4gJoEvp7CfbHmTfI0SN8");
-                
-                const models = ['gemini-2.5-flash', 'gemini-3.0-flash', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'];
-                
-                let targetUrls = [];
-
-                if (window.AI_CONFIG && window.AI_CONFIG.apiUrl && window.AI_CONFIG.apiUrl.startsWith('http')) {
-                    console.log("[Gemini API] Using custom Supabase URL from eduboard");
-                    targetUrls.push(window.AI_CONFIG.apiUrl);
+                // Models updated based on ListModels result 2026-03-27
+                const models = [
+                    'gemini-3-flash-preview',       // 1순위 (정확한 ID 확인됨)
+                    'gemini-3.1-flash-lite-preview', // 변형 모델
+                    'gemini-2.5-flash',             // 2순위 (작동 확인됨)
+                    'gemini-2.0-flash', 
+                    'gemini-1.5-flash'
+                ];
+                const keys = [];
+                if (window.AI_CONFIG && window.AI_CONFIG.primaryUrl && !window.AI_CONFIG.primaryUrl.startsWith('http')) {
+                    keys.push(window.AI_CONFIG.primaryUrl);
                 }
+                if (window.AI_CONFIG && window.AI_CONFIG.backupUrl && !window.AI_CONFIG.backupUrl.startsWith('http')) {
+                    keys.push(window.AI_CONFIG.backupUrl);
+                }
+                const userKey = (apiKey && apiKey !== 'hardcoded') ? apiKey : "AIzaSyDqcCPtLZkB6vv4gJoEvp7CfbHmTfI0SN8";
+                if (!keys.includes(userKey)) keys.push(userKey);
 
-                const versions = ['v1beta', 'v1'];
-                for (const modelName of models) {
-                    for (const apiVer of versions) {
-                        targetUrls.push(`https://generativelanguage.googleapis.com/${apiVer}/models/${modelName}:generateContent?key=${geminiKey}`);
+                const fullPrompt = `\uc2e0\ubd84: 20\ub144 \uacbd\ub825\uc758 \ubca0\ud14c\ub791 \uc9c4\ub85c \ucee8\uc124\ud134\ud2b8 \uba54\ud1a0
+\ubbf8\uc158: \ud559\uc0dd '${state.user.name}'\uc758 \uc120\ud0dd \uc544\uc774\ud15c\uacfc \uc9c1\uc811 \uc791\uc131\ud55c \uc774\uc720\ub97c \uae30\ubc18\uc73c\ub85c 2000\uc790 \uc774\uc0c1\uc758 \uc2ec\ucc3d \ubd84\uc11d \ub9ac\ud3ec\ud2b8 \uc791\uc131
+\ud3ec\ub9b7: \ud559\uc0dd\uc758 \uc774\ub984\uc744 \uc2e4\uba85\uc73c\ub85c \ubd80\ub974\uba70, \uc544\uc8fc \ub530\ub0bb\ud558\uace0 \uc815\uc131\uc2a4\ub7ec\uc6b4 \uc5d0\uc138\uc774 \ud615\uc2dd\uc73c\ub85c \uc811\uadfc\ud558\uc138\uc694. 
+\ub0b4\uc6a9:
+${qaContext}`;
+
+                for (const key of keys) {
+                    for (const modelName of models) {
+                        const targetUrls = [
+                            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`,
+                            `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${key}`
+                        ];
+                        for (const url of targetUrls) {
+                            try {
+                                console.log(`[Gemini API Request] Attempting ${modelName} with key ${key.substring(0,6)}...`);
+                                const response = await fetch(url, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 8000 } })
+                                });
+                                if (!response.ok) { lastError = `Status ${response.status}`; continue; }
+                                const data = await response.json();
+                                if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+                                    text = data.candidates[0].content.parts[0].text;
+                                    success = true;
+                                    break;
+                                }
+                            } catch (e) { lastError = e.message; }
+                        }
+                        if (success) break;
                     }
+                    if (success) break;
                 }
-
-                const fullPrompt = `신분: 진로 전문가 멘토
-미션: 학생의 답변 데이터를 기반으로 2000자 이상의 매우 긴 분석 리포트 작성
-지침: 
-1. 답변 내용(이유)을 하나하나 정성스럽게 분석하고 절대 질문 번호를 쓰지 말 것.
-2. 학생의 답변이 '테스트'용 데이터처럼 반복적일지라도, 상상력을 발휘하여 학생의 잠재력을 극대화하여 칭찬하고 에세이 형식으로 매우 길게 쓸 것.
-3. 분석 중간에 끊기지 않도록 끝까지 완성할 것.
-
-내용:
-${promptStr}`;
-
-                for (const url of targetUrls) {
-                    try {
-                        console.log(`[Gemini API Request] Attempting URL: ${url.split('?')[0]}`);
-                        
-                        const payload = { 
-                            contents: [{ parts: [{ text: fullPrompt }] }],
-                            generationConfig: {
-                                temperature: 0.8,
-                                maxOutputTokens: 8000,
-                            }
-                        };
-
-                        if (url.includes('v1beta') || (window.AI_CONFIG && window.AI_CONFIG.apiUrl && window.AI_CONFIG.apiUrl.includes('v1beta'))) {
-                            payload.system_instruction = { 
-                                parts: [{ text: "당신은 청소년 진로 멘토입니다. 학생의 답변을 기반으로 매우 길고 따뜻한 분석 리포트를 작성하세요." }] 
-                            };
-                        }
-
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        
-                        if (!response.ok) {
-                            const errorData = await response.json().catch(() => ({}));
-                            console.warn(`Gemini API Error: ${response.status}`, errorData);
-                            lastError = `Status ${response.status}`;
-                            continue; 
-                        }
-                        
-                        const data = await response.json();
-                        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-                            text = data.candidates[0].content.parts[0].text;
-                            success = true;
-                            break; 
-                        }
-                    } catch (mErr) {
-                        console.warn(`Gemini API Fetch Error:`, mErr);
-                        lastError = mErr.message;
-                    }
-                }
-                
-                if (!success) {
-                    throw new Error(`Gemini 최신 모델 호출 실패 (마지막 에러: ${lastError})`);
-                }
-            } else {
-                // OpenAI Loop (as before)
-                const url = `https://api.openai.com/v1/chat/completions`;
-                const reqBody = {
-                    model: "gpt-4o-mini",
-                    messages: [
-                        { role: "system", content: "당신은 청소년 학생들을 진심으로 사랑하고, 그들의 사소한 메모 하나에서도 엄청난 잠재력을 발견해 주는 최고의 진로 멘토입니다. 매우 길고 따뜻하며 논리적인 장문의 분석 글을 씁니다. 절대 '질문 14', '문항 4'와 같은 번호로 답변을 지칭하지 마세요. 대신 해당 문항의 '내용'을 요약하여 자연스럽게 언급하십시오." },
-                        { role: "user", content: promptStr }
-                    ],
-                    max_tokens: 6000,
-                    temperature: 0.7
-                };
-
-                for (const key of apiKeys) {
-                    try {
-                        console.log(`[OpenAI API Request] URL: ${url}, Model: ${reqBody.model}`);
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${key}`
-                            },
-                            body: JSON.stringify(reqBody)
-                        });
-
-                        if (!response.ok) {
-                            const errData = await response.json().catch(() => ({}));
-                            const errMsg = errData.error && errData.error.message ? errData.error.message : response.statusText;
-                            throw new Error(`OpenAI Error ${response.status}: ${errMsg}`);
-                        }
-                        const data = await response.json();
-                        text = data.choices[0].message.content;
-                        success = true;
-                        break;
-                    } catch (err) {
-                        lastError = err.message;
-                        console.error(`Attempt failed [${reqBody.model}]: ${err.message}`);
-                    }
-                }
-
-                if (!success) {
-                    throw new Error(`모든 API 키 한도 초과 (마지막 에러: ${lastError})`);
-                }
+                if (!success) throw new Error(`Gemini API Failed: ${lastError}`);
             }
-            
-            const providerName = provider === 'gemini' ? 'Gemini 2.0' : 'GPT-4o';
-            return [`✨ <b>[실제 AI(${providerName}) 심층 분석 리포트]</b><br><br><div style="text-align:left; line-height:1.8; font-size:1.05rem; white-space: pre-wrap;">` + text + `</div>`];
+            return [`\u2728 <b>[\uc2e4\uc81c AI \uc2ec\uce35 \ubd84\uc11d \ub9ac\ud3ec\ud2b8]</b><br><br><div style="text-align:left; line-height:1.8; font-size:1.05rem; white-space: pre-wrap;">` + text + `</div>`];
         } catch(e) {
             console.error('AI API Error:', e);
             const fallback = this.generateAISentences(state, topType);
-            fallback.unshift(`⚠️ AI API 연동 실패 (사유: ${e.message}). 오프라인 분석 결과로 대체되었습니다.`);
+            fallback.unshift(`\u26a0\ufe0f AI API \uc790\ub3d9 \uc2e4\ud328. \uc624\ud504\ub77c\uc778 \ubd84\uc11d \uacb0\uacfc\ub85c \ub300\uccb4\ub418\uc5c8\uc2b5\ub2c8\ub2e4.`);
             return fallback;
         }
     },
@@ -377,26 +249,14 @@ ${promptStr}`;
         const mainResult = this.calculateMainType(state.tagCounts);
         const categorySummaries = this.generateCategorySummaries(state);
         const traits = this.calculateTraits(state.tagCounts);
-        
-        // Prepare choice review data
         const choiceReview = QUESTIONS.map(q => {
             const ans = state.answers[q.id];
             return {
-                id: q.id,
-                title: q.title,
-                selectedOption: ans ? ans.selectedOption : null,
-                choice: ans ? (ans.selectedOption === 'A' ? q.optionA : q.optionB) : "미선택",
-                reason: ans ? ans.reason : "이유를 적지 않았어요"
+                id: q.id, title: q.title, selectedOption: ans ? ans.selectedOption : null,
+                choice: ans ? (ans.selectedOption === 'A' ? q.optionA : q.optionB) : "\ubbf8\uc120\ud0dd",
+                reason: ans ? ans.reason : "\uc774\uc720\ub97c \uc801\uc9c0 \uc54a\uc558\uc5b4\uc694"
             };
         });
-
-        return {
-            topTags: top3Tags,
-            mainType: mainResult.type,
-            categorySummaries,
-            traits,
-            choiceReview,
-            aiSentences: []
-        };
+        return { topTags: top3Tags, mainType: mainResult.type, categorySummaries, traits, choiceReview, aiSentences: [] };
     }
 };
