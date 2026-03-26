@@ -15,9 +15,19 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <meta name="color-scheme" content="light dark" />
   <link rel="stylesheet" href="css/admin.css">
+  <script src="js/security.js"></script>
+  <script>
+    (function() {
+      const u = localStorage.getItem('savedUsername');
+      if (!u || u === 'null' || u === 'undefined') {
+        location.replace('index.html');
+        document.documentElement.style.display = 'none';
+      }
+    })();
+  </script>
 </head>
 
-<body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+<body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100" style="display: none;">
   <!-- 헤더 -->
   <header class="bg-white/80 dark:bg-gray-800/70 backdrop-blur border-b sticky top-0 z-50">
     <div class="w-full px-8 py-3 flex items-center gap-3">
@@ -31,6 +41,7 @@
       <nav class="flex items-center gap-6 border-l ml-6 pl-6 h-8">
         <button id="tab-users" class="tab-btn active">사용자 관리</button>
         <button id="tab-shop" class="tab-btn">상점 관리</button>
+        <button id="tab-job" class="tab-btn">진로 검사 결과</button>
         <button id="tab-db" class="tab-btn">데이터베이스</button>
       </nav>
       <div class="ml-auto flex items-center gap-2">
@@ -105,6 +116,11 @@
             <option>3</option>
             <option>4</option>
             <option>5</option>
+            <option>6</option>
+            <option>7</option>
+            <option>8</option>
+            <option>9</option>
+            <option>10</option>
           </select>
           <select id="f-role" class="btn h-9 text-xs">
             <option value="">권한 전체</option>
@@ -210,6 +226,34 @@
           <button id="prev" class="btn h-8">이전</button>
           <button id="next" class="btn h-8">다음</button>
         </div>
+      </div>
+    </section>
+
+    <!-- 진로 검사 결과 섹션 (신규) -->
+    <section id="section-job" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold">🎯 진로 검사 결과 관리</h2>
+        <button id="refresh-job" class="btn btn-ghost">🔄 새로고침</button>
+      </div>
+
+      <div class="rounded-xl border bg-white p-5 shadow-sm">
+        <div class="border rounded-xl overflow-x-auto bg-white dark:bg-gray-800">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr class="[&>th]:p-3 [&>th]:border">
+                <th class="w-32 text-left">검사 일시</th>
+                <th class="text-left">학생 정보</th>
+                <th class="w-32 text-center">주요 유형</th>
+                <th class="text-left">핵심 키워드</th>
+                <th class="w-32 text-center">작업</th>
+              </tr>
+            </thead>
+            <tbody id="job-rows" class="[&>tr>td]:border">
+              <!-- JS에서 동적 생성 -->
+            </tbody>
+          </table>
+        </div>
+        <p id="job-empty" class="hidden text-center py-20 text-gray-400">데이터가 없습니다.</p>
       </div>
     </section>
 
@@ -371,33 +415,17 @@
           </div>
           <div class="space-y-1">
             <label class="text-xs font-bold text-gray-500 uppercase">개인 구매 한도 (재고)</label>
-            <input id="shop-stock" type="number" min="1"
-              class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="1"
-              title="유저 한 명당 구매할 수 있는 최대 수량입니다." />
+            <input id="shop-stock" type="number" min="1" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="999" />
           </div>
         </div>
         <div class="space-y-1">
-          <label class="text-xs font-bold text-gray-500 uppercase">설명</label>
-          <textarea id="shop-desc" rows="3"
-            class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900 resize-none"
-            placeholder="아이템에 대한 설명을 입력하세요.."></textarea>
+          <label class="text-xs font-bold text-gray-500 uppercase">아이템 설명 (선택)</label>
+          <textarea id="shop-desc" rows="2" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="아이템에 대한 설명을 적어주세요"></textarea>
         </div>
       </div>
-      <div class="mt-6 flex justify-end gap-2">
+      <div class="mt-8 flex justify-end gap-3">
         <button class="btn btn-ghost px-6" data-close>취소</button>
-        <button id="shop-submit" class="btn btn-primary px-8">저장하기</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-coin" class="modal">
-    <div class="w-full max-w-sm rounded-xl border bg-white dark:bg-gray-800 p-4">
-      <h3 class="font-semibold mb-3">포인트 지급</h3>
-      <input id="coin-amount" type="number" min="1" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900"
-        placeholder="지급할 포인트 수" />
-      <div class="mt-4 flex justify-end gap-2">
-        <button class="btn btn-ghost" data-close>취소</button>
-        <button class="btn btn-primary" id="coin-submit">지급</button>
+        <button id="shop-submit" class="btn btn-primary px-10">아이템 저장</button>
       </div>
     </div>
   </div>
@@ -406,47 +434,48 @@
   <div id="modal-edit" class="modal">
     <div class="w-full max-w-xl rounded-xl border bg-white dark:bg-gray-800 p-6">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="font-bold text-xl text-indigo-600 dark:text-indigo-400">사용자 정보 수정</h3>
+        <h3 class="text-lg font-bold">✏️ 사용자 정보 수정</h3>
         <button class="text-2xl text-gray-400 hover:text-gray-600" data-close>&times;</button>
       </div>
-      <div class="grid sm:grid-cols-2 gap-4">
-        <div class="space-y-1">
-          <label class="text-xs font-bold text-gray-500 uppercase">아이디</label>
-          <input id="edit-username"
-            class="w-full rounded-lg border px-3 py-2 text-sm bg-gray-50 dark:bg-gray-950 font-mono" readonly />
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs font-bold text-gray-500 uppercase">이름</label>
-          <input id="edit-name" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs font-bold text-gray-500 uppercase">이메일</label>
-          <input id="edit-email" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
-        </div>
-        <div class="space-y-1">
-          <label class="text-xs font-bold text-gray-500 uppercase">학년/반/번호</label>
-          <div class="grid grid-cols-3 gap-2">
-            <input id="edit-grade" type="number" min="1" max="3"
-              class="rounded-lg border px-2 py-2 text-sm dark:bg-gray-900" placeholder="학" />
-            <input id="edit-class" type="number" min="1" class="rounded-lg border px-2 py-2 text-sm dark:bg-gray-900"
-              placeholder="반" />
-            <input id="edit-number" type="number" min="1" class="rounded-lg border px-2 py-2 text-sm dark:bg-gray-900"
-              placeholder="번" />
+      <div class="space-y-4">
+        <input type="hidden" id="edit-username">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">이름</label>
+            <input id="edit-name" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">이메일</label>
+            <input id="edit-email" type="email" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
           </div>
         </div>
-        <div class="space-y-1">
-          <label class="text-xs font-bold text-gray-500 uppercase">레벨 / XP</label>
-          <div class="grid grid-cols-2 gap-2">
-            <input id="edit-level" type="number" min="1" class="rounded-lg border px-2 py-2 text-sm dark:bg-gray-900"
-              placeholder="LV" />
-            <input id="edit-xp" type="number" min="0" class="rounded-lg border px-2 py-2 text-sm dark:bg-gray-900"
-              placeholder="XP" />
+        <div class="grid grid-cols-3 gap-2">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">학년</label>
+            <input id="edit-grade" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">반</label>
+            <input id="edit-class" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">번호</label>
+            <input id="edit-number" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
           </div>
         </div>
-        <div class="space-y-1">
-          <label class="text-xs font-bold text-gray-500 uppercase">보유 포인트</label>
-          <input id="edit-coin" type="number" min="0"
-            class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900 font-semibold text-blue-600" />
+        <div class="grid grid-cols-3 gap-2">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">레벨</label>
+            <input id="edit-level" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">XP</label>
+            <input id="edit-xp" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">포인트</label>
+            <input id="edit-coin" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900 font-bold text-blue-600" />
+          </div>
         </div>
       </div>
       <div class="mt-8 flex justify-end gap-3">
@@ -518,6 +547,46 @@
       <div class="my-1 h-px bg-gray-100 dark:bg-gray-800"></div>
       <button class="w-full text-left px-3 py-2 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
         data-ctx="del">삭제</button>
+    </div>
+  </div>
+
+  <!-- 진로 결과 상세 모달 -->
+  <div id="modal-job-detail" class="modal">
+    <div class="w-full max-w-2xl rounded-2xl border bg-white dark:bg-gray-800 p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-6 pb-4 border-b">
+        <h3 class="text-xl font-bold flex items-center gap-2">
+            <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>
+            진로 검사 상세 리포트
+        </h3>
+        <button class="text-2xl text-gray-400 hover:text-gray-600 transition-colors" data-close>&times;</button>
+      </div>
+      <div id="job-detail-content" class="space-y-6 overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar">
+        <!-- JS에서 동적 생성 -->
+      </div>
+      <div class="mt-8 pt-6 border-t flex justify-end">
+        <button class="btn btn-primary px-8 py-2.5 rounded-xl font-bold" data-close>창 닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 포인트 지급 모달 -->
+  <div id="modal-coin" class="modal">
+    <div class="w-full max-w-sm rounded-xl border bg-white dark:bg-gray-800 p-6 shadow-xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold">💰 포인트(코인) 지급</h3>
+        <button class="text-2xl text-gray-400 hover:text-gray-600" data-close>&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-gray-500 uppercase">지급할 금액</label>
+          <input id="coin-amount" type="number" min="1" class="w-full rounded-lg border px-4 py-3 text-lg font-bold dark:bg-gray-900 focus:ring-2 focus:ring-amber-500 outline-none" placeholder="1000" />
+        </div>
+        <p class="text-xs text-gray-400">※ 입력한 금액만큼 해당 사용자의 잔액에 합산됩니다.</p>
+      </div>
+      <div class="mt-6 flex justify-end gap-3">
+        <button class="btn btn-ghost px-6" data-close>취소</button>
+        <button id="coin-submit" class="btn bg-amber-500 hover:bg-amber-600 text-white font-bold border-none px-10">지급 완료</button>
+      </div>
     </div>
   </div>
 

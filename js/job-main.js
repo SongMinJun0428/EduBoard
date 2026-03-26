@@ -48,9 +48,27 @@ class AppController {
         const cat = state.getCurrentCategory();
         const topTags = state.getTopTagsForCategory(cat.id, 2);
         
-        UI.renderIntermediateSummary(cat, topTags, () => {
-            state.nextCategory();
-            this.showCategoryIntro();
+        // Identify the last 5 questions answered across the whole test
+        const allAnsweredIds = Object.keys(state.answers);
+        const last5Questions = QUESTIONS.filter(q => allAnsweredIds.includes(q.id)).slice(-5);
+
+        UI.renderIntermediateSummary(cat, topTags, state, last5Questions, (reason) => {
+            state.saveCategoryReason(cat.id + "_" + Object.keys(state.answers).length, reason);
+            
+            // Check if we also reached the end of the category
+            const progress = state.getCurrentCategoryProgress();
+            if (progress.current >= progress.total) {
+                state.nextCategory();
+                if (state.currentCategoryIndex < CATEGORIES.length) {
+                    this.showCategoryIntro();
+                } else {
+                    this.showFinalResult();
+                }
+            } else {
+                // Just continue to next question in same category
+                state.currentQuestionIndex++; 
+                this.showQuestion();
+            }
         });
     }
 
@@ -60,6 +78,23 @@ class AppController {
             // Get base results (tags, type, etc.)
             const finalResult = await Analyzer.compileFinalResultAsync(state);
             
+            // Log to Supabase user_activity_logs
+                const resultData = {
+                    username: localStorage.getItem('savedUsername') || 'anonymous',
+                    name: state.user.name,
+                    grade: state.user.grade,
+                    main_type: finalResult.mainType.name,
+                    top_tags: finalResult.topTags.join(', '),
+                    details: {
+                        summaries: finalResult.categorySummaries.map(s => s.summary).join(' | '),
+                        categoryReasons: state.categoryReasons
+                    }
+                };
+                window.sb.from('career_test_results').insert([resultData]).then(({error}) => {
+                    if (error) console.warn("Supabase Save Result Error:", error.message);
+                    else console.log("Result saved to career_test_results.");
+                });
+
             UI.renderFinalResult(finalResult, state.user, 
                 () => { // onRestart
                     state.reset();
@@ -68,9 +103,13 @@ class AppController {
                 async (container) => { // onDeepAnalyze (Click handler)
                     try {
                         const resultText = await Analyzer.generateRealAISentences(state, finalResult.mainType);
+                        
+                        // Sync result to make it available for Print/PDF
+                        finalResult.aiSentences = Array.isArray(resultText) ? resultText : [resultText];
+
                         container.innerHTML = `
-                            <div style="position:relative; z-index: 2; text-align:left; line-height:2.0; font-size: 1.1rem; white-space: pre-wrap; color: rgba(255,255,255,0.95); animation: fade-in 1s ease-out;">
-                                ${resultText}
+                            <div id="ai-report-text-content" style="position:relative; z-index: 2; text-align:left; line-height:2.0; font-size: 1.1rem; white-space: pre-wrap; color: rgba(255,255,255,0.95); animation: fade-in 1s ease-out;">
+                                ${finalResult.aiSentences.join('<br><br>')}
                             </div>
                         `;
                     } catch(err) {

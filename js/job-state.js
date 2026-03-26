@@ -14,11 +14,14 @@ class AppState {
             apiProvider: "gemini"
         };
         
-        // answers will store: { questionId: { selectedOption: 'A', reason: '...' } }
+        // answers will store: { questionId: { selectedOption: 'A', tags: [...] } }
         this.answers = {};
         
         // tagCounts will store: { "보상": 3, "성장": 5, ... }
         this.tagCounts = {};
+
+        // categoryReasons will store: { "categoryId": "reason user typed after 5 questions" }
+        this.categoryReasons = {};
 
         this.currentCategoryIndex = 0;
         this.currentQuestionIndex = 0;
@@ -67,21 +70,30 @@ class AppState {
         });
     }
 
+    saveCategoryReason(categoryId, reason) {
+        this.categoryReasons[categoryId] = reason;
+    }
+
     nextStep() {
         // Returns "question_next", "category_summary", or "finished"
         const cat = this.getCurrentCategory();
         const maxQ = this.categoryQuestions[cat.id].length;
+        const totalAnswered = Object.keys(this.answers).length;
+
+        // Check if we should show reasoning (every 5 questions OR end of category)
+        // 1. Check if we hit a 5-question milestone WITHIN a category
+        // (But only if we are not at the very end of the category, so we don't double trigger)
+        if (totalAnswered % 5 === 0 && this.currentQuestionIndex < maxQ - 1) {
+            return "category_summary";
+        }
         
+        // 2. Move to next question if available in current category
         if (this.currentQuestionIndex < maxQ - 1) {
             this.currentQuestionIndex++;
             return "question_next";
         } else {
-            // Reached end of category
-            if (this.currentCategoryIndex < CATEGORIES.length - 1) {
-                return "category_summary";
-            } else {
-                return "finished";
-            }
+            // 3. Reached end of category -> Always summarize to ensure no questions are left out
+            return "category_summary";
         }
     }
 
@@ -118,14 +130,20 @@ class AppState {
     seedTestData() {
         this.answers = {};
         this.tagCounts = {};
+        this.categoryReasons = {};
         
-        QUESTIONS.forEach(q => {
+        QUESTIONS.forEach((q, idx) => {
             const options = ['A', 'B'];
             const selected = options[Math.floor(Math.random() * options.length)];
             const tags = selected === 'A' ? q.tagsA : q.tagsB;
             const chosenText = selected === 'A' ? q.optionA : q.optionB;
             
             this.saveAnswer(q.id, selected, tags, `테스트: ${chosenText} 성향이 저의 가치관과 더 잘 맞는다고 생각합니다.`);
+            
+            // Add dummy category reasons every 5 questions
+            if ((idx + 1) % 5 === 0) {
+                this.saveCategoryReason(q.category + "_" + (idx + 1), "테스트: 이 5가지 선택지에 대한 종합적인 가치관 분석입니다.");
+            }
         });
 
         this.currentCategoryIndex = CATEGORIES.length - 1;

@@ -198,13 +198,21 @@ const Analyzer = {
             const provider = state.user.apiProvider || 'gemini';
             
             let qaContext = "";
-            QUESTIONS.forEach((q, idx) => {
-                const ans = state.answers[q.id];
-                if (ans) {
-                    const chosenText = ans.selectedOption === 'A' ? q.optionA : q.optionB;
-                    const reasonText = ans.reason === "(이유 미작성)" ? "작성 안함" : ans.reason;
-                    qaContext += `[질문 ${idx + 1}] ${q.title}\n선택한 답: ${chosenText}\n직접 쓴 이유: ${reasonText}\n\n`;
-                }
+            CATEGORIES.forEach((cat) => {
+                qaContext += `--- [${cat.title}] 파트 ---\n`;
+                const qList = state.categoryQuestions[cat.id];
+                qList.forEach(q => {
+                    const ans = state.answers[q.id];
+                    if (ans) {
+                        const chosenText = ans.selectedOption === 'A' ? q.optionA : q.optionB;
+                        qaContext += `- 선택: ${chosenText}\n`;
+                    }
+                });
+                const relevantReasons = Object.keys(state.categoryReasons)
+                    .filter(key => key.startsWith(cat.id))
+                    .map(key => state.categoryReasons[key]);
+                const reasonText = relevantReasons.length > 0 ? relevantReasons.join(' / ') : "이유 미작성";
+                qaContext += `=> 위 가치들을 선택한 핵심 이유들: ${reasonText}\n\n`;
             });
 
             const topTags = state.getAllTopTags(3).join(', ');
@@ -213,7 +221,7 @@ const Analyzer = {
 가치관 키워드: ${topTags}
 결과 유형: ${topType.name} (${topType.desc})
 
-[학생의 25개 문항별 선택 및 이유 전체 응답]
+[학생의 파트별 선택 및 종합 이유 전체 응답]
 ${qaContext}
 이 데이터를 바탕으로 이 학생을 위한 [심도 있고 아주 자세한 진로 상담 에세이]를 한 편 작성해 주세요. 
 단순한 3줄 요약이 아닙니다. 학생의 수많은 고뇌와 답변을 하나하나 짚어보며 전문가로서 깊이 있는 통찰을 담아 매우 정성스럽고 긴 글을 써주셔야 합니다.
@@ -233,20 +241,27 @@ ${qaContext}
             ];
 
             if (provider === 'gemini') {
-                const geminiKey = (apiKey && apiKey !== 'hardcoded') ? apiKey : "AIzaSyDqcCPtLZkB6vv4gJoEvp7CfbHmTfI0SN8";
-                // Upgraded to latest Gemini models (including 2.5 and 3.0 per request)
+                const geminiKey = (window.AI_CONFIG && window.AI_CONFIG.apiUrl && !window.AI_CONFIG.apiUrl.startsWith('http')) 
+                                    ? window.AI_CONFIG.apiUrl 
+                                    : ((apiKey && apiKey !== 'hardcoded') ? apiKey : "AIzaSyDqcCPtLZkB6vv4gJoEvp7CfbHmTfI0SN8");
+                
                 const models = ['gemini-2.5-flash', 'gemini-3.0-flash', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'];
                 
+                let targetUrls = [];
+
+                if (window.AI_CONFIG && window.AI_CONFIG.apiUrl && window.AI_CONFIG.apiUrl.startsWith('http')) {
+                    console.log("[Gemini API] Using custom Supabase URL from eduboard");
+                    targetUrls.push(window.AI_CONFIG.apiUrl);
+                }
+
+                const versions = ['v1beta', 'v1'];
                 for (const modelName of models) {
-                    try {
-                        const versions = ['v1beta', 'v1'];
-                        for (const apiVer of versions) {
-                            try {
-                                const url = `https://generativelanguage.googleapis.com/${apiVer}/models/${modelName}:generateContent?key=${geminiKey}`;
-                                console.log(`[Gemini API Request] Model: ${modelName}, Version: ${apiVer}`);
-                                
-                                // Standardized payload for all versions
-                                const fullPrompt = `신분: 진로 전문가 멘토
+                    for (const apiVer of versions) {
+                        targetUrls.push(`https://generativelanguage.googleapis.com/${apiVer}/models/${modelName}:generateContent?key=${geminiKey}`);
+                    }
+                }
+
+                const fullPrompt = `신분: 진로 전문가 멘토
 미션: 학생의 답변 데이터를 기반으로 2000자 이상의 매우 긴 분석 리포트 작성
 지침: 
 1. 답변 내용(이유)을 하나하나 정성스럽게 분석하고 절대 질문 번호를 쓰지 말 것.
@@ -256,47 +271,46 @@ ${qaContext}
 내용:
 ${promptStr}`;
 
-                                const payload = { 
-                                    contents: [{ parts: [{ text: fullPrompt }] }],
-                                    generationConfig: {
-                                        temperature: 0.8,
-                                        maxOutputTokens: 8000,
-                                    }
-                                };
-
-                                // System instruction for v1beta as a secondary layer
-                                if (apiVer === 'v1beta') {
-                                    payload.system_instruction = { 
-                                        parts: [{ text: "당신은 청소년 진로 멘토입니다. 학생의 답변을 기반으로 매우 길고 따뜻한 분석 리포트를 작성하세요." }] 
-                                    };
-                                }
-
-                                const response = await fetch(url, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(payload)
-                                });
-                                
-                                if (!response.ok) {
-                                    const errorData = await response.json().catch(() => ({}));
-                                    console.warn(`Gemini API Error (${apiVer}/${modelName}): ${response.status}`, errorData);
-                                    continue; 
-                                }
-                                
-                                const data = await response.json();
-                                if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-                                    text = data.candidates[0].content.parts[0].text;
-                                    success = true;
-                                    break; 
-                                }
-                            } catch (vErr) {
-                                console.warn(`Version ${apiVer} for ${modelName} failed:`, vErr);
+                for (const url of targetUrls) {
+                    try {
+                        console.log(`[Gemini API Request] Attempting URL: ${url.split('?')[0]}`);
+                        
+                        const payload = { 
+                            contents: [{ parts: [{ text: fullPrompt }] }],
+                            generationConfig: {
+                                temperature: 0.8,
+                                maxOutputTokens: 8000,
                             }
+                        };
+
+                        if (url.includes('v1beta') || (window.AI_CONFIG && window.AI_CONFIG.apiUrl && window.AI_CONFIG.apiUrl.includes('v1beta'))) {
+                            payload.system_instruction = { 
+                                parts: [{ text: "당신은 청소년 진로 멘토입니다. 학생의 답변을 기반으로 매우 길고 따뜻한 분석 리포트를 작성하세요." }] 
+                            };
                         }
-                        if (success) break;
-                    } catch (err) {
-                        lastError = err.message;
-                        console.warn(`Gemini Model ${modelName} failed, trying next...`);
+
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}));
+                            console.warn(`Gemini API Error: ${response.status}`, errorData);
+                            lastError = `Status ${response.status}`;
+                            continue; 
+                        }
+                        
+                        const data = await response.json();
+                        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+                            text = data.candidates[0].content.parts[0].text;
+                            success = true;
+                            break; 
+                        }
+                    } catch (mErr) {
+                        console.warn(`Gemini API Fetch Error:`, mErr);
+                        lastError = mErr.message;
                     }
                 }
                 

@@ -134,18 +134,17 @@ const UI = {
         const followUps = question.followUp.map(f => `<span style="font-size:0.85rem; background:var(--primary-color-soft); color:var(--primary-color); padding:4px 10px; border-radius:15px; margin-right:5px; margin-bottom:5px; display:inline-block;">💡 ${f}</span>`).join('');
 
         const html = `
-            <div class="view active question-screen" style="padding: 35px 25px; display:flex; flex-direction:column; min-height: 480px; gap: 0;">
-                
+            <div class="view active question-screen" style="padding: 20px 20px; text-align:center; display:flex; flex-direction:column; justify-content:flex-start; min-height:100%; overflow-y:auto; gap: 20px;">
                 <!-- 1. Header Section -->
-                <div style="flex-shrink: 0; margin-bottom: 25px;">
-                    <div style="display:flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px;">
-                        <span style="font-size: 0.85rem; font-weight:700; color: var(--primary-color); text-transform: uppercase; letter-spacing: 1px;">${category.title}</span>
-                        <span style="font-size:1rem; font-weight:800; color: var(--text-muted); opacity: 0.5;">${progress.current} / ${progress.total}</span>
+                <div style="flex-shrink:0;">
+                    <div style="width: 100%; height: 6px; background: #f0f0f0; border-radius: 10px; margin-bottom: 20px; overflow:hidden;">
+                        <div style="width: ${pct}%; height: 100%; background: var(--grad-primary); transition: width 0.5s ease;"></div>
                     </div>
-                    <h2 style="font-size: 1.7rem; font-weight: 900; line-height: 1.3; margin-bottom: 20px; color: var(--text-main); letter-spacing: -0.5px;">${question.title}</h2>
-                    <div style="height: 5px; background: rgba(0,0,0,0.05); border-radius: 10px; overflow:hidden;">
-                        <div class="progress-bar-fill" style="height: 100%; background: var(--grad-primary); width: ${pct}%;"></div>
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <span style="font-weight: 800; color: var(--primary-color); font-size: 0.9rem;">${category.title}</span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">질문 ${progress.current} / ${progress.total}</span>
                     </div>
+                    <h2 style="font-size: 1.6rem; margin-bottom: 5px; line-height: 1.3; word-break: keep-all;">${question.title}</h2>
                 </div>
 
                 <!-- 2. Interaction Section -->
@@ -155,7 +154,7 @@ const UI = {
                     </p>
 
                     <!-- Options Grid -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; max-width: 600px; width: 100%; margin-left: auto; margin-right: auto;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; align-items: start;">
                         <div id="opt-a" class="btn btn-secondary hover-lift question-card" style="padding: 22px 15px; flex-direction:column; height: auto; text-align:center; border-radius: 16px; border: 2px solid transparent; cursor: pointer; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
                             <div style="font-size: 0.7rem; opacity: 0.4; margin-bottom: 4px; font-weight: 700;">OPTION A</div>
                             <div style="font-size: 1.2rem; font-weight: 900; line-height: 1.2; color: var(--text-main);">${question.optionA}</div>
@@ -167,98 +166,127 @@ const UI = {
                             <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 6px; font-weight: 500; word-break: keep-all;">${question.descB}</div>
                         </div>
                     </div>
-                    
-                    <div id="reason-mount" style="min-height: 90px;">
-                        <div style="text-align:center; padding: 25px; color: var(--text-muted); font-size: 0.85rem; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px dashed #ddd;">
-                            선택지를 클릭하면 답변 이유를 적을 수 있습니다.
-                        </div>
-                    </div>
                 </div>
 
                 <!-- 3. Footer Section -->
-                <div style="flex-shrink:0; padding-top: 15px; border-top: 1px solid #f0f0f0; margin-top: 15px;">
+                <div style="flex-shrink:0; padding-top: 15px; border-top: 1px solid #f0f0f0; margin-top: auto;">
+                    <button id="btn-next-q" class="btn btn-primary" style="width:100%; padding: 16px; margin-bottom: 20px; font-size: 1.1rem; border-radius: 14px; opacity: 0; pointer-events: none; transition: all 0.3s ease;">다음 질문으로 넘어가기</button>
                     <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; opacity: 0.7;">스스로에게 던져보는 질문:</div>
-                    <div style="display:flex; flex-wrap: wrap; gap: 6px;">${followUps}</div>
+                    <div style="display:flex; flex-wrap: wrap; gap: 6px; justify-content: center;">${followUps}</div>
                 </div>
             </div>
         `;
         
         this.renderView(html, true, () => {
-            let selectedOption = null;
-            let selectedTags = null;
-            const mountPoint = document.getElementById('reason-mount');
+            let currentSelected = null;
+            const btnA = document.getElementById('opt-a');
+            const btnB = document.getElementById('opt-b');
+            const btnNext = document.getElementById('btn-next-q');
+            const guide = document.getElementById('selection-guide');
 
-            const attachReasoning = (option, tags) => {
-                selectedOption = option;
-                selectedTags = tags;
-
-                const btnA = document.getElementById('opt-a');
-                const btnB = document.getElementById('opt-b');
-                
+            const selectChoice = (choice) => {
+                currentSelected = choice;
                 [btnA, btnB].forEach(b => {
-                    b.style.borderColor = 'transparent';
-                    b.style.background = 'var(--bg-glass-card)';
-                    b.style.opacity = '0.5';
                     b.classList.remove('active-card');
+                    b.style.borderColor = 'transparent';
+                    b.style.boxShadow = '0 4px 15px rgba(0,0,0,0.03)';
                 });
 
-                const selected = option === 'A' ? btnA : btnB;
-                selected.style.borderColor = 'var(--primary-color)';
-                selected.style.background = '#ffffff';
-                selected.style.opacity = '1';
-                selected.classList.add('active-card');
-                
-                document.getElementById('selection-guide').innerHTML = "탁월한 선택입니다! 이유를 간단히 적어주세요.";
-                document.getElementById('selection-guide').style.color = "#10b981";
+                const target = choice === 'A' ? btnA : btnB;
+                target.classList.add('active-card');
+                target.style.borderColor = 'var(--primary-color)';
+                target.style.boxShadow = '0 8px 25px rgba(99,102,241,0.2)';
 
-                mountPoint.innerHTML = `
-                    <div id="reason-container" class="fade-in-up" style="margin-top: 0; margin-bottom: 10px; background: #ffffff; padding: 20px; border-radius: 20px; border: 2px solid var(--primary-color); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);">
-                        <label style="display:block; margin-bottom: 10px; font-size: 1rem; font-weight: 800; color: var(--text-main);">그렇게 선택한 이유는 무엇인가요?</label>
-                        <textarea id="reason-input" rows="2" placeholder="예: 새로운 것을 배우고 도전할 때 에너지가 생기기 때문입니다." style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; resize:none; font-family:inherit; font-size: 0.95rem; line-height: 1.5; color: var(--text-main); outline:none;"></textarea>
-                        <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 10px;">
-                            <span style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.3;">이유를 적을수록<br>AI 리포트가 정확해집니다.</span>
-                            <button id="btn-submit-reason" class="btn btn-primary" style="padding: 10px 25px; border-radius: 12px; font-weight: 800; font-size: 0.95rem;">다음 질문 <i class="fas fa-arrow-right"></i></button>
-                        </div>
-                    </div>
-                `;
-
-                document.getElementById('btn-submit-reason').addEventListener('click', () => {
-                    const reason = document.getElementById('reason-input').value.trim();
-                    if (!reason || reason.length < 2) {
-                        alert('보다 정확한 AI 분석을 위해 선택한 이유를 간단하게나마 적어주세요!\n(예: "안정적인 것이 좋아서", "도전하고 싶어서" 등)');
-                        document.getElementById('reason-input').focus();
-                        return;
-                    }
-                    onAnswer(selectedOption, selectedTags, reason);
-                });
-                
-                document.getElementById('reason-input').focus();
+                btnNext.style.opacity = '1';
+                btnNext.style.pointerEvents = 'auto';
+                guide.innerHTML = "선택을 완료했다면 아래 '다음 질문' 버튼을 눌러주세요!";
+                guide.style.color = "var(--primary-color)";
             };
 
-            const optA = document.getElementById('opt-a');
-            const optB = document.getElementById('opt-b');
-            if (optA) optA.addEventListener('click', () => attachReasoning('A', question.tagsA));
-            if (optB) optB.addEventListener('click', () => attachReasoning('B', question.tagsB));
+            if (btnA) btnA.addEventListener('click', () => selectChoice('A'));
+            if (btnB) btnB.addEventListener('click', () => selectChoice('B'));
+
+            if (btnNext) {
+                btnNext.addEventListener('click', () => {
+                    if (!currentSelected) return;
+                    btnNext.disabled = true;
+                    onAnswer(currentSelected, currentSelected === 'A' ? question.tagsA : question.tagsB, "(이유 미작성)");
+                });
+            }
         });
     },
 
-    renderIntermediateSummary(category, topTags, onNext) {
+    renderIntermediateSummary(category, topTags, state, last5Questions, onNext) {
         const text = category.summaryTemplate.replace("[TOP_TAGS]", topTags.join(', ') || "다양함");
         
-        const html = `
-            <div class="view active intermediate-screen" style="padding: 50px 30px; text-align:center; display:flex; flex-direction:column; justify-content:center;">
-                <h3 style="color: var(--primary-color); margin-bottom: 20px;" class="delay-100">[ ${category.title} ] 요약</h3>
-                <div style="background: var(--bg-glass-card); padding: 30px; border-radius: var(--border-radius-md); box-shadow: var(--glass-shadow); margin-bottom: 40px;" class="delay-200">
-                    <p style="font-size: 1.3rem; line-height: 1.6;">"${text}"</p>
+        // Build the 5 choices HTML from the passed context
+        const choicesHtml = last5Questions.map(q => {
+            const ans = state.answers[q.id];
+            const chosen = ans ? (ans.selectedOption === 'A' ? q.optionA : q.optionB) : "미선택";
+            const catInfo = CATEGORIES.find(c => c.id === q.category) || { title: q.category };
+            return `
+                <div style="text-align:left; background: #fff; padding: 12px; border-radius: 12px; margin-bottom: 8px; font-size: 0.85rem; border: 1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                    <div style="font-weight: 700; color:var(--primary-color); margin-bottom:3px; font-size: 0.7rem; opacity: 0.8;">[${catInfo.title}]</div>
+                    <div style="line-height:1.4;">
+                        <span style="font-weight:800; color:var(--text-main); opacity: 0.6;">Q.</span> ${q.title}
+                        <div style="color:var(--primary-color); font-weight:800; margin-top:3px; font-size:0.95rem;">👉 선택: ${chosen}</div>
+                    </div>
                 </div>
-                <div class="delay-300">
-                    <button id="btn-next-cat" class="btn btn-primary">다음 단계로 이동</button>
+            `;
+        }).join('');
+
+        const html = `
+            <div class="view active intermediate-screen" style="padding: 40px 20px; text-align:center; display:flex; flex-direction:column; justify-content:flex-start; min-height:100%; overflow-y:auto;">
+                <h3 style="color: var(--primary-color); margin-bottom: 15px;" class="delay-100">[ ${category.title} ] 요약</h3>
+                <h2 style="font-size: 1.6rem; margin-bottom: 20px; line-height: 1.4;" class="delay-200">${text}</h2>
+                
+                <div class="delay-300" style="text-align: left; margin-bottom: 20px;">
+                    <p style="font-weight: 800; color: var(--text-main); margin-bottom: 10px; text-align:center;">당신이 방금 전 선택한 5가지 가치입니다.</p>
+                    <div style="max-width: 600px; margin: 0 auto; margin-bottom: 20px;">
+                        ${choicesHtml}
+                    </div>
+                </div>
+
+                <div class="delay-400" style="max-width: 600px; margin: 0 auto; width: 100%; text-align: left; background: #ffffff; padding: 20px; border-radius: 20px; border: 2px solid var(--primary-color); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);">
+                    <label style="display:block; margin-bottom: 10px; font-size: 1rem; font-weight: 800; color: var(--text-main);">위 5가지 가치를 선택한 결정적인 이유는 무엇인가요?</label>
+                    <textarea id="cat-reason-input" rows="3" placeholder="예: 평소에 사람들과 소통하는 것을 좋아하고, 도전적인 목표를 달성할 때 보람을 느끼기 때문입니다." style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; resize:none; font-family:inherit; font-size: 0.95rem; line-height: 1.5; color: var(--text-main); outline:none;"></textarea>
+                    
+                    <div style="display:flex; flex-direction: column; align-items: center; margin-top: 15px;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">※ 이 답변은 최종 AI 분석 리포트의 핵심 자료가 됩니다!</span>
+                        <button id="btn-next-cat" class="btn btn-primary" style="padding: 12px 30px; font-size: 1.05rem; width: 100%; max-width: 300px;">다음 라운드로 넘어가기 <i class="fas fa-arrow-right"></i></button>
+                    </div>
                 </div>
             </div>
         `;
         this.renderView(html, true, () => {
             const btn = document.getElementById('btn-next-cat');
-            if (btn) btn.addEventListener('click', onNext);
+            const textarea = document.getElementById('cat-reason-input');
+            
+            if (btn) btn.disabled = true; // Initially disabled
+
+            if (textarea) {
+                textarea.addEventListener('input', (e) => {
+                    const val = e.target.value.trim();
+                    if (val.length >= 10) {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                    } else {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.5';
+                    }
+                });
+            }
+
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    const reason = textarea.value.trim();
+                    if (reason.length < 10) {
+                        alert("분석을 위해 최소 10자 이상의 이유를 입력해 주세요!");
+                        return;
+                    }
+                    onNext(reason);
+                });
+            }
         });
     },
 
@@ -297,28 +325,28 @@ const UI = {
             </div>
         `).join('');
 
-        const choiceReviewHtml = choiceReview.map((cr, idx) => `
-            <div class="result-card-premium" style="margin-bottom: 15px;">
-                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px; font-weight: 600;">질문 ${idx + 1}. ${cr.title}</div>
-                <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 15px;">
-                    <div style="background: var(--primary-color); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; min-width: 24px;">
-                        <i class="fas fa-check"></i>
-                    </div>
-                    <div>
-                        <div style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); line-height: 1.3;">${cr.choice}</div>
-                        <div style="font-size: 0.9rem; font-weight: 600; color: var(--primary-color); margin-top: 4px; opacity: 0.9;">
-                            ${QUESTIONS.find(q => q.id === cr.id)[cr.selectedOption === 'A' ? 'descA' : 'descB'] || ""}
+        const intermediateReasonsHtml = Object.entries(state.categoryReasons)
+            .sort((a, b) => {
+                const numA = parseInt(a[0].split('_').pop()) || 0;
+                const numB = parseInt(b[0].split('_').pop()) || 0;
+                return numA - numB;
+            })
+            .map(([key, reason]) => {
+                const cnt = parseInt(key.split('_').pop()) || 0;
+                return `
+                    <div class="result-card-premium" style="margin-bottom: 20px; border-left: 4px solid var(--primary-color);">
+                        <div style="font-size: 0.85rem; color: var(--primary-color); margin-bottom: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
+                            <i class="fas fa-quote-left" style="margin-right: 8px; opacity: 0.5;"></i> ${cnt - 4} ~ ${cnt}번 질문에 대한 나의 생각
+                        </div>
+                        <div style="font-size: 1.05rem; color: var(--text-main); font-style: italic; line-height: 1.7; padding: 5px 0;">
+                            "${reason}"
                         </div>
                     </div>
-                </div>
-                <div style="font-size: 0.95rem; color: var(--text-muted); font-style: italic; padding: 15px; background: rgba(0,0,0,0.02); border-left: 3px solid var(--border-glass); border-radius: 0 8px 8px 0;">
-                    "${cr.reason}"
-                </div>
-            </div>
-        `).join('');
+                `;
+            }).join('');
 
         const html = `
-            <div class="view active final-screen" style="padding: 60px 40px; overflow-y:auto; scrollbar-width: none;">
+            <div class="view active final-screen" style="padding: 60px 20px; overflow-y:auto; overflow-x:hidden; scrollbar-width: none; width: 100%; max-width: 100%;">
                 
                 <!-- NEW HERO STYLE (Reference Match) -->
                 <div style="text-align:center; margin-bottom: 40px;" class="delay-100">
@@ -400,17 +428,17 @@ const UI = {
                 <!-- 3. CHOICE REVIEW (Reference Match) -->
                 <div class="delay-500" style="margin-bottom: 50px;">
                     <h3 style="margin-bottom: 30px; font-size: 1.5rem; display:flex; align-items:center; gap: 15px; font-weight: 900;">
-                        <i class="fas fa-edit" style="color: var(--primary-color);"></i> 나의 선택 이유 돌아보기
+                        <i class="fas fa-edit" style="color: var(--primary-color);"></i> 나의 5단계 신중 답변
                     </h3>
                     <div style="display:grid; grid-template-columns: 1fr; gap: 10px;">
-                        ${choiceReviewHtml}
+                        ${intermediateReasonsHtml}
                     </div>
                 </div>
 
                 <!-- Footer Actions -->
                 <div style="text-align:center; padding-top: 50px; border-top: 2px solid #eee;" class="delay-500">
                     <button id="btn-restart" class="btn btn-secondary" style="margin-right: 15px; padding: 15px 40px;">다시 시작하기</button>
-                    <button id="btn-print" class="btn btn-primary" style="padding: 15px 40px;" onclick="window.print()"><i class="fas fa-print"></i> 결과 PDF 저장 / 인쇄</button>
+                    <button id="btn-print" class="btn btn-primary" style="padding: 15px 40px;"><i class="fas fa-print"></i> 결과 PDF 저장 / 인쇄</button>
                 </div>
             </div>
         `;
@@ -432,6 +460,106 @@ const UI = {
                     onDeepAnalyze(container);
                 });
             }
+
+            const btnPrint = document.getElementById('btn-print');
+            if (btnPrint) {
+                btnPrint.addEventListener('click', () => {
+                    this.handlePrint(result, user);
+                });
+            }
         });
+    },
+
+    handlePrint(result, user) {
+        const printWindow = window.open('', '_blank');
+        const dateStr = new Date().toLocaleDateString();
+        
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>진로 심층 분석 리포트 - ${user.name}</title>
+                <style>
+                    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333; padding: 40px; max-width: 800px; margin: 0 auto; }
+                    .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+                    .info { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
+                    .section { margin-bottom: 40px; }
+                    .section-title { font-size: 1.4rem; font-weight: bold; border-left: 5px solid #4f46e5; padding-left: 15px; margin-bottom: 20px; color: #1a1a1a; }
+                    .main-type { font-size: 2rem; color: #4f46e5; font-weight: 900; margin-bottom: 10px; }
+                    .tags { color: #666; font-weight: bold; }
+                    .ai-report { white-space: pre-wrap; background: #fff; border: 1px solid #eee; padding: 25px; border-radius: 12px; font-size: 1.05rem; }
+                    .category { margin-bottom: 15px; }
+                    .cat-name { font-weight: bold; color: #4f46e5; margin-right: 10px; }
+                    @media print {
+                        body { padding: 0; }
+                        .no-print { display: none !important; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="no-print" style="position: fixed; top: 15px; right: 15px; display: flex; gap: 8px; z-index: 9999;">
+                    <button onclick="window.print()" style="padding: 10px 18px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 800; font-size: 0.9rem; box-shadow: 0 5px 15px rgba(79, 70, 229, 0.4);">실제 인쇄 / PDF 저장</button>
+                    <button onclick="window.close()" style="padding: 10px 18px; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: 800; font-size: 0.9rem; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">창 닫기</button>
+                </div>
+                <div class="header">
+                    <h1>진로 역량 심층 분석 리포트</h1>
+                    <p style="color: #666;">EduBoard AI Career Assessment System</p>
+                </div>
+                <div class="info">
+                    <div><b>이름:</b> ${user.name}</div>
+                    <div><b>학급:</b> ${user.grade}학년 ${user.classNum}반 ${user.studentNum}번</div>
+                    <div><b>검사일:</b> ${dateStr}</div>
+                </div>
+                <div class="section">
+                    <div class="section-title">종합 분석 결과</div>
+                    <div class="main-type">"${result.mainType.name}"</div>
+                    <div class="tags">핵심 키워드: ${result.topTags.join(', ')}</div>
+                </div>
+                <div class="section">
+                    <div class="section-title">AI 전문가 심층 어드바이스</div>
+                    <div class="ai-report">${(result.aiSentences && result.aiSentences.length > 0) 
+                        ? result.aiSentences.join('<br><br>') 
+                        : '<div style="text-align:center; color:#999; padding:20px;">[ 분석 리포트 생성 버튼을 누른 후 인쇄해 주세요 ]</div>'}</div>
+                </div>
+                <div class="section">
+                    <div class="section-title">영역별 세부 분석</div>
+                    ${result.categorySummaries.map(c => `
+                        <div class="category">
+                            <span class="cat-name">[${c.title}]</span> ${c.summary}
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="section">
+                    <div class="section-title">나의 5단계 신중 답변</div>
+                    ${Object.entries(state.categoryReasons)
+                        .sort((a,b) => (parseInt(a[0].split('_').pop()) || 0) - (parseInt(b[0].split('_').pop()) || 0))
+                        .map(([key, reason]) => {
+                            const cnt = parseInt(key.split('_').pop()) || 0;
+                            return `
+                                <div style="margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px;">
+                                    <div style="font-size: 0.85rem; color: #4f46e5; font-weight: bold; margin-bottom: 5px;">[ ${cnt-4} ~ ${cnt}번 질문 ]</div>
+                                    <div style="font-size: 1rem; color: #333; font-style: italic;">"${reason}"</div>
+                                </div>
+                            `;
+                        }).join('')}
+                </div>
+                <div style="text-align:center; margin-top: 50px; font-size: 0.8rem; color: #999;">
+                    © 2026 EduBoard Career Assessment. All Rights Reserved.
+                </div>
+                <script>
+                    window.onload = () => {
+                        setTimeout(() => {
+                            window.print();
+                            // window.close(); 
+                        }, 500);
+                    };
+                </script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(html);
+        printWindow.document.close();
     }
 };
+

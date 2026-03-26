@@ -13,181 +13,197 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
 // ===== Theme/Auth =====
 (async () => {
-    const { data: { user } } = await sb.auth.getUser();
-    if ($('#me')) $('#me').textContent = user?.email || '';
-    const root = document.documentElement;
-    (localStorage.getItem('theme') === 'dark') && root.classList.add('dark');
-
-    $('#theme').onclick = () => {
-        root.classList.toggle('dark');
-        localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light');
-    };
-    $('#signout').onclick = async () => {
-        await sb.auth.signOut();
-        location.href = './index.html';
-    };
-
-    // ===== State =====
-    let all = [], view = [], page = 1, pageSize = 50, sortKey = 'grade', sortDir = 'asc';
-
-    // ===== Initialization Check =====
-    // Since this script is at the bottom of the body, we can initialize immediately.
-    // However, if we're in an async IIFE, we just await the necessary data.
-
-    // ===== Load & Stats =====
-    async function loadUsers() {
-        let q = sb.from('users').select('username,name,grade,class_num,student_number,role,email,level,xp,coin_balance').limit(5000);
-        const g = $('#f-grade')?.value, c = $('#f-class')?.value, r = $('#f-role')?.value;
-        if (g) q = q.eq('grade', Number(g)); if (c) q = q.eq('class_num', Number(c)); if (r) q = q.eq('role', r);
-        const { data, error } = await q; if (error) { console.error(error); return toast('사용자 로드 실패'); }
-        all = data || [];
-        apply();
-        renderStats();
+    // [보안] 관리자 세션 및 권한 체크 (localStorage 기반 기존 로그인 방식과 연동)
+    const savedUsername = localStorage.getItem('savedUsername');
+    
+    // "null" 문자열이나 빈 값도 체크
+    if (!savedUsername || savedUsername === 'null' || savedUsername === 'undefined') {
+        alert('로그인이 필요합니다.');
+        location.replace('index.html');
+        return;
     }
 
-    async function renderStats() {
-        const total = all.length;
-        const totalCoins = all.reduce((sum, u) => sum + (u.coin_balance || 0), 0);
-        const maxLevel = all.length ? Math.max(...all.map(u => u.level || 1)) : 1;
-        const classes = new Set(all.filter(u => u.grade && u.class_num).map(u => `${u.grade}-${u.class_num}`)).size;
-
-        // 24h Logs
-        const yesterday = new Date(Date.now() - 86400000).toISOString();
-        const { count: logCount } = await sb.from('user_activity_logs').select('*', { count: 'exact', head: true }).gt('created_at', yesterday);
-
-        // Shop Items
-        const { count: shopCount } = await sb.from('shop_items').select('*', { count: 'exact', head: true });
-
-        $('#stat-total').textContent = total.toLocaleString();
-        $('#stat-total-coins').textContent = totalCoins.toLocaleString();
-        $('#stat-max-level').textContent = maxLevel.toLocaleString();
-        $('#stat-recent-logs').textContent = (logCount || 0).toLocaleString();
-        $('#stat-shop-items').textContent = (shopCount || 0).toLocaleString();
-        $('#stat-classes').textContent = classes.toLocaleString();
+    // DB에서 최신 권한 정보 확인
+    const { data: userData, error: authError } = await sb.from('users').select('role').eq('username', savedUsername).maybeSingle();
+    
+    if (authError || !userData || userData.role !== 'admin') {
+        alert('관리자 전용 페이지입니다. (권한 부족)');
+        location.replace('index.html');
+        return;
     }
 
-    // ===== DB 익스플로러 =====
-    let currentDBTable = 'users';
-    async function loadDBTable(tableName) {
-        currentDBTable = tableName;
-        const { data, error } = await sb.from(tableName).select('*').limit(100);
-        if (error) return toast('DB 로드 실패: ' + error.message);
-        renderDBTable(data);
-    }
+    // 통과 시 바디 표시
+    document.body.style.display = 'block';
 
-    function renderDBTable(data) {
-        const thead = $('#db-thead'), tbody = $('#db-tbody');
-        thead.innerHTML = ''; tbody.innerHTML = '';
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="100" class="text-center py-10 text-gray-400">데이터가 없습니다.</td></tr>'; return; }
-
-        const cols = Object.keys(data[0]);
-        thead.parentElement.classList.add('db-table'); // 전전 단계의 table 태그에 직접 추가
-        const hr = document.createElement('tr');
-        hr.innerHTML = cols.map(c => `<th class="whitespace-nowrap">${c}</th>`).join('') + '<th class="w-10"></th>';
-        thead.appendChild(hr);
-
-        data.forEach(row => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = cols.map(c => {
-                const val = row[c];
-                const isID = c === 'id' || c === 'username';
-                const strVal = escapeHtml(String(val ?? ''));
-                return `<td><input value="${strVal}" title="${strVal}" 
-                        ${isID ? 'readonly' : ''} 
-                        data-col="${c}" data-pk="${row.id || row.username}"></td>`;
-            }).join('') + `<td class="text-center px-1"><button class="text-red-500 hover:text-red-700 font-bold db-del-row" data-pk="${row.id || row.username}">×</button></td>`;
-
-            tbody.appendChild(tr);
-        });
-
-
-        // 실시간 수정 이벤트 (Blur 시 저장)
-        const inputs = Array.from(tbody.querySelectorAll('input'));
-        inputs.forEach((input, index) => {
-            input.onblur = async () => {
-                const pk = input.dataset.pk, col = input.dataset.col, val = input.value;
-                const original = data.find(r => (rowIdOrUser(r) == pk))[col];
-                if (String(original ?? '') === val) return;
-
-                const pkCol = data[0].username !== undefined ? 'username' : 'id';
-                const { error } = await sb.from(currentDBTable).update({ [col]: val }).eq(pkCol, pk);
-                if (error) { toast('수정 실패'); input.value = original; }
-                else { toast('수정됨'); logAction('db_direct_edit', { table: currentDBTable, pk, col, val }); }
-            };
-
-            // ⌨️ 키보드 네비게이션 (한셀/엑셀 스타일)
-            input.onkeydown = (e) => {
-                const rowCount = data.length;
-                const colCount = cols.length;
-                const r = Math.floor(index / colCount);
-                const c = index % colCount;
-
-                let nextIndex = -1;
-                if (e.key === 'ArrowRight') nextIndex = index + 1;
-                if (e.key === 'ArrowLeft') nextIndex = index - 1;
-                if (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey)) nextIndex = index + colCount;
-                if (e.key === 'ArrowUp' || (e.key === 'Enter' && e.shiftKey)) nextIndex = index - colCount;
-
-                if (nextIndex >= 0 && nextIndex < inputs.length) {
-                    // 수평 이동 시 행 경계 체크 (ArrowRight/Left만)
-                    if (e.key === 'ArrowRight' && c === colCount - 1) return;
-                    if (e.key === 'ArrowLeft' && c === 0) return;
-
-                    e.preventDefault();
-                    inputs[nextIndex].focus();
-                    if (!inputs[nextIndex].readOnly) inputs[nextIndex].select();
-                }
-            };
-        });
-
-
-        tbody.querySelectorAll('.db-del-row').forEach(btn => {
-            btn.onclick = async () => {
-                if (!confirm('정말 삭제할까요?')) return;
-                const pk = btn.dataset.pk;
-                const pkCol = data[0].username !== undefined ? 'username' : 'id';
-                const { error } = await sb.from(currentDBTable).delete().eq(pkCol, pk);
-                if (error) toast('삭제 실패');
-                else { toast('삭제 완료'); loadDBTable(currentDBTable); }
-            };
-        });
-    }
     function rowIdOrUser(r) { return r.id !== undefined ? r.id : r.username; }
+    
+    // Variables used in loadUsers and apply
+    let all = [], view = [], page = 1, pageSize = 50, sortKey = 'name', sortDir = 'asc';
+    let allLogs = [];
 
-    // ===== Tabs =====
-    const tabUsers = $('#tab-users'), tabShop = $('#tab-shop'), tabDB = $('#tab-db');
-    // secUsers and secShop are already defined elsewhere or should only be defined once.
-    // Let's use a unified set of sections.
-    const secUsers = [$('#section-stats'), $('#section-toolbar'), $('#section-users')];
-    const secShop = $('#section-shop');
-    const secDB = $('#section-db');
+    // ===== Tab Logic Initialization =====
+    const allSections = [
+        $('#section-stats'), 
+        $('#section-toolbar'), 
+        $('#section-users'), 
+        $('#section-shop'), 
+        $('#section-job'), 
+        $('#section-db'),
+        $('#bulk-drawer')
+    ];
 
-    function clearTabs() {
-        [tabUsers, tabShop, tabDB].forEach(t => t.classList.remove('active'));
-        [...secUsers, secShop, secDB].forEach(s => s?.classList.add('hidden'));
-        $('#bulk-drawer').classList.add('hidden');
+    const tabsMap = {
+        'tab-users': [$('#section-stats'), $('#section-toolbar'), $('#section-users')],
+        'tab-shop': [$('#section-shop')],
+        'tab-job': [$('#section-job')],
+        'tab-db': [$('#section-db')]
+    };
+
+    function switchTab(activeTabId) {
+        // Clear active states
+        $$('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        $(`#${activeTabId}`).classList.add('active');
+
+        // Hide all sections
+        allSections.forEach(sec => sec?.classList.add('hidden'));
+
+        // Show target sections
+        const targetSections = tabsMap[activeTabId];
+        if (targetSections) {
+            targetSections.forEach(sec => sec?.classList.remove('hidden'));
+        }
+
+        // Trigger loads
+        if (activeTabId === 'tab-users') loadUsers();
+        if (activeTabId === 'tab-shop') loadShopItemsAdmin();
+        if (activeTabId === 'tab-job') loadJobResults();
+        if (activeTabId === 'tab-db') loadDBTable($('#db-table-select').value);
     }
 
-    tabUsers.onclick = () => {
-        clearTabs();
-        tabUsers.classList.add('active');
-        secUsers.forEach(s => s?.classList.remove('hidden'));
-    };
-    tabShop.onclick = () => {
-        clearTabs();
-        tabShop.classList.add('active');
-        secShop.classList.remove('hidden');
-        loadShopItemsAdmin();
-    };
-    tabDB.onclick = () => {
-        clearTabs();
-        tabDB.classList.add('active');
-        secDB.classList.remove('hidden');
-        loadDBTable($('#db-table-select').value);
-    };
+    // Set up click handlers for tabs
+    $$('.tab-btn').forEach(btn => {
+        btn.onclick = () => switchTab(btn.id);
+    });
 
-    $('#db-table-select').onchange = (e) => loadDBTable(e.target.value);
-    $('#db-refresh').onclick = () => loadDBTable($('#db-table-select').value);
+    async function loadJobResults() {
+        const { data, error } = await sb.from('career_test_results')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (error) return toast('진로 결과 로드 실패');
+        
+        const tb = $('#job-rows');
+        if (!tb) return;
+        tb.innerHTML = '';
+        $('#job-empty')?.classList.toggle('hidden', !!data?.length);
+
+        (data || []).forEach(row => {
+            const d = row.details || {};
+            const tr = document.createElement('tr');
+            const dateStr = new Date(row.created_at).toLocaleString('ko-KR', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+            
+            tr.innerHTML = `
+                <td class="px-4 py-3 text-xs text-gray-400">${dateStr}</td>
+                <td class="px-4 py-3 font-medium">${escapeHtml(row.name || '익명')} (${row.grade || '-'}학년)</td>
+                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">${escapeHtml(row.main_type || '-')}</span></td>
+                <td class="px-4 py-3 text-xs text-gray-500">${escapeHtml(row.top_tags || '-')}</td>
+                <td class="px-4 py-3 text-center">
+                    <div class="flex justify-center gap-2">
+                        <button class="text-indigo-600 hover:text-indigo-800 text-xs view-job-detail" data-id="${row.id}">보기</button>
+                        <button class="text-red-500 hover:text-red-700 text-xs del-job-log" data-id="${row.id}">삭제</button>
+                    </div>
+                </td>
+            `;
+            tb.appendChild(tr);
+        });
+    }
+
+    const jobRows = $('#job-rows');
+    if (jobRows) {
+        jobRows.onclick = async (e) => {
+            if (e.target.classList.contains('del-job-log')) {
+                if (!confirm('해당 기록을 삭제하시겠습니까?')) return;
+                const id = e.target.dataset.id;
+                const { error } = await sb.from('career_test_results').delete().eq('id', id);
+                if (error) toast('삭제 실패');
+                else { toast('삭제됨'); loadJobResults(); }
+            }
+            if (e.target.classList.contains('view-job-detail')) {
+                const id = e.target.dataset.id;
+                const { data } = await sb.from('career_test_results').select('*').eq('id', id).maybeSingle();
+                if (data) showJobDetail(data);
+            }
+        };
+    }
+
+    function showJobDetail(row) {
+        const d = row.details || {};
+        const content = $('#job-detail-content');
+        if (!content) return;
+        
+        let reasonsHtml = '';
+        if (d.categoryReasons) {
+            reasonsHtml = Object.entries(d.categoryReasons)
+                .sort((a,b) => (parseInt(a[0].split('_').pop()) || 0) - (parseInt(b[0].split('_').pop()) || 0))
+                .map(([key, text]) => {
+                    const cnt = parseInt(key.split('_').pop()) || 0;
+                    return `
+                        <div class="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+                            <div class="text-xs font-bold text-indigo-500 mb-1">[ ${cnt-4} ~ ${cnt}번 질문 ] 신중 답변</div>
+                            <div class="text-sm line-height-relaxed">${escapeHtml(text || '입력 없음')}</div>
+                        </div>
+                    `;
+                }).join('');
+        }
+
+        content.innerHTML = `
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl">
+                    <div class="text-[10px] font-bold text-blue-500 uppercase mb-1">학생 정보</div>
+                    <div class="font-bold text-lg">${escapeHtml(row.name || '익명')}</div>
+                    <div class="text-sm text-blue-600">${row.grade}학년</div>
+                </div>
+                <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl">
+                    <div class="text-[10px] font-bold text-indigo-500 uppercase mb-1">주요 유형</div>
+                    <div class="font-bold text-lg text-indigo-700 dark:text-indigo-400">"${escapeHtml(row.main_type || '-')}"</div>
+                    <div class="text-sm truncate" title="${row.top_tags}">${escapeHtml(row.top_tags || '-')}</div>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <h4 class="text-sm font-bold flex items-center gap-2">
+                    <span class="w-1.5 h-4 bg-indigo-500 rounded-full"></span>
+                    영역별 분석 요약
+                </h4>
+                <div class="text-sm bg-white dark:bg-gray-800 border p-4 rounded-xl leading-relaxed">
+                    ${escapeHtml(d.summaries || '요약 정보 없음').split(' | ').map(s => `• ${s}`).join('<br>')}
+                </div>
+            </div>
+            <div class="space-y-3">
+                <h4 class="text-sm font-bold flex items-center gap-2">
+                    <span class="w-1.5 h-4 bg-indigo-500 rounded-full"></span>
+                    신중 단계 답변 (5문항당 기록)
+                </h4>
+                <div class="grid gap-2">
+                    ${reasonsHtml || '<p class="text-gray-400 text-sm">기록된 이유가 없습니다.</p>'}
+                </div>
+            </div>
+        `;
+        openModal('#modal-job-detail');
+    }
+    $$('#modal-job-detail [data-close]').forEach(b => b.onclick = () => closeModal('#modal-job-detail'));
+    
+    const refreshJob = $('#refresh-job');
+    if (refreshJob) refreshJob.onclick = loadJobResults;
+
+    const dbTableSelect = $('#db-table-select');
+    if (dbTableSelect) dbTableSelect.onchange = (e) => loadDBTable(e.target.value);
+
+    const dbRefresh = $('#db-refresh');
+    if (dbRefresh) dbRefresh.onclick = () => {
+        const sel = $('#db-table-select');
+        if (sel) loadDBTable(sel.value);
+    };
 
 
 
@@ -197,11 +213,20 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
     function apply() {
         const kw = $('#search').value.trim().toLowerCase();
+        const fg = $('#f-grade').value;
+        const fc = $('#f-class').value;
+        const fr = $('#f-role').value;
+
         view = all.filter(u => {
-            if (!kw) return true;
-            return (u.name || '').toLowerCase().includes(kw)
+            const mMatch = !kw || (u.name || '').toLowerCase().includes(kw)
                 || String(u.student_number || '').includes(kw)
                 || (u.username || '').toLowerCase().includes(kw);
+            
+            const gMatch = !fg || String(u.grade) === fg;
+            const cMatch = !fc || String(u.class_num) === fc;
+            const rMatch = !fr || u.role === fr;
+
+            return mMatch && gMatch && cMatch && rMatch;
         });
         const cmp = (a, b) => (a < b ? -1 : (a > b ? 1 : 0));
         view.sort((a, b) => {
@@ -254,6 +279,89 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
             tb.appendChild(tr);
         }
+    }
+
+
+    async function loadUsers() {
+        const { data, error } = await sb.from('users').select('*');
+        if (error) { console.error(error); return toast('사용자 목록 로딩 실패'); }
+        all = data || [];
+        apply();
+        renderStats();
+    }
+
+    async function renderStats() {
+        try {
+            // 1. 사용자 관련 (총원, 코인 합계, 최고 레벨, 학급 수)
+            const { data: userData, error: userErr } = await sb.from('users').select('coin_balance, level, grade, class_num');
+            if (userErr) throw userErr;
+
+            const userCount = userData?.length || 0;
+            const totalCoins = userData?.reduce((sum, u) => sum + (u.coin_balance || 0), 0) || 0;
+            const maxLevel = userData?.reduce((max, u) => Math.max(max, u.level || 0), 0) || 0;
+            
+            const classSet = new Set();
+            userData?.forEach(u => {
+                if (u.grade && u.class_num) classSet.add(`${u.grade}-${u.class_num}`);
+            });
+            const classCount = classSet.size;
+
+            // 2. 상점 상품 수
+            const { count: shopCount } = await sb.from('shop_items').select('*', { count: 'exact', head: true });
+
+            // 3. 24시간 활동 로그 수
+            const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            const { count: logCount } = await sb.from('user_activity_logs')
+                .select('*', { count: 'exact', head: true })
+                .gte('created_at', yesterday);
+
+            // 4. UI 반영
+            const set = (id, val) => { 
+                const v = (val || 0).toLocaleString();
+                if (window.__updateSecurityValue) {
+                    window.__updateSecurityValue(id, v);
+                } else {
+                    const el = $('#' + id); if (el) el.textContent = v; 
+                }
+            };
+            set('stat-total', userCount);
+            set('stat-total-coins', totalCoins);
+            set('stat-max-level', maxLevel);
+            set('stat-recent-logs', logCount);
+            set('stat-shop-items', shopCount);
+            set('stat-classes', classCount);
+
+        } catch (e) {
+            console.error('Stats 로딩 오류:', e);
+        }
+    }
+
+    async function loadDBTable(table) {
+        if (!table) return;
+        const tb = $('#db-tbody'), th = $('#db-thead');
+        if (!tb || !th) return;
+        
+        tb.innerHTML = '<tr><td colspan="10" class="text-center py-10">로딩 중...</td></tr>';
+        const { data, error } = await sb.from(table).select('*').limit(500);
+        if (error) { tb.innerHTML = `<tr><td colspan="10" class="text-center py-10 text-red-500">${error.message}</td></tr>`; return; }
+
+        if (!data || data.length === 0) {
+            tb.innerHTML = '<tr><td colspan="10" class="text-center py-10">데이터가 없습니다.</td></tr>';
+            return;
+        }
+
+        const keys = Object.keys(data[0]);
+        th.innerHTML = `<tr>${keys.map(k => `<th class="p-2 border bg-gray-50 text-xs font-bold">${k}</th>`).join('')}</tr>`;
+        tb.innerHTML = '';
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = keys.map(k => {
+                const val = row[k];
+                const display = (typeof val === 'object') ? JSON.stringify(val) : val;
+                return `<td class="p-2 border text-xs truncate max-w-[200px]" title="${display}">${escapeHtml(String(display ?? ''))}</td>`;
+            }).join('');
+            tb.appendChild(tr);
+        });
     }
 
     // ===== Actions =====
@@ -619,9 +727,9 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
     }
 
     // 필터/검색/페이징
-    $('#f-grade').onchange = () => { page = 1; loadUsers(); };
-    $('#f-class').onchange = () => { page = 1; loadUsers(); };
-    $('#f-role').onchange = () => { page = 1; loadUsers(); };
+    $('#f-grade').onchange = () => { page = 1; apply(); };
+    $('#f-class').onchange = () => { page = 1; apply(); };
+    $('#f-role').onchange = () => { page = 1; apply(); };
     $('#search').oninput = () => { page = 1; apply(); };
     $('#page-size').onchange = () => { page = 1; apply(); };
     $('#prev').onclick = () => { if (page > 1) { page--; apply(); } };
