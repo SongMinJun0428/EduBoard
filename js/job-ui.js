@@ -471,18 +471,21 @@ const UI = {
     },
 
     handlePrint(result, user) {
-        const printWindow = window.open('', '_blank');
         const dateStr = new Date().toLocaleDateString();
         
-        const html = `
+        // 1. 좀 더 정밀한 모바일/테블릿 감지 (iPadOS 포함)
+        const isIPad = navigator.maxTouchPoints > 0 && /Macintosh/.test(navigator.userAgent);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 1024 || isIPad;
+        
+        const printHtml = `
             <!DOCTYPE html>
             <html>
             <head>
                 <title>진로 심층 분석 리포트 - ${user.name}</title>
                 <style>
-                    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333; padding: 40px; max-width: 800px; margin: 0 auto; }
+                    body { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; line-height: 1.6; color: #333; padding: 40px; max-width: 800px; margin: 0 auto; background: white; }
                     .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
-                    .info { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
+                    .info { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f9f9f9; padding: 15px; border-radius: 8px; font-size: 0.9rem; }
                     .section { margin-bottom: 40px; }
                     .section-title { font-size: 1.4rem; font-weight: bold; border-left: 5px solid #4f46e5; padding-left: 15px; margin-bottom: 20px; color: #1a1a1a; }
                     .main-type { font-size: 2rem; color: #4f46e5; font-weight: 900; margin-bottom: 10px; }
@@ -491,7 +494,7 @@ const UI = {
                     .category { margin-bottom: 15px; }
                     .cat-name { font-weight: bold; color: #4f46e5; margin-right: 10px; }
                     @media print {
-                        body { padding: 0; }
+                        body { padding: 20px; }
                         .no-print { display: none !important; }
                     }
                 </style>
@@ -507,7 +510,7 @@ const UI = {
                 </div>
                 <div class="info">
                     <div><b>이름:</b> ${user.name}</div>
-                    <div><b>학급:</b> ${user.grade}학년 ${user.classNum}반 ${user.studentNum}번</div>
+                    <div><b>학급:</b> ${user.grade}학년 ${user.classNum || ''}반 ${user.studentNum || ''}번</div>
                     <div><b>검사일:</b> ${dateStr}</div>
                 </div>
                 <div class="section">
@@ -546,19 +549,81 @@ const UI = {
                 <div style="text-align:center; margin-top: 50px; font-size: 0.8rem; color: #999;">
                     © 2026 EduBoard Career Assessment. All Rights Reserved.
                 </div>
-                <script>
-                    window.onload = () => {
-                        setTimeout(() => {
-                            window.print();
-                            // window.close(); 
-                        }, 500);
-                    };
-                </script>
             </body>
             </html>
         `;
 
-        printWindow.document.write(html);
+        if (isMobile && typeof html2pdf !== 'undefined') {
+            // 모바일/테블릿: 자동 다운로드 시도
+            console.log("[PDF] Mobile/Tablet detected. Starting automated download...");
+            
+            // 시각적 피드백 제공
+            const originalBtn = document.activeElement;
+            const originalText = originalBtn ? originalBtn.innerHTML : null;
+            if (originalBtn && originalBtn.id === 'btn-print') {
+                originalBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PDF 생성 중...';
+                originalBtn.disabled = true;
+            } else {
+                alert("PDF 리포트를 생성하고 있습니다. 잠시만 기다려 주세요...");
+            }
+
+            try {
+                const element = document.createElement('div');
+                element.innerHTML = printHtml;
+                const btns = element.querySelector('.no-print');
+                if (btns) btns.remove();
+
+                const opt = {
+                    margin: [10, 10, 10, 10],
+                    filename: `진로분석리포트_${user.name}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 2, 
+                        useCORS: true, 
+                        letterRendering: true,
+                        logging: false
+                    },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(opt).from(element).save().then(() => {
+                    if (originalBtn) {
+                        originalBtn.innerHTML = originalText;
+                        originalBtn.disabled = false;
+                    }
+                }).catch(err => {
+                    console.error("html2pdf save error:", err);
+                    throw err;
+                });
+            } catch (err) {
+                console.warn("Automated PDF failed, falling back to print window:", err);
+                this.openPrintWindow(printHtml);
+                if (originalBtn) {
+                    originalBtn.innerHTML = originalText;
+                    originalBtn.disabled = false;
+                }
+            }
+        } else {
+            // PC 또는 라이브러리 미로딩 시: 기존 방식
+            this.openPrintWindow(printHtml);
+        }
+    },
+
+    openPrintWindow(html) {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            alert("팝업이 차단되었습니다. 팝업 허용 후 다시 시도해 주세요.");
+            return;
+        }
+        printWindow.document.write(html + `
+            <script>
+                window.onload = () => {
+                    setTimeout(() => {
+                        window.print();
+                    }, 500);
+                };
+            </script>
+        `);
         printWindow.document.close();
     }
 };

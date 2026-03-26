@@ -43,7 +43,7 @@ const QUESTIONS = [
     {
         id: "v2", category: "value",
         title: "어떤 직장이 더 끌리나요?",
-        optionA: "워라밸 좋은 직업", descA: "일과 삶의 균형을 소후히 여김", tagsA: ["여유", "삶의질", "안정"],
+        optionA: "워라밸 좋은 직업", descA: "일과 삶의 균형을 소중히 여김", tagsA: ["여유", "삶의질", "안정"],
         optionB: "성장 기회 많은 직업", descB: "성취와 발전을 위해 몰입함", tagsB: ["성장", "도전", "성취"],
         followUp: ["개인의 여유 시간과 일에서의 성장 중 무엇이 내게 더 큰 원동력이 될까요?"]
     },
