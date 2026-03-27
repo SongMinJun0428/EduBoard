@@ -30,34 +30,69 @@
 
 <body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100" style="display: none;">
   <!-- 헤더 -->
-  <header class="bg-white/80 dark:bg-gray-800/70 backdrop-blur border-b sticky top-0 z-50">
-    <div class="w-full px-8 py-3 flex items-center gap-3">
-      <a href="./index.html" class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-        <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4">
-          <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-        </svg>
-        대시보드
-      </a>
-      <h1 class="text-lg font-semibold">사용자 & 권한 관리</h1>
-      <nav class="flex items-center gap-6 border-l ml-6 pl-6 h-8">
-        <button id="tab-users" class="tab-btn active">사용자 관리</button>
-        <button id="tab-shop" class="tab-btn">상점 관리</button>
-        <button id="tab-job" class="tab-btn">진로 검사 결과</button>
-        <button id="tab-db" class="tab-btn">데이터베이스</button>
-      </nav>
-      <div class="ml-auto flex items-center gap-2">
-        <button id="theme" class="btn btn-ghost text-sm">테마</button>
-        <span id="me"
-          class="text-sm text-gray-600 dark:text-gray-300 px-2 py-1 rounded bg-gray-100/70 dark:bg-gray-700/60"></span>
-        <button id="signout" class="btn">로그아웃</button>
+  <header class="sticky top-0 z-40">
+    <div class="container-max flex h-16 items-center justify-between">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <a href="./index.html" class="flex-shrink-0 text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+          <svg viewBox="0 0 24 24" fill="none" class="w-5 h-5">
+            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <span class="hidden md:inline">대시보드</span>
+        </a>
+        <h1 class="text-sm md:text-xl font-black tracking-tighter truncate max-w-[120px] md:max-w-none bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">EduBoard 관리</h1>
+        
+        <!-- PC용 내비게이션 -->
+        <nav class="hidden md:flex items-center gap-6 border-l ml-6 pl-6 h-8">
+          <button id="tab-users" class="tab-btn active">사용자 관리</button>
+          <button id="tab-shop" class="tab-btn">상점 관리</button>
+          <button id="tab-job" class="tab-btn">진로 검사 결과</button>
+          <button id="tab-db" class="tab-btn">데이터베이스</button>
+        </nav>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- 모바일 전용 메뉴 버튼 -->
+        <button id="btn-mobile-menu" class="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+          <svg viewBox="0 0 24 24" fill="none" class="w-6 h-6">
+            <path d="M4 6h16M4 12h16m-7 6h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+
+        <div class="hidden sm:flex items-center gap-2">
+          <button id="theme" class="btn btn-ghost text-sm">테마</button>
+          <span id="me" class="hidden md:inline text-sm text-gray-600 dark:text-gray-300 px-2 py-1 rounded bg-gray-100/70 dark:bg-gray-700/60"></span>
+          <button id="signout" class="btn">로그아웃</button>
+        </div>
       </div>
     </div>
+
   </header>
+  
+  <!-- 모바일 사이드바 내비게이션 (헤더 밖으로 이동) -->
+  <div id="mobile-sidebar" class="fixed inset-0 z-[100] hidden">
+      <div class="absolute inset-0 bg-black/60" id="mobile-sidebar-overlay"></div>
+      <div class="flex flex-col gap-6 p-6" id="master-sidebar">
+          <div class="flex items-center justify-between">
+              <span class="font-bold text-lg text-slate-800">메뉴</span>
+              <button id="btn-close-mobile-menu" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
+          </div>
+          <nav class="flex flex-col gap-2">
+              <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-users">👤 사용자 관리</button>
+              <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-shop">🛒 상점 관리</button>
+              <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-job">🎯 진로 검사 결과</button>
+              <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-db">🗃️ 데이터베이스</button>
+          </nav>
+          <div class="mt-auto flex flex-col gap-3">
+              <button id="mobile-theme" class="btn w-full justify-center">🌙 테마 전환</button>
+              <button id="mobile-signout" class="btn btn-primary w-full justify-center">로그아웃</button>
+          </div>
+      </div>
+  </div>
 
   <!-- 본문 -->
-  <main class="w-full px-8 py-6 space-y-8">
+  <main class="container-max py-4 space-y-4">
     <!-- KPI 카드 -->
-    <section id="section-stats" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-5">
+    <section id="section-stats" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
       <div class="stat-card">
         <div class="stat-card-icon">💰</div>
         <h3 class="uppercase-label">전체 코인</h3>
@@ -91,102 +126,69 @@
     </section>
 
     <!-- 툴바 -->
-    <section id="section-toolbar" class="bg-white dark:bg-slate-900 border rounded-xl p-4 shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <!-- Filters (Left) -->
-        <div class="flex items-center gap-2">
-          <div
-            class="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-slate-50 dark:bg-slate-950 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
-            <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4 text-slate-400">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
-              <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            </svg>
-            <input id="search" class="outline-none bg-transparent text-sm w-48 md:w-64"
-              placeholder="사용자 검색 (아이디/이름/학번)..." />
+    <section id="section-toolbar" class="bg-white dark:bg-slate-900 border rounded-xl p-3 shadow-sm">
+      <div class="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+          <div class="relative w-full sm:w-64 h-10">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input id="search" type="text" class="w-full h-full pl-10 pr-4 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="사용자 검색 (아이디/이름/학번)">
           </div>
-          <select id="f-grade" class="btn h-9 text-xs">
-            <option value="">학년 전체</option>
-            <option>1</option>
-            <option>2</option>
-            <option>3</option>
-          </select>
-          <select id="f-class" class="btn h-9 text-xs">
-            <option value="">반 전체</option>
-            <option>1</option>
-            <option>2</option>
-            <option>3</option>
-            <option>4</option>
-            <option>5</option>
-            <option>6</option>
-            <option>7</option>
-            <option>8</option>
-            <option>9</option>
-            <option>10</option>
-          </select>
-          <select id="f-role" class="btn h-9 text-xs">
-            <option value="">권한 전체</option>
-            <option value="admin">Admin</option>
-            <option value="teacher">Teacher</option>
-            <option value="class_admin">Class Admin</option>
-            <option value="student">Student</option>
-            <option value="user">User</option>
-          </select>
-          <div class="h-4 w-px bg-gray-200 dark:bg-gray-800 mx-1"></div>
-          <select id="page-size" class="btn h-9 text-xs" title="페이지당 표시 개수">
-            <option value="10">10개씩</option>
-            <option value="20" selected>20개씩</option>
-            <option value="50">50개씩</option>
-            <option value="100">100개씩</option>
-          </select>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <select id="f-grade" class="flex-1 sm:w-28 h-10 rounded-xl border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800">
+                <option value="">학년 전체</option><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option>
+            </select>
+            <select id="f-class" class="flex-1 sm:w-28 h-10 rounded-xl border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800">
+                <option value="">반 전체</option>
+                <option value="1">1반</option><option value="2">2반</option><option value="3">3반</option><option value="4">4반</option><option value="5">5반</option><option value="6">6반</option><option value="7">7반</option><option value="8">8반</option><option value="9">9반</option><option value="10">10반</option>
+            </select>
+            <select id="f-role" class="flex-1 sm:w-28 h-10 rounded-xl border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800">
+                <option value="">권한 전체</option>
+                <option value="admin">Admin</option><option value="teacher">Teacher</option><option value="class_admin">Class Admin</option><option value="student">Student</option><option value="user">User</option>
+            </select>
+            <select id="page-size" class="hidden sm:block sm:w-24 h-10 rounded-xl border-gray-200 dark:border-gray-700 text-xs bg-white dark:bg-gray-800">
+                <option value="10">10개씩</option><option value="20" selected>20개씩</option><option value="50">50개씩</option><option value="100">100개씩</option>
+            </select>
+          </div>
         </div>
 
-        <!-- Actions (Right) -->
-        <div class="flex items-center gap-2">
-          <button id="refresh" class="btn h-9" title="새로고침">
-            <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4">
-              <path d="M4 12a8 8 0 0114.93-4.07M20 12a8 8 0 01-14.93 4.07" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" />
-            </svg>
-          </button>
-          <div class="relative">
-            <button id="more-btn" class="btn btn-primary h-9">
-              관리 작업
-              <svg viewBox="0 0 24 24" fill="none" class="w-3 h-3 ml-1">
-                <path d="M19 9l-7 7-7-7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-            </button>
-            <div id="more" class="popover right-0 mt-1">
-              <div class="p-1 space-y-0.5">
-                <button id="open-add"
-                  class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
-                  <span>👤</span> 사용자 추가
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+            <button id="refresh" class="btn btn-ghost h-10 w-10 p-0 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700"><i class="fa-solid fa-rotate"></i></button>
+            <div class="relative flex-grow sm:flex-grow-0 h-10">
+                <button id="more-btn" class="btn bg-indigo-600 hover:bg-indigo-700 text-white w-full h-full border-none rounded-xl px-4 flex items-center justify-center gap-2 transition-all">
+                    <span>관리 작업</span>
+                    <i class="fa-solid fa-chevron-down text-[10px] opacity-70"></i>
                 </button>
-                <label
-                  class="w-full block px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors flex items-center gap-2">
-                  <span>📄</span> CSV 업로드 <input id="csv-in" type="file" accept=".csv" class="hidden">
-                </label>
-                <button id="csv-out"
-                  class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
-                  <span>📥</span> CSV 다운로드
-                </button>
-                <div class="my-1 h-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
-                <button id="open-logs"
-                  class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
-                  <span>📋</span> 활동 로그 보기
-                </button>
-                <div class="my-1 h-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
-                <button id="admin-sync-all"
-                  class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-indigo-50 text-indigo-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 font-bold">
-                  <span>🎒</span> 아이템 전체 지급 (나)
-                </button>
-                <button id="promote"
-                  class="w-full text-left px-3 py-2 text-sm rounded-md text-indigo-600 font-semibold hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center gap-2">
-                  <span>🚀</span> 신학기 자동 승급
-                </button>
-              </div>
+                <div id="more" class="popover w-full sm:w-48 right-0 top-full mt-2">
+                    <div class="p-1 space-y-0.5">
+                      <button id="open-add"
+                        class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
+                        <span>👤</span> 사용자 추가
+                      </button>
+                      <label
+                        class="w-full block px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors flex items-center gap-2">
+                        <span>📄</span> CSV 업로드 <input id="csv-in" type="file" accept=".csv" class="hidden">
+                      </label>
+                      <button id="csv-out"
+                        class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
+                        <span>📥</span> CSV 다운로드
+                      </button>
+                      <div class="my-1 h-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
+                      <button id="open-logs"
+                        class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
+                        <span>📋</span> 활동 로그 보기
+                      </button>
+                      <div class="my-1 h-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
+                      <button id="admin-sync-all"
+                        class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-indigo-50 text-indigo-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 font-bold">
+                        <span>🎒</span> 아이템 전체 지급 (나)
+                      </button>
+                      <button id="promote"
+                        class="w-full text-left px-3 py-2 text-sm rounded-md text-indigo-600 font-semibold hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center gap-2">
+                        <span>🚀</span> 신학기 자동 승급
+                      </button>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
       </div>
     </section>
@@ -199,16 +201,13 @@
           <thead>
             <tr>
               <th class="w-10 text-center"><input type="checkbox" id="check-all"></th>
-              <th class="sortable text-left" data-sort="name">이름</th>
-              <th class="w-32 sortable text-left" data-sort="username">아이디</th>
-              <th class="w-16 text-center sortable" data-sort="grade">학년</th>
-              <th class="w-16 text-center sortable" data-sort="class_num">반</th>
-              <th class="w-20 text-center sortable" data-sort="student_number">번호</th>
-              <th>권한</th>
-              <th class="w-16 text-center">레벨</th>
-              <th class="w-20 text-center">XP</th>
-              <th class="w-20 text-center">포인트</th>
-              <th class="w-[220px] text-center">작업</th>
+              <th class="sortable text-left px-4 py-3" data-sort="name">이름</th>
+              <th class="sortable text-left px-4 py-3" data-sort="username">아이디</th>
+              <th class="w-24 text-center px-4 py-3 sortable" data-sort="grade">학급 정보</th>
+              <th class="w-48 text-left px-4 py-3">권한 관리</th>
+              <th class="w-24 text-center px-4 py-3 sortable" data-sort="level">성장 Stats</th>
+              <th class="w-24 text-right px-4 pr-6 py-3 sortable" data-sort="coin_balance">포인트</th>
+              <th class="w-24 text-center px-4 py-3">작업</th>
             </tr>
           </thead>
           <tbody id="rows" class="[&>tr>td]:p-2 [&>tr>td]:border"></tbody>
@@ -238,7 +237,7 @@
       </div>
 
       <div class="rounded-xl border bg-white p-5 shadow-sm">
-        <div class="border rounded-xl overflow-x-auto bg-white dark:bg-gray-800">
+        <div class="table-container border rounded-xl overflow-x-auto bg-white dark:bg-gray-800">
           <table class="min-w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-700">
               <tr class="[&>th]:p-3 [&>th]:border">
@@ -266,7 +265,7 @@
       </div>
 
       <div class="rounded-xl border bg-white p-5 shadow-sm">
-        <div class="border rounded-xl overflow-x-auto bg-white dark:bg-gray-800">
+        <div class="table-container border rounded-xl overflow-x-auto bg-white dark:bg-gray-800">
           <table class="min-w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-700">
               <tr class="[&>th]:p-2 [&>th]:border">
@@ -303,7 +302,7 @@
         <div class="text-xs text-slate-400 font-mono">⚠️ 원본 데이터를 직접 수정하므로 주의가 필요합니다.</div>
       </div>
       <div class="panel rounded-xl border bg-white overflow-hidden shadow-sm">
-        <div class="overflow-x-auto max-h-[600px]">
+        <div class="table-container no-mobile-cards overflow-x-auto max-h-[600px]">
           <table class="table w-full text-sm">
             <thead id="db-thead"></thead>
             <tbody id="db-tbody"></tbody>
@@ -315,19 +314,18 @@
 
   <!-- 일괄 권한 배너 -->
   <div id="bulk-drawer" class="drawer hidden">
-    <div class="w-full px-8 py-3 flex items-center gap-2">
-      <div class="text-sm flex-1">선택됨: <span id="sel-count">0</span>명</div>
-      <select id="bulk-role" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900">
-        <option value="">일괄 권한 선택…</option>
+    <div class="w-full px-4 py-2 flex items-center gap-2">
+      <div class="text-[11px] whitespace-nowrap"><span id="sel-count" class="font-bold">0</span>명</div>
+      <select id="bulk-role" class="rounded-lg border px-2 py-1.5 text-xs dark:bg-gray-900 w-24">
+        <option value="">권한…</option>
         <option>admin</option>
         <option>teacher</option>
         <option>class_admin</option>
         <option>student</option>
         <option>user</option>
       </select>
-      <button id="bulk-apply" class="btn btn-primary">일괄 권한 변경</button>
-      <button id="bulk-point" class="btn bg-amber-500 hover:bg-amber-600 text-white border-none ml-2">💰 일괄 포인트
-        지급</button>
+      <button id="bulk-apply" class="btn btn-primary h-8 px-2 text-[10px] shrink-0 rounded-lg">권한 변경</button>
+      <button id="bulk-point" class="btn bg-amber-500 hover:bg-amber-600 text-white border-none h-8 px-2 text-[10px] shrink-0 rounded-lg ml-auto">💰 포인트 지급</button>
     </div>
   </div>
 

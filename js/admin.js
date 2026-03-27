@@ -1,7 +1,7 @@
 // ===== Supabase =====
 const SUPABASE_URL = "https://ucmzrkwrsezfdjnnwsww.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let sb; // 위임 초기화
 const USE_SUPABASE_RESET_EMAIL = true;
 
 // ===== Utils =====
@@ -23,17 +23,28 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         return;
     }
 
-    // DB에서 최신 권한 정보 확인
-    const { data: userData, error: authError } = await sb.from('users').select('role').eq('username', savedUsername).maybeSingle();
-    
-    if (authError || !userData || userData.role !== 'admin') {
-        alert('관리자 전용 페이지입니다. (권한 부족)');
+    try {
+        if (!window.supabase) throw new Error('Supabase 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하세요.');
+        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // DB에서 최신 권한 정보 확인
+        const { data: userData, error: authError } = await sb.from('users').select('role').eq('username', savedUsername).maybeSingle();
+        
+        if (authError) throw new Error(`서버 연결 오류: ${authError.message}`);
+        if (!userData || userData.role !== 'admin') {
+            alert('관리자 전용 페이지입니다. (권한 부족)');
+            location.replace('index.html');
+            return;
+        }
+
+        // 통과 시 바디 표시
+        document.body.style.display = 'block';
+    } catch (err) {
+        console.error('Initialization Error:', err);
+        alert(err.message || '시스템 초기화 중 오류가 발생했습니다.');
         location.replace('index.html');
         return;
     }
-
-    // 통과 시 바디 표시
-    document.body.style.display = 'block';
 
     function rowIdOrUser(r) { return r.id !== undefined ? r.id : r.username; }
     
@@ -85,6 +96,76 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         btn.onclick = () => switchTab(btn.id);
     });
 
+    // ===== Header Scroll Effect =====
+    const hdr = $('header');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 10) hdr.classList.add('scrolled');
+        else hdr.classList.remove('scrolled');
+    }, { passive: true });
+
+    // ===== Mobile Menu Logic =====
+    const mobileMenuBtn = $('#btn-mobile-menu');
+    const mobileSidebar = $('#mobile-sidebar');
+    const masterSidebar = $('#master-sidebar');
+    const mobileSidebarOverlay = $('#mobile-sidebar-overlay');
+    const closeMobileMenuBtn = $('#btn-close-mobile-menu');
+
+    function openMobileMenu() {
+        mobileSidebar.classList.remove('hidden');
+        mobileSidebar.classList.add('open');
+        setTimeout(() => masterSidebar.classList.add('active'), 10);
+    }
+    function closeMobileMenu() {
+        masterSidebar.classList.remove('active');
+        setTimeout(() => {
+            mobileSidebar.classList.remove('open');
+            mobileSidebar.classList.add('hidden');
+        }, 400); // 100ms extra for smooth transition
+    }
+
+    if (mobileMenuBtn) mobileMenuBtn.onclick = openMobileMenu;
+    if (closeMobileMenuBtn) closeMobileMenuBtn.onclick = closeMobileMenu;
+    if (mobileSidebarOverlay) mobileSidebarOverlay.onclick = closeMobileMenu;
+
+    $$('.tab-btn.mobile').forEach(btn => {
+        btn.onclick = () => {
+            const tabId = btn.dataset.tab;
+            switchTab(tabId);
+            closeMobileMenu();
+            $$('.tab-btn.mobile').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        };
+    });
+
+    const mobileThemeBtn = $('#mobile-theme');
+    const pcThemeBtn = $('#theme');
+    const pcSignoutBtn = $('#signout');
+
+    if (pcThemeBtn) {
+        pcThemeBtn.onclick = () => {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('admin-theme', isDark ? 'dark' : 'light');
+            if (mobileThemeBtn) mobileThemeBtn.textContent = isDark ? '☀️ 라이트 모드' : '🌙 다크 모드';
+        };
+    }
+
+    if (pcSignoutBtn) {
+        pcSignoutBtn.onclick = () => {
+            if (!confirm('로그아웃 하시겠습니까?')) return;
+            localStorage.removeItem('savedUsername');
+            location.replace('index.html');
+        };
+    }
+
+    if (mobileThemeBtn) {
+        mobileThemeBtn.onclick = () => pcThemeBtn?.click();
+    }
+    const mobileSignoutBtn = $('#mobile-signout');
+    if (mobileSignoutBtn) {
+        mobileSignoutBtn.onclick = () => pcSignoutBtn?.click();
+    }
+
     async function loadJobResults() {
         const { data, error } = await sb.from('career_test_results')
             .select('*')
@@ -104,11 +185,11 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
             const dateStr = new Date(row.created_at).toLocaleString('ko-KR', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
             
             tr.innerHTML = `
-                <td class="px-4 py-3 text-xs text-gray-400">${dateStr}</td>
-                <td class="px-4 py-3 font-medium">${escapeHtml(row.name || '익명')} (${row.grade || '-'}학년)</td>
-                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">${escapeHtml(row.main_type || '-')}</span></td>
-                <td class="px-4 py-3 text-xs text-gray-500">${escapeHtml(row.top_tags || '-')}</td>
-                <td class="px-4 py-3 text-center">
+                <td data-label="검사 일시" class="px-4 py-3 text-xs text-gray-400">${dateStr}</td>
+                <td data-label="학생 정보" class="px-4 py-3 font-medium">${escapeHtml(row.name || '익명')} (${row.grade || '-'}학년)</td>
+                <td data-label="주요 유형" class="px-4 py-3"><span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">${escapeHtml(row.main_type || '-')}</span></td>
+                <td data-label="핵심 키워드" class="px-4 py-3 text-xs text-gray-500">${escapeHtml(row.top_tags || '-')}</td>
+                <td data-label="작업" class="px-4 py-3 text-center">
                     <div class="flex justify-center gap-2">
                         <button class="text-indigo-600 hover:text-indigo-800 text-xs view-job-detail" data-id="${row.id}">보기</button>
                         <button class="text-red-500 hover:text-red-700 text-xs del-job-log" data-id="${row.id}">삭제</button>
@@ -310,7 +391,8 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
             for (const k of ['grade', 'class_num', 'student_number', 'name']) { if (k === sortKey) continue; const t = cmp(a[k] ?? '', b[k] ?? ''); if (t !== 0) return t; }
             return 0;
         });
-        pageSize = Number($('#page-size').value || 50);
+        const pageSizeEl = $('#page-size');
+        pageSize = Number(pageSizeEl?.value || 50);
         const total = view.length, pages = Math.max(1, Math.ceil(total / pageSize)); if (page > pages) page = pages;
         render(view.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize));
         $('#page-info').textContent = `총 ${total.toLocaleString()}명 · ${page}/${pages}페이지`;
@@ -323,25 +405,35 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
             const tr = document.createElement('tr');
             tr.className = 'group hover:bg-slate-50 transition-colors';
             tr.innerHTML = `
-          <td class="text-center"><input type="checkbox" class="row-check" data-username="${u.username}"></td>
-          <td class="font-medium text-left">${u.name ?? '-'}</td>
-          <td class="text-left font-mono text-xs text-slate-400">${u.username ?? '-'}</td>
-          <td class="text-center">${u.grade ?? '-'}</td>
-          <td class="text-center">${u.class_num ?? '-'}</td>
-          <td class="text-center">${u.student_number ?? '-'}</td>
-          <td>
+          <td data-label="선택" class="text-center w-10"><input type="checkbox" class="row-check" data-username="${u.username}"></td>
+          <td data-label="이름" class="text-left font-bold text-gray-900 dark:text-gray-100">${u.name ?? '-'}</td>
+          <td data-label="아이디" class="text-left font-mono text-[11px] text-slate-400">${u.username ?? '-'}</td>
+          <td data-label="학급 정보" class="text-center whitespace-nowrap">
+            <span class="text-sm font-medium">${u.grade ?? '-'}학년 ${u.class_num ?? '-'}반</span>
+            <span class="text-[10px] text-slate-400 ml-1">(${u.student_number ?? '0'}번)</span>
+          </td>
+          <td data-label="권한 관리">
             <div class="flex items-center gap-1">
-              <select class="rounded border px-1.5 py-1 text-xs dark:bg-gray-900 border-slate-200 w-24" data-role-select="${u.username}">
-                ${['admin', 'teacher', 'class_admin', 'student', 'user'].map(r => `<option ${u.role === r ? 'selected' : ''}>${r}</option>`).join('')}
+              <select class="rounded-lg border px-2 py-1 text-xs dark:bg-gray-800 border-slate-200 w-24 h-8" data-role-select="${u.username}">
+                ${['admin', 'teacher', 'class_admin', 'student', 'user'].map(r => `<option ${u.role === r ? 'selected' : ''} value="${r}">${r}</option>`).join('')}
               </select>
-              <button class="btn btn-primary h-7 px-2 text-[10px] shrink-0 quick-save-role" data-username="${u.username}">저장</button>
+              <button class="btn btn-primary h-8 px-2 text-[10px] shrink-0 quick-save-role rounded-lg" data-username="${u.username}">저장</button>
             </div>
           </td>
-          <td class="text-center font-mono">${u.level ?? '-'}</td>
-          <td class="text-center font-mono">${u.xp ?? '-'}</td>
-          <td class="text-center font-mono text-blue-600 font-bold">${(u.coin_balance ?? 0).toLocaleString()}</td>
-          <td class="text-center">
-            <button class="btn h-7 text-xs bg-slate-50 border-slate-200 group-hover:bg-white" data-menu="${u.username}">관리 ⋯</button>
+          <td data-label="성장 Stats" class="text-center">
+            <div class="flex items-center gap-1.5 justify-end">
+                <span class="text-xs font-bold">Lvl.${u.level ?? '1'}</span>
+                <span class="text-[10px] text-slate-400 font-mono">(${u.xp ?? '0'} XP)</span>
+            </div>
+          </td>
+          <td data-label="포인트" class="text-right pr-6 font-mono text-blue-600 font-bold whitespace-nowrap">
+            ${(u.coin_balance ?? 0).toLocaleString()} <span class="text-[10px] text-slate-400 font-normal">P</span>
+          </td>
+          <td data-label="작업" class="text-center w-24">
+            <button class="btn h-8 px-3 text-xs bg-slate-50 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/50 rounded-lg flex items-center gap-1.5 transition-all" data-menu="${u.username}">
+                <span>관리</span>
+                <i class="fa-solid fa-ellipsis text-[10px] opacity-50"></i>
+            </button>
           </td>`;
 
             // 빠른 저장 이벤트
@@ -433,7 +525,7 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
             tr.innerHTML = keys.map(k => {
                 const val = row[k];
                 const display = (typeof val === 'object') ? JSON.stringify(val) : val;
-                return `<td class="p-2 border text-xs truncate max-w-[200px]" title="${display}">${escapeHtml(String(display ?? ''))}</td>`;
+                return `<td data-label="${k}" class="p-2 border text-xs truncate max-w-[200px]" title="${display}">${escapeHtml(String(display ?? ''))}</td>`;
             }).join('');
             tb.appendChild(tr);
         });
@@ -797,7 +889,7 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
     function togglePopover(el) { el.classList.toggle('open'); }
     function updateSelectionUI() {
         const cnt = [...$$('.row-check:checked')].length;
-        $('#sel-count').textContent = cnt; $('#bulk-drawer').classList.toggle('hidden', cnt === 0);
+        $('#sel-count').textContent = cnt; $('#bulk-drawer').classList.toggle('active', cnt > 0);
         $('#check-all').checked = !!cnt && [...$$('.row-check')].every(i => i.checked);
     }
 
@@ -806,7 +898,8 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
     $('#f-class').onchange = () => { page = 1; apply(); };
     $('#f-role').onchange = () => { page = 1; apply(); };
     $('#search').oninput = () => { page = 1; apply(); };
-    $('#page-size').onchange = () => { page = 1; apply(); };
+    const pageSizeEl = $('#page-size');
+    if (pageSizeEl) pageSizeEl.onchange = () => { page = 1; apply(); };
     $('#prev').onclick = () => { if (page > 1) { page--; apply(); } };
     $('#next').onclick = () => { const pages = Math.max(1, Math.ceil(view.length / pageSize)); if (page < pages) { page++; apply(); } };
 
@@ -973,8 +1066,8 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
                 : `<div class="w-10 h-10 rounded border bg-gray-100 flex items-center justify-center text-xs text-gray-400">No Img</div>`;
 
             tr.innerHTML = `
-          <td class="text-center font-mono text-xs text-gray-400">${item.id}</td>
-          <td>
+          <td data-label="ID" class="text-center font-mono text-xs text-gray-400">${item.id}</td>
+          <td data-label="아이템 정보">
             <div class="flex items-center gap-3">
               ${imgHtml}
               <div class="flex flex-col">
@@ -983,10 +1076,10 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
               </div>
             </div>
           </td>
-          <td class="text-center text-amber-600 font-bold">${(item.price || 0).toLocaleString()}</td>
-          <td class="text-center">${item.stock || 1}</td>
-          <td class="text-gray-500 text-xs truncate max-w-[300px]">${escapeHtml(item.description || '-')}</td>
-          <td class="text-center">
+          <td data-label="가격 (P)" class="text-center text-amber-600 font-bold">${(item.price || 0).toLocaleString()}</td>
+          <td data-label="개인 재고" class="text-center">${item.stock || 1}</td>
+          <td data-label="설명" class="text-gray-500 text-xs truncate max-w-[300px]">${escapeHtml(item.description || '-')}</td>
+          <td data-label="작업" class="text-center">
             <div class="flex justify-center gap-2">
               <button class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors edit-shop" data-id="${item.id}">수정</button>
               <button class="text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors del-shop" data-id="${item.id}">삭제</button>
