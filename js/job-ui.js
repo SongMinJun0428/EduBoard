@@ -4,6 +4,13 @@
 const UI = {
     container: document.getElementById('main-content'),
 
+    // Utility
+    escapeHtml(str) {
+        if (!str) return '';
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        return String(str).replace(/[&<>"']/g, s => map[s]);
+    },
+
     renderView(html, isFade = true, onComplete = null) {
         if (!isFade) {
             this.container.innerHTML = html;
@@ -223,8 +230,9 @@ const UI = {
         });
     },
 
-    renderIntermediateSummary(category, topTags, state, last5Questions, onNext) {
+    renderIntermediateSummary(category, topTags, state, last5Questions, isLast, onNext) {
         const text = category.summaryTemplate.replace("[TOP_TAGS]", topTags.join(', ') || "다양함");
+        const nextBtnText = isLast ? "분석 결과 확인하기" : "다음 라운드로 넘어가기";
         
         // Build the 5 choices HTML from the passed context
         const choicesHtml = last5Questions.map(q => {
@@ -261,7 +269,9 @@ const UI = {
                     
                     <div style="display:flex; flex-direction: column; align-items: center; margin-top: 15px;">
                         <span style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 15px;">※ 이 답변은 최종 AI 분석 리포트의 핵심 자료가 됩니다!</span>
-                        <button id="btn-next-cat" class="btn btn-primary" style="padding: 12px 30px; font-size: 1.05rem; width: 100%; max-width: 300px; opacity: 0.5;">다음 라운드로 넘어가기 <i class="fas fa-arrow-right"></i></button>
+                        <button id="btn-next-cat" class="btn btn-primary" style="padding: 12px 30px; font-size: 1.05rem; width: 100%; max-width: 300px; opacity: 0.5;">
+                            ${nextBtnText} <i class="fas fa-arrow-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -298,6 +308,9 @@ const UI = {
                         alert("분석을 위해 최소 10자 이상의 이유를 입력해 주세요!");
                         return;
                     }
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 분석 준비 중...';
                     onNext(reason);
                 });
             }
@@ -307,18 +320,33 @@ const UI = {
     renderAnalyzingScreen() {
         const html = `
             <div class="view active analyzing-screen" style="padding: 50px 30px; text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                <div class="spinner" style="border-width: 6px; width: 60px; height: 60px; margin-bottom: 25px;"></div>
-                <h2 style="font-size: 1.8rem; color: var(--primary-color); margin-bottom: 15px;" class="delay-100">결과 분석 중...</h2>
-                <p style="font-size: 1.1rem; color: var(--text-muted);" class="delay-200">
-                    작성해주신 소중한 이유들과 선택지들을<br>AI가 하나하나 정성스럽게 읽어보고 있습니다.
-                </p>
+                <div class="premium-loader" style="margin-bottom: 30px;"></div>
+                <h2 style="font-size: 2.2rem; color: var(--primary-color); margin-bottom: 20px; font-weight: 900;" class="delay-100">AI 심층 분석 중...</h2>
+                <div style="max-width: 500px;" class="delay-200">
+                    <p style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 10px; font-weight: 700;">작성해주신 소중한 답변들을 AI가 분석하고 있습니다.</p>
+                    <p id="analyzing-msg" style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6;">
+                        당신의 가치관과 성향을 데이터로 변환하여<br>세상에 하나뿐인 리포트를 작성하는 중입니다. 잠시만 기다려 주세요.
+                    </p>
+                </div>
+                <div style="margin-top: 40px; width: 100%; max-width: 400px; height: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; overflow:hidden;">
+                    <div id="analyzing-progress" style="width: 0%; height: 100%; background: var(--grad-primary); transition: width 0.3s ease;"></div>
+                </div>
             </div>
         `;
-        this.renderView(html);
+        this.renderView(html, true, () => {
+            let p = 0;
+            const bar = document.getElementById('analyzing-progress');
+            const interval = setInterval(() => {
+                p += Math.random() * 5;
+                if (p > 95) p = 95;
+                if (bar) bar.style.width = p + '%';
+            }, 500);
+            window._analyzingInterval = interval;
+        });
     },
 
-    renderFinalResult(result, user, onRestart, onDeepAnalyze) {
-        const { topTags, mainType, categorySummaries, traits, choiceReview } = result;
+    renderFinalResult(result, user, onRestart, onRetry, aiSuccess = true) {
+        const { topTags, mainType, categorySummaries, traits, aiSentences } = result;
 
         const catSummariesHtml = categorySummaries.map(c => `
             <div style="margin-bottom: 20px; padding: 22px; background: rgba(255,255,255,0.4); border-radius: 20px; border: 1px solid rgba(255,255,255,0.5); box-shadow: var(--glass-shadow);">
@@ -366,7 +394,7 @@ const UI = {
                 <div style="text-align:center; margin-bottom: 40px;" class="delay-100">
                     <div style="display:inline-block; padding: 6px 18px; background: var(--secondary-color); color: white; border-radius: 4px; font-weight: 900; font-size: 0.75rem; margin-bottom: 15px; letter-spacing: 2px;">YOUR RESULT</div>
                     <h1 style="font-size: clamp(1.8rem, 6vw, 3.2rem); font-weight: 900; letter-spacing: -1.5px; margin-bottom: 12px; color: var(--text-main); line-height: 1.2;">
-                        당신은 <span style="background: var(--grad-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${mainType.name}</span>
+                        당신은 <span style="background: var(--grad-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${this.escapeHtml(mainType.name)}</span>
                     </h1>
                     <p style="font-size: clamp(0.95rem, 2vw, 1.1rem); color: var(--text-muted); font-weight: 500;">나의 진로 가치관과 추천 직업을 확인하세요</p>
                 </div>
@@ -386,63 +414,86 @@ const UI = {
                     <div style="position:absolute; bottom: -30px; right: -30px; font-size: 15rem; opacity: 0.1; transform: rotate(-15deg); pointer-events:none;">🎨</div>
                 </div>
 
-                <!-- 1. KEYWORDS & TRAITS -->
+                <!-- 1. RADAR CHART & TRAITS -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 50px;" class="delay-300">
+                    <div class="result-section">
+                        <h3 style="margin-bottom: 25px; font-size: 1.3rem; display:flex; align-items:center; gap: 10px; font-weight: 900;">
+                            <i class="fas fa-chart-pie" style="color: #6366f1;"></i> 핵심 역량 분석 차트
+                        </h3>
+                        <div style="background: white; padding: 20px; border-radius: 24px; border: 1px solid #eee; display:flex; justify-content:center; align-items:center;">
+                            <canvas id="radarChart" style="max-width: 100%; max-height: 350px;"></canvas>
+                        </div>
+                    </div>
+                    
                     <div class="result-section">
                         <h3 style="margin-bottom: 20px; font-size: 1.3rem; display:flex; align-items:center; gap: 10px; font-weight: 900;">
                             <i class="fas fa-thumbtack" style="color: var(--secondary-color);"></i> 나의 진로 키워드 3가지
                         </h3>
-                        <div style="display:flex; gap: 10px; flex-wrap: wrap; margin-bottom: 40px;">
+                        <div style="display:flex; gap: 10px; flex-wrap: wrap; margin-bottom: 30px;">
                             ${topTags.map(tag => `<span style="padding: 10px 22px; background: #1a1a1a; color: white; border-radius: 4px; font-size:1rem; font-weight:800;"># ${tag}</span>`).join('')}
                         </div>
 
-                        <h3 style="margin-bottom: 25px; font-size: 1.3rem; display:flex; align-items:center; gap: 10px; font-weight: 900;">
-                            <i class="fas fa-chart-bar" style="color: #10b981;"></i> 성향 분석
+                        <h3 style="margin-bottom: 20px; font-size: 1.3rem; display:flex; align-items:center; gap: 10px; font-weight: 900;">
+                            <i class="fas fa-chart-bar" style="color: #10b981;"></i> 상세 성향 지표
                         </h3>
                         <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(8px); padding: 25px; border-radius: 12px; border: 1px solid var(--border-glass);">
                             ${traitsHtml}
                         </div>
                     </div>
-                    
-                    <div class="result-section">
-                        <h3 style="margin-bottom: 25px; font-size: 1.3rem; display:flex; align-items:center; gap: 10px; font-weight: 900;">
-                            <i class="fas fa-briefcase" style="color: #6366f1;"></i> 추천 직업
-                        </h3>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            ${mainType.jobs.slice(0, 6).map((job, i) => `
-                                <div class="hover-lift" style="background: #ffffff; padding: 25px 20px; border-radius: 12px; border: 1px solid #eee; text-align:center;">
-                                    <div style="font-size: 2.2rem; margin-bottom: 15px;">${['🎬','🎨','🚀','✍️','🎮','🏗️'][i] || '💼'}</div>
-                                    <div style="font-size: 1.15rem; font-weight: 800; margin-bottom: 8px; color: var(--text-main);">${job}</div>
-                                    <div style="font-size: 0.8rem; font-weight: 700; color: ${i < 2 ? 'var(--secondary-color)' : i < 4 ? 'var(--primary-color)' : '#94a3b8'};">
-                                        ${i < 2 ? '★ 최고 적합' : i < 4 ? '◎ 강력 추천' : '○ 추천'}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
                 </div>
 
-                <!-- 2. AI DEEP REPORT (Premium Shimmer) -->
+                <!-- 2. AI DEEP REPORT (Automatic Display) -->
                 <div class="delay-400" id="report-view-anchor" style="margin-bottom: 60px;">
-                    <div id="ai-report-container" style="background: #1a1a1a; padding: 70px 50px; border-radius: 28px; color: white; text-align:center; position:relative; overflow:visible; box-shadow: 0 40px 80px -15px rgba(0,0,0,0.4); min-height: 400px; transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);">
+                    <div id="ai-report-container" style="background: #1a1a1a; padding: 60px 40px; border-radius: 28px; color: white; text-align:left; position:relative; overflow:visible; box-shadow: 0 40px 80px -15px rgba(0,0,0,0.4); min-height: 400px; transition: all 0.6s ease;">
                         <div style="position:absolute; top:0; left:0; right:0; bottom:0; background: var(--mesh-dark); opacity: 0.5; z-index: 1; border-radius: 28px;"></div>
                         <div style="position:relative; z-index: 2;">
-                            <h3 style="font-size: 2.2rem; margin-bottom: 18px; font-weight: 900; letter-spacing: -1px;">✨ 2026 AI 전문가 심층 리포트</h3>
-                            <p style="opacity: 0.75; line-height: 1.8; margin-bottom: 45px; font-size: 1.1rem; max-width: 620px; margin-left:auto; margin-right:auto; word-break: keep-all;">
-                                당신이 답변 속에 남긴 고민의 흔적들을 AI가 세밀하게 분석하여,<br>세상에 하나뿐인 <b>장문의 진로 상담 에세이</b>를 작성합니다.
-                            </p>
-                            <button id="btn-deep-analyze" class="btn shimmer-btn" style="padding: 22px 65px; font-size: 1.35rem; border-radius: 18px; color: white; font-weight:900; background: var(--grad-primary); border:none; box-shadow: 0 20px 40px rgba(99,102,241,0.5);">
-                                 AI 심층 분석 리포트 생성하기
-                            </button>
-                            <p style="margin-top: 25px; font-size: 0.85rem; opacity: 0.5;">(약 15~30초 정도 소요될 수 있습니다)</p>
+                            <div style="text-align:center; margin-bottom: 40px;">
+                                <h3 style="font-size: 2.2rem; margin-bottom: 10px; font-weight: 900; letter-spacing: -1px;">✨ AI 전문가 심층 리포트</h3>
+                                <p style="opacity: 0.6; font-size: 0.95rem;">당신의 답변과 선택 가치를 AI가 종합 분석한 맞춤 상담 리포트입니다.</p>
+                            </div>
+                            
+                            <!-- AI Content Area -->
+                            <div id="ai-report-text-content" style="line-height:2.0; font-size: 1.1rem; white-space: pre-wrap; color: rgba(255,255,255,0.95);">
+                                ${aiSentences.join('<br><br>')}
+                            </div>
+
+                            ${!aiSuccess ? `
+                            <div id="ai-retry-box" style="margin-top: 40px; padding: 30px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px dashed rgba(255,255,255,0.2); text-align:center;">
+                                <p style="margin-bottom: 20px; color: #fecaca; font-size: 0.95rem;">
+                                    ⚠️ AI 분석 엔진 결합 중 일시적인 오류가 발생했습니다.<br>
+                                    현재 표시된 내용은 기본 분석 데이터입니다.
+                                </p>
+                                <button id="btn-retry-ai" class="btn shimmer-btn" style="padding: 15px 40px; font-size: 1.1rem; border-radius: 12px; background: var(--grad-primary);">
+                                    AI 심층 분석 다시 시도하기
+                                </button>
+                            </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
+                
+                <!-- 3. RECOMMENDED JOBS -->
+                <div class="delay-400" style="margin-bottom: 60px;">
+                    <h3 style="margin-bottom: 25px; font-size: 1.5rem; display:flex; align-items:center; gap: 15px; font-weight: 900;">
+                        <i class="fas fa-briefcase" style="color: #6366f1;"></i> 나에게 어울리는 추천 진로
+                    </h3>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;">
+                        ${mainType.jobs.slice(0, 6).map((job, i) => `
+                            <div class="hover-lift" style="background: #ffffff; padding: 25px 20px; border-radius: 12px; border: 1px solid #eee; text-align:center;">
+                                <div style="font-size: 2.2rem; margin-bottom: 15px;">${['🎬','🎨','🚀','✍️','🎮','🏗️'][i] || '💼'}</div>
+                                <div style="font-size: 1.15rem; font-weight: 800; margin-bottom: 8px; color: var(--text-main);">${job}</div>
+                                <div style="font-size: 0.8rem; font-weight: 700; color: ${i < 2 ? 'var(--secondary-color)' : i < 4 ? 'var(--primary-color)' : '#94a3b8'};">
+                                    ${i < 2 ? '★ 최고 적합' : i < 4 ? '◎ 강력 추천' : '○ 추천'}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
 
-                <!-- 3. CHOICE REVIEW (Reference Match) -->
+                <!-- 4. CHOICE REVIEW -->
                 <div class="delay-500" style="margin-bottom: 50px;">
                     <h3 style="margin-bottom: 30px; font-size: 1.5rem; display:flex; align-items:center; gap: 15px; font-weight: 900;">
-                        <i class="fas fa-edit" style="color: var(--primary-color);"></i> 나의 5단계 신중 답변
+                        <i class="fas fa-edit" style="color: var(--primary-color);"></i> 나의 5단계 신중 답변 기록
                     </h3>
                     <div style="display:grid; grid-template-columns: 1fr; gap: 10px;">
                         ${intermediateReasonsHtml}
@@ -451,48 +502,79 @@ const UI = {
 
                 <!-- Footer Actions -->
                 <div style="text-align:center; padding-top: 50px; border-top: 2px solid #eee; margin-bottom: 80px;" class="delay-500">
-                    <button id="btn-restart" class="btn btn-secondary" style="margin-right: 15px; padding: 15px 40px;">다시 시작하기</button>
-                    <button id="btn-print" class="btn btn-primary" style="padding: 15px 40px;"><i class="fas fa-print"></i> 결과 PDF 저장 / 인쇄</button>
+                    <button id="btn-restart" class="btn btn-secondary" style="margin-right: 15px; padding: 15px 40px;">테스트 다시하기</button>
+                    <button id="btn-print" class="btn btn-primary" style="padding: 15px 40px;"><i class="fas fa-print"></i> PDF 리포트 저장</button>
                 </div>
             </div>
         `;
         
         this.renderView(html, true, () => {
+            // Draw Chart
+            this.drawRadarChart(traits);
+
             const btnRestart = document.getElementById('btn-restart');
             if (btnRestart) btnRestart.addEventListener('click', onRestart);
             
-            const btnAnalyze = document.getElementById('btn-deep-analyze');
-            if (btnAnalyze) {
-                btnAnalyze.addEventListener('click', () => {
+            const btnRetry = document.getElementById('btn-retry-ai');
+            if (btnRetry) {
+                btnRetry.addEventListener('click', () => {
                     const container = document.getElementById('ai-report-container');
-                    this.renderDeepAnalyzeProgress(container);
-                    onDeepAnalyze(container);
+                    onRetry(container);
                 });
             }
-
-            // Trigger sparkle reveal
-            setTimeout(() => {
-                const overlay = document.getElementById("sparkle-overlay");
-                if (overlay) this.createSparkles(overlay);
-            }, 500);
-
-            // Trigger sparkle reveal after a short delay
-            setTimeout(() => {
-                const overlay = document.getElementById('sparkle-overlay');
-                if (overlay) this.createSparkles(overlay);
-            }, 500);
-
-            // Trigger sparkle reveal after a short delay
-            setTimeout(() => {
-                const overlay = document.getElementById('sparkle-overlay');
-                if (overlay) this.createSparkles(overlay);
-            }, 500);
 
             const btnPrint = document.getElementById('btn-print');
             if (btnPrint) {
                 btnPrint.addEventListener('click', () => {
                     this.handlePrint(result, user);
                 });
+            }
+            if (window._analyzingInterval) clearInterval(window._analyzingInterval);
+        });
+    },
+
+    drawRadarChart(traits) {
+        const canvas = document.getElementById('radarChart');
+        if (!canvas) return;
+
+        // Cleanup existing chart instance if any to prevent "Canvas is already in use" error
+        const existingChart = Chart.getChart(canvas);
+        if (existingChart) existingChart.destroy();
+
+        // Extract top 6 traits for radar chart (to keep it readable)
+        const displayTraits = traits.slice(0, 6);
+        
+        new Chart(canvas, {
+            type: 'radar',
+            data: {
+                labels: displayTraits.map(t => t.name),
+                datasets: [{
+                    label: '성향 지표',
+                    data: displayTraits.map(t => t.value),
+                    fill: true,
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    borderColor: 'rgb(99, 102, 241)',
+                    pointBackgroundColor: 'rgb(99, 102, 241)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgb(99, 102, 241)'
+                }]
+            },
+            options: {
+                elements: {
+                    line: { borderWidth: 3 }
+                },
+                scales: {
+                    r: {
+                        angleLines: { display: true },
+                        suggestedMin: 0,
+                        suggestedMax: 100,
+                        ticks: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
             }
         });
     },

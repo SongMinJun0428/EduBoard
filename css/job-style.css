@@ -239,6 +239,40 @@ a {
     50% { transform: translateY(-5px) scale(1.02); }
 }
 
+/* Premium Loader */
+.premium-loader {
+    width: 80px;
+    height: 80px;
+    border: 5px solid rgba(99, 102, 241, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    border-bottom-color: var(--secondary-color);
+    animation: premium-spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+    position: relative;
+}
+
+.premium-loader::after {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    right: 15px;
+    bottom: 15px;
+    border: 5px solid rgba(236, 72, 153, 0.1);
+    border-radius: 50%;
+    border-left-color: var(--secondary-color);
+    border-right-color: var(--primary-color);
+    animation: premium-spin-reverse 1s linear infinite;
+}
+
+@keyframes premium-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes premium-spin-reverse {
+    to { transform: rotate(-360deg); }
+}
+
 /* ==========================================================================
    Premium Result Screen Styles
    ========================================================================== */

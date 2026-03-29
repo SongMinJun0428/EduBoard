@@ -48,7 +48,38 @@ function syncPersistentSession() {
     setCookie('savedUsername', savedUser, 7); // 7일 유지
   }
 }
+function initTheme() {
+  const prefs = JSON.parse(localStorage.getItem('eduBoard_preferences') || '{}');
+  const savedTheme = prefs.theme || localStorage.getItem('theme') || 'system';
+  applyTheme(savedTheme);
+}
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  if (theme === 'dark') {
+    root.classList.add('dark');
+  } else if (theme === 'light') {
+    root.classList.remove('dark');
+  } else {
+    // system
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }
+}
+
+function updateThemeUI(isDark) {
+  const icon = isDark ? '☀️' : '🌙';
+  const desktopIcon = document.getElementById('theme-icon');
+  const mobileIcon = document.getElementById('theme-icon-mobile');
+  if (desktopIcon) desktopIcon.textContent = icon;
+  if (mobileIcon) mobileIcon.textContent = icon;
+}
+
 syncPersistentSession();
+initTheme();
 
 // 전역 폼 제출 방지 (엔터 키 리다이렉트 버그 해결)
 document.addEventListener('submit', (e) => {
@@ -302,6 +333,33 @@ async function updateProfile() {
     }
   }
 }
+
+// 📱 모바일 하단 네브 활성화 상태 업데이트
+function updateMobileNavActive(panelId) {
+  const navItems = document.querySelectorAll('.bottom-nav .nav-item');
+  navItems.forEach(item => {
+    const onclick = item.getAttribute('onclick');
+    if (onclick && onclick.includes(`'${panelId}'`)) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
+    }
+  });
+}
+
+// 기존 showPanel 함수를 확장하거나 호출 시점에 연동
+const originalShowPanel = window.showPanel;
+window.showPanel = function(id) {
+  if (typeof originalShowPanel === 'function') {
+    originalShowPanel(id);
+  } else {
+    // 만약 이미 전역에 정의되어 있다면 (index.js 또는 다른 파일)
+    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    const target = document.getElementById(id);
+    if (target) target.style.display = 'block';
+  }
+  updateMobileNavActive(id);
+};
 
 async function addNotice() {
   const submitBtn = document.querySelector('#notice-panel button');
@@ -4942,19 +5000,7 @@ function loadPreferences() {
   }
 }
 
-function applyTheme(theme) {
-  // 기존 테마 클래스 제거
-  document.body.classList.remove('theme-dark', 'theme-pastel', 'theme-neon', 'theme-ocean');
-
-  if (theme === 'dark') {
-    document.body.classList.add('theme-dark');
-  } else if (theme === 'system') {
-    // 시스템 설정 따르기 (matchMedia)
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.body.classList.add('theme-dark');
-    }
-  }
-}
+// Redundant applyTheme removed
 
 /** 🔐 개인정보 처리방침 모달 제어 */
 function showPrivacyDetail() {
@@ -5501,12 +5547,7 @@ function loadPreferences() {
   } catch (e) { }
 }
 
-function applyTheme(theme) {
-  document.body.classList.remove('theme-dark');
-  if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.body.classList.add('theme-dark');
-  }
-}
+// applyTheme consolidated above
 
 // 로그아웃 (기존 함수 보강)
 async function handleLogout(scope = 'local') {
@@ -5617,20 +5658,7 @@ function savePreferences() {
   alert('환경 설정이 저장되었습니다.');
 }
 
-function applyTheme(theme) {
-  if (theme === 'dark') {
-    document.body.classList.add('dark-mode');
-  } else if (theme === 'light') {
-    document.body.classList.remove('dark-mode');
-  } else {
-    // system
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.body.classList.add('dark-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
-    }
-  }
-}
+// Redundant applyTheme removed
 
 async function requestNotificationPermission() {
   if (!("Notification" in window)) return;
@@ -6391,3 +6419,25 @@ function appendChatMessage(msg) {
     msgContainer.scrollTo({ top: msgContainer.scrollHeight, behavior: 'smooth' });
   }
 }
+
+window.switchSettingsTab = function(tab) {
+  const profileSection = document.getElementById('settings-profile-section');
+  const generalSection = document.getElementById('settings-general-section');
+  const profileBtn = document.getElementById('tab-btn-profile');
+  const generalBtn = document.getElementById('tab-btn-general');
+  const titleText = document.querySelector('#profile-panel h2 span');
+
+  if (tab === 'profile') {
+    profileSection.classList.add('active');
+    generalSection.classList.remove('active');
+    profileBtn.classList.add('active');
+    generalBtn.classList.remove('active');
+    if (titleText) titleText.textContent = '내 프로필 설정';
+  } else {
+    profileSection.classList.remove('active');
+    generalSection.classList.add('active');
+    profileBtn.classList.remove('active');
+    generalBtn.classList.add('active');
+    if (titleText) titleText.textContent = '내 설정';
+  }
+};

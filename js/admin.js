@@ -12,6 +12,16 @@ const chunked = (a, n) => { const o = []; for (let i = 0; i < a.length; i += n)o
 const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
 // ===== Theme/Auth =====
+// ===== Theme Initialization =====
+(() => {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+})();
+
 (async () => {
     // [보안] 관리자 세션 및 권한 체크 (localStorage 기반 기존 로그인 방식과 연동)
     const savedUsername = localStorage.getItem('savedUsername');
@@ -145,7 +155,7 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         pcThemeBtn.onclick = () => {
             document.documentElement.classList.toggle('dark');
             const isDark = document.documentElement.classList.contains('dark');
-            localStorage.setItem('admin-theme', isDark ? 'dark' : 'light');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
             if (mobileThemeBtn) mobileThemeBtn.textContent = isDark ? '☀️ 라이트 모드' : '🌙 다크 모드';
         };
     }
@@ -166,21 +176,29 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         mobileSignoutBtn.onclick = () => pcSignoutBtn?.click();
     }
 
+    let currentJobData = [];
+    let jobChart = null;
+
     async function loadJobResults() {
         const { data, error } = await sb.from('career_test_results')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(100);
+            .limit(500); // Increased limit for better stats
 
         if (error) return toast('진로 결과 로드 실패');
         
+        currentJobData = data || [];
+        renderJobTable(currentJobData);
+        renderJobStats(currentJobData);
+    }
+
+    function renderJobTable(data) {
         const tb = $('#job-rows');
         if (!tb) return;
         tb.innerHTML = '';
         $('#job-empty')?.classList.toggle('hidden', !!data?.length);
 
-        (data || []).forEach(row => {
-            const d = row.details || {};
+        data.forEach(row => {
             const tr = document.createElement('tr');
             const dateStr = new Date(row.created_at).toLocaleString('ko-KR', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
             
@@ -199,6 +217,98 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
             tb.appendChild(tr);
         });
     }
+
+    function renderJobStats(data) {
+        const total = data.length;
+        $('#job-stat-total').textContent = total.toLocaleString();
+
+        const typeCounts = {};
+        data.forEach(r => {
+            if (r.main_type) typeCounts[r.main_type] = (typeCounts[r.main_type] || 0) + 1;
+        });
+
+        const sortedTypes = Object.entries(typeCounts).sort((a,b) => b[1] - a[1]);
+        $('#job-stat-top-type').textContent = sortedTypes[0] ? sortedTypes[0][0] : '-';
+
+        renderJobDistributionChart(typeCounts);
+    }
+
+    function renderJobDistributionChart(counts) {
+        const ctx = document.getElementById('job-dist-chart');
+        if (!ctx) return;
+
+        if (jobChart) jobChart.destroy();
+
+        const labels = Object.keys(counts);
+        const values = Object.values(counts);
+
+        jobChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: [
+                        '#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { boxWidth: 12, font: { size: 11 } }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+
+    function exportJobResultsToCSV() {
+        if (!currentJobData.length) return toast('내보낼 데이터가 없습니다.');
+
+        const headers = ['검사일시', '이름', '학년', '주요유형', '키워드', 'AI리포트', '답변이유'];
+        const rows = currentJobData.map(r => {
+            const d = r.details || {};
+            const reasons = d.categoryReasons ? Object.values(d.categoryReasons).join(' | ') : '';
+            return [
+                new Date(r.created_at).toLocaleString(),
+                r.name || '',
+                r.grade || '',
+                r.main_type || '',
+                r.top_tags || '',
+                (d.ai_report || '').replace(/\n/g, ' '),
+                reasons.replace(/\n/g, ' ')
+            ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+        });
+
+        const csvContent = "\uFEFF" + headers.join(',') + '\n' + rows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", `job_results_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast('CSV 다운로드 시작');
+    }
+
+    // Job Search/Filter
+    $('#job-search')?.addEventListener('input', (e) => {
+        const kw = e.target.value.toLowerCase();
+        const filtered = currentJobData.filter(r => 
+            (r.name || '').toLowerCase().includes(kw) || 
+            (r.main_type || '').toLowerCase().includes(kw) ||
+            (r.top_tags || '').toLowerCase().includes(kw)
+        );
+        renderJobTable(filtered);
+    });
+
+    $('#job-csv-out')?.addEventListener('click', exportJobResultsToCSV);
 
     const jobRows = $('#job-rows');
     if (jobRows) {

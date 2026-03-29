@@ -52,12 +52,16 @@ class AppController {
         const allAnsweredIds = Object.keys(state.answers);
         const last5Questions = QUESTIONS.filter(q => allAnsweredIds.includes(q.id)).slice(-5);
 
-        UI.renderIntermediateSummary(cat, topTags, state, last5Questions, (reason) => {
+        // Check if we also reached the end of the category
+        const progress = state.getCurrentCategoryProgress();
+        const isLastCategory = state.currentCategoryIndex >= CATEGORIES.length - 1;
+        const isEndOfCategory = progress.current >= progress.total;
+        const isLast = isLastCategory && isEndOfCategory;
+
+        UI.renderIntermediateSummary(cat, topTags, state, last5Questions, isLast, (reason) => {
             state.saveCategoryReason(cat.id + "_" + Object.keys(state.answers).length, reason);
             
-            // Check if we also reached the end of the category
-            const progress = state.getCurrentCategoryProgress();
-            if (progress.current >= progress.total) {
+            if (isEndOfCategory) {
                 state.nextCategory();
                 if (state.currentCategoryIndex < CATEGORIES.length) {
                     this.showCategoryIntro();
@@ -75,10 +79,42 @@ class AppController {
     async showFinalResult() {
         UI.renderAnalyzingScreen();
         try {
-            // Get base results (tags, type, etc.)
+            // 1. Get base results (tags, type, traits, etc.)
             const finalResult = await Analyzer.compileFinalResultAsync(state);
             
-            // Log to Supabase user_activity_logs (Await the save to prevent race conditions)
+            // 2. Automated AI Deep Analysis
+            // (Pedagogical Check for reasoning length - if too short, we use the fallback logic in Analyzer)
+            const totalReasonLength = state.categoryReasons ? Object.values(state.categoryReasons).join('').length : 0;
+            
+            let aiSuccess = false;
+            let aiReportText = "";
+            if (totalReasonLength >= 20) {
+                try {
+                    console.log("Starting automated AI analysis...");
+                    const aiResult = await Analyzer.generateRealAISentences(state, finalResult.mainType);
+                    
+                    // Check if it's a real AI result or a fallback from generateRealAISentences
+                    const isFallback = Array.isArray(aiResult) && aiResult[0] && aiResult[0].includes('AI API 자동 실패');
+                    
+                    finalResult.aiSentences = Array.isArray(aiResult) ? aiResult : [aiResult];
+                    aiReportText = finalResult.aiSentences.join('\n\n');
+                    aiSuccess = !isFallback;
+                } catch (aiErr) {
+                    console.warn("AI Analysis failed, using fallback:", aiErr.message);
+                    const fallback = Analyzer.generateAISentences(state, finalResult.mainType);
+                    finalResult.aiSentences = fallback;
+                    aiReportText = fallback.join('\n\n');
+                    aiSuccess = false;
+                }
+            } else {
+                console.log("Reasoning too short for AI analysis, using fallback.");
+                const fallback = Analyzer.generateAISentences(state, finalResult.mainType);
+                finalResult.aiSentences = fallback;
+                aiReportText = fallback.join('\n\n');
+                aiSuccess = false;
+            }
+
+            // 3. Prepare merged data for Supabase
             const resultData = {
                 username: localStorage.getItem('savedUsername') || 'anonymous',
                 name: state.user.name,
@@ -88,67 +124,45 @@ class AppController {
                 details: {
                     summaries: finalResult.categorySummaries.map(s => s.summary).join(' | '),
                     categoryReasons: state.categoryReasons,
-                    answers: state.answers
+                    answers: state.answers,
+                    ai_report: aiReportText,
+                    ai_success: aiSuccess
                 }
             };
 
-            // Return a promise for the save operation and execute it immediately
-            console.log("Saving result to Supabase...");
-            const savePromise = window.sb.from('career_test_results')
+            // 4. Single Save to Supabase
+            console.log("Saving final results to Supabase (Single Step)...");
+            const { data: savedData, error: saveError } = await window.sb.from('career_test_results')
                 .insert([resultData])
                 .select('id')
                 .single();
-            
-            // Handle initial save errors early
-            savePromise.then(({data, error}) => {
-                if (error) {
-                    console.error("Supabase Save Error Details:", error);
-                    // Critical for debugging: show if table or column is missing
-                } else {
-                    console.log("Base result saved successfully. ID:", data?.id);
-                }
-            });
 
+            const currentId = savedData?.id;
+            if (saveError) {
+                console.error("Supabase Save Error:", saveError.message);
+            } else {
+                console.log("Final result saved successfully. ID:", currentId);
+            }
+
+            // 5. Render Final UI (AI report is already there)
             UI.renderFinalResult(finalResult, state.user, 
                 () => { // onRestart
                     state.reset();
                     this.start();
                 },
-                async (container) => { // onDeepAnalyze (Click handler)
-                    // 1. Check if reasoning is enough (Pedagogical Check)
-                    const totalReasonLength = state.categoryReasons ? Object.values(state.categoryReasons).join('').length : 0;
-                    if (totalReasonLength < 20) {
-                        alert("분석을 위해 답변 이유를 조금 더 자세히 적어주세요! (각 단계별 이유를 합쳐 최소 20자 이상 필요합니다)");
-                        return;
-                    }
-
+                async (container) => { // onRetry (Manual Retry)
                     const loadingInterval = UI.renderDeepAnalyzeProgress(container);
-
                     try {
-                        const resultText = await Analyzer.generateRealAISentences(state, finalResult.mainType);
-                        
-                        // Clear loading animation immediately
+                        const aiResult = await Analyzer.generateRealAISentences(state, finalResult.mainType);
                         if (loadingInterval) clearInterval(loadingInterval);
                         
-                        // Sync result to result object
-                        finalResult.aiSentences = Array.isArray(resultText) ? resultText : [resultText];
+                        finalResult.aiSentences = Array.isArray(aiResult) ? aiResult : [aiResult];
+                        const newReportText = finalResult.aiSentences.join('\n\n');
 
-                        // Ensure initial save is finished before updating
-                        const { data: savedData, error: saveError } = await savePromise;
-                        
-                        if (!saveError && savedData) {
-                            const aiReportText = finalResult.aiSentences.join('\n\n');
-                            const finalDetails = JSON.parse(JSON.stringify(resultData.details || {}));
-                            finalDetails.ai_report = aiReportText;
-
-                            const { error: updateError } = await window.sb.from('career_test_results').update({
-                                details: finalDetails
-                            }).eq('id', savedData.id);
-                            
-                            if (updateError) console.warn("AI Report sync error:", updateError.message);
-                            else console.log("AI Report successfully synced to DB.");
-                        } else if (saveError) {
-                            console.warn("Could not sync AI report because initial save failed:", saveError.message);
+                        // Update DB if we have an ID
+                        if (currentId) {
+                            const newDetails = { ...resultData.details, ai_report: newReportText, ai_success: true };
+                            await window.sb.from('career_test_results').update({ details: newDetails }).eq('id', currentId);
                         }
 
                         container.innerHTML = `
@@ -156,21 +170,16 @@ class AppController {
                                 ${finalResult.aiSentences.join('<br><br>')}
                             </div>
                         `;
-                    } catch(err) {
-                        console.error(err);
-                        container.innerHTML = `
-                            <div style="position:relative; z-index: 2; padding: 30px; color: #fecaca; background: rgba(220, 38, 38, 0.1); border-radius: 16px; border: 1px solid rgba(220, 38, 38, 0.2); text-align:center;">
-                                <div style="font-size: 2.5rem; margin-bottom: 20px;">⚠️</div>
-                                <h4 style="margin-bottom: 10px; font-weight: 800;">AI 분석 중 오류가 발생했습니다.</h4>
-                                <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 20px;">사유: ${err.message}</p>
-                                <button onclick="location.reload()" class="btn btn-primary" style="padding: 10px 25px; font-size: 0.9rem;">새로고침 후 다시 시도</button>
-                            </div>
-                        `;
+                    } catch (err) {
+                        if (loadingInterval) clearInterval(loadingInterval);
+                        alert("다시 시도했으나 오류가 발생했습니다: " + err.message);
                     }
-                }
+                },
+                aiSuccess
             );
+
         } catch(e) {
-            console.error(e);
+            console.error("Critical Error in showFinalResult:", e);
             alert('결과 화면을 수립하는 중 오류가 발생했습니다.');
         }
     }

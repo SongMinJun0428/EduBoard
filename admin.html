@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <!-- Supabase v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <meta name="color-scheme" content="light dark" />
   <link rel="stylesheet" href="css/admin.css">
   <script src="js/security.js"></script>
@@ -233,10 +234,43 @@
     <section id="section-job" class="hidden space-y-6">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-bold">🎯 진로 검사 결과 관리</h2>
-        <button id="refresh-job" class="btn btn-ghost">🔄 새로고침</button>
+        <div class="flex gap-2">
+            <button id="job-csv-out" class="btn bg-emerald-600 hover:bg-emerald-700 text-white border-none text-xs"><i class="fa-solid fa-file-csv mr-2"></i>결과 내보내기 (CSV)</button>
+            <button id="refresh-job" class="btn btn-ghost">🔄 새로고침</button>
+        </div>
       </div>
 
-      <div class="rounded-xl border bg-white p-5 shadow-sm">
+      <!-- 진로 통계 대시보드 (신규) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-xl border bg-white p-5 shadow-sm dark:bg-gray-800">
+            <h3 class="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wider">유형별 분포 통계</h3>
+            <div style="height: 250px; display: flex; justify-content: center; align-items: center;">
+                <canvas id="job-dist-chart"></canvas>
+            </div>
+        </div>
+        <div class="rounded-xl border bg-white p-5 shadow-sm dark:bg-gray-800 flex flex-col justify-center">
+            <h3 class="text-sm font-bold text-gray-500 mb-6 uppercase tracking-wider">주요 인사이트</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                    <div class="text-xs text-blue-600 dark:text-blue-400 font-bold mb-1">총 검사 횟수</div>
+                    <div id="job-stat-total" class="text-2xl font-black">0</div>
+                </div>
+                <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                    <div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold mb-1">가장 많은 유형</div>
+                    <div id="job-stat-top-type" class="text-lg font-black truncate">-</div>
+                </div>
+            </div>
+            <div class="mt-4 p-4 text-xs text-gray-500 border-t pt-4">
+                * 위 통계는 현재 불러온 데이터를 기준으로 실시간 집계됩니다.
+            </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border bg-white p-5 shadow-sm dark:bg-gray-800">
+        <!-- 필터 영역 -->
+        <div class="flex gap-2 mb-4">
+            <input id="job-search" type="text" class="flex-1 rounded-lg border px-4 py-2 text-sm dark:bg-gray-900" placeholder="학생 이름 또는 유형으로 검색...">
+        </div>
         <div class="table-container border rounded-xl overflow-x-auto bg-white dark:bg-gray-800">
           <table class="min-w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-700">
