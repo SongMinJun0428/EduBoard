@@ -70,6 +70,7 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         $('#section-shop'), 
         $('#section-job'), 
         $('#section-db'),
+        $('#section-codingon'),
         $('#bulk-drawer')
     ];
 
@@ -77,7 +78,8 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         'tab-users': [$('#section-stats'), $('#section-toolbar'), $('#section-users')],
         'tab-shop': [$('#section-shop')],
         'tab-job': [$('#section-job')],
-        'tab-db': [$('#section-db')]
+        'tab-db': [$('#section-db')],
+        'tab-codingon': [$('#section-codingon')]
     };
 
     function switchTab(activeTabId) {
@@ -99,6 +101,7 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         if (activeTabId === 'tab-shop') loadShopItemsAdmin();
         if (activeTabId === 'tab-job') loadJobResults();
         if (activeTabId === 'tab-db') loadDBTable($('#db-table-select').value);
+        if (activeTabId === 'tab-codingon' && window.renderCOAdmin) window.renderCOAdmin();
     }
 
     // Set up click handlers for tabs

@@ -50,7 +50,7 @@ function syncPersistentSession() {
 }
 function initTheme() {
   const prefs = JSON.parse(localStorage.getItem('eduBoard_preferences') || '{}');
-  const savedTheme = prefs.theme || localStorage.getItem('theme') || 'system';
+  const savedTheme = prefs.theme || localStorage.getItem('theme') || 'light'; // Default to light
   applyTheme(savedTheme);
 }
 
@@ -974,6 +974,7 @@ function showMain() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('main-app').style.display = 'block';
   setupAdminNav();
+  setupCodingOnNav();
   showPanel('dashboard');
 }
 
@@ -998,6 +999,9 @@ function showPanel(panelId) {
   if (panelId === 'dashboard') updateQuestProgress('visit_dashboard');
   if (panelId === 'minigame-panel') {
     if (typeof window.checkDailyGameStatus === 'function') window.checkDailyGameStatus();
+  }
+  if (panelId === 'codingon-panel') {
+    if (typeof updateQuestProgress === 'function') updateQuestProgress('visit_codingon');
   }
 
   // 모든 패널 숨기기
@@ -1028,6 +1032,8 @@ function showPanel(panelId) {
       if (typeof initDashboardTop === 'function') initDashboardTop();
     } else if (panelId === 'profile-panel') {
       if (typeof loadOwnedCollection === 'function') loadOwnedCollection();
+    } else if (panelId === 'codingon-panel') {
+      if (typeof initCodingOn === 'function') initCodingOn();
     }
   }
 }
@@ -1366,6 +1372,20 @@ function setupAdminNav() {
     }
   } else {
     if (existing) existing.remove();
+  }
+}
+
+function setupCodingOnNav() {
+  const role = currentUserRole || localStorage.getItem('savedRole');
+  const navCodingOn = document.getElementById('nav-codingon');
+  const sideNavCodingOn = document.getElementById('side-nav-codingon');
+
+  if (role === 'student' || role === 'admin') {
+    if (navCodingOn) navCodingOn.style.display = 'inline-block';
+    if (sideNavCodingOn) sideNavCodingOn.style.display = 'block';
+  } else {
+    if (navCodingOn) navCodingOn.style.display = 'none';
+    if (sideNavCodingOn) sideNavCodingOn.style.display = 'none';
   }
 }
 
