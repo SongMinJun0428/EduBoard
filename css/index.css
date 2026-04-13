@@ -1,3 +1,23 @@
+/* Hide scrollbar for all browsers */
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+* {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
+/* Ensure common scrollable containers also hide scrollbars */
+#co-console, #co-lesson-body, .co-split-view, .roadmap-grid, body {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+#co-console::-webkit-scrollbar, #co-lesson-body::-webkit-scrollbar, .co-split-view::-webkit-scrollbar, .roadmap-grid::-webkit-scrollbar, body::-webkit-scrollbar {
+  display: none !important;
+}
+
     body {
       margin: 0;
       font-family: 'Noto Sans KR', sans-serif;
@@ -385,7 +405,7 @@
       background: #fff;
       border: 1px solid #dee2e6;
       border-radius: 1.5rem;
-      padding: 2.5rem;
+      padding: 2rem;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
       box-sizing: border-box;
     }
@@ -875,7 +895,7 @@
     .dashboard-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 24px;
+      gap: 2rem;
       margin-top: 0;
     }
 
@@ -1021,7 +1041,7 @@
     }
 
     .card-body {
-      padding: 18px 20px
+      padding: 20px
     }
 
     .section-head {
@@ -3263,6 +3283,201 @@
       background: #f8fafc;
       border-color: #cbd5e1;
       transform: translateX(3px);
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+      text-align: center;
+    }
+
+    #btn-profile-save {
+      background: #1a1a1a;
+      /* Dark background */
+      color: #fff;
+    }
+
+    #btn-profile-save:hover {
+      background: #333;
+    }
+
+    /* Secondary Button (White) */
+    .btn-secondary {
+      background: #fff;
+      border: 1px solid #dee2e6;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #f8f9fa;
+    }
+
+    /* Danger Button (Red) */
+    .btn-danger {
+      background: #fff;
+      border: 1px solid #ff6b6b;
+      color: #ff6b6b;
+    }
+
+    .btn-danger:hover {
+      background: #fff5f5;
+    }
+
+    .btn-red {
+      background: #ff6b6b;
+      color: white;
+    }
+
+    .btn-red:hover {
+      background: #fa5252;
+    }
+
+    .small-muted {
+      font-size: 0.85rem;
+      color: #6c757d;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    /* 📁 고급 파일 매니저 스타일 */
+    .file-manager-item:hover {
+      border-color: #4f46e5 !important;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+      transform: translateY(-2px);
+    }
+
+    #edit-material-dropzone:hover {
+      background: #f0f4ff !important;
+      border-color: #4f46e5 !important;
+    }
+
+    #edit-material-file-grid::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #edit-material-file-grid::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    /* Inventory Filters */
+    .inventory-filters::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .inventory-filters::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    .filter-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .filter-btn.active {
+      background: #4f46e5;
+      color: #fff;
+      border-color: #4f46e5;
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+    }
+
+    /* Collection Management (Profile Panel) */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #cbd5e1;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+      margin: 4px 0;
+    }
+
+    .character-select-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      position: relative;
+    }
+
+    .character-select-item:hover {
+      border-color: #cbd5e1;
+      transform: translateY(-3px);
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .character-select-item.equipped {
+      border: 2px solid #4f46e5;
+      background: #eef2ff;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.12);
+      padding: 9px;
+    }
+
+    .character-select-item.equipped::after {
+      content: '✔ 장착됨';
+      position: absolute;
+      top: -10px;
+      right: -8px;
+      background: linear-gradient(135deg, #4f46e5, #3730a3);
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+      letter-spacing: -0.02em;
+    }
+
+    .title-select-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.9rem;
+      color: #334155;
+    }
+
+    .title-select-item:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      transform: translateX(3px);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
     }
 
@@ -3283,31 +3498,6 @@
       border-radius: 12px;
       font-weight: 700;
       white-space: nowrap;
-      box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
-    }
-
-    body.dark-mode .notification-item {
-      background: rgba(45, 45, 45, 0.4);
-      border-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .notification-item:hover {
-      background: rgba(255, 255, 255, 0.8);
-      transform: translateX(4px);
-    }
-
-    body.dark-mode .notification-item:hover {
-      background: rgba(60, 60, 60, 0.5);
-    }
-
-    .noti-title {
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: #1e293b;
-      margin-bottom: 2px;
-    }
-
-    body.dark-mode .noti-title {
       color: #f1f5f9;
     }
 
@@ -3324,36 +3514,6 @@
       flex-direction: row;
       margin-bottom: 12px;
       max-width: 85%;
-      gap: 10px;
-    }
-
-    .chat-msg-row.mine {
-      align-self: flex-end;
-      flex-direction: row-reverse;
-    }
-
-    .chat-msg-row.other {
-      align-self: flex-start;
-    }
-
-    .chat-content {
-      display: flex;
-      flex-direction: column;
-      max-width: calc(100% - 46px);
-    }
-
-    .chat-content.mine-content {
-      align-items: flex-end;
-    }
-
-    .chat-username {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #475569;
-      margin-bottom: 4px;
-      padding: 0 4px;
-      display: flex;
-      align-items: baseline;
       gap: 4px;
     }
 
@@ -3396,18 +3556,31 @@
       text-shadow: 0 0 5px rgba(236, 72, 153, 0.3);
     }
 
+    .chat-msg-row.mine {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .chat-msg-row.other {
+      align-self: flex-start;
+    }
+
+    .chat-username {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 4px;
+      padding: 0 4px;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
     .chat-msg-row.premium-chat .chat-bubble {
       background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(236, 72, 153, 0.1));
       border: 1px solid rgba(236, 72, 153, 0.3);
       color: #1e293b;
       font-weight: 500;
-    }
-
-    .chat-msg-row.mine.premium-chat .chat-bubble {
-      background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
-      color: white;
-      border: none;
-      box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
     }
 
     /* 🌙 Refined Dark Mode (Charcoal/Navy) */
@@ -3457,6 +3630,7 @@
     body.dark-mode .nav-btn:hover {
       background: #475569;
     }
+
     /* Settings Tabs (Design v2) */
     .settings-tabs {
       display: inline-flex;
@@ -3532,4 +3706,535 @@
     }
     #btn-profile-save, #btn-profile-refresh, #btn-pref-save, #btn-pref-reset {
       padding: 8px 16px !important;
+    }
+
+    /* ============================================================
+       🚀 CodingOn Integration Styles
+    ============================================================ */
+    .co-sub-nav button {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      background: transparent !important;
+      color: #64748b !important;
+      font-weight: 700 !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    .co-sub-nav button:hover {
+      background: rgba(79, 70, 229, 0.05) !important;
+      color: #4f46e5 !important;
+    }
+    .co-sub-nav button.active {
+      background: #4f46e5 !important;
+      color: #fff !important;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3) !important;
+    }
+
+    .lesson-card {
+      padding: 1.5rem;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border: 1px solid rgba(0,0,0,0.05);
+      position: relative;
+      overflow: hidden;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .lesson-card:hover:not(.locked) {
+      transform: translateY(-5px);
+      border-color: #4f46e5;
+      background: rgba(79, 70, 229, 0.02);
+      box-shadow: 0 10px 20px rgba(79, 70, 229, 0.05);
+    }
+    .lesson-card.locked {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: #f8fafc;
+      filter: grayscale(1);
+    }
+    .lesson-card.locked:after {
+      content: '🔒';
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 0.8rem;
+    }
+
+    /* --- 👨‍💻 CodingOn v3.0 Premium Design --- */
+    
+    /* 1. Lesson Content Typography & Layout */
+    #co-lesson-body {
+      padding: 1rem;
+      color: var(--text-main);
+      line-height: 1.7;
+    }
+
+    #co-lesson-body .co-step-header {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #4f46e5;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    #co-lesson-body .co-content-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 2rem;
+      border-radius: 24px;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    }
+
+    #co-lesson-body h3 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-top: 0;
+      margin-bottom: 1rem;
+      color: var(--text-main);
+    }
+
+    #co-lesson-body p {
+      color: var(--text-sub);
+      margin-bottom: 1.5rem;
+    }
+
+    /* 2. Components: Boxes, Tables, Tips */
+    .co-example-box {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      position: relative;
+    }
+
+    .co-example-title {
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: #4f46e5;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 8px;
+    }
+
+    .co-example-box pre {
+      margin: 0;
+      color: #e2e8f0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.95rem;
+      overflow-x: auto;
+    }
+
+    .co-point-box {
+      background: rgba(79, 70, 229, 0.05);
+      border-left: 4px solid #4f46e5;
+      padding: 1.25rem;
+      border-radius: 0 12px 12px 0;
+      margin: 1.5rem 0;
+    }
+
+    .co-tip-box {
+      background: #fff7ed;
+      border: 1px dashed #fdba74;
+      padding: 1rem;
+      border-radius: 12px;
+      color: #c2410c;
+      font-size: 0.9rem;
+    }
+    
+    .dark .co-tip-box {
+      background: rgba(251, 146, 60, 0.1);
+      color: #fb923c;
+    }
+
+    .co-data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+
+    .co-data-table th {
+      text-align: left;
+      padding: 12px;
+      background: var(--bg-card);
+      border-bottom: 2px solid var(--border-color);
+      color: #64748b;
+    }
+
+    .co-data-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    /* 3. Editor & Console UI Overhaul */
+    .co-editor-container {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .dark .co-editor-container {
+      background: #0f172a;
+      border-color: #1e293b;
+    }
+
+    #co-code-editor {
+      background: transparent;
+      color: #1e293b;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 1.05rem;
+      padding: 1.5rem;
+      border: none;
+      resize: none;
+      outline: none;
+      min-height: 400px;
+    }
+
+    .dark #co-code-editor {
+      color: #94a3b8;
+    }
+
+    /* Console Styling */
+    .co-console-wrapper {
+      background: #1e293b;
+      color: #f1f5f9;
+      border-radius: 16px;
+      padding: 1.25rem;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.9rem;
+      min-height: 150px;
+      box-shadow: inset 0 4px 10px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .co-console-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 8px;
+    }
+
+    /* Roadmap Step Badges */
+    .lesson-card .co-step-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #4f46e5;
+      background: #eef2ff;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      display: inline-block;
+    }
+
+    /* Animations */
+    @keyframes coFadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .co-animate-in {
+      animation: coFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .co-buy-btn {
+      padding: 8px 16px !important;
+      border-radius: 99px !important;
+      font-size: 0.85rem !important;
+      font-weight: 700 !important;
+      border: none !important;
+      cursor: pointer !important;
+      transition: all 0.2s !important;
+      width: auto !important;
+      margin: 0 !important;
+    }
+    .co-buy-btn.active {
+      background: #4f46e5 !important;
+      color: white !important;
+    }
+    .co-buy-btn.disabled {
+      background: #f1f5f9 !important;
+      color: #94a3b8 !important;
+      cursor: not-allowed !important;
+    }
+    .co-buy-btn.already {
+      background: #dcfce7 !important;
+      color: #166534 !important;
+      cursor: default !important;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* 4. Lesson Content Styling (Premium edu style) */
+    #co-lesson-body .description {
+      margin-bottom: 2rem;
+    }
+    #co-lesson-body .description h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dark #co-lesson-body .description h2 {
+      color: #f1f5f9;
+    }
+    #co-lesson-body p {
+      line-height: 1.7;
+      color: #475569;
+      font-size: 1.05rem;
+    }
+    .dark #co-lesson-body p {
+      color: #94a3b8;
+    }
+    
+    #co-lesson-body code {
+      background: #eff6ff; /* Solid light blue */
+      color: #3b82f6; /* Brilliant blue instead of purple/indigo */
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      font-family: 'Consolas', monospace;
+      font-weight: 700; /* Bolder code */
+    }
+    
+    /* Example Code Block */
+    #co-lesson-body .example-code {
+      background: #f1f5f9; /* Distinct slate gray background */
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    .dark #co-lesson-body .example-code {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    #co-lesson-body .example-code h2 {
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: #475569;
+      margin-top: 0;
+      margin-bottom: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    #co-lesson-body .example-code pre {
+      background: #0f172a; /* Absolute dark for example code */
+      color: #f8fafc;
+      padding: 1.25rem;
+      border-radius: 10px;
+      margin: 0;
+      font-family: 'Consolas', monospace;
+      font-size: 1.05rem;
+      overflow-x: auto;
+      border: 1px solid #334155;
+    }
+    #co-lesson-body .output {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #e2e8f0; /* Darker output box */
+      border-radius: 8px;
+      border-left: 5px solid #64748b;
+      font-family: inherit;
+      color: #1e293b;
+      font-weight: 600;
+    }
+    .dark #co-lesson-body .output {
+      background: rgba(255,255,255,0.05);
+      color: #cbd5e1;
+    }
+
+    /* Admin Sub-Tabs Styling */
+    .co-sub-tab {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .co-sub-tab:hover {
+      color: #4f46e5;
+      background: rgba(79, 70, 229, 0.05);
+    }
+    .co-sub-tab.active {
+      background: white;
+      color: #4f46e5;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .dark .co-admin-tabs {
+      background: #0f172a !important;
+      border-color: #1e293b !important;
+    }
+    .dark .co-sub-tab.active {
+      background: #1e293b;
+      color: #818cf8;
+    }
+    
+    /* Tables in Lesson */
+    #co-lesson-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+    .dark #co-lesson-body table {
+      border-color: #1e293b;
+    }
+    #co-lesson-body th {
+      background: #f1f5f9;
+      padding: 12px;
+      text-align: left;
+      font-weight: 700;
+      color: #475569;
+    }
+    .dark #co-lesson-body th {
+      background: #1e293b;
+      color: #94a3b8;
+    }
+    #co-lesson-body td {
+      padding: 12px;
+      border-top: 1px solid #e2e8f0;
+      color: #475569;
+    }
+    .dark #co-lesson-body td {
+      border-top-color: #1e293b;
+      color: #94a3b8;
+    }
+
+    /* Modal Layout Polishing */
+    /* Modal Solid Design (Fixes transparency visibility issues) */
+    #co-lesson-modal .premium-modal {
+      background: white !important; /* Solid white for light mode */
+      border-radius: 24px;
+      box-shadow: 0 0 0 100vmax rgba(2, 6, 23, 0.8), 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border: 1px solid #cbd5e1;
+      overflow: hidden;
+    }
+    .dark #co-lesson-modal .premium-modal {
+      background: #0f172a !important; /* Solid Slate 950 for dark mode */
+      border-color: #1e293b;
+    }
+
+    #co-lesson-body {
+      background: white !important; /* Forces solid background for content */
+      padding: 2.5rem 3rem !important;
+      color: #1e293b !important; /* High contrast text */
+    }
+    .dark #co-lesson-body {
+      background: #0f172a !important;
+      color: #f1f5f9 !important;
+    }
+
+    #co-lesson-body p {
+      color: #334155 !important;
+      font-weight: 500;
+    }
+    .dark #co-lesson-body p {
+      color: #cbd5e1 !important;
+    }
+
+    /* Dark Editor & Console Styling */
+    #co-code-editor {
+      background: #020617 !important; /* Absolute black for editor contrast */
+      color: #f1f5f9 !important;
+      font-size: 1.15rem !important;
+      line-height: 1.6;
+      border: 1px solid #1e293b !important;
+      caret-color: #6366f1;
+    }
+    
+    .co-console-wrapper {
+      background: #020617 !important; /* Absolute dark */
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .co-console-header {
+      background: #1e293b;
+      padding: 8px 15px;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #94a3b8;
+    }
+    #co-console {
+      background: transparent !important;
+      color: #e2e8f0 !important;
+      font-family: 'Consolas', monospace;
+      font-size: 0.95rem !important;
+      padding: 1rem !important;
+    }
+    
+    /* Responsive adjustment */
+    @media (max-width: 1024px) {
+      #co-lesson-modal .glass-card > div:last-child {
+        flex-direction: column !important;
+      }
+      #co-lesson-body {
+        border-right: none !important;
+        border-bottom: 1px solid var(--border-color);
+        max-height: 40vh;
+      }
+      #co-lesson-modal .glass-card {
+        height: 95vh;
+        max-width: 95vw;
+      }
+    }
+
+    /* Card Hover Fix */
+    .lesson-card.glass-card:hover:not(.locked) {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(79, 70, 229, 0.15);
+      border-color: rgba(79, 70, 229, 0.3);
+    }
+    
+    /* 🧭 Roadmap Step Header Fix */
+    .co-step-header {
+      grid-column: 1 / -1; /* Spans across all columns of the grid */
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #1e293b;
+      padding: 2rem 0.5rem 0.5rem;
+      margin-top: 1rem;
+      border-bottom: 2px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dark .co-step-header {
+      color: #f1f5f9;
+      border-color: #1e293b;
     }

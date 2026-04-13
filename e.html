@@ -3,285 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium Feature | 청각장애 학생의 지워진 교육권</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Outfit:wght@800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="e.css">
+    <title>papago | 번역기</title>
+    <link rel="stylesheet" href="css/translate.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <header class="main-header" id="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <span class="logo-text">JUSTICE <span class="accent-news">REPORTS</span></span>
-                </div>
-                <nav class="nav-links">
-                    <a href="#" class="active">FEAT. STORY</a>
-                    <a href="#">REPORTS</a>
-                    <a href="#">ART GALLERY</a>
-                    <button id="toggle-view" class="toggle-btn">글로만 보기</button>
-                </nav>
-            </div>
+    <header class="header">
+        <div class="header-left">
+            <a href="#" class="logo-link">
+                <i class="fas fa-dove"></i> papago <small>사전</small>
+            </a>
+            <div id="progress-text" style="font-size: 0.85rem; color: #999; margin-left: 20px; font-weight: 500; letter-spacing: 0.5px;">1 / 17</div>
+        </div>
+        <div class="header-right">
+            <button class="header-btn plus">papago+</button>
+            <button class="header-btn">플러스 소개</button>
+            <i class="far fa-star"></i>
+            <i class="fas fa-user-circle"></i>
         </div>
     </header>
 
-    <main id="main-content">
-        <!-- 뉴스 스타일 콘텐츠 (FEATURE STORY MODE) -->
-        <div id="news-style-content">
-            <section class="hero-cover">
-                <img src="img/human_rights_typography_v2_reference.png" alt="Right to Education - Understanding and Learning Typography" class="hero-typography" id="hero-img">
-                <div class="hero-headline-group">
-                    <span class="hero-tag">Special Editorial Report</span>
-                    <h1 class="hero-headline">침묵에 갇힌 교실:<br>청각장애 학생의 지워진 교육권</h1>
+    <div class="tabs-container">
+        <div class="tab active"><i class="fas fa-font"></i> 텍스트</div>
+        <div class="tab"><i class="far fa-image"></i> 이미지</div>
+        <div class="tab"><i class="far fa-file-alt"></i> 문서</div>
+        <div class="tab"><i class="fas fa-globe"></i> 웹사이트</div>
+    </div>
+
+    <main class="main-content">
+        <div class="translate-container">
+            <!-- Source Box -->
+            <div class="box source">
+                <div class="box-header">
+                    <div class="lang-dropdown">언어감지 <i class="fas fa-chevron-down"></i></div>
+                    <div class="swap-arrows"><i class="fas fa-exchange-alt"></i></div>
                 </div>
-                <div class="scroll-indicator">↓</div>
-            </section>
-
-            <div class="article-container">
-                <div class="typography-insight reveal">
-                    <h3>타이포그래피에 담긴 기본권의 의미와 특징</h3>
-                    <p>본 기사의 타이포그래피는 <strong>교육을 받을 권리의 의미(장애와 관계없이 모든 학생이 평등하게 배울 기회)</strong>와 <strong>특징(단순히 학교에 다니는 것이 아니라, 수업 내용을 '이해하며 배울' 권리)</strong>을 직관적으로 담아낸 작품입니다. "장애가 있어도 모든 학생은 평등하게 교육을 받아야 한다"는 대전제 아래, 황금빛으로 강조된 '이해하며'라는 구절은 교육권이 형식적 권리를 넘어 실질적인 평등의 보장으로 나아가야 함을 상징합니다.</p>
-                </div>
-
-                <div class="article-meta-modern reveal">
-                    <div class="meta-item"><strong>PRODUCED BY</strong> JUSTICE REPORTS</div>
-                    <div class="meta-item"><strong>PUBLISHED</strong> 2026. 04. 02.</div>
-                </div>
-
-                <div class="article-body">
-                    <p class="reveal">내가 조사한 인권 침해 사례는 청각장애 학생이 학교에 수어통역이나 문자통역 지원을 요청했지만 학교가 이를 제대로 제공하지 않은 사건이다. 이 학생은 입학 전부터 학교와 교육청에 통역 지원을 요청하였으나, 학교는 학생이 직접 통역사를 구해야 한다고 하였다. 그 결과 학생은 출석수업에 자유롭게 참여하지 못했고, 가족의 도움을 받아야만 겨우 수업에 참여할 수 있는 상황이 되었다. 이는 단순한 불편이 아니라, 학생이 학교생활을 정상적으로 이어 가기 어렵게 만든 문제라고 볼 수 있다.</p>
-
-                    <p class="reveal">이 사례에서 침해된 기본권은 사회권이다. 사회권이란 국민이 인간다운 생활을 할 수 있도록 국가에 적극적인 배려와 도움을 요구할 수 있는 권리이다. 사회권에는 교육을 받을 권리, 근로의 권리, 인간다운 생활을 할 권리 등이 포함된다. 이 사례는 그중에서도 교육을 받을 권리와 관련된 문제라고 볼 수 있다. 따라서 단순히 학교에 다니는 형식만 갖추는 것이 아니라, 수업 내용을 이해하고 질문하며 발표와 활동에도 참여할 수 있도록 실질적인 교육 기회를 보장받아야 한다.</p>
-
-                    <h2 class="section-title-premium reveal">침해의 3가지 본질</h2>
-                    <div class="premium-grid">
-                        <div class="premium-card reveal">
-                            <span class="card-icon-modern">🔇</span>
-                            <span class="card-label">REASON 01</span>
-                            <h3>지식 습득의<br>근원적 차단</h3>
-                            <p>첫째, 통역 지원이 없으면 수업 내용을 제대로 이해하기 어렵기 때문이다. 청각장애 학생은 수어통역이나 문자통역이 있어야 교사의 설명을 정확히 이해할 수 있는데, 그 지원이 없으면 수업의 중요한 내용을 놓치게 된다. 이렇게 되면 학생은 같은 교실에 있어도 실제로는 충분한 교육을 받기 어려워진다.</p>
-                        </div>
-                        <div class="premium-card reveal">
-                            <span class="card-icon-modern">⚖️</span>
-                            <span class="card-label">REASON 02</span>
-                            <h3>사회권 보장의<br>부재</h3>
-                            <p>둘째, 사회권의 중요한 내용인 교육을 받을 권리가 충분히 보장되지 않았기 때문이다. 사회권은 국가가 국민이 인간다운 생활을 할 수 있도록 필요한 조건을 마련해 주어야 하는 권리인데, 학교가 필요한 통역 지원을 제공하지 않은 것은 학생이 제대로 배우고 성장할 기회를 약하게 만든 것이다.</p>
-                        </div>
-                        <div class="premium-card reveal">
-                            <span class="card-icon-modern">🏢</span>
-                            <span class="card-label">REASON 03</span>
-                            <h3>공적 책임의<br>전가</h3>
-                            <p>셋째, 학교가 해야 할 책임을 학생 개인에게 떠넘겼기 때문이다. 필요한 편의를 제공해야 하는 주체는 학교인데, 학생이 직접 통역사를 구하게 한 것은 교육기관이 책임을 다하지 않은 것이다. 이는 학생과 가족에게 큰 부담을 주었고, 결국 학생의 사회권을 충분히 누리지 못하게 만들었다.</p>
-                        </div>
+                <div id="source-text" class="text-box">화덕 피자는 나에게 가장 큰 위안을 주는 음식 중 하나이다.</div>
+                <div class="char-count" id="char-count">0 / 3000</div>
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button class="toolbar-btn" onclick="speak('ko-KR')"><i class="fas fa-volume-up"></i></button>
+                        <button class="toolbar-btn" onclick="copyText('source-text')"><i class="far fa-paste"></i></button>
                     </div>
-
-                    <h2 class="section-title-premium reveal">닫힌 교실을 여는 구제책</h2>
-                    <div class="remedy-horizontal">
-                        <div class="remedy-long-card reveal">
-                            <div class="remedy-label">국가인권위 진정</div>
-                            <div class="remedy-desc">
-                                첫째, 국가인권위원회에 진정을 제기하는 방법이 있다. 국가인권위원회는 인권 침해나 차별행위를 조사하고, 문제가 확인되면 시정 권고를 할 수 있다. 따라서 학교의 조치가 부당하다고 판단될 때 가장 먼저 도움을 요청할 수 있는 기관이다.
-                            </div>
-                        </div>
-                        <div class="remedy-long-card reveal">
-                            <div class="remedy-label">교육부/청 민원</div>
-                            <div class="remedy-desc">
-                                둘째, 교육청이나 교육부에 민원을 제기하는 방법이 있다. 이를 통해 학교의 잘못된 조치를 바로잡고, 통역 지원이나 예산 지원과 같은 실제적인 도움을 요구할 수 있다. 감독기관이 학교에 개선을 요구하면 문제 해결이 더 빠르게 이루어질 가능성도 있다.
-                            </div>
-                        </div>
-                        <div class="remedy-long-card reveal">
-                            <div class="remedy-label">법원 시정 청구</div>
-                            <div class="remedy-desc">
-                                셋째, 법원에 차별행위 중지와 시정 조치를 청구하는 방법이 있다. 법원은 차별행위를 멈추게 하거나 필요한 조치를 하도록 명할 수 있으므로, 문제가 계속될 경우 보다 강한 방식의 구제를 받을 수 있다. 이 방법은 학생의 권리를 법적으로 보호받을 수 있다는 점에서 중요하다.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="margin: 150px 0; border-top: 2px solid #000; padding-top: 60px;" class="reveal">
-                        <p style="font-size: 32px; line-height: 1.5; font-weight: 800; color: #000; letter-spacing: -1px; word-break: keep-all;">
-                            "따라서 이 사례는 청각장애 학생이 학교에서 정당한 통역 지원을 받지 못해 사회권이 침해된 사례라고 볼 수 있다. 특히 사회권 가운데 교육을 받을 권리가 제대로 보장되지 않아 실질적인 교육 참여가 어려워졌기 때문이다. 학교는 모든 학생이 장애 유무와 관계없이 동등하게 배우고 참여할 수 있도록 필요한 지원을 제공해야 한다. 그래야만 모든 학생이 차별 없이 자신의 능력을 키우고 학교생활을 할 수 있을 것이다."
-                        </p>
-                    </div>
-
-                    <div class="references-section reveal">
-                        <h3 class="references-title">출처 및 참고문헌</h3>
-                        <ul class="references-list">
-                            <li><a href="https://www.humanrights.go.kr/base/board/read?boardManagementNo=24&boardNo=7611849&menuLevel=3&menuNo=91" target="_blank">국가인권위원회, 「학교는 청각장애학생에게 수어통역 등 정당한 편의 제공해야(결정)」, 2026.04.01.</a></li>
-                            <li><a href="https://www.humanrights.go.kr/site/program/board/basicboard/view?menuId=001004002001&boardTypeId=24&boardId=7607739" target="_blank">국가인권위원회, 「학교는 청각장애학생에게 수어통역 등 정당한 편의 제공해야」, 2026.02.27.</a></li>
-                            <li><a href="https://www.law.go.kr/법령/대한민국헌법/제31조" target="_blank">대한민국헌법 제31조(교육을 받을 권리), 국가법령정보센터.</a></li>
-                            <li><a href="https://www.law.go.kr/법령/장애인차별금지및권리구제등에관한법률/제14조" target="_blank">장애인차별금지 및 권리구제 등에 관한 법률 제14조(정당한 편의제공 의무), 국가법령정보센터.</a></li>
-                            <li><a href="https://www.law.go.kr/법령/장애인차별금지및권리구제등에관한법률/제48조" target="_blank">장애인차별금지 및 권리구제 등에 관한 법률 제48조(법원의 구제조치), 국가법령정보센터.</a></li>
-                            <li><a href="https://www.moe.go.kr/sub/info.do?m=050101&s=moe" target="_blank">교육부 민원신청하기 안내, 교육부 홈페이지.</a></li>
-                            <li><a href="https://case.humanrights.go.kr/" target="_blank">국가인권위원회 홈페이지 진정신청 안내.</a></li>
-                        </ul>
-                    </div>
+                    <button class="translate-submit-btn" onclick="nextSentence()">번역하기</button>
                 </div>
             </div>
 
-            <!-- The Art of Basic Rights Showcase -->
-            <section class="art-showcase">
-                <div class="art-container">
-                    <h2 class="art-title reveal">The Art of Basic Rights</h2>
-                    <div class="art-gallery">
-                        <div class="art-item reveal">
-                            <img src="img/human_rights_typography_v2_premium.png" alt="Premium Typography Piece 1" class="gallery-img">
-                            <div class="art-caption">"평등하게 교육을 받을 권리" - Premium Edition</div>
-                        </div>
-                        <div class="art-item reveal">
-                            <img src="img/human_rights_typography_v2_final.png" alt="Final Typography Masterpiece" class="gallery-img">
-                            <div class="art-caption">"이해하며 배울 권리" - Final Masterpiece</div>
-                        </div>
+            <!-- Target Box -->
+            <div class="box target">
+                <div class="box-header">
+                    <div class="lang-dropdown">한국어 <i class="fas fa-chevron-down"></i></div>
+                </div>
+                <div id="target-text" class="text-box" style="color:#00c73c;">Eating warm oven-baked pizza...</div>
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button class="toolbar-btn" onclick="speak('en-US')"><i class="fas fa-volume-up"></i></button>
+                        <button class="toolbar-btn" onclick="copyText('target-text')"><i class="far fa-paste"></i></button>
+                        <button class="toolbar-btn"><i class="far fa-star"></i></button>
+                        <button class="toolbar-btn"><i class="fas fa-share-alt"></i></button>
                     </div>
-                    <p style="margin-top: 80px; opacity: 0.5; font-size: 14px;" class="reveal">Designed by JUSTICE REPORTS Creative Studio</p>
-                </div>
-            </section>
-        </div>
-
-        <!-- 글로만 보기 콘텐츠 (MINIMALIST MODE) -->
-        <div id="pure-text-content" style="display:none;">
-            <div class="pure-text-inner">
-                <button id="back-to-news" class="toggle-btn" style="margin-bottom: 60px;">다시 뉴스 스타일로 보기</button>
-                <h2 style="font-size: 32px; margin-bottom: 50px; border-bottom: 3px solid #111; padding-bottom: 20px; font-family: 'Outfit';">[인권 침해 사례 분석 논술]</h2>
-                <div style="font-size: 20px; line-height: 2.2; text-align: justify; word-break: keep-all;">
-                    <p style="margin-bottom: 40px;">내가 조사한 인권 침해 사례는 청각장애 학생이 학교에 수어통역이나 문자통역 지원을 요청했지만 학교가 이를 제대로 제공하지 않은 사건이다. 이 학생은 입학 전부터 학교와 교육청에 통역 지원을 요청하였으나, 학교는 학생이 직접 통역사를 구해야 한다고 하였다. 그 결과 학생은 출석수업에 자유롭게 참여하지 못했고, 가족의 도움을 받아야만 겨우 수업에 참여할 수 있는 상황이 되었다. 이는 단순한 불편이 아니라, 학생이 학교생활을 정상적으로 이어 가기 어렵게 만든 문제라고 볼 수 있다.</p>
-                    
-                    <p style="margin-bottom: 40px;">이 사례에서 침해된 기본권은 사회권이다. 사회권이란 국민이 인간다운 생활을 할 수 있도록 국가에 적극적인 배려와 도움을 요구할 수 있는 권리이다. 사회권에는 교육을 받을 권리, 근로의 권리, 인간다운 생활을 할 권리 등이 포함된다. 이 사례는 그중에서도 교육을 받을 권리와 관련된 문제라고 볼 수 있다. 따라서 단순히 학교에 다니는 형식만 갖추는 것이 아니라, 수업 내용을 이해하고 질문하며 발표와 활동에도 참여할 수 있도록 실질적인 교육 기회를 보장받아야 한다.</p>
-                    
-                    <p style="margin-bottom: 40px;">이 기본권이 침해된 이유는 세 가지이다.<br>
-                    첫째, 통역 지원이 없으면 수업 내용을 제대로 이해하기 어렵기 때문이다. 청각장애 학생은 수어통역이나 문자통역이 있어야 교사의 설명을 정확히 이해할 수 있는데, 그 지원이 없으면 수업의 중요한 내용을 놓치게 된다. 이렇게 되면 학생은 같은 교실에 있어도 실제로는 충분한 교육을 받기 어려워진다.<br>
-                    둘째, 사회권의 중요한 내용인 교육을 받을 권리가 충분히 보장되지 않았기 때문이다. 사회권은 국가가 국민이 인간다운 생활을 할 수 있도록 필요한 조건을 마련해 주어야 하는 권리인데, 학교가 필요한 통역 지원을 제공하지 않은 것은 학생이 제대로 배우고 성장할 기회를 약하게 만든 것이다.<br>
-                    셋째, 학교가 해야 할 책임을 학생 개인에게 떠넘겼기 때문이다. 필요한 편의를 제공해야 하는 주체는 학교인데, 학생이 직접 통역사를 구하게 한 것은 교육기관이 책임을 다하지 않은 것이다. 이는 학생과 가족에게 큰 부담을 주었고, 결국 학생의 사회권을 충분히 누리지 못하게 만들었다.</p>
-                    
-                    <p style="margin-bottom: 40px;">이 침해된 기본권을 구제하기 위한 국가기관과 구제 방법도 세 가지가 있다.<br>
-                    첫째, 국가인권위원회에 진정을 제기하는 방법이 있다. 국가인권위원회는 인권 침해나 차별행위를 조사하고, 문제가 확인되면 시정 권고를 할 수 있다. 따라서 학교의 조치가 부당하다고 판단될 때 가장 먼저 도움을 요청할 수 있는 기관이다.<br>
-                    둘째, 교육청이나 교육부에 민원을 제기하는 방법이 있다. 이를 통해 학교의 잘못된 조치를 바로잡고, 통역 지원이나 예산 지원과 같은 실제적인 도움을 요구할 수 있다. 감독기관이 학교에 개선을 요구하면 문제 해결이 더 빠르게 이루어질 가능성도 있다.<br>
-                    셋째, 법원에 차별행위 중지와 시정 조치를 청구하는 방법이 있다. 법원은 차별행위를 멈추게 하거나 필요한 조치를 하도록 명할 수 있으므로, 문제가 계속될 경우 보다 강한 방식의 구제를 받을 수 있다. 이 방법은 학생의 권리를 법적으로 보호받을 수 있다는 점에서 중요하다.</p>
-                    
-                    <p style="margin-bottom: 40px; font-weight: 700; border-top: 1px solid #eee; padding-top: 40px;">따라서 이 사례는 청각장애 학생이 학교에서 정당한 통역 지원을 받지 못해 사회권이 침해된 사례라고 볼 수 있다. 특히 사회권 가운데 교육을 받을 권리가 제대로 보장되지 않아 실질적인 교육 참여가 어려워졌기 때문이다. 학교는 모든 학생이 장애 유무와 관계없이 동등하게 배우고 참여할 수 있도록 필요한 지원을 제공해야 한다. 그래야만 모든 학생이 차별 없이 자신의 능력을 키우고 학교생활을 할 수 있을 것이다.</p>
-                </div>
-
-                <div style="margin-top: 80px; padding-top: 40px; border-top: 1px solid #111; font-size: 14px; line-height: 2;">
-                    <div style="font-weight: 900; margin-bottom: 10px;">[참고자료]</div>
-                    국가인권위원회, 「학교는 청각장애학생에게 수어통역 등 정당한 편의 제공해야(결정)」, 2026.04.01.<br>
-                    국가인권위원회, 「학교는 청각장애학생에게 수어통역 등 정당한 편의 제공해야」, 2026.02.27.<br>
-                    대한민국헌법 제31조(교육을 받을 권리), 국가법령정보센터.<br>
-                    장애인차별금지 및 권리구제 등에 관한 법률 제14조(정당한 편의제공 의무), 국가법령정보센터.<br>
-                    장애인차별금지 및 권리구제 등에 관한 법률 제48조(법원의 구제조치), 국가법령정보센터.<br>
-                    교육부 민원신청하기 안내, 교육부 홈페이지.<br>
-                    국가인권위원회 홈페이지 진정신청 안내.
                 </div>
             </div>
         </div>
     </main>
 
-    <footer class="site-footer">
-        <div class="container">
-            <h2 style="font-family: 'Outfit'; font-size: 48px; margin-bottom: 20px;">JUSTICE REPORTS</h2>
-            <p style="opacity: 0.5; font-size: 14px; letter-spacing: 2px;">ADVANCING HUMAN RIGHTS THROUGH MODERN EDUCATION</p>
-            <p style="opacity: 0.3; font-size: 12px; margin-top: 40px;">© 2026 Special Project Group | All Rights Reserved.</p>
-        </div>
-    </footer>
-
-    <!-- 이미지 확대 모달 -->
-    <div id="image-modal" class="modal">
-        <span class="close-modal">&times;</span>
-        <img class="modal-content" id="zoomed-image">
-        <div id="caption"></div>
-    </div>
+    <div id="toast">복사되었습니다.</div>
 
     <script>
-        const toggleBtn = document.getElementById('toggle-view');
-        const backBtn = document.getElementById('back-to-news');
-        const body = document.body;
-        const header = document.getElementById('header');
-        const newsContent = document.getElementById('news-style-content');
-        const pureContent = document.getElementById('pure-text-content');
+        const sentences = [
+            // ... (keep original sentences)
+            { ko: "[음식 소개]", en: "[Food Introduction]", type: "title" },
+            { ko: "화덕 피자는 나에게 가장 큰 위안을 주는 음식 중 하나이다.", en: "Eating warm oven-baked pizza with my family is one of the best ways for me to relax after a long day.", type: "text" },
+            { ko: "나는 어느 날 저녁 가족과 함께 따뜻한 화덕 피자를 나누어 먹었던 시간을 아직도 기억한다.", en: "I still remember an ordinary evening when we sat together and shared a warm pizza at home.", type: "text" },
+            { ko: "그날은 특별한 날은 아니었지만, 모두가 집에 모여 함께 식사할 수 있어서 더 따뜻하게 느껴졌다.", en: "It was not a special day, but it was the kind of memory to stay in my heart for a long time.", type: "text" },
+            { ko: "상자를 열었을 때 퍼지던 도우 냄새와 치즈 향은 하루의 피곤함을 잊게 해 주었다.", en: "The smell of fresh dough and melted cheese made us forget the tiredness of the day.", type: "text" },
+            { ko: "아버지는 우리가 아직 따뜻할 때 같이 먹을 수 있도록 피자를 작은 조각으로 잘라주셨다.", en: "My father cut the pizza into small pieces so that we could eat it together while it was still hot.", type: "text" },
+            { ko: "나에게 따뜻한 화덕 피자를 먹는 것은 스트레스를 해소하고 마음을 편안하게 만드는 좋은 방법이다.", en: "For me, warm oven-baked pizza always makes me feel calm and peaceful.", type: "text" },
+            { ko: "그래서 화덕 피자는 나에게 단순한 음식이 아니라, 행복했던 순간을 다시 떠올리게 하는 특별한 위안의 음식이다.", en: "That is why oven-baked pizza is not just food to me, but a special comfort food that brings back happy moments.", type: "text" },
+            { ko: "[레시피]", en: "[Recipe]", type: "title" },
+            { ko: "집에서 화덕 피자를 만들면 그 따뜻한 기억을 다시 떠올릴 수 있다.", en: "Making oven-baked pizza at home is easier than many people think.", type: "text" },
+            { ko: "먼저 피자 도우, 토마토소스, 모차렐라 치즈, 양파, 버섯, 햄, 그리고 피자를 구울 트레이를 준비한다.", en: "First, prepare pizza dough, tomato sauce, mozzarella cheese, onions, mushrooms, ham, and a tray to bake the pizza on.", type: "text" },
+            { ko: "오븐에 넣을 팬 위에 도우를 올리고, 토마토소스를 고르게 펴 바른다.", en: "Place the dough on the tray and spread the sauce evenly over it.", type: "text" },
+            { ko: "그다음 치즈와 토핑을 고르게 올린다.", en: "Then add the cheese and toppings in a neat layer.", type: "text" },
+            { ko: "가장자리가 노릇해지고 치즈가 잘 녹을 수 있도록 높은 온도에서 약 10분 정도 굽는다.", en: "Bake it at a high temperature for about ten minutes so that it can turn golden and the cheese can melt well.", type: "text" },
+            { ko: "오븐에서 퍼지는 고소한 냄새는 가족들이 자연스럽게 부엌으로 오게 만든다.", en: "The warm smell from the oven will make your family come into the kitchen.", type: "text" },
+            { ko: "완성된 피자를 바로 내는 것은 나를 항상 따뜻하고 편안하게 만든다.", en: "Serving the pizza right away always makes me feel warm and relaxed.", type: "text" },
+            { ko: "이것은 사랑하는 사람들과 나누기 좋은 간단한 레시피이다.", en: "It is also a simple recipe to share with the people you love.", type: "text" }
+        ];
 
-        // 모달 관련 요소
-        const modal = document.getElementById('image-modal');
-        const modalImg = document.getElementById('zoomed-image');
-        const captionText = document.getElementById('caption');
-        const closeModal = document.querySelector('.close-modal');
+        let currentIndex = 0;
 
-        // 헤더 스크롤 효과
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 100) {
-                header.classList.add('scrolled');
-            } else {
-                header.classList.remove('scrolled');
+        function updateUI() {
+            const source = document.getElementById('source-text');
+            const target = document.getElementById('target-text');
+            const progress = document.getElementById('progress-text');
+            const charCount = document.getElementById('char-count');
+
+            const item = sentences[currentIndex];
+            source.innerText = item.ko;
+            target.innerText = item.en;
+            progress.innerText = `${currentIndex + 1} / ${sentences.length}`;
+            charCount.innerText = `${item.ko.length} / 3000`;
+
+            // Transition effect
+            source.style.opacity = '0.5';
+            target.style.opacity = '0.5';
+            setTimeout(() => {
+                source.style.opacity = '1';
+                target.style.opacity = '1';
+            }, 100);
+        }
+
+        function nextSentence() {
+            if (currentIndex < sentences.length - 1) {
+                currentIndex++;
+                updateUI();
             }
-        });
+        }
 
-        // 스크롤 리빌 (Intersection Observer)
-        const observerOptions = {
-            threshold: 0.15
-        };
+        function prevSentence() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateUI();
+            }
+        }
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('active');
-                }
+        function speak(lang) {
+            window.speechSynthesis.cancel();
+            const text = (lang === 'ko-KR') ? sentences[currentIndex].ko : sentences[currentIndex].en;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast();
             });
-        }, observerOptions);
-
-        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-        // 히어로 패럴랙스 효과
-        const heroImg = document.getElementById('hero-img');
-        window.addEventListener('mousemove', (e) => {
-            if (body.classList.contains('text-only-mode')) return;
-            const x = (window.innerWidth / 2 - e.pageX) / 40;
-            const y = (window.innerHeight / 2 - e.pageY) / 40;
-            heroImg.style.transform = `translate(${x}px, ${y}px) scale(1.02)`;
-        });
-
-        function toggleMode() {
-            body.classList.toggle('text-only-mode');
-            if (body.classList.contains('text-only-mode')) {
-                toggleBtn.style.display = 'none';
-                newsContent.style.display = 'none';
-                pureContent.style.display = 'block';
-                window.scrollTo(0, 0);
-            } else {
-                toggleBtn.style.display = 'block';
-                newsContent.style.display = 'block';
-                pureContent.style.display = 'none';
-                window.scrollTo(0, 0);
-            }
         }
 
-        toggleBtn.addEventListener('click', toggleMode);
-        backBtn.addEventListener('click', toggleMode);
-
-        // 이미지 클릭 시 확대 기능 (갤러리 포함)
-        document.querySelectorAll('img').forEach(img => {
-            if (!img.classList.contains('logo-img')) { // 로고 제외
-                img.style.cursor = 'zoom-in';
-                img.addEventListener('click', function() {
-                    modal.style.display = "flex";
-                    modalImg.src = this.src;
-                    captionText.innerHTML = this.alt;
-                });
-            }
-        });
-
-        // 모달 닫기 기능
-        closeModal.onclick = function() {
-            modal.style.display = "none";
+        function showToast() {
+            const toast = document.getElementById("toast");
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
 
-        modal.onclick = function(e) {
-            if (e.target === modal) {
-                modal.style.display = "none";
-            }
-        }
-
-        // ESC 키로 모달 닫기
+        // Keyboard support
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') modal.style.display = 'none';
+            if (e.key === 'ArrowRight') nextSentence();
+            if (e.key === 'ArrowLeft') prevSentence();
         });
+
+        updateUI();
     </script>
 </body>
 </html>
