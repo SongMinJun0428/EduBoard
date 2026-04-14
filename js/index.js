@@ -6,10 +6,45 @@ if (typeof pdfjsLib !== 'undefined') {
 
 const { createClient } = supabase;
 window.supabaseClient = window.supabase.createClient(
-  'https://ucmzrkwrsezfdjnnwsww.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw'
+  window.EduConfig.getSupabaseURL(),
+  window.EduConfig.getSupabaseKey()
 );
 const supabaseClient = window.supabaseClient;
+
+// 🛡️ 보안 및 로딩 신뢰성: 인증 상태 실시간 감지 및 세션 동기화
+supabaseClient.auth.onAuthStateChange(async (event, session) => {
+  console.log('🛡️ Auth Event:', event);
+  
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+    if (session && session.user) {
+      // 1. 최소 세션 정보 즉시 저장 (백업용)
+      const rawEmail = session.user.email || '';
+      const username = rawEmail ? rawEmail.split('@')[0] : `kakao_${session.user.id.substring(0, 8)}`;
+      localStorage.setItem('savedUsername', username);
+      localStorage.setItem('savedEmail', rawEmail);
+      localStorage.setItem('savedUserId', session.user.id);
+      
+      // 2. 전체 데이터 즉시 로딩 및 대시보드 진입
+      if (typeof showMain === 'function') showMain();
+      if (typeof loadUserInfo === 'function') {
+        await loadUserInfo();
+      }
+      
+      // 3. 최초 소셜 로그인 시 추가 데이터 요청 여부 확인
+      // 3. 최초 소셜 로그인 시 추가 데이터 요청 여부 확인
+      const { data: userRecord } = await supabaseClient.from('users').select('name').eq('username', username).maybeSingle();
+      if (!userRecord && !location.href.includes('complete')) {
+        // 회원 기록이 없으면 (어떤 세션 이벤트든 상관없이) 추가 정보 입력 모달 표시
+        if (typeof showSocialSignupModal === 'function') showSocialSignupModal();
+      }
+    }
+  } else if (event === 'SIGNED_OUT') {
+    // 로그아웃 시 클린업
+    localStorage.clear();
+    setCookie('savedUsername', '', -1);
+    if (typeof hideMain === 'function') hideMain();
+  }
+});
 
 const NEIS_KEY = '28ca0f05af184e8ba231d5a949d52db2';
 const ATPT_OFCDC_SC_CODE = 'J10';
@@ -141,6 +176,9 @@ let currentUserName = '';
 let currentStudentNumber = '';
 let currentGrade = null;
 let currentClassNum = null;
+let currentAtptCode = null; // 🏫 추가
+let currentSchulCode = null; // 🏫 추가
+let currentSchoolName = ''; // 🏫 추가
 let timetableOffset = 0;
 
 let currentFourNumbers = [];
@@ -168,13 +206,130 @@ function hideLoading() {
   }
 }
 
+/** 🌐 소셜 로그인 (OAuth) 처리 */
+async function loginWithProvider(provider) {
+  showLoading();
+  // 🛡️ 고유 사용자 세션을 위해 이메일prefix 추출 로직은 가입 완료 시점에 수행
+  const { data, error } = await supabaseClient.auth.signInWithOAuth({
+    provider: provider,
+    options: {
+      redirectTo: window.location.origin
+    }
+  });
+  if (error) {
+    hideLoading();
+    alert('소셜 로그인 오류: ' + error.message);
+  }
+}
+
+/** 🔗 소셜 계정 연동 해제 (보안 강화) */
+async function unlinkSocialAccount(provider) {
+  if (!confirm(`정말로 ${provider} 계정 연동을 해제하시겠습니까?`)) return;
+
+  showLoading();
+  try {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) throw new Error('로그인 정보가 없습니다.');
+
+    // 1. Supabase Auth에서 해당 ID 제거
+    const identity = user.identities?.find(id => id.provider === provider);
+    if (identity) {
+      const { error: unlinkErr } = await supabaseClient.auth.unlinkIdentity(identity);
+      if (unlinkErr) throw unlinkErr;
+    }
+
+    // 2. 우리 DB에서 auth_user_id 연결 제거
+    const { error: dbErr } = await supabaseClient
+      .from('users')
+      .update({ auth_user_id: null })
+      .eq('username', localStorage.getItem('savedUsername'));
+
+    if (dbErr) throw dbErr;
+
+    alert('연동이 해제되었습니다. 다음 로그인부터는 아이디와 비밀번호를 사용해 주세요.');
+    location.reload();
+  } catch (err) {
+    console.error('Unlink error:', err);
+    alert('연동 해제 중 오류가 발생했습니다: ' + err.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+/** 📝 소셜 로그인 후 최초 정보 입력 완료 */
+async function completeSocialSignup() {
+  const name = document.getElementById('social-name').value.trim();
+  const password = document.getElementById('social-password').value.trim();
+  const passwordConfirm = document.getElementById('social-password-confirm').value.trim();
+  const grade = parseInt(document.getElementById('social-grade').value, 10);
+  const classNum = parseInt(document.getElementById('social-class').value, 10);
+  const number = parseInt(document.getElementById('social-number').value, 10);
+  
+  // 🏫 학교 정보 추출
+  const schoolName = document.getElementById('socialSchoolName').value;
+  const atptCode = document.getElementById('socialAtptCode').value;
+  const schulCode = document.getElementById('socialSchulCode').value;
+
+  if (!name || !password || isNaN(grade) || isNaN(classNum) || isNaN(number) || !schulCode) {
+    alert('학교 정보를 포함하여 모든 정보를 임력해 주세요.');
+    return;
+  }
+
+  if (password.length < 6) {
+    alert('비밀번호는 6자 이상이어야 합니다.');
+    return;
+  }
+
+  if (password !== passwordConfirm) {
+    alert('비밀번호가 일치하지 않습니다.');
+    return;
+  }
+
+  showLoading();
+  try {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) throw new Error('로그인 정보가 없습니다.');
+
+    // 🛡️ 카카오톡 등 이메일 필수 동의가 없는 소셜 로그인을 위한 안전 장치
+    const rawEmail = user.email || '';
+    const safeUsername = rawEmail ? rawEmail.split('@')[0] : `kakao_${user.id.substring(0, 8)}`;
+    
+    const { error: insErr } = await supabaseClient.from('users').insert([{
+      username: safeUsername, 
+      email: rawEmail || null,
+      password: password,
+      name: name,
+      grade: grade,
+      class_num: classNum,
+      student_number: number,
+      school_name: schoolName,
+      atpt_ofcdc_sc_code: atptCode,
+      sd_schul_code: schulCode,
+      role: 'user', // 기본 권한
+      auth_user_id: user.id
+    }]);
+
+    if (insErr) {
+      if (insErr.code === '23505') throw new Error('이미 사용 중인 아이디/이메일입니다.');
+      throw insErr;
+    }
+
+    alert('전국 EduBoard 가입을 환영합니다!');
+    location.reload();
+  } catch (err) {
+    alert('정보 저장 실패: ' + err.message);
+  } finally {
+    hideLoading();
+  }
+}
+
 async function loginDirect() {
   const userBtn = document.getElementById('login-btn');
-  const username = document.getElementById('loginUsername').value.replace(/\s+/g, '');
+  const loginValue = document.getElementById('loginUsername').value.trim(); // 📧 ID 또는 이메일 통합
   const password = document.getElementById('loginPassword').value.replace(/\s+/g, '');
 
-  if (!username || !password) {
-    alert('아이디와 비밀번호를 입력해주세요.');
+  if (!loginValue || !password) {
+    alert('정보를 입력해주세요.');
     return;
   }
 
@@ -182,51 +337,57 @@ async function loginDirect() {
   if (userBtn) userBtn.disabled = true;
 
   try {
+    // 🛡️ 보안: ID 또는 이메일 중 일치하는 계정 검색
     const { data: user } = await supabaseClient
       .from('users')
       .select('*')
-      .eq('username', username)
+      .or(`username.eq."${loginValue}",email.eq."${loginValue}"`)
       .eq('password', password)
-      .single();
+      .maybeSingle();
 
     if (user) {
+      // 세션 유지 및 UI 설정
+      localStorage.setItem('savedUsername', user.username);
+      setCookie('savedUsername', user.username, 7);
+      
+      // 전역 상태 업데이트 (전국 학교 코드 포함, 없으면 J10/7679111 기본값)
       currentUserName = user.name;
       currentStudentNumber = user.student_number;
-
-      localStorage.setItem('savedUsername', username);
-      setCookie('savedUsername', username, 7); // 7일 유지
-      localStorage.setItem('savedName', currentUserName);
-      localStorage.setItem('savedStudentNum', currentStudentNumber);
-      localStorage.setItem('savedGrade', user.grade || 0);
-      localStorage.setItem('savedClassNum', user.class_num || 0);
-      localStorage.setItem('savedRole', user.role || 'user');
-      localStorage.setItem('savedUserId', user.id || '');
-      localStorage.setItem('savedEmail', user.email || '');
-
-      setUserInfoInput();
-
-      currentUserRole = user.role || 'user';
       currentGrade = user.grade;
       currentClassNum = user.class_num;
+      currentAtptCode = user.atpt_ofcdc_sc_code || 'J10';
+      currentSchulCode = user.sd_schul_code || '7679111';
+      currentSchoolName = user.school_name || '기본학교';
 
-      // 📝 로그인 로그 기록 (통합 로그 함수 사용)
+      localStorage.setItem('savedName', currentUserName);
+      localStorage.setItem('savedGrade', currentGrade);
+      localStorage.setItem('savedClassNum', currentClassNum);
+      localStorage.setItem('savedAtptCode', currentAtptCode);
+      localStorage.setItem('savedSchulCode', currentSchulCode);
+      localStorage.setItem('savedSchoolName', currentSchoolName);
+
+      setUserInfoInput();
+      currentUserRole = user.role || 'user';
+
+      // 📝 활동 로그
       if (window.logActivity) {
-        window.logActivity('login', username, 'user', { name: user.name, student_number: user.student_number });
+        window.logActivity('login', user.username, 'user', { school: currentSchoolName });
       }
 
-      document.getElementById('dash-name').innerHTML = formatUserDisplayName(user);
+      document.getElementById('dash-name').innerText = ''; // 초기화 후 안전하게 추가
+      document.getElementById('dash-name').appendChild(formatUserDisplayName(user)); // 🛡️ XSS 방지 처리된 노드 추가
+      
       document.getElementById('dash-role').textContent = user.role === 'admin' ? '관리자' : '학생';
 
-      loadTimetableWeek(user.grade, user.class_num);
+      await loadTimetableWeek(user.grade, user.class_num);
       showMain();
-      loadNotices();
-      initDashboardTop();
+      await afterLoginRefreshDashboard();
     } else {
-      document.getElementById('loginStatus').innerText = '아이디 또는 비밀번호가 틀렸습니다.';
+      document.getElementById('loginStatus').innerText = '정보가 일치하지 않습니다.';
     }
   } catch (err) {
     console.error('Login error:', err);
-    document.getElementById('loginStatus').innerText = '로그인 중 오류가 발생했습니다: ' + err.message;
+    document.getElementById('loginStatus').innerText = '오류 발생: ' + err.message;
   } finally {
     hideLoading();
     if (userBtn) userBtn.disabled = false;
@@ -247,9 +408,15 @@ async function signup() {
   const classNum = document.getElementById('signupClass').value.trim();
   const number = document.getElementById('signupNumber').value.trim();
   const agree = document.getElementById('privacy-agree').checked;
+  const tosAgree = document.getElementById('tos-agree')?.checked;
+  const isVerified = document.getElementById('signup-btn').classList.contains('verified');
 
-  if (!agree) {
-    if (signupStatus) signupStatus.innerText = '개인정보 수집·이용에 동의해 주세요.';
+  if (!agree || !tosAgree) {
+    if (signupStatus) signupStatus.innerText = '모든 동의 항목에 체크해 주세요.';
+    return;
+  }
+  if (!isVerified) {
+    if (signupStatus) signupStatus.innerText = '이메일 인증을 완료해 주세요.';
     return;
   }
   if (!username || !password || !email || !name || !grade || !classNum || !number) {
@@ -281,7 +448,16 @@ async function signup() {
       return;
     }
 
-    // 2. 가입 시도
+    // 2. 가입 시도 (전국 학교 정보 포함)
+    const schoolName = document.getElementById('signupSchoolName').value;
+    const atptCode = document.getElementById('signupAtptCode').value;
+    const schulCode = document.getElementById('signupSchulCode').value;
+
+    if (!schulCode) {
+      if (signupStatus) signupStatus.innerText = '학교를 검색하여 선택해 주세요.';
+      return;
+    }
+
     const { error } = await supabaseClient.from('users').insert([{
       username: username,
       password: password,
@@ -290,24 +466,130 @@ async function signup() {
       grade: parseInt(grade, 10),
       class_num: parseInt(classNum, 10),
       student_number: parseInt(number, 10),
+      school_name: schoolName,
+      atpt_ofcdc_sc_code: atptCode,
+      sd_schul_code: schulCode,
       role: 'user',
       privacy_agreed_at: new Date().toISOString()
     }]);
 
     if (error) throw error;
 
-    alert('가입을 축하합니다! 로그인 해 주세요.');
-    showLogin();
+    alert('회원가입이 완료되었습니다! 로그인해 주세요.');
+    showBox('login-box');
   } catch (err) {
-    if (signupStatus) {
-      signupStatus.innerText = '가입 오류: ' + err.message;
-      signupStatus.style.color = 'red';
-    }
+    console.error('Signup error:', err);
+    if (signupStatus) signupStatus.innerText = '회원가입 중 오류가 발생했습니다: ' + err.message;
   } finally {
     hideLoading();
     if (signupBtn) signupBtn.disabled = false;
   }
 }
+
+/** 🏗️ 회원가입 단계 이동 (검증 포함) */
+function nextSignupStep(step) {
+  const currentStep = document.querySelector('.signup-step.active');
+  const currentStepId = currentStep ? currentStep.id : 'signup-step-1';
+
+  // [검증 로직] 다음 단계로 갈 때만 체크 (이전 단계로 갈 때는 step < currentStepId의 숫자)
+  const currentStepNum = parseInt(currentStepId.replace('signup-step-', ''), 10);
+  
+  if (step > currentStepNum) {
+    if (currentStepNum === 1) {
+      const privacy = document.getElementById('privacy-agree').checked;
+      const tos = document.getElementById('tos-agree').checked;
+      if (!privacy || !tos) {
+        alert('모든 필수 약관에 동의해야 합니다.');
+        return;
+      }
+    } else if (currentStepNum === 2) {
+      const username = document.getElementById('signupUsername');
+      const pass = document.getElementById('signupPassword');
+      const name = document.getElementById('signupName');
+      const grade = document.getElementById('signupGrade');
+      const classNum = document.getElementById('signupClass');
+      const number = document.getElementById('signupNumber');
+
+      let isValid = true;
+      const fields = [username, pass, name, grade, classNum, number];
+      
+      fields.forEach(f => {
+        if (!f.value.trim()) {
+          f.classList.add('input-error');
+          setTimeout(() => f.classList.remove('input-error'), 500);
+          isValid = false;
+        }
+      });
+
+      if (!isValid) {
+        const signupStatus = document.getElementById('signupStatus');
+        if (signupStatus) signupStatus.innerText = '모든 필수 정보를 입력해 주세요.';
+        return;
+      }
+      
+      if (pass.value.trim().length < 6) {
+        pass.classList.add('input-error');
+        setTimeout(() => pass.classList.remove('input-error'), 500);
+        alert('비밀번호는 6자 이상이어야 합니다.');
+        return;
+      }
+    }
+  }
+
+  // 전환 수행
+  const steps = document.querySelectorAll('.signup-step');
+  steps.forEach(s => s.classList.remove('active'));
+  
+  const target = document.getElementById(`signup-step-${step}`);
+  if (target) {
+    target.classList.add('active');
+  }
+  
+  // 상태 메시지 초기화
+  const signupStatus = document.getElementById('signupStatus');
+  if (signupStatus) signupStatus.innerText = '';
+}
+
+/** ✅ 약관 동의 상태 업데이트 */
+function updateAgreementStatus() {
+  const privacy = document.getElementById('privacy-agree').checked;
+  const tos = document.getElementById('tos-agree').checked;
+  const nextBtn = document.getElementById('btn-next-step-1');
+  
+  const privacyContainer = document.getElementById('privacy-container');
+  const tosContainer = document.getElementById('tos-container');
+  
+  if (privacy) privacyContainer.classList.add('checked');
+  else privacyContainer.classList.remove('checked');
+  
+  if (tos) tosContainer.classList.add('checked');
+  else tosContainer.classList.remove('checked');
+  
+  if (privacy && tos) {
+    nextBtn.disabled = false;
+  } else {
+    nextBtn.disabled = true;
+  }
+}
+
+/** 💎 UI 박스 전환 (로그인/회원가입) */
+function showBox(boxId) {
+  const loginBox = document.getElementById('login-box');
+  const signupBox = document.getElementById('signup-box');
+  
+  if (boxId === 'login-box') {
+    signupBox.style.display = 'none';
+    loginBox.style.display = 'block';
+  } else {
+    loginBox.style.display = 'none';
+    signupBox.style.display = 'block';
+    nextSignupStep(1); // 가입 시 항상 1단계부터
+  }
+}
+
+// 기존 함수 매핑 유지
+function showSignup() { showBox('signup-box'); }
+function showLogin() { showBox('login-box'); }
 
 async function logout() {
   await supabaseClient.auth.signOut();
@@ -443,23 +725,44 @@ async function addNotice() {
   }
 }
 
-/** 👤 사용자 표시 이름 포맷터 (칭호 포함) */
+/** 👤 사용자 표시 이름 포맷터 (🛡️ XSS 보안 강화버전) */
 function formatUserDisplayName(user) {
-  if (!user) return '사용자';
-  let nameHtml = user.name;
-  if (user.equipped_title) {
-    let titleStyle = 'font-size:0.85rem; font-weight:700; margin-right:6px;';
-    if (user.equipped_title.includes('rainbow') || (user.equipped_color && user.equipped_color.includes('무지개'))) {
-      titleStyle += 'background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent;';
-    } else if (user.equipped_color) {
-      titleStyle += `color: ${user.equipped_color};`;
-    } else {
-      titleStyle += 'color: #6366f1;'; // 기본 인디고
-    }
-    const cleanTitle = user.equipped_title.replace('[칭호]', '').trim();
-    nameHtml = `<span style="${titleStyle}">[${cleanTitle}]</span> ${user.name}`;
+  const container = document.createElement('span');
+  if (!user) {
+    container.textContent = '사용자';
+    return container;
   }
-  return nameHtml;
+
+  // 1. 칭호 처리 (textContent 사용하여 HTML 삽입 원천 차단)
+  if (user.equipped_title) {
+    const titleSpan = document.createElement('span');
+    const cleanTitle = user.equipped_title.replace('[칭호]', '').trim();
+    titleSpan.textContent = `[${cleanTitle}] `;
+    
+    // 스타일 적용
+    titleSpan.style.fontSize = '0.85rem';
+    titleSpan.style.fontWeight = '700';
+    titleSpan.style.marginRight = '6px';
+    
+    if (user.equipped_title.includes('rainbow') || (user.equipped_color && user.equipped_color.includes('무지개'))) {
+      titleSpan.style.background = 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)';
+      titleSpan.style.webkitBackgroundClip = 'text';
+      titleSpan.style.webkitTextFillColor = 'transparent';
+    } else if (user.equipped_color) {
+      titleSpan.style.color = user.equipped_color;
+    } else {
+      titleSpan.style.color = '#6366f1';
+    }
+    
+    container.appendChild(titleSpan);
+  }
+
+  // 2. 이름 추가 (안전한 textContent)
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = user.name;
+  container.appendChild(nameSpan);
+
+  return container;
 }
 
 /** 📢 공지사항 메뉴 토글 */
@@ -467,11 +770,8 @@ window.toggleNoticeMenu = function (id) {
   const menu = document.getElementById(`notice-menu-${id}`);
   if (!menu) return;
   const isVisible = menu.style.display === 'block';
-
-  // 다른 모든 메뉴 닫기
   document.querySelectorAll('.notice-menu-dropdown').forEach(el => el.style.display = 'none');
   document.querySelectorAll('.material-menu-dropdown').forEach(el => el.style.display = 'none');
-
   menu.style.display = isVisible ? 'none' : 'block';
 };
 
@@ -480,11 +780,8 @@ window.toggleMaterialMenu = function (id) {
   const menu = document.getElementById(`material-menu-${id}`);
   if (!menu) return;
   const isVisible = menu.style.display === 'block';
-
-  // 다른 모든 메뉴 닫기
   document.querySelectorAll('.notice-menu-dropdown').forEach(el => el.style.display = 'none');
   document.querySelectorAll('.material-menu-dropdown').forEach(el => el.style.display = 'none');
-
   menu.style.display = isVisible ? 'none' : 'block';
 };
 
@@ -497,27 +794,25 @@ document.addEventListener('click', function (e) {
 
 async function loadNotices() {
   const listEl = document.getElementById('notice-list');
-  if (listEl) listEl.innerHTML = '<div style="text-align:center; padding:2rem; color:#6b7280;">공지사항을 불러오는 중...</div>';
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="text-align:center; padding:2rem; color:#6b7280;">공지사항을 불러오는 중...</div>';
 
   try {
     const { safeG, safeC } = getSafeGradeClass();
-
     let query = supabaseClient.from('notices').select('*');
 
     if (currentUserRole === 'admin') {
       if (safeG !== 0) {
-        // 관리자도 전교 공지(grade=0, null)와 자기 반 공지를 함께 봄
         query = query.or(`grade.is.null,grade.eq.0,and(grade.eq.${safeG},class_num.eq.${safeC})`);
       }
-      // safeG가 0이면 모든 공지 노출
     } else {
-      // 전교 공지(grade=0, null) 또는 내 반 공지
       query = query.or(`grade.is.null,grade.eq.0,and(grade.eq.${safeG},class_num.eq.${safeC})`);
     }
 
     const { data, error } = await query.order('id', { ascending: false }).limit(20);
 
-    // [No-Join Refactor] Fetch users separately to avoid PGRST200
+    if (error) throw error;
+
     if (data && data.length > 0) {
       const usernames = [...new Set(data.filter(i => i.username).map(i => i.username))];
       if (usernames.length > 0) {
@@ -532,74 +827,97 @@ async function loadNotices() {
       }
     }
 
-    if (error) {
-      console.error('Notice loading error:', error);
-      if (listEl) listEl.innerHTML = `<div style="text-align:center; padding:2rem; color:#dc3545;">공지사항 로딩 실패: ${error.message}</div>`;
-      return;
-    }
-
-    if (!listEl) return;
     listEl.innerHTML = '';
-
     if (!data || data.length === 0) {
       listEl.innerHTML = '<div style="text-align:center; padding:2rem; color:#888;">등록된 공지사항이 없습니다.</div>';
       return;
     }
 
     data.forEach(item => {
-      const safeTitle = escapeHtml(item.title);
-      const writerTitle = item.users?.equipped_title ? `[${item.users.equipped_title.replace('[칭호]', '').trim()}] ` : '';
-      const writerColor = item.users?.equipped_color || '#6366f1';
-      const safeWriter = escapeHtml(item.writer);
-      const safeContent = (item.content || '').split('\n').map(line => escapeHtml(line)).join('<br>');
-
-      const titleSpanStyle = `font-size:0.8rem; font-weight:700; margin-left:8px; color:${writerColor};`;
-      const writerTitleHtml = writerTitle ? `<span style="${titleSpanStyle}">${writerTitle}</span>` : '';
-
       const div = document.createElement('div');
-      div.style.borderBottom = '1px solid #ddd';
-      div.style.padding = '0.75rem 0';
+      div.className = 'notice-item';
+      div.style.cssText = 'border-bottom: 1px solid #f1f5f9; padding: 1rem 0;';
 
-      const currentUsername = localStorage.getItem('savedUsername');
-      const isAuthor = (item.username === currentUsername);
-      const isAdmin = (currentUserRole === 'admin');
+      const header = document.createElement('div');
+      header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;';
 
-      let adminBtns = '';
-      if (isAuthor || isAdmin) {
-        adminBtns = `
-              <div class="notice-menu-container" style="position:relative; display:inline-block;">
-                <button onclick="toggleNoticeMenu(${item.id})" style="background:none; border:none; font-size:1.2rem; cursor:pointer; padding:0 5px; color:#888; line-height:1;">⋮</button>
-                <div id="notice-menu-${item.id}" class="notice-menu-dropdown" style="display:none; position:absolute; right:0; top:100%; background:white; border:1px solid #ddd; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:100; min-width:90px; overflow:hidden;">
-                  <button onclick="openEditNoticeModal(${item.id})" style="display:block; width:100%; text-align:left; padding:10px 14px; background:none; border:none; cursor:pointer; font-size:0.85rem; color:#333; border-bottom:1px solid #eee; transition:background 0.2s;" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background='none'">수정</button>
-                  <button onclick="deleteNotice(${item.id}, '${item.image_url || ''}')" style="display:block; width:100%; text-align:left; padding:10px 14px; background:none; border:none; cursor:pointer; font-size:0.85rem; color:#dc3545; transition:background 0.2s;" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='none'">삭제</button>
-                </div>
-              </div>
-          `;
+      const left = document.createElement('div');
+      left.style.cssText = 'display: flex; align-items: center; gap: 8px; flex-wrap: wrap;';
+
+      const title = document.createElement('strong');
+      title.textContent = item.title;
+      title.style.color = '#1e293b';
+      left.appendChild(title);
+
+      if (item.is_edited) {
+        const badge = document.createElement('span');
+        badge.textContent = '(수정됨)';
+        badge.style.cssText = 'font-size: 0.7rem; color: #94a3b8; background: #f8fafc; padding: 2px 6px; border-radius: 4px;';
+        left.appendChild(badge);
       }
 
-      const editedBadge = item.is_edited ? '<span style="font-size:0.75rem; color:#94a3b8; background:#f1f5f9; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:normal;">(수정됨)</span>' : '';
+      // 🛡️ 작성자 표시 (formatUserDisplayName 활용)
+      const writerWrap = document.createElement('span');
+      writerWrap.style.cssText = 'font-size: 0.85rem; display: flex; align-items: center;';
+      writerWrap.appendChild(formatUserDisplayName(item.users || { name: item.writer || '알 수 없음' }));
+      left.appendChild(writerWrap);
 
-      div.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                           <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
-                             <strong>${safeTitle}</strong>
-                             ${editedBadge}
-                             ${writerTitleHtml}
-                             <span style="font-size:0.8rem;color:#888;">${safeWriter}</span>
-                           </div>
-                           ${adminBtns}
-                         </div>
-                         <div style="margin-top:0.4rem; padding-right:1rem; word-break:break-all;">${safeContent}</div>`;
+      header.appendChild(left);
+
+      // 관리자/작성자 메뉴
+      const currentUsername = localStorage.getItem('savedUsername');
+      if (item.username === currentUsername || currentUserRole === 'admin') {
+        const menuContainer = document.createElement('div');
+        menuContainer.className = 'notice-menu-container';
+        menuContainer.style.position = 'relative';
+
+        const menuBtn = document.createElement('button');
+        menuBtn.textContent = '⋮';
+        menuBtn.style.cssText = 'background:none; border:none; font-size:1.2rem; cursor:pointer; color:#94a3b8;';
+        menuBtn.onclick = () => window.toggleNoticeMenu(item.id);
+        menuContainer.appendChild(menuBtn);
+
+        const dropdown = document.createElement('div');
+        dropdown.id = `notice-menu-${item.id}`;
+        dropdown.className = 'notice-menu-dropdown';
+        dropdown.style.cssText = 'display:none; position:absolute; right:0; top:100%; background:white; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.08); z-index:100; min-width:80px; overflow:hidden;';
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = '수정';
+        editBtn.style.cssText = 'display:block; width:100%; text-align:left; padding:8px 12px; border:none; background:none; cursor:pointer; font-size:0.85rem; border-bottom:1px solid #f1f5f9;';
+        editBtn.onclick = () => window.openEditNoticeModal(item.id);
+        dropdown.appendChild(editBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '삭제';
+        delBtn.style.cssText = 'display:block; width:100%; text-align:left; padding:8px 12px; border:none; background:none; cursor:pointer; font-size:0.85rem; color:#ef4444;';
+        delBtn.onclick = () => window.deleteNotice(item.id, item.image_url || '');
+        dropdown.appendChild(delBtn);
+
+        menuContainer.appendChild(dropdown);
+        header.appendChild(menuContainer);
+      }
+
+      div.appendChild(header);
+
+      const body = document.createElement('div');
+      body.style.cssText = 'font-size: 0.95rem; color: #475569; line-height: 1.6; white-space: pre-wrap; word-break: break-all;';
+      body.textContent = item.content; // 🛡️ textContent로 안전하게 삽입
+      div.appendChild(body);
 
       if (item.image_url) {
-        div.innerHTML += `<br><img src="${item.image_url}" 
-                               style="max-width:100%;margin-top:0.5rem;border-radius:0.5rem; cursor:pointer;"
-                               onclick="openImageModal('${item.image_url}')">`;
+        const img = document.createElement('img');
+        img.src = item.image_url;
+        img.style.cssText = 'max-width: 100%; margin-top: 0.75rem; border-radius: 8px; cursor: pointer; border: 1px solid #e2e8f0;';
+        img.onclick = () => window.openImageModal(item.image_url);
+        div.appendChild(img);
       }
+
       listEl.appendChild(div);
     });
   } catch (err) {
-    console.error('Notice load exception:', err);
-    if (listEl) listEl.innerHTML = `<div style="text-align:center; padding:2rem; color:#dc3545;">공지사항을 불러오는 중 오류가 발생했습니다.</div>`;
+    console.error('Notice load error:', err);
+    listEl.innerHTML = `<div style="text-align:center; padding:2rem; color:#ef4444;">오류 발생: ${err.message}</div>`;
   }
 }
 
@@ -624,8 +942,13 @@ async function loadTimetableWeek(grade, classNum) {
   currentGrade = grade;
   currentClassNum = classNum;
 
+  // 🏫 전역 저장된 학교 코드가 있으면 사용, 없으면 기존 기본값 사용
+  const atpt = currentAtptCode || localStorage.getItem('savedAtptCode') || 'J10';
+  const schul = currentSchulCode || localStorage.getItem('savedSchulCode') || '7679111';
+  const schoolName = currentSchoolName || localStorage.getItem('savedSchoolName') || '기본학교';
+
   if (document.getElementById('timetable-grade-info')) {
-    document.getElementById('timetable-grade-info').innerText = `${grade}학년 ${classNum}반 (주간)`;
+    document.getElementById('timetable-grade-info').innerText = `${schoolName} ${grade}학년 ${classNum}반 (주간)`;
   }
   if (container) container.innerHTML = '<p>시간표 불러오는 중...</p>';
 
@@ -647,7 +970,14 @@ async function loadTimetableWeek(grade, classNum) {
   try {
     const results = await Promise.all(
       dates.map(async (dateStr) => {
-        const url = `https://open.neis.go.kr/hub/misTimetable?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${SD_SCHUL_CODE}&AY=${year}&SEM=${semester}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
+        // 🏫 학교 급별 API 자동 감지 (초등: els, 중등: mis, 고등: his)
+        let apiType = 'misTimetable'; // 기본값 (중학교)
+        const schoolName = currentSchoolName || localStorage.getItem('savedSchoolName') || '';
+        
+        if (schoolName.includes('초등학교')) apiType = 'elsTimetable';
+        else if (schoolName.includes('고등학교')) apiType = 'hisTimetable';
+        
+        const url = `https://open.neis.go.kr/hub/${apiType}?KEY=${NEIS_KEY}&Type=json&ATPT_OFCDC_SC_CODE=${atpt}&SD_SCHUL_CODE=${schul}&AY=${year}&SEM=${semester}&ALL_TI_YMD=${dateStr}&GRADE=${grade}&CLASS_NM=${classNum}`;
         //console.log(url);
         const res = await fetch(url);
         const data = await res.json();
@@ -1882,14 +2212,15 @@ async function initDashboardTop() {
   if ($id('dash-name')) {
     const savedName = localStorage.getItem('savedName') || '학생';
     const equippedTitle = localStorage.getItem('savedTitle') || '';
-    const nameHtml = formatUserDisplayName({ name: savedName, equipped_title: equippedTitle });
-    if (window.__updateSecurityValue) window.__updateSecurityValue('dash-name', nameHtml, true);
-    else $id('dash-name').innerHTML = nameHtml;
+    const nameNode = formatUserDisplayName({ name: savedName, equipped_title: equippedTitle });
+    
+    // 🛡️ [object HTMLSpanElement] 오류 수정: innerHTML 대신 appendChild 사용
+    $id('dash-name').textContent = '';
+    $id('dash-name').appendChild(nameNode);
   }
   if ($id('dash-role')) {
     const roleTxt = isAdmin ? '관리자' : '학생';
-    if (window.__updateSecurityValue) window.__updateSecurityValue('dash-role', roleTxt);
-    else $id('dash-role').textContent = roleTxt;
+    $id('dash-role').textContent = roleTxt;
   }
   if ($id('dash-num')) {
     if (window.__updateSecurityValue) window.__updateSecurityValue('dash-num', num);
@@ -2825,55 +3156,97 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
 
 
 window.addEventListener('DOMContentLoaded', async () => {
-  // 1. 세션 복구 및 기본 데이터 로드
-  const savedUsername = localStorage.getItem('savedUsername');
-  if (!savedUsername) {
-    showLogin();
-    return;
-  }
-
-  // Supabase 세션 확인 (레이스 컨디션 방지)
+  // 1. Supabase 세션 확인 (OAuth 리다이렉트 처리 포함)
   const { data: { session } } = await supabaseClient.auth.getSession();
+  
+  let user = null;
+  let savedUsername = localStorage.getItem('savedUsername');
 
-  const { data: user, error } = await supabaseClient
-    .from('users')
-    .select('*')
-    .eq('username', savedUsername)
-    .maybeSingle();
+  if (session) {
+    // 소셜 로그인 또는 Supabase Auth 세션이 있는 경우
+    const authUser = session.user;
+    
+    // 이전에 연동된 적이 있는지 확인 (중복 계정 방어 로직 추가)
+    const { data: linkedUsers } = await supabaseClient
+      .from('users')
+      .select('*')
+      .or(`auth_user_id.eq.${authUser.id},email.eq.${authUser.email}`)
+      .limit(1);
 
-  if (error || !user) {
-    console.warn('User not found or error, showing login.');
+    if (linkedUsers && linkedUsers.length > 0) {
+      const linkedUser = linkedUsers[0];
+      user = linkedUser;
+      // 아직 auth_user_id가 없다면 업데이트 (자동 연동)
+      if (!user.auth_user_id) {
+        await supabaseClient.from('users').update({ auth_user_id: authUser.id }).eq('id', user.id);
+      }
+      // 세션 유지용 데이터 설정
+      localStorage.setItem('savedUsername', user.username);
+      setCookie('savedUsername', user.username, 7);
+    } else {
+      // 새로운 소셜 사용자 -> 추가 정보 입력 모달 띄우기
+      document.getElementById('social-signup-modal').style.display = 'flex';
+      document.getElementById('social-name').value = authUser.user_metadata.full_name || '';
+      return; // 모달 응답 대기
+    }
+  } else if (savedUsername) {
+    // 기존 아이디/비번 로그인 세션만 있는 경우
+    const { data: legacyUser, error } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('username', savedUsername)
+      .maybeSingle();
+    
+    if (legacyUser) user = legacyUser;
+  }
+
+  if (!user) {
     showLogin();
     return;
   }
 
-  // 2. 전역 변수 설정
+  // 2. 전역 변수 및 세션 동기화
   currentUserRole = user.role || 'user';
   currentGrade = user.grade;
   currentClassNum = user.class_num;
   currentUserName = user.name;
   currentStudentNumber = user.student_number;
 
-  // 3. 로컬 스토리지 동기화
   localStorage.setItem('savedName', user.name);
   localStorage.setItem('savedStudentNum', user.student_number);
   localStorage.setItem('savedGrade', user.grade);
   localStorage.setItem('savedClassNum', user.class_num);
+  localStorage.setItem('savedUserId', user.id);
 
-  // 4. UI 및 데이터 로드 (순차 실행)
+  // 3. UI 및 데이터 로드
   await loadUserInfo();
   setUserInfoInput();
   await loadTimetableWeek(user.grade, user.class_num);
   await loadCoinBalance();
+  
+  // 연동 상태 UI 관리 (프로필 패널)
+  updateSocialLinkingStatus(session);
 
   showMain();
-
-  // 5. 대시보드 및 기타 데이터 최종 갱신
   await afterLoginRefreshDashboard();
-
-  // 6. 확성기(브로드캐스트) 리스너 시작
   listenForBroadcasts();
 });
+
+/** 🔗 연동 상태 UI 업데이트 */
+function updateSocialLinkingStatus(session) {
+  const googleBtn = document.getElementById('link-google-btn');
+  if (!googleBtn) return;
+
+  if (session && session.user.app_metadata.providers.includes('google')) {
+    googleBtn.textContent = '연동됨';
+    googleBtn.disabled = true;
+    googleBtn.style.background = '#f1f5f9';
+    googleBtn.style.color = '#94a3b8';
+  } else {
+    googleBtn.textContent = '연동하기';
+    googleBtn.disabled = false;
+  }
+}
 
 // =========================================
 // 📢 확성기 (전역 브로드캐스트) 시스템 & 모달 전용
@@ -4863,162 +5236,135 @@ window.buyItem = async function (itemId, price, itemName) {
 // ⚙️ 내 설정 (Profile Settings) 관련 로직
 // ==========================================
 
-document.addEventListener('DOMContentLoaded', () => {
-  setupProfileSettings();
-  loadPreferences();
-});
-
-function setupProfileSettings() {
-  // 1. 계정/보안
-  const btnLogout = document.getElementById('btn-session-logout');
-  if (btnLogout) btnLogout.addEventListener('click', () => handleLogout('local'));
-
-  const btnGlobalLogout = document.getElementById('btn-session-global-logout');
-  if (btnGlobalLogout) btnGlobalLogout.addEventListener('click', () => handleLogout('global'));
-
-  const btnPassReset = document.getElementById('btn-password-reset');
-  if (btnPassReset) btnPassReset.addEventListener('click', handlePasswordReset);
-
-  const btnAccountDelete = document.getElementById('btn-account-delete');
-  if (btnAccountDelete) btnAccountDelete.addEventListener('click', handleAccountDelete);
-
-  // 2. 알림/환경 설정
-  const btnPrefSave = document.getElementById('btn-pref-save');
-  if (btnPrefSave) btnPrefSave.addEventListener('click', savePreferences);
-
-  const btnPrefReset = document.getElementById('btn-pref-reset');
-  if (btnPrefReset) btnPrefReset.addEventListener('click', () => {
-    if (confirm('모든 설정을 기본값으로 되돌리시겠습니까?')) {
-      localStorage.removeItem('eduBoard_preferences');
-      loadPreferences();
-      alert('설정이 초기화되었습니다.');
-    }
-  });
-
-  // 테마 변경 즉시 적용 (선택 시)
-  const selTheme = document.getElementById('pref-theme');
-  if (selTheme) {
-    selTheme.addEventListener('change', (e) => applyTheme(e.target.value));
-  }
-
-  // 3. 기타 버튼
-  const btnGoNotices = document.getElementById('btn-go-notices');
-  if (btnGoNotices) {
-    btnGoNotices.addEventListener('click', () => {
-      showPanel('notice-panel');
-      window.scrollTo(0, 0);
-    });
-  }
-
-  const btnGoHelp = document.getElementById('btn-go-help');
-  if (btnGoHelp) {
-    btnGoHelp.addEventListener('click', () => {
-      alert('도움말/FAQ 기능은 준비 중입니다.\n관리자에게 문의해주세요.');
-    });
-  }
-
-  const btnCheckUpdates = document.getElementById('btn-check-updates');
-  if (btnCheckUpdates) {
-    btnCheckUpdates.addEventListener('click', () => {
-      alert('최신 버전입니다. (v1.09)');
-    });
-  }
-}
-
-async function handleLogout(scope) {
+/** 🚪 로그아웃 로직 통합 */
+async function handleLogout(scope = 'local') {
   if (!confirm(scope === 'global' ? '모든 기기에서 로그아웃 하시겠습니까?' : '로그아웃 하시겠습니까?')) return;
-
+  
   try {
-    const { error } = await supabaseClient.auth.signOut({ scope: scope });
+    if (typeof showLoading === 'function') showLoading();
+    
+    // 📝 로그 기록 (세션 만료 전 기록)
+    if (window.logActivity) {
+      window.logActivity('logout', localStorage.getItem('savedUsername'), 'user', { scope });
+    }
+
+    const { error } = await supabaseClient.auth.signOut({ scope });
     if (error) throw error;
+
   } catch (err) {
-    console.warn('Supabase 로그아웃 오류 (무시 가능):', err);
+    console.warn('Logout warning:', err.message);
+  } finally {
+    // 🛡️ 에러 여부와 상관없이 로컬 데이터는 반드시 초기화하여 무한루프/세션꼬임 방지
+    localStorage.clear();
+    if (typeof setCookie === 'function') setCookie('savedUsername', '', -1);
+    
+    alert('로그아웃 되었습니다.');
+    location.reload();
   }
-
-  // 📝 로그 기록
-  if (window.logActivity) {
-    window.logActivity('logout', localStorage.getItem('savedUsername'), 'user', { scope: scope });
-  }
-
-  // 로컬 스토리지 클리어
-  localStorage.removeItem('savedUsername');
-  setCookie('savedUsername', '', -1); // 쿠키 삭제
-  localStorage.removeItem('savedName');
-  localStorage.removeItem('savedStudentNum');
-  localStorage.removeItem('savedGrade');
-  localStorage.removeItem('savedClassNum');
-  localStorage.removeItem('savedRole');
-  localStorage.removeItem('savedUserId');
-  localStorage.removeItem('savedEmail');
-
-  alert('로그아웃 되었습니다.');
-  location.reload();
 }
 
+/** 🔐 비밀번호 재설정 발송 */
 async function handlePasswordReset() {
-  const email = document.getElementById('profile-email').value;
+  const email = localStorage.getItem('savedEmail') || document.getElementById('profile-email')?.value;
   if (!email) {
-    alert('프로필에 이메일이 등록되어 있지 않습니다.\n이메일을 먼저 저장해주세요.');
+    alert('등록된 이메일 정보를 찾을 수 없습니다. 프로필에서 이메일을 먼저 저장해 주세요.');
     return;
   }
-
   if (!confirm(`${email} 주소로 비밀번호 재설정 메일을 보내시겠습니까?`)) return;
 
   try {
-    const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email);
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/index.html?type=recovery'
+    });
     if (error) throw error;
-    alert('비밀번호 재설정 메일이 발송되었습니다.\n메일함을 확인해주세요.');
-  } catch (err) {
-    alert('메일 발송 실패: ' + err.message);
+    alert('비밀번호 재설정 메일이 발송되었습니다. 이메일을 확인해주세요.');
+  } catch (e) {
+    alert('메일 발송 오류: ' + e.message);
   }
 }
 
-function handleAccountDelete() {
-  alert('계정 삭제 요청이 접수되었습니다.\n(실제 삭제는 관리자 승인 후 처리됩니다.)');
-}
-
-// --- 환경 설정 (Preferences) ---
-
+/** ⚙️ 환경 설정 저장/로드 */
 function savePreferences() {
   const pref = {
-    notice: document.getElementById('pref-notice').checked,
-    homework: document.getElementById('pref-homework').checked,
-    push: document.getElementById('pref-push').checked,
-    theme: document.getElementById('pref-theme').value,
-    lang: document.getElementById('pref-lang').value
+    notice: document.getElementById('pref-notice')?.checked,
+    homework: document.getElementById('pref-homework')?.checked,
+    push: document.getElementById('pref-push')?.checked,
+    theme: document.getElementById('pref-theme')?.value || 'light',
+    lang: document.getElementById('pref-lang')?.value || 'ko'
   };
 
   localStorage.setItem('eduBoard_preferences', JSON.stringify(pref));
-
-  // 테마 적용
-  applyTheme(pref.theme);
+  if (typeof applyTheme === 'function') applyTheme(pref.theme);
 
   const statusEl = document.getElementById('pref-status');
   if (statusEl) {
-    statusEl.textContent = '설정이 저장되었습니다.';
+    statusEl.textContent = '✅ 설정이 저장되었습니다.';
     setTimeout(() => statusEl.textContent = '', 2000);
   }
 }
 
 function loadPreferences() {
   const saved = localStorage.getItem('eduBoard_preferences');
-  if (!saved) return; // 기본값 유지
-
+  if (!saved) return;
   try {
     const pref = JSON.parse(saved);
-
-    if (document.getElementById('pref-notice')) document.getElementById('pref-notice').checked = pref.notice;
-    if (document.getElementById('pref-homework')) document.getElementById('pref-homework').checked = pref.homework;
-    if (document.getElementById('pref-push')) document.getElementById('pref-push').checked = pref.push;
+    if (document.getElementById('pref-notice')) document.getElementById('pref-notice').checked = !!pref.notice;
+    if (document.getElementById('pref-homework')) document.getElementById('pref-homework').checked = !!pref.homework;
+    if (document.getElementById('pref-push')) document.getElementById('pref-push').checked = !!pref.push;
     if (document.getElementById('pref-theme')) document.getElementById('pref-theme').value = pref.theme || 'light';
     if (document.getElementById('pref-lang')) document.getElementById('pref-lang').value = pref.lang || 'ko';
-
-    applyTheme(pref.theme);
-
-  } catch (e) {
-    console.error('설정 로드 실패:', e);
-  }
+    if (typeof applyTheme === 'function') applyTheme(pref.theme || 'light');
+  } catch (e) {}
 }
+
+/** 🛠️ 설정 페이지 이벤트 바인딩 (단일화) */
+function setupProfileSettings() {
+  document.getElementById('btn-session-logout')?.addEventListener('click', () => handleLogout('local'));
+  document.getElementById('btn-session-global-logout')?.addEventListener('click', () => handleLogout('global'));
+  document.getElementById('btn-password-reset')?.addEventListener('click', handlePasswordReset);
+  document.getElementById('btn-pref-save')?.addEventListener('click', savePreferences);
+  document.getElementById('btn-pref-reset')?.addEventListener('click', () => {
+    if (confirm('모든 설정을 초기화하시겠습니까?')) {
+      localStorage.removeItem('eduBoard_preferences');
+      loadPreferences();
+      alert('초기화되었습니다.');
+    }
+  });
+  
+  // 기타 버튼들
+  document.getElementById('btn-go-notices')?.addEventListener('click', () => {
+    showPanel('notice-panel');
+    window.scrollTo(0, 0);
+  });
+}
+
+// 🌐 전역 노출 (HTML onclick 연동용)
+window.handleLogout = handleLogout;
+window.logout = () => handleLogout('local'); // 하위 호환성용
+window.savePreferences = savePreferences;
+window.loadPreferences = loadPreferences;
+window.handlePasswordReset = handlePasswordReset;
+
+// 초기화 실행
+document.addEventListener('DOMContentLoaded', async () => {
+  setupProfileSettings();
+  loadPreferences();
+  
+  // 🚪 로그인 상태 확인 및 초기 진입 처리 (신규)
+  const savedUsername = localStorage.getItem('savedUsername');
+  if (savedUsername) {
+    if (typeof showMain === 'function') showMain();
+    if (typeof loadUserInfo === 'function') {
+      await loadUserInfo();
+    }
+  }
+
+  // 브라우저 알림 권한 체크 및 실시간 리스너 설정
+  const prefs = JSON.parse(localStorage.getItem('eduBoard_preferences') || '{}');
+  if (prefs.notice || prefs.push) {
+    if (typeof setupRealtimeNotifications === 'function') setupRealtimeNotifications();
+  }
+});
 
 // Redundant applyTheme removed
 
@@ -5038,6 +5384,88 @@ function closePrivacyDetail() {
 // 전역 노출
 window.showPrivacyDetail = showPrivacyDetail;
 window.closePrivacyDetail = closePrivacyDetail;
+
+window.showTosDetail = function() {
+    const modal = document.getElementById('tos-modal');
+    if (modal) modal.style.display = 'flex';
+};
+
+/** 📧 이메일 인증번호 수동 발송 및 검증 로직 */
+let currentVerificationCode = null;
+
+window.sendVerificationEmail = async function() {
+    const emailId = document.getElementById('signupEmailId').value.trim();
+    const domainValue = document.getElementById('signupEmailDomain').value;
+    const customDomain = document.getElementById('signupEmailCustom').value.trim();
+    const email = `${emailId}@${domainValue === '직접입력' ? customDomain : domainValue}`;
+    const name = document.getElementById('signupName').value.trim();
+
+    if (!emailId || !name) {
+        alert("이름과 이메일을 먼저 입력해주세요.");
+        return;
+    }
+
+    const btn = document.getElementById('send-verify-email-btn');
+    btn.disabled = true;
+    btn.innerText = "발송 중...";
+
+    // 6자리 랜덤 번호 생성
+    currentVerificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    try {
+        await emailjs.send(
+            window.EduConfig.EMAILJS_SERVICE_ID,
+            window.EduConfig.EMAILJS_TEMPLATE_ID,
+            {
+                to_name: name,
+                to_email: email,
+                message: `EduBoard 회원가입 인증번호는 [ ${currentVerificationCode} ] 입니다.`
+            },
+            window.EduConfig.EMAILJS_PUBLIC_KEY
+        );
+
+        alert("인증번호가 발송되었습니다. 메일을 확인해주세요.");
+        document.getElementById('verify-code-input-group').style.display = 'block';
+        document.getElementById('verify-status').innerText = "인증번호를 입력해주세요.";
+    } catch (err) {
+        console.error("Mail Error:", err);
+        alert("메일 발송에 실패했습니다. 이메일 주소를 확인해주세요.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "인증번호 재발송";
+    }
+};
+
+window.verifySignupCode = function() {
+    const input = document.getElementById('email-verify-code').value.trim();
+    const status = document.getElementById('verify-status');
+    const signupBtn = document.getElementById('signup-btn');
+
+    if (input === currentVerificationCode && currentVerificationCode !== null) {
+        status.innerText = "✅ 인증되었습니다.";
+        status.style.color = "#10b981";
+        signupBtn.dataset.verified = "true";
+        toggleSignupBtn(); // 버튼 표시 트리거
+    } else {
+        status.innerText = "❌ 인증번호가 일치하지 않습니다.";
+        status.style.color = "#ef4444";
+        signupBtn.dataset.verified = "false";
+    }
+};
+
+window.toggleSignupBtn = function() {
+    const privacy = document.getElementById('privacy-agree').checked;
+    const tos = document.getElementById('tos-agree')?.checked;
+    const isVerified = document.getElementById('signup-btn').dataset.verified === 'true';
+    const signupBtn = document.getElementById('signup-btn');
+
+    if (privacy && tos && isVerified) {
+        signupBtn.style.display = 'block';
+    } else {
+        signupBtn.style.display = 'none';
+    }
+};
+
 window.exitMiniGame = exitMiniGame;
 
 /** 📢 공지사항 삭제 */
@@ -5516,167 +5944,9 @@ window.deleteMaterial = async function (id) {
   }
 };
 
-// --- 환경 설정 및 보안 함수들 ---
+// Redundant preferences/logout sections removed to prevent conflicts (moved to 5200s block)
 
-async function handlePasswordReset() {
-  const email = document.getElementById('profile-email')?.value;
-  if (!email) {
-    alert('프로필 이메일 정보가 없습니다. 먼저 저장해 주세요.');
-    return;
-  }
-  if (!confirm(`${email}로 비밀번호 재설정 메일을 보내시겠습니까?`)) return;
-  try {
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
-    if (error) throw error;
-    alert('재설정 메일이 발송되었습니다.');
-  } catch (e) { alert('발송 실패: ' + e.message); }
-}
-
-function handleAccountDelete() {
-  alert('계정 삭제 요청 기능은 아직 준비 중입니다. 관리자에게 문의하세요.');
-}
-
-function savePreferences() {
-  const pref = {
-    notice: document.getElementById('pref-notice')?.checked,
-    homework: document.getElementById('pref-homework')?.checked,
-    push: document.getElementById('pref-push')?.checked,
-    theme: document.getElementById('pref-theme')?.value,
-    lang: document.getElementById('pref-lang')?.value
-  };
-  localStorage.setItem('eduBoard_preferences', JSON.stringify(pref));
-  applyTheme(pref.theme);
-  const status = document.getElementById('pref-status');
-  if (status) {
-    status.innerText = '✅ 설정이 저장되었습니다.';
-    setTimeout(() => status.innerText = '', 2000);
-  }
-}
-
-function loadPreferences() {
-  const saved = localStorage.getItem('eduBoard_preferences');
-  if (!saved) return;
-  try {
-    const pref = JSON.parse(saved);
-    if (document.getElementById('pref-notice')) document.getElementById('pref-notice').checked = !!pref.notice;
-    if (document.getElementById('pref-homework')) document.getElementById('pref-homework').checked = !!pref.homework;
-    if (document.getElementById('pref-push')) document.getElementById('pref-push').checked = !!pref.push;
-    if (document.getElementById('pref-theme')) document.getElementById('pref-theme').value = pref.theme || 'light';
-    if (document.getElementById('pref-lang')) document.getElementById('pref-lang').value = pref.lang || 'ko';
-    applyTheme(pref.theme);
-  } catch (e) { }
-}
-
-// applyTheme consolidated above
-
-// 로그아웃 (기존 함수 보강)
-async function handleLogout(scope = 'local') {
-  if (!confirm('로그아웃 하시겠습니까?')) return;
-  try {
-    await supabaseClient.auth.signOut({ scope });
-    localStorage.clear();
-    location.reload();
-  } catch (e) { alert('로그아웃 중 오류: ' + e.message); }
-}
-
-async function handlePasswordReset() {
-  const username = localStorage.getItem('savedUsername');
-  const email = localStorage.getItem('savedEmail');
-  if (!email) {
-    alert('등록된 이메일 정보를 찾을 수 없습니다.');
-    return;
-  }
-  if (!confirm(`${email} 주소로 비밀번호 재설정 메일을 보내시겠습니까?`)) return;
-
-  try {
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/index.html?type=recovery'
-    });
-    if (error) throw error;
-    alert('비밀번호 재설정 메일이 발송되었습니다. 이메일을 확인해주세요.');
-  } catch (e) {
-    alert('메일 발송 오류: ' + e.message);
-  }
-}
-
-async function handleAccountDelete() {
-  const username = localStorage.getItem('savedUsername');
-  if (!username) return;
-
-  const reason = prompt('계정 삭제 사유를 입력해주세요 (선택사항):');
-  if (reason === null) return; // 취소
-
-  if (!confirm('정말로 계정 삭제를 요청하시겠습니까? 삭제된 계정은 복구할 수 없습니다.')) return;
-
-  try {
-    const { error } = await supabaseClient
-      .from('deletion_requests')
-      .insert([{
-        username,
-        reason,
-        requested_at: new Date().toISOString()
-      }]);
-
-    if (error) throw error;
-    alert('계정 삭제 요청이 접수되었습니다. 관리자 확인 후 처리될 예정입니다.');
-    handleLogout('local');
-  } catch (e) {
-    alert('삭제 요청 중 오류: ' + e.message);
-  }
-}
-
-// 초기 로드 시 실행 및 이벤트 바인딩
-document.addEventListener('DOMContentLoaded', () => {
-  loadPreferences();
-  document.getElementById('btn-session-logout')?.addEventListener('click', () => handleLogout('local'));
-  document.getElementById('btn-session-global-logout')?.addEventListener('click', () => handleLogout('global'));
-  document.getElementById('btn-password-reset')?.addEventListener('click', handlePasswordReset);
-  document.getElementById('btn-account-delete')?.addEventListener('click', handleAccountDelete);
-  document.getElementById('btn-pref-save')?.addEventListener('click', savePreferences);
-  document.getElementById('btn-pref-reset')?.addEventListener('click', () => {
-    if (!confirm('모든 설정을 초기화하시겠습니까?')) return;
-    localStorage.removeItem('eduBoard_preferences');
-    loadPreferences();
-    alert('초기화되었습니다.');
-  });
-
-  // 브라우저 알림 권한 체크 및 실시간 리스너 설정
-  if (document.getElementById('pref-notice')?.checked || document.getElementById('pref-push')?.checked) {
-    setupRealtimeNotifications();
-  }
-});
-
-function loadPreferences() {
-  const prefs = JSON.parse(localStorage.getItem('eduBoard_preferences') || '{}');
-
-  if ($id('pref-notice')) $id('pref-notice').checked = prefs.notice !== false;
-  if ($id('pref-homework')) $id('pref-homework').checked = prefs.homework !== false;
-  if ($id('pref-push')) $id('pref-push').checked = prefs.push === true;
-  if ($id('pref-theme')) $id('pref-theme').value = prefs.theme || 'system';
-  if ($id('pref-lang')) $id('pref-lang').value = prefs.lang || 'ko';
-
-  applyTheme(prefs.theme || 'system');
-}
-
-function savePreferences() {
-  const prefs = {
-    notice: $id('pref-notice')?.checked,
-    homework: $id('pref-homework')?.checked,
-    push: $id('pref-push')?.checked,
-    theme: $id('pref-theme')?.value,
-    lang: $id('pref-lang')?.value
-  };
-
-  localStorage.setItem('eduBoard_preferences', JSON.stringify(prefs));
-  applyTheme(prefs.theme);
-
-  if (prefs.notice || prefs.push) {
-    requestNotificationPermission();
-    setupRealtimeNotifications();
-  }
-
-  alert('환경 설정이 저장되었습니다.');
-}
+// Redundant preferences/logout sections removed to prevent conflicts
 
 // Redundant applyTheme removed
 
@@ -6011,16 +6281,22 @@ window.loadUserInfo = async function () {
     const previewGrade = document.getElementById('profile-preview-grade');
     const previewClass = document.getElementById('profile-preview-class');
 
-    const nameHtml = formatUserDisplayName(user);
+    const nameNode = formatUserDisplayName(user); // 🛡️ 보안 노드 생성
     const cleanTitle = user.equipped_title ? user.equipped_title.replace('[칭호]', '').trim() : '칭호 없음';
-    let titleStyle = 'font-size:0.85rem; font-weight:700; margin-right:6px; color:#6366f1;';
-    if (user.equipped_title && (user.equipped_title.includes('rainbow') || (user.equipped_color && user.equipped_color.includes('무지개')))) {
-      titleStyle += 'background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent;';
+    
+    // 🛡️ XSS 방지: innerHTML 대신 appendChild/textContent 사용
+    if (dashName) {
+      dashName.textContent = '';
+      dashName.appendChild(nameNode.cloneNode(true));
     }
-
-    if (dashName) dashName.innerHTML = nameHtml;
-    if (headerName) headerName.innerHTML = nameHtml;
-    if (sideMenuName) sideMenuName.innerHTML = nameHtml;
+    if (headerName) {
+      headerName.textContent = '';
+      headerName.appendChild(nameNode.cloneNode(true));
+    }
+    if (sideMenuName) {
+      sideMenuName.textContent = '';
+      sideMenuName.appendChild(nameNode.cloneNode(true));
+    }
 
     // 대시보드 학급 정보 업데이트 (관리자 및 null 방지)
     const isAdmin = user.role === 'admin';
@@ -6037,19 +6313,21 @@ window.loadUserInfo = async function () {
     // 미리보기 업데이트
     if (previewName) previewName.textContent = user.name;
     if (previewTitle) {
-      previewTitle.innerHTML = user.equipped_title ? `[${cleanTitle}]` : '칭호 없음';
-      previewTitle.style.cssText = user.equipped_title ? titleStyle : 'color:#94a3b8; font-weight:normal; font-size:0.85rem;';
+      previewTitle.textContent = user.equipped_title ? `[${cleanTitle}]` : '칭호 없음';
+      previewTitle.style.cssText = user.equipped_title ? 'font-size:0.85rem; font-weight:700; color:#6366f1;' : 'color:#94a3b8; font-weight:normal; font-size:0.85rem;';
     }
-    if (previewSchool) previewSchool.textContent = '봉담중학교';
+    if (previewSchool) previewSchool.textContent = user.school_name || '봉담중학교';
     if (previewGrade) previewGrade.textContent = user.grade || '-';
     if (previewClass) previewClass.textContent = user.class_num || '-';
 
-    // ✅ 로컬 스토리지 데이터 동기화 (초기 로딩용)
+    // ✅ 로컬 스토리지 데이터 동기화 (초기 로딩 및 안정성용)
     localStorage.setItem('savedTitle', user.equipped_title || '');
     localStorage.setItem('savedGrade', user.grade || '');
     localStorage.setItem('savedClassNum', user.class_num || '');
+    localStorage.setItem('savedRole', user.role || 'user'); // 권한 정보 동기화 누락 수정
+    localStorage.setItem('savedName', user.name || '학생');
 
-    if (dashRole) dashRole.textContent = user.role === 'admin' ? '관리자' : '학생';
+    if (dashRole) dashRole.textContent = (user.role === 'admin' || user.role === 'ADMIN') ? '관리자' : '학생';
 
     // 대시보드 및 헤더 아바타 업데이트 (인스타 스타일, 황금 테두리 지원)
     updateAvatarUI(dashAvatar, user.avatar_url, user.character_icon || '👤', user);
@@ -6133,15 +6411,37 @@ window.loadUserInfo = async function () {
       }
     }
 
-    // ✅ 확성기 UI 표시 여부 제어
-    const broadcastSection = document.getElementById('broadcast-panel-section');
-    if (broadcastSection) {
-      if (user.permissions && user.permissions.includes('loudspeaker')) {
-        broadcastSection.style.display = 'flex';
+    // ✅ 소셜 연동 상태 UI 처리 (신규)
+    const socialIcon = document.getElementById('social-link-icon');
+    const socialText = document.getElementById('social-link-text');
+    const unlinkContainer = document.getElementById('social-unlink-container');
+    const linkContainer = document.getElementById('social-link-container');
+
+    if (socialIcon && socialText && unlinkContainer && linkContainer) {
+      if (user.auth_user_id) {
+        socialIcon.textContent = '🔵';
+        socialText.textContent = 'Google 계정과 연동되어 있습니다.';
+        unlinkContainer.style.display = 'block';
+        linkContainer.style.display = 'none';
       } else {
-        broadcastSection.style.display = 'none';
+        socialIcon.textContent = '⚪';
+        socialText.textContent = '연동된 소셜 계정이 없습니다.';
+        unlinkContainer.style.display = 'none';
+        linkContainer.style.display = 'block';
       }
     }
+
+    // ✅ 학교 정보 기본값 할당 (경기도 교육청 J10, 7679111)
+    const atpt = user.atpt_ofcdc_sc_code || 'J10';
+    const schul = user.sd_schul_code || '7679111';
+    const schoolName = user.school_name || '기본학교(경기도)';
+
+    if (previewSchool) previewSchool.textContent = schoolName;
+    
+    // 로컬 스토리지 동기화 (기본값 포함)
+    localStorage.setItem('savedAtptCode', atpt);
+    localStorage.setItem('savedSchulCode', schul);
+    localStorage.setItem('savedSchoolName', schoolName);
 
     // 컬렉션 정보 갱신
     if (typeof loadOwnedCollection === 'function') loadOwnedCollection();
@@ -6440,24 +6740,70 @@ function appendChatMessage(msg) {
   }
 }
 
-window.switchSettingsTab = function(tab) {
-  const profileSection = document.getElementById('settings-profile-section');
-  const generalSection = document.getElementById('settings-general-section');
-  const profileBtn = document.getElementById('tab-btn-profile');
-  const generalBtn = document.getElementById('tab-btn-general');
-  const titleText = document.querySelector('#profile-panel h2 span');
+/** 🏛️ 전국 학교 검색 UI 로직 */
+let currentSearchType = 'signup'; // 'signup' 또는 'social'
 
-  if (tab === 'profile') {
-    profileSection.classList.add('active');
-    generalSection.classList.remove('active');
-    profileBtn.classList.add('active');
-    generalBtn.classList.remove('active');
-    if (titleText) titleText.textContent = '내 프로필 설정';
-  } else {
-    profileSection.classList.remove('active');
-    generalSection.classList.add('active');
-    profileBtn.classList.remove('active');
-    generalBtn.classList.add('active');
-    if (titleText) titleText.textContent = '내 설정';
+window.openSchoolSearchModal = function(type) {
+  currentSearchType = type;
+  const modal = document.getElementById('school-search-modal');
+  if (modal) modal.style.display = 'flex';
+  document.getElementById('school-search-input').value = '';
+  document.getElementById('school-search-results').innerHTML = '<p style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.9rem;">학교명을 검색해주세요.</p>';
+  document.getElementById('school-search-input').focus();
+};
+
+window.closeSchoolSearchModal = function() {
+  document.getElementById('school-search-modal').style.display = 'none';
+};
+
+window.executeSchoolSearch = async function() {
+  const keyword = document.getElementById('school-search-input').value.trim();
+  const resultsEl = document.getElementById('school-search-results');
+  
+  if (keyword.length < 2) {
+    alert('2글자 이상 입력해주세요.');
+    return;
   }
+
+  resultsEl.innerHTML = '<p style="padding: 20px; text-align: center; color: #6366f1;">🔍 검색 중...</p>';
+  
+  const results = await window.SchoolSearch.search(keyword);
+  
+  if (results.length === 0) {
+    resultsEl.innerHTML = '<p style="padding: 20px; text-align: center; color: #ef4444;">검색 결과가 없습니다.</p>';
+    return;
+  }
+
+  resultsEl.innerHTML = '';
+  results.forEach(school => {
+    const row = document.createElement('div');
+    row.style.padding = '12px 16px';
+    row.style.borderBottom = '1px solid #f1f5f9';
+    row.style.cursor = 'pointer';
+    row.style.transition = 'background 0.2s';
+    
+    row.innerHTML = `
+      <div style="font-weight: 700; color: #1e293b; font-size: 0.95rem;">${school.name}</div>
+      <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">${school.address}</div>
+      <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">${school.type}</div>
+    `;
+    
+    row.onmouseover = () => row.style.background = '#f8fafc';
+    row.onmouseout = () => row.style.background = 'none';
+    
+    row.onclick = () => {
+      if (currentSearchType === 'signup') {
+        document.getElementById('signupSchoolName').value = school.name;
+        document.getElementById('signupAtptCode').value = school.atptCode;
+        document.getElementById('signupSchulCode').value = school.schulCode;
+      } else {
+        document.getElementById('socialSchoolName').value = school.name;
+        document.getElementById('socialAtptCode').value = school.atptCode;
+        document.getElementById('socialSchulCode').value = school.schulCode;
+      }
+      closeSchoolSearchModal();
+    };
+    
+    resultsEl.appendChild(row);
+  });
 };

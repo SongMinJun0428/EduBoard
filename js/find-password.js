@@ -1,15 +1,14 @@
-import emailjs from 'https://esm.sh/@emailjs/browser';
-
-// Supabase 연결
+// Supabase 및 EmailJS는 config.js와 CDN을 통해 글로벌하게 로드됨
 const supabase = window.supabase.createClient(
-    "https://ucmzrkwrsezfdjnnwsww.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw"
+    window.EduConfig.getSupabaseURL(),
+    window.EduConfig.getSupabaseKey()
 );
 
-// EmailJS 초기화
-emailjs.init("ylQL6_ZfhS-QQi2LT"); // 본인 public key
+let currentResetCode = null;
+let verifiedUsername = null;
 
-document.getElementById("findBtn").addEventListener("click", async () => {
+// 1. 인증번호 발송
+document.getElementById("sendCodeBtn").addEventListener("click", async () => {
     const username = document.getElementById("username").value.trim();
     const name = document.getElementById("name").value.trim();
     const email = document.getElementById("email").value.trim();
@@ -21,14 +20,11 @@ document.getElementById("findBtn").addEventListener("click", async () => {
         return;
     }
 
+    // 사용자 확인
     const { data, error } = await supabase
         .from("users")
-        .select("password") // 일단 전체 선택으로 테스트
-        .match({
-            username: username,
-            name: name,
-            email: email
-        });
+        .select("id")
+        .match({ username, name, email });
 
     if (error || !data || data.length === 0) {
         result.innerText = "일치하는 회원 정보를 찾을 수 없습니다.";
@@ -36,21 +32,84 @@ document.getElementById("findBtn").addEventListener("click", async () => {
         return;
     }
 
-    const password = data[0].password;
+    const btn = document.getElementById("sendCodeBtn");
+    btn.disabled = true;
+    btn.innerText = "발송 중...";
+
+    // 6자리 인증번호 생성
+    currentResetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    verifiedUsername = username;
 
     try {
-        await emailjs.send("service_cnktiz9", "template_ozh7f4v", {
-            to_name: name,
-            to_email: email,
-            message: `요청하신 비밀번호는 [ ${password} ] 입니다.`
-        });
+        await emailjs.send(
+            window.EduConfig.EMAILJS_SERVICE_ID,
+            window.EduConfig.EMAILJS_TEMPLATE_ID,
+            {
+                to_name: name,
+                to_email: email,
+                message: `비밀번호 재설정을 위한 인증번호는 [ ${currentResetCode} ] 입니다.`
+            },
+            window.EduConfig.EMAILJS_PUBLIC_KEY
+        );
 
-        result.innerText = "📧 이메일로 비밀번호를 전송했습니다.";
+        result.innerText = "📧 이메일로 인증번호를 전송했습니다.";
         result.style.color = "#28a745";
-        alert("비밀번호가 이메일로 전송되었습니다.");
+        document.getElementById("verify-area").style.display = "block";
     } catch (err) {
         console.error("이메일 전송 실패:", err);
         result.innerText = "이메일 전송에 실패했습니다.";
+        result.style.color = "red";
+        btn.disabled = false;
+        btn.innerText = "인증번호 재발송";
+    }
+});
+
+// 2. 인증번호 확인
+document.getElementById("verifyBtn").addEventListener("click", () => {
+    const input = document.getElementById("verifyCode").value.trim();
+    const result = document.getElementById("result");
+
+    if (input === currentResetCode && currentResetCode !== null) {
+        result.innerText = "✅ 인증되었습니다. 새 비밀번호를 입력하세요.";
+        result.style.color = "#28a745";
+        document.getElementById("reset-area").style.display = "block";
+        document.getElementById("verify-area").style.display = "none";
+    } else {
+        result.innerText = "❌ 인증번호가 일치하지 않습니다.";
+        result.style.color = "red";
+    }
+});
+
+// 3. 비밀번호 재설정 완료
+document.getElementById("resetBtn").addEventListener("click", async () => {
+    const newPassword = document.getElementById("newPassword").value.trim();
+    const confirmPassword = document.getElementById("confirmPassword").value.trim();
+    const result = document.getElementById("result");
+
+    if (newPassword.length < 6) {
+        result.innerText = "비밀번호는 6자 이상이어야 합니다.";
+        result.style.color = "red";
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        result.innerText = "비밀번호가 일치하지 않습니다.";
+        result.style.color = "red";
+        return;
+    }
+
+    try {
+        const { error } = await supabase
+            .from("users")
+            .update({ password: newPassword })
+            .eq("username", verifiedUsername);
+
+        if (error) throw error;
+
+        alert("비밀번호가 성공적으로 변경되었습니다. 로그인 해주세요.");
+        window.location.href = "index.html";
+    } catch (err) {
+        result.innerText = "비밀번호 변경 실패: " + err.message;
         result.style.color = "red";
     }
 });

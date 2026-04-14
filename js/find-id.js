@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const supabase = window.supabase.createClient(
-        "https://ucmzrkwrsezfdjnnwsww.supabase.co",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw"
+        window.EduConfig.getSupabaseURL(),
+        window.EduConfig.getSupabaseKey()
     );
 
     document.getElementById("findIdBtn").addEventListener("click", async () => {

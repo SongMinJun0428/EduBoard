@@ -7,9 +7,10 @@ function toggleMenu() { $('nav').classList.toggle('show'); }
 function toggleDark() { document.body.classList.toggle('dark'); }
 
 /* Supabase 클라이언트 */
+/* Supabase 클라이언트 */
 const client = window.supabase.createClient(
-    "https://ucmzrkwrsezfdjnnwsww.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw"
+    window.EduConfig.getSupabaseURL(),
+    window.EduConfig.getSupabaseKey()
 );
 
 /* 공지 */
