@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>papago | 번역기</title>
+    <title>papago | 학습관</title>
     <link rel="stylesheet" href="css/translate.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -11,151 +11,257 @@
     <header class="header">
         <div class="header-left">
             <a href="#" class="logo-link">
-                <i class="fas fa-dove"></i> papago <small>사전</small>
+                <img src="https://papago.naver.com/static/img/papago_og.png" alt="Papago">
+                <span>papago</span> <small>사전</small>
             </a>
-            <div id="progress-text" style="font-size: 0.85rem; color: #999; margin-left: 20px; font-weight: 500; letter-spacing: 0.5px;">1 / 17</div>
+            <div id="progress-text" style="font-size: 0.85rem; color: #adb5bd; font-weight: 500;">Story: 1 / 22</div>
+            <button class="header-btn" onclick="nextSentence()" id="header-next-btn" style="border-color: #00c73c; color: #00c73c;">
+                <i class="fas fa-step-forward"></i> 스토리 넘기기
+            </button>
         </div>
         <div class="header-right">
-            <button class="header-btn plus">papago+</button>
-            <button class="header-btn">플러스 소개</button>
-            <i class="far fa-star"></i>
-            <i class="fas fa-user-circle"></i>
+            <button class="header-btn" onclick="toggleModeMode()" id="mode-toggle-btn" style="color: var(--papago-green); border-color: var(--papago-green); margin-right:8px;">학습 모드 보기</button>
+            <button class="header-btn plus" style="margin-right:20px;">papago+</button>
+            
+            <div class="header-icon-group">
+                <i class="far fa-share-square h-icon" title="공유"></i>
+                <i class="far fa-star h-icon" title="단어장" onclick="showSavedTranslations()"></i>
+                <i class="fas fa-sliders-h h-icon" title="설정"></i>
+                <i class="fas fa-user-circle h-icon profile" style="font-size: 1.5rem; color: #adb5bd;"></i>
+                <i class="fas fa-th h-icon" title="메뉴"></i>
+            </div>
         </div>
     </header>
 
-    <div class="tabs-container">
-        <div class="tab active"><i class="fas fa-font"></i> 텍스트</div>
-        <div class="tab"><i class="far fa-image"></i> 이미지</div>
-        <div class="tab"><i class="far fa-file-alt"></i> 문서</div>
-        <div class="tab"><i class="fas fa-globe"></i> 웹사이트</div>
+    <div class="tabs-container" id="tabs-container">
+        <div class="tab active" onclick="switchTab('text', this)"><i class="fas fa-font"></i> 텍스트</div>
+        <div class="tab" onclick="switchTab('image', this)"><i class="far fa-image"></i> 이미지</div>
+        <div class="tab" onclick="switchTab('document', this)"><i class="far fa-file-alt"></i> 문서</div>
+        <div class="tab" onclick="switchTab('web', this)"><i class="fas fa-globe"></i> 웹사이트</div>
     </div>
 
     <main class="main-content">
-        <div class="translate-container">
-            <!-- Source Box -->
+        <div class="translate-container" id="translate-container">
             <div class="box source">
                 <div class="box-header">
-                    <div class="lang-dropdown">언어감지 <i class="fas fa-chevron-down"></i></div>
-                    <div class="swap-arrows"><i class="fas fa-exchange-alt"></i></div>
+                    <div class="lang-dropdown" id="source-lang-label">한국어 <i class="fas fa-chevron-down"></i></div>
+                    <div class="swap-arrows" onclick="swapLanguages()"><i class="fas fa-exchange-alt"></i></div>
                 </div>
-                <div id="source-text" class="text-box">화덕 피자는 나에게 가장 큰 위안을 주는 음식 중 하나이다.</div>
-                <div class="char-count" id="char-count">0 / 3000</div>
+                <textarea id="source-text" class="text-box" placeholder="번역할 내용을 입력하세요" oninput="updateCharCount(this)"></textarea>
                 <div class="toolbar">
                     <div class="toolbar-left">
                         <button class="toolbar-btn" onclick="speak('ko-KR')"><i class="fas fa-volume-up"></i></button>
-                        <button class="toolbar-btn" onclick="copyText('source-text')"><i class="far fa-paste"></i></button>
+                        <button class="toolbar-btn" onclick="copyText('source-text', true)"><i class="far fa-copy"></i></button>
                     </div>
-                    <button class="translate-submit-btn" onclick="nextSentence()">번역하기</button>
+                    <button class="translate-submit-btn" onclick="handleTranslate()">번역하기</button>
                 </div>
             </div>
-
-            <!-- Target Box -->
             <div class="box target">
                 <div class="box-header">
-                    <div class="lang-dropdown">한국어 <i class="fas fa-chevron-down"></i></div>
+                    <div class="lang-dropdown" id="target-lang-label">영어 <i class="fas fa-chevron-down"></i></div>
                 </div>
-                <div id="target-text" class="text-box" style="color:#00c73c;">Eating warm oven-baked pizza...</div>
+                <div id="target-text" class="text-box" style="color:#00c73c; white-space: pre-wrap;"></div>
+                <div id="loading-spinner" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--papago-green);"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
                 <div class="toolbar">
                     <div class="toolbar-left">
                         <button class="toolbar-btn" onclick="speak('en-US')"><i class="fas fa-volume-up"></i></button>
-                        <button class="toolbar-btn" onclick="copyText('target-text')"><i class="far fa-paste"></i></button>
-                        <button class="toolbar-btn"><i class="far fa-star"></i></button>
-                        <button class="toolbar-btn"><i class="fas fa-share-alt"></i></button>
+                        <button class="toolbar-btn" onclick="copyText('target-text', false)"><i class="far fa-copy"></i></button>
+                        <button class="toolbar-btn" id="star-btn" onclick="toggleFavorite()"><i class="far fa-star"></i></button>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div id="list-view" style="display:none;">
+            <div class="study-control-bar">
+                <div style="display:flex; gap:10px;">
+                    <button class="study-btn" id="hide-en-btn" onclick="toggleHideEnglish()">
+                        <i class="fas fa-eye-slash"></i> 영어 가리기
+                    </button>
+                </div>
+                <div id="carousel-progress" style="font-size:0.95rem; font-weight:700; color:var(--papago-green);">Card: 1 / 17</div>
+            </div>
+
+            <div class="carousel-viewport">
+                <div class="carousel-track" id="carousel-track"></div>
+            </div>
+
+            <div class="carousel-nav">
+                <button class="nav-btn" onclick="prevCard()"><i class="fas fa-chevron-left"></i></button>
+                <button class="nav-btn" onclick="nextCard()"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+        <div class="footer-social" style="margin-top:50px; display:flex; justify-content:flex-end; width:100%; max-width:1200px; gap:20px;">
+            <a href="#" style="text-decoration:none; color:#adb5bd; font-weight:700;"><i class="fab fa-facebook-f"></i> f</a>
+            <a href="#" style="text-decoration:none; color:#adb5bd; font-weight:700;">blog</a>
+        </div>
     </main>
+
+    <footer class="bottom-bar">
+        <div class="bottom-container">
+            <div class="bottom-left">
+                <a href="#" class="app-download"><img src="https://papago.naver.com/static/img/papago_og.png" alt="Papago" style="height:20px;"> APP Download</a>
+                <div class="bottom-links"><a href="#">이용약관</a><a href="#">개인정보처리방침</a><a href="#">책임의 한계와 법적고지</a></div>
+            </div>
+            <div class="bottom-right"><div class="lang-selector-bottom">한국어 <i class="fas fa-chevron-down"></i></div></div>
+        </div>
+    </footer>
 
     <div id="toast">복사되었습니다.</div>
 
     <script>
         const sentences = [
-            // ... (keep original sentences)
-            { ko: "[음식 소개]", en: "[Food Introduction]", type: "title" },
-            { ko: "화덕 피자는 나에게 가장 큰 위안을 주는 음식 중 하나이다.", en: "Eating warm oven-baked pizza with my family is one of the best ways for me to relax after a long day.", type: "text" },
-            { ko: "나는 어느 날 저녁 가족과 함께 따뜻한 화덕 피자를 나누어 먹었던 시간을 아직도 기억한다.", en: "I still remember an ordinary evening when we sat together and shared a warm pizza at home.", type: "text" },
-            { ko: "그날은 특별한 날은 아니었지만, 모두가 집에 모여 함께 식사할 수 있어서 더 따뜻하게 느껴졌다.", en: "It was not a special day, but it was the kind of memory to stay in my heart for a long time.", type: "text" },
-            { ko: "상자를 열었을 때 퍼지던 도우 냄새와 치즈 향은 하루의 피곤함을 잊게 해 주었다.", en: "The smell of fresh dough and melted cheese made us forget the tiredness of the day.", type: "text" },
-            { ko: "아버지는 우리가 아직 따뜻할 때 같이 먹을 수 있도록 피자를 작은 조각으로 잘라주셨다.", en: "My father cut the pizza into small pieces so that we could eat it together while it was still hot.", type: "text" },
-            { ko: "나에게 따뜻한 화덕 피자를 먹는 것은 스트레스를 해소하고 마음을 편안하게 만드는 좋은 방법이다.", en: "For me, warm oven-baked pizza always makes me feel calm and peaceful.", type: "text" },
-            { ko: "그래서 화덕 피자는 나에게 단순한 음식이 아니라, 행복했던 순간을 다시 떠올리게 하는 특별한 위안의 음식이다.", en: "That is why oven-baked pizza is not just food to me, but a special comfort food that brings back happy moments.", type: "text" },
-            { ko: "[레시피]", en: "[Recipe]", type: "title" },
-            { ko: "집에서 화덕 피자를 만들면 그 따뜻한 기억을 다시 떠올릴 수 있다.", en: "Making oven-baked pizza at home is easier than many people think.", type: "text" },
-            { ko: "먼저 피자 도우, 토마토소스, 모차렐라 치즈, 양파, 버섯, 햄, 그리고 피자를 구울 트레이를 준비한다.", en: "First, prepare pizza dough, tomato sauce, mozzarella cheese, onions, mushrooms, ham, and a tray to bake the pizza on.", type: "text" },
-            { ko: "오븐에 넣을 팬 위에 도우를 올리고, 토마토소스를 고르게 펴 바른다.", en: "Place the dough on the tray and spread the sauce evenly over it.", type: "text" },
-            { ko: "그다음 치즈와 토핑을 고르게 올린다.", en: "Then add the cheese and toppings in a neat layer.", type: "text" },
-            { ko: "가장자리가 노릇해지고 치즈가 잘 녹을 수 있도록 높은 온도에서 약 10분 정도 굽는다.", en: "Bake it at a high temperature for about ten minutes so that it can turn golden and the cheese can melt well.", type: "text" },
-            { ko: "오븐에서 퍼지는 고소한 냄새는 가족들이 자연스럽게 부엌으로 오게 만든다.", en: "The warm smell from the oven will make your family come into the kitchen.", type: "text" },
-            { ko: "완성된 피자를 바로 내는 것은 나를 항상 따뜻하고 편안하게 만든다.", en: "Serving the pizza right away always makes me feel warm and relaxed.", type: "text" },
-            { ko: "이것은 사랑하는 사람들과 나누기 좋은 간단한 레시피이다.", en: "It is also a simple recipe to share with the people you love.", type: "text" }
+            { id: 1, ko: "1. 화덕 피자는 나에게 가장 큰 위안을 주는 음식 중 하나이다.", en: "Wood-fired pizza is one of the most comforting foods for me.", section: "음식 소개" },
+            { id: 2, ko: "2. 나는 어느 날 저녁 가족과 함께 따뜻한 화덕 피자를 나누어 먹었던 시간을 아직도 기억한다.", en: "I still remember one evening when my family sat together and shared a warm wood-fired pizza.", section: "음식 소개" },
+            { id: 3, ko: "3. 그날은 특별한 날은 아니었지만, 모두가 집에 모여 함께 식사할 수 있어서 더 따뜻하게 느껴졌다.", en: "It was not a special day, but it felt warm because everyone could gather at home and have dinner together.", section: "음식 소개" },
+            { id: 4, ko: "4. 상자를 열었을 때 퍼지던 도우 냄새와 치즈 향은 하루의 피곤함을 잊게 해 주었다.", en: "The smell of fresh dough and melted cheese **made us forget** the tiredness of the day.", section: "음식 소개" },
+            { id: 5, ko: "5. 아버지는 우리가 아직 따뜻할 때 함께 먹을 수 있도록 피자를 작은 조각으로 잘라주셨다.", en: "My father cut the pizza into small pieces **so that we could eat it together while it was still hot**.", section: "음식 소개" },
+            { id: 6, ko: "6. 나는 언젠가 우리 가족을 위해 그런 따뜻한 피자를 직접 만들 수 있을지 종종 궁금하다.", en: "I sometimes wonder **whether I can make** the same warm pizza for my family someday.", section: "음식 소개" },
+            { id: 7, ko: "7. 나에게 가족과 함께 따뜻한 화덕 피자를 먹는 것은 스트레스를 해소하는 좋은 방법이다.", en: "**Eating** warm wood-fired pizza with my family is a good way for me to relieve stress.", section: "음식 소개" },
+            { id: 8, ko: "8. 그것은 항상 나를 차분하고 편안하게 느끼게 해 준다.", en: "It always **makes me feel calm and peaceful**.", section: "음식 소개" },
+            { id: 9, ko: "9. 그래서 화덕 피자는 나에게 단순한 음식이 아니라, 행복했던 순간을 다시 떠올리게 하는 특별한 위안의 음식이다.", en: "That is why wood-fired pizza is not just food to me, but a special comfort food that brings back happy moments.", section: "음식 소개" },
+            { id: 10, ko: "10. 집에서 화덕 피자를 만들면 그 따뜻한 기억을 다시 떠올릴 수 있다.", en: "**Making** wood-fired pizza at home helps me remember that warm moment again.", section: "레시피" },
+            { id: 11, ko: "11. 먼저 피자 도우, 토마토소스, 모차렐라 치즈, 양파, 버섯, 햄, 그리고 피자를 구울 트레이를 준비한다.", en: "First, prepare pizza dough, tomato sauce, mozzarella cheese, onions, mushrooms, ham, and **a tray to bake the pizza on**.", section: "레시피" },
+            { id: 12, ko: "12. 트레이 위에 도우를 올리고 토마토소스를 고르게 펴 바른다.", en: "Place the dough on the tray and spread the tomato sauce evenly over it.", section: "레시피" },
+            { id: 13, ko: "13. 그다음 모차렐라 치즈와 양파, 버섯, 햄을 골고루 올린다.", en: "Then add the mozzarella cheese, onions, mushrooms, and ham evenly.", section: "레시피" },
+            { id: 14, ko: "14. 가장자리가 노릇해지고 치즈가 잘 녹을 수 있도록 높은 온도에서 약 10분 정도 굽는다.", en: "Bake it at a high temperature for about ten minutes **so that the crust can turn golden brown and the cheese can melt well**.", section: "레시피" },
+            { id: 15, ko: "15. 피자가 다 익으면 먹기 좋은 크기로 자른다.", en: "When the pizza is ready, cut it into small pieces.", section: "레시피" },
+            { id: 16, ko: "16. 따뜻할 때 바로 식탁에 내어 함께 나누어 먹는다.", en: "Serve it right away and share it while it is still warm.", section: "레시피" },
+            { id: 17, ko: "17. 완성된 피자를 바로 내는 것은 나를 항상 따뜻하고 편안하게 만든다.", en: "Serving the pizza right away always **makes me feel warm and relaxed**.", section: "레시피" },
+            { id: 18, ko: "18. 이것은 사랑하는 사람들과 나누기 좋은 간단한 레시피이다.", en: "It is also **a simple recipe to share with the people you love**.", section: "레시피" }
         ];
 
-        let currentIndex = 0;
+        let currentIndex = 0; let carouselIndex = 0;
+        let isListView = false; let hideEnglish = false;
+        let sourceLang = 'ko'; let targetLang = 'en';
 
-        function updateUI() {
-            const source = document.getElementById('source-text');
-            const target = document.getElementById('target-text');
-            const progress = document.getElementById('progress-text');
-            const charCount = document.getElementById('char-count');
-
-            const item = sentences[currentIndex];
-            source.innerText = item.ko;
-            target.innerText = item.en;
-            progress.innerText = `${currentIndex + 1} / ${sentences.length}`;
-            charCount.innerText = `${item.ko.length} / 3000`;
-
-            // Transition effect
-            source.style.opacity = '0.5';
-            target.style.opacity = '0.5';
-            setTimeout(() => {
-                source.style.opacity = '1';
-                target.style.opacity = '1';
-            }, 100);
+        function updateCharCount(el) { /* Character count logic */ }
+        async function handleTranslate() {
+            const st = document.getElementById('source-text').value.trim();
+            const tb = document.getElementById('target-text');
+            const sp = document.getElementById('loading-spinner');
+            if (!st) { nextSentence(); return; }
+            sp.style.display = 'block'; tb.innerText = '';
+            try {
+                const lp = `${sourceLang}|${targetLang}`;
+                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(st)}&langpair=${lp}`);
+                const data = await res.json();
+                tb.innerText = data.responseData.translatedText;
+            } catch (e) { tb.innerText = "번역 중 오류가 발생했습니다."; } finally { sp.style.display = 'none'; }
         }
+
+        function swapLanguages() {
+            const st = document.getElementById('source-text'); const tt = document.getElementById('target-text');
+            const tmpT = st.value; st.value = tt.innerText; tt.innerText = tmpT;
+            const tmpL = sourceLang; sourceLang = targetLang; targetLang = tmpL;
+            document.getElementById('source-lang-label').innerHTML = `${sourceLang === 'ko' ? '한국어' : '영어'} <i class="fas fa-chevron-down"></i>`;
+            document.getElementById('target-lang-label').innerHTML = `${targetLang === 'ko' ? '한국어' : '영어'} <i class="fas fa-chevron-down"></i>`;
+        }
+
+        function toggleModeMode() {
+            isListView = !isListView;
+            const tc = document.getElementById('translate-container'); const lv = document.getElementById('list-view');
+            const ts = document.getElementById('tabs-container'); const btn = document.getElementById('mode-toggle-btn');
+            const hn = document.getElementById('header-next-btn');
+            if (isListView) {
+                tc.style.display = 'none'; ts.style.display = 'none'; lv.style.display = 'flex'; hn.style.display = 'none';
+                btn.innerText = '번역 모드 보기'; renderCarousel();
+            } else {
+                tc.style.display = 'flex'; ts.style.display = 'flex'; lv.style.display = 'none'; hn.style.display = 'inline-block';
+                btn.innerText = '학습 모드 보기';
+            }
+        }
+
+        function renderCarousel() {
+            const track = document.getElementById('carousel-track');
+            track.innerHTML = '';
+            sentences.forEach((item) => {
+                const card = document.createElement('div');
+                card.className = 'study-card';
+                card.innerHTML = `
+                    <div class="card-content">
+                        <div class="card-section-title">${item.section}</div>
+                        <div class="card-num">${item.ko}</div>
+                        <div class="card-en ${hideEnglish ? 'hidden-text' : ''}" onclick="this.classList.add('revealed')">${item.en}</div>
+                        <div class="card-actions">
+                            <button class="card-action-btn" onclick="speakFromList('${item.ko}', 'ko-KR')"><i class="fas fa-volume-up"></i></button>
+                            <button class="card-action-btn" onclick="speakFromList('${item.en.replace(/'/g, "\\'")}', 'en-US')"><i class="fas fa-headphones"></i></button>
+                            <button class="card-action-btn" onclick="copyTextFromList('${item.en.replace(/'/g, "\\'")}')"><i class="far fa-copy"></i></button>
+                        </div>
+                    </div>
+                `;
+                track.appendChild(card);
+            });
+            updateCarousel();
+        }
+
+        function nextCard() { if (carouselIndex < sentences.length - 1) { carouselIndex++; updateCarousel(); } }
+        function prevCard() { if (carouselIndex > 0) { carouselIndex--; updateCarousel(); } }
+
+        function updateCarousel() {
+            const track = document.getElementById('carousel-track');
+            track.style.transform = `translateX(-${carouselIndex * 100}%)`;
+            document.getElementById('carousel-progress').innerText = `Card: ${carouselIndex + 1} / ${sentences.length}`;
+        }
+
+        function toggleHideEnglish() {
+            hideEnglish = !hideEnglish;
+            const btn = document.getElementById('hide-en-btn');
+            btn.innerHTML = hideEnglish ? '<i class="fas fa-eye"></i> 영어 보이기' : '<i class="fas fa-eye-slash"></i> 영어 가리기';
+            renderCarousel();
+        }
+
+        function speakFromList(t, l) { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = l; window.speechSynthesis.speak(u); }
+        function copyTextFromList(t) { navigator.clipboard.writeText(t).then(() => showToast("복사되었습니다.")); }
 
         function nextSentence() {
-            if (currentIndex < sentences.length - 1) {
-                currentIndex++;
-                updateUI();
-            }
+            const item = sentences[currentIndex];
+            const sa = document.getElementById('source-text'); const tb = document.getElementById('target-text');
+            const pt = document.getElementById('progress-text');
+            sa.value = item.ko; tb.innerText = item.en;
+            pt.innerText = `Story: ${currentIndex + 1} / ${sentences.length}`;
+            currentIndex = (currentIndex + 1) % sentences.length;
         }
 
-        function prevSentence() {
-            if (currentIndex > 0) {
-                currentIndex--;
-                updateUI();
-            }
-        }
-
-        function speak(lang) {
+        function speak(langCode) {
             window.speechSynthesis.cancel();
-            const text = (lang === 'ko-KR') ? sentences[currentIndex].ko : sentences[currentIndex].en;
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = lang;
-            window.speechSynthesis.speak(utterance);
+            const text = (langCode === 'ko-KR') ? document.getElementById('source-text').value : document.getElementById('target-text').innerText;
+            const utter = new SpeechSynthesisUtterance(text); utter.lang = langCode; window.speechSynthesis.speak(utter);
         }
 
-        function copyText(elementId) {
-            const text = document.getElementById(elementId).innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                showToast();
-            });
+        function copyText(id, isArea) {
+            const text = isArea ? document.getElementById(id).value : document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text).then(() => showToast());
         }
 
-        function showToast() {
+        function showToast(msg) {
             const toast = document.getElementById("toast");
-            toast.className = "show";
-            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+            toast.innerText = msg || "복사되었습니다."; toast.className = "show";
+            setTimeout(() => { toast.className = ""; }, 3000);
         }
 
-        // Keyboard support
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight') nextSentence();
-            if (e.key === 'ArrowLeft') prevSentence();
+        function switchTab(type, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            if (type !== 'text') showToast(`${type} 번역 기능은 준비 중입니다.`);
+        }
+
+        function toggleFavorite() {
+            const star = document.querySelector('#star-btn i');
+            star.classList.toggle('far'); star.classList.toggle('fas');
+            star.style.color = star.classList.contains('fas') ? '#fcc419' : '#adb5bd';
+            showToast(star.classList.contains('fas') ? "단어장에 추가되었습니다." : "단어장에서 삭제되었습니다.");
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (isListView) {
+                if (e.key === 'ArrowRight') nextCard();
+                if (e.key === 'ArrowLeft') prevCard();
+            }
         });
 
-        updateUI();
+        nextSentence();
     </script>
 </body>
 </html>
