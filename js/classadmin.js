@@ -516,74 +516,171 @@ function updateGridLayout(cols) {
     map.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 }
 
-// ✅ 자리 배치표 이미지 다운로드 (PDF 형식처럼)
+// ✅ 자리 배치표 이미지 다운로드 (요청하신 사진 형식으로 완벽 변환)
 async function downloadSeatingChart() {
-    const container = document.getElementById("seat-map-container");
-    const map = document.getElementById("seat-map");
+    const seatMap = document.getElementById("seat-map");
     const cols = document.getElementById("column-count").value;
     const now = new Date();
     
-    // 1️⃣ 임시 요소 생성 (전문화된 스타일)
-    const exportTitle = document.createElement("div");
-    exportTitle.style.cssText = "text-align: center; margin-bottom: 30px; border-bottom: 2px solid #1e293b; padding-bottom: 15px;";
-    exportTitle.innerHTML = `
-        <h1 style="margin: 0; font-size: 2.2rem; font-weight: 900; color: #1e293b; letter-spacing: 0.1em;">2026학년도 2학년 3반 좌석 배치표</h1>
-        <p style="margin: 5px 0 0 0; color: #64748b; font-size: 0.9rem;">${now.getFullYear()}년 ${now.getMonth()+1}월 기준 | 봉담중학교</p>
+    // 1️⃣ 임시 컨테이너 생성 (A4 가로 사이즈 정규화: 1414px * 1000px)
+    const exportWrapper = document.createElement("div");
+    exportWrapper.id = "export-capture-container";
+    exportWrapper.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1414px;
+        height: 1000px;
+        background: white;
+        padding: 40px 60px;
+        font-family: 'Malgun Gothic', 'Dotum', sans-serif;
+        color: #000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-sizing: border-box;
+        z-index: -9999;
+        overflow: hidden;
     `;
 
-    const deskBox = document.createElement("div");
-    deskBox.style.cssText = "width: 200px; height: 50px; border: 2px solid #1e293b; margin: 0 auto 30px auto; display: flex; align-items: center; justify-content: center; font-weight: 800; background: #f8fafc; font-size: 1.1rem; letter-spacing: 0.3em;";
-    deskBox.innerText = "교탁";
-    
-    // 2️⃣ 기존 좌석 임시 스타일 변경 (캡처용)
-    const originalStyle = map.style.cssText;
-    const seats = map.querySelectorAll(".seat");
-    const originalSeatStyles = Array.from(seats).map(s => s.style.cssText);
-    const originalSeatInners = Array.from(seats).map(s => s.innerHTML);
+    // 2️⃣ 제목 (3학년 2반 좌석배치표)
+    const title = document.createElement("h1");
+    title.style.cssText = "font-size: 64px; font-weight: bold; margin-bottom: 30px; margin-top: 10px; font-family: 'Malgun Gothic';";
+    title.innerText = "3학년 2반 좌석배치표";
+    exportWrapper.appendChild(title);
 
-    // 캡처용 스타일 강제 적용
-    map.style.gap = "0px"; // 표 형식처럼 붙이기
-    map.style.borderLeft = "1px solid #1e293b";
-    map.style.borderTop = "1px solid #1e293b";
+    // 3️⃣ 메인 레이아웃 (좌측: 좌석 / 우측: 명단)
+    const mainContent = document.createElement("div");
+    mainContent.style.cssText = "display: flex; width: 100%; gap: 30px; align-items: flex-start; flex: 1; padding: 0 10px;";
     
-    seats.forEach((s, idx) => {
-        const student = seatData[idx];
-        s.style.cssText = `
-            border-right: 1px solid #1e293b !important;
-            border-bottom: 1px solid #1e293b !important;
-            background: #fff !important;
-            border-radius: 0 !important;
-            padding: 1.5rem 0.5rem !important;
-            height: 100px !important;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: none !important;
-            transform: none !important;
+    // 3-1. 좌석 배치도 (2-2-2 그룹화 레이아웃)
+    const seatsArea = document.createElement("div");
+    seatsArea.style.cssText = `
+        display: flex;
+        gap: 50px;
+        flex: 1;
+        justify-content: center;
+        padding-top: 10px;
+    `;
+    
+    // 3그룹 (각 2열씩) - 32명 기준 10/11/11 분배
+    const groups = [
+        seatData.slice(0, 10),  // 1-2열 (10명)
+        seatData.slice(10, 21), // 3-4열 (11명)
+        seatData.slice(21)      // 5-6열 (11명)
+    ];
+    
+    groups.forEach((groupSeats, gIdx) => {
+        const groupDiv = document.createElement("div");
+        groupDiv.style.cssText = `
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            flex: 1;
         `;
-        // [번호. 이름] 형식으로 깔끔하게 재구성
-        s.innerHTML = `
-            <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 4px;">${student.student_number || (idx+1)}</div>
-            <div style="font-size: 1.2rem; font-weight: 800; color: #1e293b;">${student.name}</div>
-        `;
+        
+        // 중앙 그룹(gIdx=1)은 PDF처럼 첫 칸을 비워 첫 번째 좌석(아이콘 14번 위치)이 상단에 오도록 조정
+        if (gIdx === 1 && groupSeats.length % 2 !== 0) {
+            const emptyCell = document.createElement("div");
+            groupDiv.appendChild(emptyCell);
+        }
+
+        groupSeats.forEach((s) => {
+            const seatBox = document.createElement("div");
+            seatBox.style.cssText = `
+                border: 1px solid #000;
+                height: 95px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: #fff;
+            `;
+            
+            seatBox.innerHTML = `
+                <div style="font-size: 22px; margin-bottom: 2px;">${s.student_number}</div>
+                <div style="font-size: 47px; font-weight: bold;">${s.name}</div>
+            `;
+            groupDiv.appendChild(seatBox);
+        });
+        seatsArea.appendChild(groupDiv);
     });
+    
+    // 3-2. 학생 명단 (우측)
+    const studentListArea = document.createElement("div");
+    studentListArea.style.width = "210px";
+    
+    const table = document.createElement("table");
+    table.style.cssText = "width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 15px;";
+    
+    // 테이블 헤더
+    const thead = document.createElement("thead");
+    thead.innerHTML = `
+        <tr style="background: #ffd8a8;">
+            <th style="border: 1px solid #000; padding: 4px; font-weight: normal;">번호</th>
+            <th style="border: 1px solid #000; padding: 4px; font-weight: normal;">이름</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+    
+    // 테이블 바디
+    const tbody = document.createElement("tbody");
+    const sortedList = [...seatData].sort((a, b) => (a.student_number || 0) - (b.student_number || 0));
+    
+    sortedList.forEach(s => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td style="border: 1px solid #000; padding: 2px; text-align: center; height: 18px;">${s.student_number}</td>
+            <td style="border: 1px solid #000; padding: 2px; font-weight: bold; text-align: center;">${s.name}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    studentListArea.appendChild(table);
 
-    container.prepend(deskBox);
-    container.prepend(exportTitle);
+    mainContent.appendChild(seatsArea);
+    mainContent.appendChild(studentListArea);
+    exportWrapper.appendChild(mainContent);
+
+    // 4️⃣ 교탁 (하단 중앙)
+    const desk = document.createElement("div");
+    desk.style.cssText = `
+        margin-top: 15px;
+        margin-bottom: 25px;
+        width: 380px;
+        height: 75px;
+        border: 1.5px solid #3b82f6; 
+        border-radius: 20px;
+        background: #dcfce7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        font-weight: bold;
+        letter-spacing: 24px;
+        color: #000;
+        padding-left: 24px;
+    `;
+    desk.innerText = "교탁";
+    exportWrapper.appendChild(desk);
+
+    document.body.appendChild(exportWrapper);
+
+    // 약간의 지연 시간을 주어 렌더링 보장 (브라우저가 레이아웃을 계산할 시간)
+    await new Promise(resolve => setTimeout(resolve, 150));
 
     try {
-        container.style.width = "1000px"; // 넓은 캔버스 확보
-        container.style.padding = "50px";
-        
-        const canvas = await html2canvas(container, {
+        const canvas = await html2canvas(exportWrapper, {
             scale: 2,
             useCORS: true,
-            backgroundColor: "#ffffff"
+            backgroundColor: "#ffffff",
+            logging: false, 
+            width: 1414,
+            height: 1000
         });
 
         const link = document.createElement("a");
-        link.download = `2-3_정식_좌석배치표_${now.toISOString().split('T')[0]}.png`;
+        link.download = `3학년2반_좌석배치표_${now.toISOString().split('T')[0]}.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
         
@@ -591,18 +688,12 @@ async function downloadSeatingChart() {
         console.error("다운로드 실패", e);
         alert("이미지 생성 중 오류가 발생했습니다.");
     } finally {
-        // 원상복구
-        exportTitle.remove();
-        deskBox.remove();
-        map.style.cssText = originalStyle;
-        seats.forEach((s, idx) => {
-            s.style.cssText = originalSeatStyles[idx];
-            s.innerHTML = originalSeatInners[idx];
-        });
-        container.style.width = "";
-        container.style.padding = "20px";
+        document.body.removeChild(exportWrapper);
     }
 }
+
+
+
 
 // 페이지 로드시 학생 목록 불러오기
 document.addEventListener("DOMContentLoaded", () => {

@@ -517,7 +517,7 @@ async function renderCOStudentList() {
     `;
     body.innerHTML = html;
   } catch (err) {
-    body.innerHTML = `<div style="padding: 3rem; text-align: center; color: #fb7185;">학생 목록 로드 실패: ${err.message}</div>`;
+    body.innerHTML = `<div style="padding: 3rem; text-align: center; color: #fb7185;">학생 목록 로드 실패: ${escapeHtml(err.message)}</div>`;
   }
 }
 

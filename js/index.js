@@ -58,7 +58,7 @@ function setCookie(name, value, days) {
     date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
     expires = "; expires=" + date.toUTCString();
   }
-  document.cookie = name + "=" + (value || "") + expires + "; path=/";
+  document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Strict";
 }
 
 function getCookie(name) {
@@ -917,7 +917,7 @@ async function loadNotices() {
     });
   } catch (err) {
     console.error('Notice load error:', err);
-    listEl.innerHTML = `<div style="text-align:center; padding:2rem; color:#ef4444;">오류 발생: ${err.message}</div>`;
+    listEl.innerHTML = `<div style="text-align:center; padding:2rem; color:#ef4444;">오류 발생: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -1143,7 +1143,7 @@ async function loadMaterials() {
 
     if (error) {
       console.error('Material loading error:', error);
-      if (listEl) listEl.innerHTML = `<li style="text-align:center; padding:2rem; color:#dc3545;">자료 로딩 실패: ${error.message}</li>`;
+      if (listEl) listEl.innerHTML = `<li style="text-align:center; padding:2rem; color:#dc3545;">자료 로딩 실패: ${escapeHtml(error.message)}</li>`;
       return;
     }
 
@@ -2283,7 +2283,7 @@ async function loadRecentNotices3() {
 
     if (error) {
       console.error('Dash notice loading error:', error);
-      box.innerHTML = `<div class="notice-item"><div class="meta" style="color:#dc3545;">불러오기 실패: ${error.message}</div></div>`;
+      box.innerHTML = `<div class="notice-item"><div class="meta" style="color:#dc3545;">불러오기 실패: ${escapeHtml(error.message)}</div></div>`;
       return;
     }
 

@@ -17,6 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <meta name="color-scheme" content="light dark" />
   <link rel="stylesheet" href="css/admin.css">
+  <script src="js/config.js"></script>
   <script src="js/security.js"></script>
   <script>
     (function() {
@@ -48,6 +49,7 @@
           <button id="tab-shop" class="tab-btn">상점 관리</button>
           <button id="tab-job" class="tab-btn">진로 검사 결과</button>
           <button id="tab-db" class="tab-btn">데이터베이스</button>
+          <button id="tab-codingon" class="tab-btn">CodingOn 관리</button>
         </nav>
       </div>
 
@@ -82,6 +84,7 @@
               <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-shop">🛒 상점 관리</button>
               <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-job">🎯 진로 검사 결과</button>
               <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-db">🗃️ 데이터베이스</button>
+              <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-codingon">💻 CodingOn 관리</button>
           </nav>
           <div class="mt-auto flex flex-col gap-3">
               <button id="mobile-theme" class="btn w-full justify-center">🌙 테마 전환</button>
@@ -342,6 +345,23 @@
             <tbody id="db-tbody"></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- CodingOn 관리 섹션 (신규) -->
+    <section id="section-codingon" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl">🛡️</div>
+          <div>
+            <h2 class="text-xl font-bold">CodingOn 관리</h2>
+            <p class="text-xs text-gray-400">학생들의 학습 진도와 승인 요청을 한눈에 관리합니다.</p>
+          </div>
+        </div>
+        <button onclick="renderCOAdmin()" class="btn btn-ghost">🔄 새로고침</button>
+      </div>
+      <div id="co-admin-content" class="bg-white dark:bg-slate-900 border rounded-2xl overflow-hidden shadow-sm min-h-[600px]">
+         <!-- JS에서 동적 생성 (codingon.js) -->
       </div>
     </section>
   </main>
@@ -624,6 +644,7 @@
   </div>
 
   <script src="js/job-data.js?v=3"></script>
+  <script src="js/codingon.js"></script>
   <script src="js/admin.js"></script>
   <div id="toast"></div>
 </body>

@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>2-3반 관리자 페이지</title>
+  <script src="js/config.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <link rel="stylesheet" href="css/classadmin.css">
 </head>
 <body>
@@ -32,10 +34,26 @@
     <!-- 자리 관리 -->
     <div id="seats" class="card">
       <h2>🪑 자리 관리</h2>
-      <button class="btn" onclick="loadSeats()">📥 불러오기</button>
-      <button class="btn primary" onclick="shuffleSeats()">🔄 랜덤 섞기</button>
-      <button class="btn primary" onclick="saveSeats()">💾 저장</button>
-      <div id="seat-map"></div>
+      <div class="seat-controls" style="margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <button class="btn" onclick="loadSeats()">📥 불러오기</button>
+        <button class="btn primary" onclick="shuffleSeats()">🔄 랜덤 섞기</button>
+        <button class="btn primary" onclick="saveSeats()">💾 저장</button>
+        <button class="btn" style="background:#10b981; color:white; border:none;" onclick="downloadSeatingChart()">🖼️ 이미지 다운로드</button>
+        
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+          <label style="margin:0; font-size:0.85rem;">가로 칸 수:</label>
+          <select id="column-count" onchange="updateGridLayout(this.value)" style="padding: 4px; border-radius: 4px;">
+            <option value="4">4칸</option>
+            <option value="5">5칸</option>
+            <option value="6" selected>6칸</option>
+            <option value="7">7칸</option>
+            <option value="8">8칸</option>
+          </select>
+        </div>
+      </div>
+      <div id="seat-map-container" style="background: white; padding: 20px; border-radius: 8px;">
+        <div id="seat-map"></div>
+      </div>
     </div>
     
     <!-- 과제 관리 -->

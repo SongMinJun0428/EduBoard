@@ -5,12 +5,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EduBoard</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://*.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.supabase.co https://*.naver.com https://*.google.com https://*.daumcdn.net; connect-src 'self' https://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com; worker-src 'self' blob: https://cdn.jsdelivr.net;">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 
   <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <script src="js/config.js"></script>
   <script src="js/security.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+  <script src="js/co_data.js"></script>
+  
+  <!-- 📱 PWA & iOS App Optimization -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EduBoard">
+  <link rel="apple-touch-icon" href="eduboard_logo_premium.png">
+  <link rel="shortcut icon" href="eduboard_logo_premium.png" type="image/png">
   <style>
     /* 🔄 글로벌 로딩 오버레이 */
     #loader-overlay {
@@ -60,80 +76,167 @@
   <div id="login-screen">
     <div class="auth-box" id="login-box">
       <h2>로그인</h2>
-      <input id="loginUsername" type="text" placeholder="아이디">
-      <input id="loginPassword" type="password" placeholder="비밀번호">
-      <button onclick="loginDirect()">로그인</button>
-      <p style="font-size:0.85rem;">
-        아이디가 없으신가요? <a href="#" onclick="showSignup()">회원가입</a>
-      <div class="login-help">
-        <a href="find-id.html">아이디 찾기</a>
-        <span>|</span>
-        <a href="find-password.html">비밀번호 찾기</a>
+      
+      <div class="auth-input-group">
+        <label for="loginUsername">아이디</label>
+        <input id="loginUsername" type="text" placeholder="아이디를 입력하세요">
       </div>
-      </p>
-      <div id="loginStatus" style="font-size:0.85rem;color:red;"></div>
+      
+      <div class="auth-input-group">
+        <label for="loginPassword">비밀번호</label>
+        <input id="loginPassword" type="password" placeholder="비밀번호를 입력하세요">
+      </div>
+
+      <button class="auth-btn-primary" onclick="loginDirect()">로그인</button>
+      
+      <div class="auth-divider">
+        <span>또는 소셜 계정으로 로그인</span>
+      </div>
+
+      <div class="social-login-group">
+        <button class="social-btn google" onclick="loginWithProvider('google')">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+          구글로 시작하기
+        </button>
+        <button class="social-btn kakao" onclick="alert('🔧 다른 기능 접속 테스트를 위해 카카오 로그인은 잠시 비활성화되었습니다.'); return false;" style="background-color: #FEE500; color: #191919; margin-top: 10px;">
+          <svg viewBox="0 0 32 32" width="18" height="18" style="margin-right: 8px;">
+            <path d="M16 4.64C8.653 4.64 2.667 9.168 2.667 14.736c0 3.568 2.475 6.709 6.203 8.523l-1.344 4.88c-.149.523.469.907.896.619l5.653-3.669c.629.085 1.275.133 1.925.133 7.347 0 13.333-4.528 13.333-10.096S23.347 4.64 16 4.64z" fill="#000000" />
+          </svg>
+          카카오로 시작하기
+        </button>
+      </div>
+      
+      <div class="auth-footer-links">
+        아이디가 없으신가요? <a href="#" onclick="showSignup()">회원가입</a>
+      </div>
+      
+      <div class="login-help" style="margin-top: 1rem; font-size: 0.85rem; color: #64748b; display: flex; justify-content: center; gap: 0.75rem;">
+        <a href="find-id.html" style="color: inherit; text-decoration: none;">아이디 찾기</a>
+        <span>|</span>
+        <a href="find-password.html" style="color: inherit; text-decoration: none;">비밀번호 찾기</a>
+      </div>
+      
+      <div id="loginStatus" style="font-size:0.85rem; color:#ef4444; margin-top: 1rem; font-weight: 600;"></div>
     </div>
 
     <!-- 회원가입 박스 -->
     <div class="auth-box" id="signup-box" style="display:none;">
       <h2>회원가입</h2>
 
-      <!-- 개인정보 수집, 이용 동의 -->
-      <div style="
-        text-align:left;
-        font-size:0.8rem;
-        margin:0.5rem 0;
-        border:1px solid #ddd;
-        padding:0.6rem;
-        border-radius:0.5rem;
-        background:#f8f9fa;">
-        <p style="margin:0 0 0.4rem 0; font-weight:bold;">📌 개인정보 수집·이용 동의</p>
-        <p style="margin:0 0 0.3rem 0; line-height:1.4;">
-          수집 항목: 아이디, 비밀번호, 이메일, 이름, 학년, 반, 번호<br>
-          이용 목적: EduBoard 회원 관리 및 수업 자료 제공<br>
-          보유 기간: 회원 탈퇴 시까지 (법령에 따라 보관 필요 시 해당 기간 보존)<br>
-          동의 거부 시 회원가입이 제한됩니다.
-        </p>
-        <label style="display:flex;align-items:center;font-weight:600;">
-          <input type="checkbox" id="privacy-agree" style="margin-right:0.4rem;">
-          위 개인정보 수집·이용에 동의합니다.
-          <button type="button" onclick="showPrivacyDetail()"
-            style="margin-left:auto; font-size:0.75rem; background:none; border:1px solid #ccc; border-radius:4px; cursor:pointer; padding:2px 6px;">전문
-            보기</button>
-        </label>
+      <div id="signup-step-1" class="signup-step active">
+        <div class="signup-agreements">
+          <div class="agreement-container" id="privacy-container">
+            <div class="agreement-header">
+              <span class="agreement-title">📌 개인정보 수집·이용 동의</span>
+              <button type="button" class="agreement-detail-btn" onclick="showPrivacyDetail()">전문 보기</button>
+            </div>
+            <p class="agreement-text">만 14세 미만 보호자 동의 필수 조항을 포함하며, AI 진로 분석 및 관리 목적으로 최소한의 정보를 안전하게 수집합니다.</p>
+            <label class="agreement-checkbox-label">
+              <input type="checkbox" id="privacy-agree" onchange="updateAgreementStatus()">
+              위 개인정보 수집·이용에 동의합니다.
+            </label>
+          </div>
+
+          <div class="agreement-container" id="tos-container">
+            <div class="agreement-header">
+              <span class="agreement-title">⚖️ 이용 약관 동의</span>
+              <button type="button" class="agreement-detail-btn" onclick="showTosDetail()">전문 보기</button>
+            </div>
+            <p class="agreement-text">비속어 사용 등 타인을 비방하는 행위는 엄격히 금지되며, 위반 시 서비스 이용이 영구 제한될 수 있습니다.</p>
+            <label class="agreement-checkbox-label">
+              <input type="checkbox" id="tos-agree" onchange="updateAgreementStatus()">
+              위 이용 약관에 동의합니다.
+            </label>
+          </div>
+        </div>
+        <button type="button" class="auth-btn-primary" id="btn-next-step-1" onclick="nextSignupStep(2)" disabled>
+          다음 단계로 <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        <div class="auth-footer-links">
+          이미 계정이 있나요? <a href="javascript:void(0)" onclick="showBox('login-box')">로그인</a>
+        </div>
       </div>
 
-      <!-- 입력 폼 -->
-      <input id="signupUsername" type="text" placeholder="아이디">
-      <div style="position:relative; margin-bottom: 0.8rem;">
-        <input id="signupPassword" type="password" placeholder="비밀번호 (6자 이상)" required />
-        <span onclick="togglePassword('signupPassword')" style="
-          position:absolute; right:10px; top:50%; transform:translateY(-50%);
-          cursor:pointer;">👁️</span>
-      </div>
-      <div style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem;">
-        <input id="signupEmailId" type="text" placeholder="이메일 아이디" style="flex:1;" />
-        <span>@</span>
-        <select id="signupEmailDomain" style="flex:1;">
-          <option value="gmail.com">gmail.com</option>
-          <option value="naver.com">naver.com</option>
-          <option value="daum.net">daum.net</option>
-          <option value="직접입력">직접입력</option>
-        </select>
-      </div>
-      <input id="signupEmailCustom" type="text" placeholder="도메인 입력" style="display:none; margin-bottom:0.8rem;" />
-      <input id="signupName" type="text" placeholder="이름">
-      <input id="signupGrade" type="number" placeholder="학년">
-      <input id="signupClass" type="number" placeholder="반">
-      <input id="signupNumber" type="number" placeholder="번호">
+      <div id="signup-step-2" class="signup-step">
+        <div class="auth-input-group">
+          <label for="signupUsername">아이디</label>
+          <input id="signupUsername" type="text" placeholder="아이디를 입력하세요">
+        </div>
 
-      <!-- 회원가입 버튼 (동의 시 보이도록) -->
-      <button id="signup-btn" onclick="signup()" style="display:none;">회원가입 완료</button>
+        <!-- 🏫 학교 검색 섹션 추가 -->
+        <div class="auth-input-group">
+          <label>학교 검색</label>
+          <div style="display: flex; gap: 8px;">
+            <input id="signupSchoolName" type="text" placeholder="학교명을 검색하세요 (예: 한국초)" readonly onclick="openSchoolSearchModal('signup')">
+            <button type="button" class="auth-btn-secondary" style="width: auto; padding: 0 15px; height: 50px;" onclick="openSchoolSearchModal('signup')">🔍 검색</button>
+          </div>
+          <input type="hidden" id="signupAtptCode">
+          <input type="hidden" id="signupSchulCode">
+        </div>
+        <div class="auth-input-group">
+          <label for="signupPassword">비밀번호</label>
+          <div style="position:relative;">
+            <input id="signupPassword" type="password" placeholder="6자 이상 입력하세요" required />
+            <span onclick="togglePassword('signupPassword')" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; opacity:0.6;">👁️</span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+          <div class="auth-input-group" style="margin-bottom:0;">
+            <label>학년</label>
+            <input id="signupGrade" type="number" placeholder="학년" />
+          </div>
+          <div class="auth-input-group" style="margin-bottom:0;">
+            <label>반</label>
+            <input id="signupClass" type="number" placeholder="반" />
+          </div>
+          <div class="auth-input-group" style="margin-bottom:0;">
+            <label>번호</label>
+            <input id="signupNumber" type="number" placeholder="번호" />
+          </div>
+        </div>
+        <div class="auth-input-group">
+          <label for="signupName">이름</label>
+          <input id="signupName" type="text" placeholder="본명을 입력하세요" />
+        </div>
+        <button type="button" class="auth-btn-primary" onclick="nextSignupStep(3)">
+          다음 단계로 <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        <button type="button" class="auth-btn-secondary" onclick="nextSignupStep(1)">
+          <i class="fa-solid fa-arrow-left"></i> 이전으로
+        </button>
+      </div>
 
-      <p style="font-size:0.85rem;">
-        <a href="#" onclick="showLogin()">← 로그인으로 돌아가기</a>
-      </p>
-      <div id="signupStatus" style="font-size:0.85rem;color:red;"></div>
+      <div id="signup-step-3" class="signup-step">
+        <div class="auth-input-group">
+          <label>이메일 인증</label>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <input id="signupEmailId" type="text" placeholder="아이디" style="flex:1;" />
+            <span style="align-self: center; font-weight: bold; color: #64748b;">@</span>
+            <input id="signupEmailDomain" type="text" placeholder="도메인" style="flex:1;" />
+          </div>
+          <button type="button" id="send-verify-email-btn" class="auth-btn-secondary" onclick="sendVerificationEmail()">
+            📩 인증번호 발송
+          </button>
+        </div>
+        <div id="verify-code-input-group" style="display: none; margin-top: 1rem; border-top: 1px dashed #e2e8f0; padding-top: 1rem;">
+          <div class="auth-input-group">
+            <label>인증번호 6자리</label>
+            <div class="verification-row">
+              <input id="email-verify-code" type="text" placeholder="000000" maxlength="6" />
+              <button type="button" class="auth-btn-primary" onclick="verifySignupCode()" style="height: 50px;">확인</button>
+            </div>
+            <p id="verify-status" style="font-size:0.75rem; text-align:center; font-weight:600; color:#64748b; margin-top:0.5rem;">인증번호를 입력해주세요.</p>
+          </div>
+        </div>
+        <div class="step-divider"></div>
+        <button id="signup-btn" class="auth-btn-primary" onclick="signup()" disabled>
+          <i class="fa-solid fa-user-plus"></i> 회원가입 완료
+        </button>
+        <button type="button" class="auth-btn-secondary" onclick="nextSignupStep(2)">
+          <i class="fa-solid fa-arrow-left"></i> 이전으로
+        </button>
+      </div>
+      <div id="signupStatus" style="font-size:0.85rem;color:red;margin-top:1rem;"></div>
     </div>
   </div>
 
@@ -187,7 +290,7 @@
               font-size: 0.95rem;">
             내 설정
           </button>
-          <button onclick="logout()" style="
+          <button onclick="handleLogout('local')" style="
               width: 100%;
               padding: 0.6rem 1rem;
               background: none;
@@ -212,13 +315,13 @@
         top: 0;
         left: 0;
         width: 100%;
-        background: linear-gradient(90deg, #4f46e5, #ec4899);
+        background: linear-gradient(90deg, #0ea5e9, #6366f1);
         color: white;
         text-align: center;
         padding: 12px 20px;
         font-weight: 800;
         z-index: 10000;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
         animation: slideDown 0.5s ease-out;">
       <span id="broadcast-sender" style="color: #fcd34d; margin-right: 8px;">[알림]</span>
       <span id="broadcast-message">확성기 테스트 메시지입니다!</span>
@@ -275,7 +378,8 @@
         <li><a href="#" onclick="showPanel('minigame-panel'); closeMobileMenu();"><span>🎮</span> 미니게임</a></li>
         <li><a href="#" onclick="showPanel('inventory-panel'); closeMobileMenu();"><span>🎒</span> 내 인벤토리</a></li>
         <li><a href="#" onclick="showPanel('profile-panel'); closeMobileMenu();"><span>⚙️</span> 환경 설정</a></li>
-        <li><a href="#" onclick="logout()"
+        <li><a href="#" id="side-nav-codingon" onclick="showPanel('codingon-panel'); closeMobileMenu();" style="display:none;"><span>💻</span> CodingOn</a></li>
+        <li><a href="#" onclick="handleLogout('local')"
             style="color: #ef4444; margin-top: 10px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px;"><span>🚪</span>
             로그아웃</a></li>
       </ul>
@@ -323,6 +427,7 @@
       <a href="#" onclick="showPanel('timetable-panel')">시간표</a>
       <a href="#" onclick="showPanel('minigame-panel')">미니게임</a>
       <a href="#" onclick="showPanel('shop-panel')">상점</a>
+      <a href="#" id="nav-codingon" onclick="showPanel('codingon-panel')" style="display:none;">CodingOn</a>
     </nav>
 
     <div class="content">
@@ -333,7 +438,7 @@
           <!-- 📢 최근 공지 -->
           <div class="accent-card" data-section="notice">
             <div class="accent-head"
-              style="background: #fff5f5; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #fee2e2;">
+              style="background: #fff5f5; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #fee2e2;">
               <div class="accent-title-box" style="display: flex; align-items: center; gap: 10px;">
                 <div class="accent-bar" style="width: 4px; height: 18px; background: #f43f5e; border-radius: 10px;">
                 </div>
@@ -413,7 +518,7 @@
           <!-- 📅 일정 스케줄 -->
           <div class="accent-card" data-section="schedule">
             <div class="accent-head"
-              style="background: #f8faff; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9;">
+              style="background: #f8faff; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9;">
               <div class="accent-title-box" style="display: flex; align-items: center; gap: 10px;">
                 <div class="accent-bar" style="width: 4px; height: 18px; background: #6366f1; border-radius: 10px;">
                 </div>
@@ -453,7 +558,7 @@
           <!-- 🕒 주간 시간표 -->
           <div class="accent-card" data-section="timetable">
             <div class="accent-head"
-              style="background: #fffdf7; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #fdf2e9;">
+              style="background: #fffdf7; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #fdf2e9;">
               <div class="accent-title-box" style="display: flex; align-items: center; gap: 10px;">
                 <div class="accent-bar" style="width: 4px; height: 18px; background: #f59e0b; border-radius: 10px;">
                 </div>
@@ -486,7 +591,7 @@
           <!-- 🏆 랭킹 -->
           <div class="accent-card" id="rank-card" data-section="rank">
             <div class="accent-head"
-              style="background: #fdfaff; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f5f3ff;">
+              style="background: #fdfaff; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f5f3ff;">
               <div class="accent-title-box" style="display: flex; align-items: center; gap: 10px;">
                 <div class="accent-bar" style="width: 4px; height: 18px; background: #a855f7; border-radius: 10px;">
                 </div>
@@ -521,7 +626,7 @@
           <!-- 🍽️ 급식 -->
           <div class="accent-card" data-section="meal">
             <div class="accent-head"
-              style="background: #f0fdf4; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #dcfce7;">
+              style="background: #f0fdf4; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #dcfce7;">
               <div class="accent-title-box" style="display: flex; align-items: center; gap: 10px;">
                 <div class="accent-bar" style="width: 4px; height: 18px; background: #22c55e; border-radius: 10px;">
                 </div>
@@ -546,7 +651,31 @@
         </div> <!-- End of dashboard-grid -->
 
       </div>
+    
+    <!-- Panels after the dashboard were outside .content; now wrapping them inside. -->
+    
+
+
+    <div id="codingon-panel" class="panel" style="display:none;">
+      <!-- ... existing codingon-panel content ... -->
+      <div class="panel-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="font-size: 2.8rem; background: #fff; padding: 10px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">👨‍💻</div>
+          <div>
+            <h2 style="margin: 0; font-size: 1.8rem;">CodingOn</h2>
+            <p style="margin: 0; color: #64748b; font-size: 0.9rem; font-weight: 500;">봉담중학교 코딩 동아리 커뮤니티</p>
+          </div>
+        </div>
+        
+        <div class="co-sub-nav glass-card" style="display: flex; gap: 8px; padding: 6px; border-radius: 12px; background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.02); overflow-x: auto;">
+          <button class="active" onclick="switchCOTab('home')" style="width: auto; margin: 0; padding: 10px 20px; border-radius: 8px; white-space: nowrap;">🏠 학습 로드맵</button>
+        </div>
+      </div>
+
+      <div id="co-dynamic-content" style="min-height: 400px;"></div>
     </div>
+
+
 
 
     <div id="notice-panel" class="panel" style="display:none;">
@@ -965,6 +1094,34 @@
               <div id="profile-pass-status" style="margin-top:8px; font-size:0.85rem; font-weight:700; color:#e11d48; text-align:center;"></div>
             </div>
           </div>
+
+          <!-- 🔗 소셜 계정 연동 관리 (신규) -->
+          <div class="accent-card glass-card">
+            <div class="accent-head theme-sky-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>🔗 소셜 계정 연동 관리</h3>
+              </div>
+            </div>
+            <div class="accent-body">
+              <div id="social-link-status" style="margin-bottom: 16px; padding: 12px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0;">
+                <p style="margin:0; font-size: 0.9rem; color: #475569; display: flex; align-items: center; gap: 8px;">
+                  <span id="social-link-icon" style="font-size: 1.2rem;">⚪</span>
+                  <span id="social-link-text">연동 상태 확인 중...</span>
+                </p>
+              </div>
+              <div id="social-unlink-container" style="display: none;">
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">소셜 연동을 해제하면 다음부터는 아이디와 비밀번호로 로그인해야 합니다.</p>
+                <button onclick="unlinkSocialAccount('google')" style="background:#f1f5f9; color:#ef4444; border:1px solid #fee2e2; width:100%; padding: 10px; border-radius: 10px; font-weight: 700;">Google 연동 해제하기</button>
+              </div>
+              <div id="social-link-container" style="display: none;">
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">계정을 소셜 서비스와 연결하여 더 간편하게 로그인하세요.</p>
+                <button onclick="loginWithProvider('google')" style="background:#fff; color:#475569; border:1px solid #e2e8f0; width:100%; padding: 10px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                  <img src="https://www.google.com/favicon.ico" style="width: 16px; height: 16px;"> Google 계정 연결하기
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1051,6 +1208,29 @@
           </div>
           <div id="app-version" style="margin-top:16px; font-size:0.8rem; color:#94a3b8; text-align:right;">EduBoard
             v1.09-stable | © 2026 Song MinJun</div>
+        </div>
+      </div>
+
+      <!-- 🔗 소셜 계정 연동 -->
+      <div class="accent-card" style="margin-top: 24px;">
+        <div class="accent-head theme-purple-head">
+          <div class="accent-title-box">
+            <div class="accent-bar"></div>
+            <h3>🔗 소셜 계정 연동</h3>
+          </div>
+        </div>
+        <div class="accent-body">
+          <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem;">기존 계정에 소셜 계정을 연결하면 아이디 입력 없이 더 편리하게 로그인할 수 있습니다.</p>
+          <div id="social-linking-status" style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="linking-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google">
+                <span style="font-weight: 600;">구글(Google)</span>
+              </div>
+              <button id="link-google-btn" onclick="linkSocialAccount('google')" class="auth-btn-secondary" style="width: auto; height: 36px; padding: 0 16px; font-size: 0.8rem;">연동하기</button>
+            </div>
+            <!-- Kakao, Naver will be added later -->
+          </div>
         </div>
       </div>
         </div> <!-- End of profile-grid-wrapper -->
@@ -1780,7 +1960,55 @@
     </div>
   </div>
 
+  </div> <!-- End of .content; all panels are now uniformly wrapped. -->
 
+  <!-- 🚀 CodingOn: 인터렉티브 학습 모달 -->
+  <div id="co-lesson-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:4000; align-items:center; justify-content:center;">
+    <div class="glass-card" style="width: 98%; height: 95%; background: white; display:flex; flex-direction:column; overflow:hidden; border-radius: 20px;">
+      <!-- 모달 헤더 -->
+      <div style="padding: 1rem 2rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fff; z-index: 10;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <h3 id="co-lesson-title" style="margin: 0; color: #1e293b; font-size: 1.2rem;">파이썬 학습</h3>
+          <span id="co-lesson-badge" style="font-size: 0.75rem; padding: 4px 12px; background: #eef2ff; color: #4f46e5; border-radius: 99px; font-weight: 700;">기초</span>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button onclick="runPythonCode()" id="co-run-btn" style="width: auto; margin:0; background: #10b981; color: #fff; padding: 8px 20px; border-radius: 8px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 1rem;">▶</span> 코드 실행
+          </button>
+          <button onclick="closeCOModal()" style="width: auto; margin:0; background: #f1f5f9; color: #64748b; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+      </div>
+
+      <!-- 메인 스플릿 뷰 -->
+      <div style="flex: 1; display: flex; overflow: hidden; background: #f8fafc;">
+        <!-- 왼쪽: 학습 내용 -->
+        <div id="co-lesson-body" class="custom-scrollbar" style="flex: 1.2; padding: 2rem; overflow-y: auto; background: #ffffff; border-right: 1px solid #e2e8f0; line-height: 1.7;">
+          <!-- 내용이 동적으로 삽입됩니다 -->
+          <div style="padding: 2rem; text-align: center; color: #94a3b8;">학습 내용을 불러오는 중...</div>
+        </div>
+
+        <!-- 오른쪽: 코딩 에디터 & 콘솔 -->
+        <div style="flex: 1; display: flex; flex-direction: column; background: #1e293b;">
+          <!-- 에디터 타이틀 바 -->
+          <div style="padding: 8px 20px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+            <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.05em;">PYTHON EDITOR</div>
+            <button onclick="resetEditorCode()" style="background:none; border:none; color: #64748b; font-size: 0.75rem; cursor:pointer;">초기화</button>
+          </div>
+          
+          <!-- 코드 입력창 -->
+          <div style="flex: 2; position: relative; padding: 0;">
+            <textarea id="co-code-editor" spellcheck="false" placeholder="# 여기에 파이썬 코드를 작성하세요..." style="width: 100%; height: 100%; background: #1e293b; color: #e2e8f0; font-family: 'Consolas', 'Monaco', monospace; font-size: 1rem; padding: 20px; border: none; resize: none; outline: none; line-height: 1.5;"></textarea>
+          </div>
+
+          <!-- 콘솔 출력창 -->
+          <div style="flex: 1; background: #0f172a; border-top: 2px solid #334155; display: flex; flex-direction: column;">
+            <div style="padding: 6px 20px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); color: #94a3b8; font-size: 0.75rem; font-weight: 700;">CONSOLE OUTPUT</div>
+            <div id="co-console-output" class="custom-scrollbar" style="flex: 1; padding: 15px 20px; font-family: 'Consolas', monospace; font-size: 0.95rem; color: #10b981; overflow-y: auto; white-space: pre-wrap;">코드 실행 결과가 여기에 표시됩니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="imageModal" class="modal"
     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:center; justify-content:center;">
@@ -2006,9 +2234,147 @@
     </div>
   </div>
 
-  <script src="js/games.js"></script>
-  <script src="js/index.js"></script>
+  <!-- 💻 CodingOn 학습 패널 -->
+  <div id="codingon-panel" class="panel">
+    <div class="accent-head" style="background: linear-gradient(135deg, #4f46e5, #818cf8); color: white; padding: 2rem; border-radius: 20px 20px 0 0; margin: -2rem -2rem 2rem -2rem; display: flex; justify-content: space-between; align-items: center; border: none;">
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <span style="font-size: 2.2rem;">💻</span>
+        <div>
+          <h2 style="margin: 0; color: white; font-size: 1.8rem; font-weight: 900; letter-spacing: -0.02em;">CodingOn</h2>
+          <p style="margin: 5px 0 0; opacity: 0.9; font-size: 0.95rem; font-weight: 600;">파이썬 마스터 단계별 학습</p>
+        </div>
+      </div>
+      <div id="co-progression-stats" style="text-align: right; background: rgba(255,255,255,0.15); padding: 10px 18px; border-radius: 12px; backdrop-filter: blur(10px);">
+         <!-- 📊 Progress statistics injected here -->
+      </div>
+    </div>
+    <div id="co-dynamic-content">
+       <!-- 🚀 Roadmap grid injected here -->
+    </div>
+  </div>
 
+
+  <!-- 👤 추가 정보 입력 모달 (소셜 로그인용) -->
+  <div id="social-signup-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10010; align-items:center; justify-content:center; backdrop-filter: blur(4px);">
+    <div class="auth-box" style="background: white; transform: none; animation: none; max-width: 400px !important;">
+      <h2 style="margin-bottom: 1rem; -webkit-text-fill-color: var(--auth-primary);">반갑습니다! 👋</h2>
+      <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 1.5rem;">서비스 이용을 위해 학생 정보를 입력해주세요.</p>
+      
+      <div class="auth-input-group">
+        <label>실명</label>
+        <input id="social-name" type="text" placeholder="본명을 입력하세요">
+      </div>
+
+      <!-- 🏫 소셜 가입용 학교 검색 -->
+      <div class="auth-input-group">
+        <label>학교 검색</label>
+        <div style="display: flex; gap: 8px;">
+          <input id="socialSchoolName" type="text" placeholder="학교명 검색" readonly onclick="openSchoolSearchModal('social')">
+          <button type="button" class="auth-btn-secondary" style="width: auto; padding: 0 10px; height: 50px;" onclick="openSchoolSearchModal('social')">🔍</button>
+        </div>
+        <input type="hidden" id="socialAtptCode">
+        <input type="hidden" id="socialSchulCode">
+      </div>
+
+      <div class="auth-input-group">
+        <label>사이트 전용 비밀번호</label>
+        <input id="social-password" type="password" placeholder="6자 이상 입력">
+      </div>
+
+      <div class="auth-input-group">
+        <label>비밀번호 확인</label>
+        <input id="social-password-confirm" type="password" placeholder="비밀번호 재입력">
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem;">
+        <div class="auth-input-group" style="margin-bottom:0;">
+          <label>학년</label>
+          <input id="social-grade" type="number" placeholder="학년" />
+        </div>
+        <div class="auth-input-group" style="margin-bottom:0;">
+          <label>반</label>
+          <input id="social-class" type="number" placeholder="반" />
+        </div>
+        <div class="auth-input-group" style="margin-bottom:0;">
+          <label>번호</label>
+          <input id="social-number" type="number" placeholder="번호" />
+        </div>
+      </div>
+
+      <button class="auth-btn-primary" onclick="completeSocialSignup()">가입 완료하기</button>
+    </div>
+  </div>
+
+  <!-- 약관 및 정책 모달 -->
+  <div id="tos-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10050; align-items:center; justify-content:center; backdrop-filter: blur(4px);">
+    <div class="auth-box" style="background: white; transform: none; animation: none; max-width: 600px !important; width:90%; padding: 30px;">
+      <h2 style="margin-bottom: 1rem; -webkit-text-fill-color: var(--auth-primary); font-size:1.5rem;">⚖️ 서비스 이용약관</h2>
+      <div style="max-height: 400px; overflow-y: auto; margin-top: 1rem; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size:0.9rem; line-height:1.6; color:#334155; text-align:left; background:#f8fafc;">
+        <h3 style="font-size:1.1rem; color:#1e293b; margin-top:0;">제1조 (목적)</h3>
+        <p>본 약관은 EduBoard가 제공하는 학급 대시보드 및 교육용 게이미피케이션 서비스(이하 "서비스")의 이용과 관련하여 회사와 회원 간의 권리, 의무, 책임사항을 규정함을 목적으로 합니다.</p>
+        <h3 style="font-size:1.1rem; color:#1e293b;">제4조 (이용계약 체결 및 미성년자 보호)</h3>
+        <p>만 14세 미만의 아동은 서비스 이용을 위해 법정대리인(부모 등)의 동의를 얻어야 합니다. 관련 법령에 따라 법정대리인의 동의 여부를 확인하기 위한 추가 절차를 요구할 수 있습니다.</p>
+        <h3 style="font-size:1.1rem; color:#1e293b;">제7조 (회원의 의무)</h3>
+        <p>회원은 타인의 정보 도용, 비방, 욕설, 악성코드 유포 등을 하여서는 안 되며, 위반 시 서비스 제공자는 이용 정지 등의 조치를 취할 수 있습니다.</p>
+        <h3 style="font-size:1.1rem; color:#1e293b;">제8조 (서비스의 제공 등)</h3>
+        <p>서비스 내에 포함된 미니게임의 점수, 가상 포인트 등은 운영 정책에 따라 일괄 초기화되거나 변경될 수 있으며, 자산적 가치를 지니지 않습니다.</p>
+        <h3 style="font-size:1.1rem; color:#1e293b;">제10조 (면책 조항)</h3>
+        <p>본 서비스 내의 각종 정보 및 분석 결과는 참고용 정보이며, 해당 결과에 대한 법적 효력이나 전적인 정확성을 보증하지 않습니다.</p>
+      </div>
+      <button class="auth-btn-secondary" style="margin-top: 1.5rem;" onclick="document.getElementById('tos-modal').style.display='none'">확인 및 닫기</button>
+    </div>
+  </div>
+
+  <div id="privacy-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10050; align-items:center; justify-content:center; backdrop-filter: blur(4px);">
+    <div class="auth-box" style="background: white; transform: none; animation: none; max-width: 600px !important; width:90%; padding: 30px;">
+      <h2 style="margin-bottom: 1rem; -webkit-text-fill-color: var(--auth-primary); font-size:1.5rem;">📌 개인정보 수집·이용 동의</h2>
+      <div style="max-height: 400px; overflow-y: auto; margin-top: 1rem; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size:0.9rem; line-height:1.6; color:#334155; text-align:left; background:#f8fafc;">
+        <h3 style="font-size:1.1rem; color:#1e293b; margin-top:0;">1. 개인정보의 수집 및 이용 목적</h3>
+        <p>홈페이지 회원 가입 및 관리, 만 14세 미만 법정대리인 동의 여부 확인, 서비스 제공(진로 리포트 생성 등) 및 통계 분석 목적으로 사용됩니다.</p>
+        <h3 style="font-size:1.1rem; color:#1e293b;">2. 수집하는 개인정보 항목</h3>
+        <ul style="padding-left: 20px; margin-bottom: 0;">
+          <li><strong>필수</strong>: 아이디, 비밀번호(단방향 암호화), 이름, 이메일 주소, 학급 정보</li>
+          <li><strong>선택</strong>: 진로 분석 서술형 응답 데이터, 게임 포인트, 채팅 기록</li>
+        </ul>
+        <h3 style="font-size:1.1rem; color:#1e293b;">3. 보유 및 이용 기간</h3>
+        <p>원칙적으로 개인정보는 <strong>회원 탈퇴 시 또는 학년도 종료 시점(매년 개편 시)에 일괄 파기</strong>됩니다.</p>
+        <h3 style="font-size:1.1rem; color:#1e293b;">4. 외부 제공(위탁) 및 AI 활용</h3>
+        <p>DB 데이터 보관을 위해 클라우드 서비스(Supabase)를 사용하며, 진로 분석과 문서 파악을 위해 AI 모델(Gemini)을 활용합니다. 단, 제공되는 모든 텍스트는 익명화되어 전송되며 인공지능의 외부 학습 용도로 무단 저장되지 않습니다.</p>
+      </div>
+      <button class="auth-btn-secondary" style="margin-top: 1.5rem;" onclick="closePrivacyDetail()">확인 및 닫기</button>
+    </div>
+  </div>
+
+  <!-- 🏫 학교 검색 팝업 모달 -->
+  <div id="school-search-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10020; align-items:center; justify-content:center; backdrop-filter: blur(4px);">
+    <div class="auth-box" style="background: white; transform: none; animation: none; max-width: 450px !important;">
+      <h2 style="margin-bottom: 1rem; -webkit-text-fill-color: var(--auth-primary);">학교 찾기 🔍</h2>
+      <div class="auth-input-group">
+        <div style="display: flex; gap: 8px;">
+          <input id="school-search-input" type="text" placeholder="학교명을 입력하세요 (예: 광명중)">
+          <button type="button" class="auth-btn-primary" style="width: 80px;" onclick="executeSchoolSearch()">검색</button>
+        </div>
+      </div>
+      <div id="school-search-results" style="max-height: 300px; overflow-y: auto; margin-top: 1rem; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <p style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.9rem;">학교명을 검색해주세요.</p>
+      </div>
+      <button class="auth-btn-secondary" style="margin-top: 1rem;" onclick="closeSchoolSearchModal()">닫기</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/codingon.js"></script>
+  <script src="js/index.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('✅ EduBoard Service Worker Registered'))
+          .catch(err => console.log('❌ Service Worker Error:', err));
+      });
+    }
+  </script>
 </body>
 
 </html>
