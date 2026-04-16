@@ -1,0 +1,9 @@
+{
+  "appId": "com.antigravity.eduboard",
+  "appName": "EduBoard",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
