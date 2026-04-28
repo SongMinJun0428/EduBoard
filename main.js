@@ -18,7 +18,7 @@ function createWindow() {
     backgroundColor: '#ffffff'
   });
 
-  mainWindow.loadFile('index.html');
+  mainWindow.loadFile('www/index.html');
   
   // 외부 링크는 기본 브라우저에서 열리도록 처리
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

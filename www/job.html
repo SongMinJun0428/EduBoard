@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>진로 밸런스 게임 | 나를 찾아가는 여정</title>
+    <script src="js/config.js"></script>
+    <script src="js/security.js"></script>
+    <meta name="description" content="단순한 밸런스 게임이 아닌, 선택과 이유를 통해 나의 가치관과 진로 방향을 탐색하는 서비스">
+    
+    <!-- External Assets -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/job-style.css">
+    <link rel="stylesheet" href="css/job-animations.css">
+</head>
+<body class="theme-light">
+    <!-- Main App Content -->
+    <div id="app" class="app-container">
+        <!-- Animated Background -->
+        <div class="bg-blur bg-blur-1"></div>
+        <div class="bg-blur bg-blur-2"></div>
+        <div class="bg-blur bg-blur-3"></div>
+
+        <!-- Main Panel -->
+        <main id="main-content" class="glass-panel">
+            <div class="loader">
+                <div class="spinner pulse-glow"></div>
+                <p style="font-weight: 700; color: var(--primary-color);">나를 찾는 밸런싱 게임 로딩 중...</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="js/job-data.js?v=3"></script>
+    <script src="js/job-supabase.js"></script>
+    <script src="js/job-state.js"></script>
+    <script src="js/job-ui.js"></script>
+    <script src="js/job-analyzer.js"></script>
+    <script src="js/job-main.js"></script>
+</body>
+</html>

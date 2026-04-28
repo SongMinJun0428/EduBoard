@@ -1,0 +1,18 @@
+{
+  "name": "EduBoard",
+  "short_name": "EduBoard",
+  "description": "지능형 교육 대시 보드",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "img/eduboard_logo_premium.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "orientation": "portrait"
+}

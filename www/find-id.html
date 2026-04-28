@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>아이디 찾기 - EduBoard</title>
+  <script src="js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link rel="stylesheet" href="css/find-id.css">
+</head>
+<body>
+  <header>
+    <h1>EduBoard</h1>
+    <div></div>
+  </header>
+
+  <main class="container">
+    <h2>아이디 찾기</h2>
+    <input type="text" id="name" placeholder="이름을 입력하세요" />
+    <input type="email" id="email" placeholder="이메일을 입력하세요" />
+    <button id="findIdBtn">아이디 찾기</button>
+    <div id="result"></div>
+    <div class="back-link">
+      <a href="index.html">← 로그인으로 돌아가기</a>
+    </div>
+  </main>
+
+  <script src="js/find-id.js"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>2-3반 관리자 페이지</title>
+  <script src="js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <link rel="stylesheet" href="css/classadmin.css">
+</head>
+<body>
+  <header>
+    <h1>🏫 2-3반 관리자 페이지</h1>
+    <nav>
+      <a href="#seats">자리</a>
+      <a href="#assign">과제</a>
+      <a href="#points">포인트</a>
+      <a href="#quiz">퀴즈</a>
+      <a href="#vote">투표</a>
+    </nav>
+  </header>
+  <!-- 🔥 자리 셔플 연출용 오버레이 -->
+<div id="shuffle-overlay">
+  <div class="overlay-inner">
+    <div class="overlay-title">자리 셔플 준비!</div>
+    <div class="overlay-count">3</div>
+    <div class="overlay-sub">자리에 앉아 주세요 😎</div>
+  </div>
+</div>
+
+
+  <div class="wrap">
+
+    <!-- 자리 관리 -->
+    <div id="seats" class="card">
+      <h2>🪑 자리 관리</h2>
+      <div class="seat-controls" style="margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <button class="btn" onclick="loadSeats()">📥 불러오기</button>
+        <button class="btn primary" onclick="shuffleSeats()">🔄 랜덤 섞기</button>
+        <button class="btn primary" onclick="saveSeats()">💾 저장</button>
+        <button class="btn" style="background:#10b981; color:white; border:none;" onclick="downloadSeatingChart()">🖼️ 이미지 다운로드</button>
+        
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+          <label style="margin:0; font-size:0.85rem;">가로 칸 수:</label>
+          <select id="column-count" onchange="updateGridLayout(this.value)" style="padding: 4px; border-radius: 4px;">
+            <option value="4">4칸</option>
+            <option value="5">5칸</option>
+            <option value="6" selected>6칸</option>
+            <option value="7">7칸</option>
+            <option value="8">8칸</option>
+          </select>
+        </div>
+      </div>
+      <div id="seat-map-container" style="background: white; padding: 20px; border-radius: 8px;">
+        <div id="seat-map"></div>
+      </div>
+    </div>
+    
+    <!-- 과제 관리 -->
+    <div id="assign" class="card">
+      <h2>📝 과제 등록</h2>
+      <label>제목 <input id="assign-title"></label>
+      <label>마감일 <input type="date" id="assign-deadline"></label>
+      <button class="btn primary" onclick="addAssignment()">등록</button>
+    </div>
+
+    <!-- 포인트 관리 -->
+    <div id="points" class="card">
+      <h2>🏆 포인트 관리</h2>
+      <label>학생 선택
+        <select id="point-student"></select>
+      </label>
+      <label>추가할 포인트 <input type="number" id="point-value"></label>
+      <button class="btn primary" onclick="addPoint()">➕ 포인트 추가</button>
+    </div>
+
+
+    <!-- 퀴즈 관리 -->
+    <div id="quiz" class="card">
+      <h2>🇺🇸 영어 퀴즈 등록</h2>
+      <label>문제 <input id="quiz-question"></label>
+      <button class="btn primary" onclick="addQuiz()">추가</button>
+    </div>
+
+    <!-- 투표 관리 -->
+    <div id="vote" class="card">
+      <h2>🗳️ 투표 등록</h2>
+      <label>질문 <input id="vote-question"></label>
+      <label>옵션 (콤마로 구분) <input id="vote-options"></label>
+      <button class="btn primary" onclick="addVote()">등록</button>
+    </div>
+
+  </div>
+
+  <script src="js/classadmin.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>2-3반 학급 사이트</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="css/class.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1>🏫 2-3반 학급 사이트</h1>
+      <div class="hamburger" onclick="toggleMenu()">☰ 메뉴</div>
+    </div>
+    <nav id="nav">
+      <a href="#notices">공지</a>
+      <a href="#assign">과제</a>
+      <a href="#timetable">시간표</a>
+      <a href="#clean">청소/자리</a>
+      <a href="#test">테스트</a>
+      <a href="#gallery">갤러리</a>
+      <a href="#points">포인트</a>
+      <a href="#vote">투표</a>
+      <button class="btn" onclick="toggleDark()">🌙 모드</button>
+    </nav>
+  </header>
+
+  <div class="wrap">
+
+    <!-- 빠른메뉴 -->
+    <div class="card grid-4">
+      <button class="btn primary" onclick="location.hash='#assign'">📝 과제</button>
+      <button class="btn primary" onclick="location.hash='#notices'">📢 공지</button>
+      <button class="btn primary" onclick="location.hash='#clean'">🧹 청소/자리</button>
+      <button class="btn primary" onclick="location.hash='#test'">📝 테스트</button>
+    </div>
+
+    <!-- 공지 -->
+    <div id="notices" class="card">
+      <h2>📢 공지사항</h2>
+      <div id="notice-list" class="muted">불러오는 중…</div>
+    </div>
+
+    <!-- 과제 + 시간표 -->
+    <div class="grid-2">
+      <div id="assign" class="card">
+        <h2>📝 과제</h2>
+        <div id="assign-list" class="muted">불러오는 중…</div>
+      </div>
+      <div id="timetable" class="card">
+        <h2>🗓️ 시간표</h2>
+        <input type="date" id="timetable-date" />
+        <button class="btn primary" onclick="loadTimetableByDate()">📅 불러오기</button>
+        <div id="timetable-grid"></div>
+      </div>
+    </div>
+
+<div id="clean" class="card">
+  <h2>🧹 청소 당번 & 🪑 자리 배치</h2>
+  <div id="seat-map" style="margin-top:1rem"></div>
+</div>  
+
+<div id="quiz" class="card">
+  <h2>🇺🇸 영어 퀴즈</h2>
+  <div class="quiz-box">
+    <input type="text" id="student-name" placeholder="이름 입력" />
+    <div id="quiz-questions">로딩 중...</div>
+    <button class="btn" onclick="submitEnglishAnswers()">제출</button>
+    <div id="quiz-submit-result" class="result"></div>
+  </div>
+</div>
+    <!-- 갤러리 -->
+    <div id="gallery" class="card">
+      <h2>📂 자료실 & 갤러리</h2>
+      <div id="files" class="grid-4"></div>
+    </div>
+
+    <!-- 포인트 -->
+<div id="points" class="card">
+  <h2>🏆 학급 전용 포인트</h2>
+  <div id="points-list" class="points-grid">불러오는 중...</div>
+</div>
+
+    <!-- 투표 -->
+    <div id="vote" class="card">
+      <h2>🗳️ 학급 투표</h2>
+      <div id="vote-box">불러오는 중...</div>
+      <div id="vote-result" class="muted" style="margin-top:.5rem"></div>
+    </div>
+
+  </div>
+<div id="image-modal" onclick="closeModal()">
+  <img id="modal-img" src="" alt="확대 이미지" />
+</div>
+<div id="file-modal" class="modal" onclick="closeFileModal()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <img id="modal-preview" src="" alt="미리보기" class="modal-image" />
+    <div class="modal-text">
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-meta" id="modal-meta"></div>
+      <div class="modal-comment" id="modal-comment"></div>
+      <div class="modal-scope" id="modal-scope"></div>
+    </div>
+  </div>
+</div>
+
+
+  <script src="js/class.js"></script>
+
+</body>
+</html>

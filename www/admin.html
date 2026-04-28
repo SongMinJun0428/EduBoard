@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="ko" class="h-full">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EduBoard 관리자</title>
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Supabase v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="color-scheme" content="light dark" />
+  <link rel="stylesheet" href="css/admin.css">
+  <script src="js/config.js"></script>
+  <script src="js/security.js"></script>
+  <script src="js/password-utils.js"></script>
+</head>
+
+<body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100" style="display: none;">
+  <!-- 헤더 -->
+  <header class="sticky top-0 z-40">
+    <div class="container-max flex h-16 items-center justify-between">
+      <div class="flex items-center gap-3 overflow-hidden">
+        <a href="./index.html" class="flex-shrink-0 text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+          <svg viewBox="0 0 24 24" fill="none" class="w-5 h-5">
+            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <span class="hidden md:inline">대시보드</span>
+        </a>
+        <h1 class="text-sm md:text-xl font-black tracking-tighter truncate max-w-[120px] md:max-w-none bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">EduBoard 관리</h1>
+        
+        <!-- PC용 내비게이션 -->
+        <nav class="hidden md:flex items-center gap-6 border-l ml-6 pl-6 h-8">
+          <button id="tab-users" class="tab-btn active">사용자 관리</button>
+          <button id="tab-shop" class="tab-btn">상점 관리</button>
+          <button id="tab-job" class="tab-btn">진로 검사 결과</button>
+          <button id="tab-db" class="tab-btn">데이터베이스</button>
+          <button id="tab-codingon" class="tab-btn">CodingOn 관리</button>
+        </nav>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- 모바일 전용 메뉴 버튼 -->
+        <button id="btn-mobile-menu" class="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+          <svg viewBox="0 0 24 24" fill="none" class="w-6 h-6">
+            <path d="M4 6h16M4 12h16m-7 6h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+
+        <div class="hidden sm:flex items-center gap-2">
+          <button id="theme" class="btn btn-ghost text-sm">테마</button>
+          <span id="me" class="hidden md:inline text-sm text-gray-600 dark:text-gray-300 px-2 py-1 rounded bg-gray-100/70 dark:bg-gray-700/60"></span>
+          <button id="signout" class="btn">로그아웃</button>
+        </div>
+      </div>
+    </div>
+
+  </header>
+  
+  <!-- 모바일 사이드바 내비게이션 (헤더 밖으로 이동) -->
+  <div id="mobile-sidebar" class="fixed inset-0 z-[100] hidden">
+      <div class="absolute inset-0 bg-black/60" id="mobile-sidebar-overlay"></div>
+      <div class="flex flex-col gap-6 p-6" id="master-sidebar">
+          <div class="flex items-center justify-between">
+              <span class="font-bold text-lg text-slate-800">메뉴</span>
+              <button id="btn-close-mobile-menu" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
+          </div>
+          <nav class="flex flex-col gap-2">
+              <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-users">👤 사용자 관리</button>
+              <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-shop">🛒 상점 관리</button>
+              <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-job">🎯 진로 검사 결과</button>
+              <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-db">🗃️ 데이터베이스</button>
+              <button class="tab-btn mobile text-left px-4 py-3 rounded-xl hover:bg-gray-100 transition-colors" data-tab="tab-codingon">💻 CodingOn 관리</button>
+          </nav>
+          <div class="mt-auto flex flex-col gap-3">
+              <button id="mobile-theme" class="btn w-full justify-center">🌙 테마 전환</button>
+              <button id="mobile-signout" class="btn btn-primary w-full justify-center">로그아웃</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- 본문 -->
+  <main class="container-max py-4 space-y-4">
+    <!-- KPI 카드 -->
+    <section id="section-stats" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div class="stat-card">
+        <div class="stat-card-icon">💰</div>
+        <h3 class="uppercase-label">전체 코인</h3>
+        <p id="stat-total-coins" class="text-2xl font-bold mt-1 tracking-tighter">0</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon">👑</div>
+        <h3 class="uppercase-label">최고 레벨</h3>
+        <p id="stat-max-level" class="text-2xl font-bold mt-1 text-indigo-600 tracking-tighter">0</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon">🔥</div>
+        <h3 class="uppercase-label">24h 활동 로그</h3>
+        <p id="stat-recent-logs" class="text-2xl font-bold mt-1 text-indigo-600 tracking-tighter">0</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon">🛒</div>
+        <h3 class="uppercase-label">등록 상품</h3>
+        <p id="stat-shop-items" class="text-2xl font-bold mt-1 text-rose-600 tracking-tighter">0</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon">🏫</div>
+        <h3 class="uppercase-label">학급 수</h3>
+        <p id="stat-classes" class="text-2xl font-bold mt-1 tracking-tighter">0</p>
+      </div>
+      <div class="stat-card border-indigo-100 bg-indigo-50/30 dark:bg-indigo-950/20">
+        <div class="stat-card-icon text-indigo-500">👥</div>
+        <h3 class="uppercase-label text-indigo-600/70">총 사용자</h3>
+        <p id="stat-total" class="text-2xl font-bold mt-1 text-indigo-700 dark:text-indigo-400 tracking-tighter">0</p>
+      </div>
+    </section>
+
+    <!-- 툴바 -->
+    <section id="section-toolbar" class="bg-white dark:bg-slate-900 border rounded-xl p-3 shadow-sm">
+      <div class="flex flex-col sm:flex-row flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+          <div class="relative w-full sm:w-64 h-10">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input id="search" type="text" class="w-full h-full pl-10 pr-4 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="사용자 검색 (아이디/이름/학번)">
+          </div>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <select id="f-grade" class="flex-1 sm:w-28 h-10 rounded-xl border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800">
+                <option value="">학년 전체</option><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option>
+            </select>
+            <select id="f-class" class="flex-1 sm:w-28 h-10 rounded-xl border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800">
+                <option value="">반 전체</option>
+                <option value="1">1반</option><option value="2">2반</option><option value="3">3반</option><option value="4">4반</option><option value="5">5반</option><option value="6">6반</option><option value="7">7반</option><option value="8">8반</option><option value="9">9반</option><option value="10">10반</option>
+            </select>
+            <select id="f-role" class="flex-1 sm:w-28 h-10 rounded-xl border-gray-200 dark:border-gray-700 text-sm bg-white dark:bg-gray-800">
+                <option value="">권한 전체</option>
+                <option value="admin">Admin</option><option value="teacher">Teacher</option><option value="class_admin">Class Admin</option><option value="student">Student</option><option value="user">User</option>
+            </select>
+            <select id="page-size" class="hidden sm:block sm:w-24 h-10 rounded-xl border-gray-200 dark:border-gray-700 text-xs bg-white dark:bg-gray-800">
+                <option value="10">10개씩</option><option value="20" selected>20개씩</option><option value="50">50개씩</option><option value="100">100개씩</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+            <button id="refresh" class="btn btn-ghost h-10 w-10 p-0 flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700"><i class="fa-solid fa-rotate"></i></button>
+            <div class="relative flex-grow sm:flex-grow-0 h-10">
+                <button id="more-btn" class="btn bg-indigo-600 hover:bg-indigo-700 text-white w-full h-full border-none rounded-xl px-4 flex items-center justify-center gap-2 transition-all">
+                    <span>관리 작업</span>
+                    <i class="fa-solid fa-chevron-down text-[10px] opacity-70"></i>
+                </button>
+                <div id="more" class="popover w-full sm:w-48 right-0 top-full mt-2">
+                    <div class="p-1 space-y-0.5">
+                      <button id="open-add"
+                        class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
+                        <span>👤</span> 사용자 추가
+                      </button>
+                      <label
+                        class="w-full block px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors flex items-center gap-2">
+                        <span>📄</span> CSV 업로드 <input id="csv-in" type="file" accept=".csv" class="hidden">
+                      </label>
+                      <button id="csv-out"
+                        class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
+                        <span>📥</span> CSV 다운로드
+                      </button>
+                      <div class="my-1 h-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
+                      <button id="open-logs"
+                        class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
+                        <span>📋</span> 활동 로그 보기
+                      </button>
+                      <div class="my-1 h-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
+                      <button id="admin-sync-all"
+                        class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-indigo-50 text-indigo-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 font-bold">
+                        <span>🎒</span> 아이템 전체 지급 (나)
+                      </button>
+                      <button id="promote"
+                        class="w-full text-left px-3 py-2 text-sm rounded-md text-indigo-600 font-semibold hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center gap-2">
+                        <span>🚀</span> 신학기 자동 승급
+                      </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 사용자 테이블 -->
+    <section id="section-users" class="rounded-xl border bg-white p-5 shadow-sm">
+      <!-- 테이블 컨테이너 -->
+      <div class="table-container mb-2">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr>
+              <th class="w-10 text-center"><input type="checkbox" id="check-all"></th>
+              <th class="sortable text-left px-4 py-3" data-sort="name">이름</th>
+              <th class="sortable text-left px-4 py-3" data-sort="username">아이디</th>
+              <th class="w-24 text-center px-4 py-3 sortable" data-sort="grade">학급 정보</th>
+              <th class="w-48 text-left px-4 py-3">권한 관리</th>
+              <th class="w-24 text-center px-4 py-3 sortable" data-sort="level">성장 Stats</th>
+              <th class="w-24 text-right px-4 pr-6 py-3 sortable" data-sort="coin_balance">포인트</th>
+              <th class="w-24 text-center px-4 py-3">작업</th>
+            </tr>
+          </thead>
+          <tbody id="rows" class="[&>tr>td]:p-2 [&>tr>td]:border"></tbody>
+        </table>
+        <p id="empty" class="hidden p-5 text-center text-gray-500">결과가 없습니다.</p>
+      </div>
+
+      <div class="flex items-center justify-between py-3 text-sm">
+        <div class="flex items-center gap-4">
+          <div id="page-info" class="text-gray-600 dark:text-gray-300"></div>
+          <div class="flex items-center gap-2 border-l pl-4">
+            <span class="text-xs text-slate-400">페이지 당 표시중</span>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button id="prev" class="btn h-8">이전</button>
+          <button id="next" class="btn h-8">다음</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 진로 검사 결과 섹션 (신규) -->
+    <section id="section-job" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold">🎯 진로 검사 결과 관리</h2>
+        <div class="flex gap-2">
+            <button id="job-csv-out" class="btn bg-emerald-600 hover:bg-emerald-700 text-white border-none text-xs"><i class="fa-solid fa-file-csv mr-2"></i>결과 내보내기 (CSV)</button>
+            <button id="refresh-job" class="btn btn-ghost">🔄 새로고침</button>
+        </div>
+      </div>
+
+      <!-- 진로 통계 대시보드 (신규) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-xl border bg-white p-5 shadow-sm dark:bg-gray-800">
+            <h3 class="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wider">유형별 분포 통계</h3>
+            <div style="height: 250px; display: flex; justify-content: center; align-items: center;">
+                <canvas id="job-dist-chart"></canvas>
+            </div>
+        </div>
+        <div class="rounded-xl border bg-white p-5 shadow-sm dark:bg-gray-800 flex flex-col justify-center">
+            <h3 class="text-sm font-bold text-gray-500 mb-6 uppercase tracking-wider">주요 인사이트</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800">
+                    <div class="text-xs text-blue-600 dark:text-blue-400 font-bold mb-1">총 검사 횟수</div>
+                    <div id="job-stat-total" class="text-2xl font-black">0</div>
+                </div>
+                <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                    <div class="text-xs text-indigo-600 dark:text-indigo-400 font-bold mb-1">가장 많은 유형</div>
+                    <div id="job-stat-top-type" class="text-lg font-black truncate">-</div>
+                </div>
+            </div>
+            <div class="mt-4 p-4 text-xs text-gray-500 border-t pt-4">
+                * 위 통계는 현재 불러온 데이터를 기준으로 실시간 집계됩니다.
+            </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border bg-white p-5 shadow-sm dark:bg-gray-800">
+        <!-- 필터 영역 -->
+        <div class="flex gap-2 mb-4">
+            <input id="job-search" type="text" class="flex-1 rounded-lg border px-4 py-2 text-sm dark:bg-gray-900" placeholder="학생 이름 또는 유형으로 검색...">
+        </div>
+        <div class="table-container border rounded-xl overflow-x-auto bg-white dark:bg-gray-800">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr class="[&>th]:p-3 [&>th]:border">
+                <th class="w-32 text-left">검사 일시</th>
+                <th class="text-left">학생 정보</th>
+                <th class="w-32 text-center">주요 유형</th>
+                <th class="text-left">핵심 키워드</th>
+                <th class="w-32 text-center">작업</th>
+              </tr>
+            </thead>
+            <tbody id="job-rows" class="[&>tr>td]:border">
+              <!-- JS에서 동적 생성 -->
+            </tbody>
+          </table>
+        </div>
+        <p id="job-empty" class="hidden text-center py-20 text-gray-400">데이터가 없습니다.</p>
+      </div>
+    </section>
+
+    <!-- 상점 아이템 관리 섹션 (초기 숨김) -->
+    <section id="section-shop" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold">🛒 상점 아이템 관리</h2>
+        <button id="open-add-shop" class="btn btn-primary">+ 새 아이템 추가</button>
+      </div>
+
+      <div class="rounded-xl border bg-white p-5 shadow-sm">
+        <div class="table-container border rounded-xl overflow-x-auto bg-white dark:bg-gray-800">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr class="[&>th]:p-2 [&>th]:border">
+                <th class="w-16 text-center">ID</th>
+                <th class="text-left">아이템 이름</th>
+                <th class="w-24 text-center">가격 (P)</th>
+                <th class="w-20 text-center">개인 재고</th>
+                <th class="text-left">설명</th>
+                <th class="w-20 text-center">작업</th>
+              </tr>
+            </thead>
+            <tbody id="shop-rows" class="[&>tr>td]:p-2 [&>tr>td]:border">
+              <!-- JS에서 동적 생성 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p id="shop-empty" class="hidden text-center py-20 text-gray-400">등록된 상품이 없습니다.</p>
+    </section>
+
+    <!-- DB 익스플로러 섹션 -->
+    <section id="section-db" class="hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <select id="db-table-select"
+            class="rounded-lg border px-4 py-2 font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 outline-none">
+            <option value="users">users (사용자)</option>
+            <option value="shop_items">shop_items (상점)</option>
+            <option value="notices">notices (공지)</option>
+            <option value="user_activity_logs">user_activity_logs (로그)</option>
+          </select>
+          <button id="db-refresh" class="btn btn-ghost">🔄 새로고침</button>
+        </div>
+        <div class="text-xs text-slate-400 font-mono">⚠️ 원본 데이터를 직접 수정하므로 주의가 필요합니다.</div>
+      </div>
+      <div class="panel rounded-xl border bg-white overflow-hidden shadow-sm">
+        <div class="table-container no-mobile-cards overflow-x-auto max-h-[600px]">
+          <table class="table w-full text-sm">
+            <thead id="db-thead"></thead>
+            <tbody id="db-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CodingOn 관리 섹션 (신규) -->
+    <section id="section-codingon" class="hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-xl">🛡️</div>
+          <div>
+            <h2 class="text-xl font-bold">CodingOn 관리</h2>
+            <p class="text-xs text-gray-400">학생들의 학습 진도와 승인 요청을 한눈에 관리합니다.</p>
+          </div>
+        </div>
+        <button onclick="renderCOAdmin()" class="btn btn-ghost">🔄 새로고침</button>
+      </div>
+      <div id="co-admin-content" class="bg-white dark:bg-slate-900 border rounded-2xl overflow-hidden shadow-sm min-h-[600px]">
+         <!-- JS에서 동적 생성 (codingon.js) -->
+      </div>
+    </section>
+  </main>
+
+  <!-- 일괄 권한 배너 -->
+  <div id="bulk-drawer" class="drawer hidden">
+    <div class="w-full px-4 py-2 flex items-center gap-2">
+      <div class="text-[11px] whitespace-nowrap"><span id="sel-count" class="font-bold">0</span>명</div>
+      <select id="bulk-role" class="rounded-lg border px-2 py-1.5 text-xs dark:bg-gray-900 w-24">
+        <option value="">권한…</option>
+        <option>admin</option>
+        <option>teacher</option>
+        <option>class_admin</option>
+        <option>student</option>
+        <option>user</option>
+      </select>
+      <button id="bulk-apply" class="btn btn-primary h-8 px-2 text-[10px] shrink-0 rounded-lg">권한 변경</button>
+      <button id="bulk-point" class="btn bg-amber-500 hover:bg-amber-600 text-white border-none h-8 px-2 text-[10px] shrink-0 rounded-lg ml-auto">💰 포인트 지급</button>
+    </div>
+  </div>
+
+  <!-- 사용자 추가 모달 -->
+  <div id="modal-add" class="modal">
+    <div class="w-full max-w-xl rounded-xl border bg-white dark:bg-gray-800 p-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">사용자 추가</h3>
+        <button class="btn btn-ghost" data-close>닫기</button>
+      </div>
+      <div class="mt-3 grid sm:grid-cols-2 gap-3">
+        <input id="add-username" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900"
+          placeholder="아이디(username)" />
+        <input id="add-name" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="이름" />
+        <input id="add-email" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="이메일(선택)" />
+        <input id="add-grade" type="number" min="1" max="3" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900"
+          placeholder="학년" />
+        <input id="add-class" type="number" min="1" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900"
+          placeholder="반" />
+        <input id="add-number" type="number" min="1" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900"
+          placeholder="번호(학번)" />
+        <select id="add-role" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900">
+          <option value="student">student(동아리)</option>
+          <option>class_admin</option>
+          <option>admin</option>
+          <option>user</option>
+        </select>
+        <input id="add-level" type="number" min="1" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900"
+          placeholder="레벨(선택)" />
+        <input id="add-xp" type="number" min="0" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900"
+          placeholder="XP(선택)" />
+        <input id="add-point" type="number" min="0" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900"
+          placeholder="포인트(선택)" />
+        <input id="add-password" class="rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="임시 비번(선택)" />
+      </div>
+      <div class="mt-4 flex justify-end">
+        <button id="add-submit" class="btn btn-primary">추가</button>
+      </div>
+      <p class="text-xs text-gray-500 mt-2">운영에선 비밀번호는 서버에서 해시 저장 권장.</p>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- 상점 아이템 추가/수정 모달 -->
+  <div id="modal-shop" class="modal">
+    <div class="w-full max-w-xl rounded-xl border bg-white dark:bg-gray-800 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="shop-modal-title" class="text-lg font-bold">🛒 아이템 추가/수정</h3>
+        <button class="text-2xl text-gray-400 hover:text-gray-600" data-close>&times;</button>
+      </div>
+      <div class="space-y-4">
+        <input type="hidden" id="shop-id">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">아이템 이름</label>
+            <input id="shop-name" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900"
+              placeholder="예: [캐릭터] 레인보우" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">가격 (Points)</label>
+            <input id="shop-price" type="number" min="0"
+              class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="0" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">아이템 종류</label>
+            <select id="shop-type" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900">
+              <option value="normal" selected>일반 (Normal)</option>
+              <option value="title">칭호 (Title)</option>
+              <option value="permission">권한 (Permission)</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">효과/색상 (칭호 색상 등)</label>
+            <input id="shop-effect" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900"
+              placeholder="예: #FF0000 또는 perm_key" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">이미지 URL (선택)</label>
+            <input id="shop-image" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900"
+              placeholder="https://..." />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">개인 구매 한도 (재고)</label>
+            <input id="shop-stock" type="number" min="1" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="999" />
+          </div>
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-gray-500 uppercase">아이템 설명 (선택)</label>
+          <textarea id="shop-desc" rows="2" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" placeholder="아이템에 대한 설명을 적어주세요"></textarea>
+        </div>
+      </div>
+      <div class="mt-8 flex justify-end gap-3">
+        <button class="btn btn-ghost px-6" data-close>취소</button>
+        <button id="shop-submit" class="btn btn-primary px-10">아이템 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 사용자 정보 수정 모달 -->
+  <div id="modal-edit" class="modal">
+    <div class="w-full max-w-xl rounded-xl border bg-white dark:bg-gray-800 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold">✏️ 사용자 정보 수정</h3>
+        <button class="text-2xl text-gray-400 hover:text-gray-600" data-close>&times;</button>
+      </div>
+      <div class="space-y-4">
+        <input type="hidden" id="edit-username">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">이름</label>
+            <input id="edit-name" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">이메일</label>
+            <input id="edit-email" type="email" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">학년</label>
+            <input id="edit-grade" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">반</label>
+            <input id="edit-class" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">번호</label>
+            <input id="edit-number" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">레벨</label>
+            <input id="edit-level" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">XP</label>
+            <input id="edit-xp" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">포인트</label>
+            <input id="edit-coin" type="number" class="w-full rounded-lg border px-3 py-2 text-sm dark:bg-gray-900 font-bold text-blue-600" />
+          </div>
+        </div>
+      </div>
+      <div class="mt-8 flex justify-end gap-3">
+        <button class="btn btn-ghost px-6" data-close>취소</button>
+        <button id="edit-submit" class="btn btn-primary px-10">변경사항 저장</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 로그 모달 -->
+  <div id="modal-logs" class="modal">
+    <div class="w-full rounded-xl border bg-white dark:bg-gray-800 p-4" style="max-width: 960px;">
+
+
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <h3 class="font-semibold text-lg">활동 로그</h3>
+        <div class="flex gap-2">
+          <input id="log-search-user" class="rounded-lg border px-3 py-1 text-xs dark:bg-gray-900 w-32"
+            placeholder="사용자 검색">
+          <input id="log-search-action" class="rounded-lg border px-3 py-1 text-xs dark:bg-gray-900 w-32"
+            placeholder="활동 검색">
+          <button id="refresh-logs" class="btn btn-ghost btn-sm hover:bg-gray-100 dark:hover:bg-gray-700">🔄
+            새로고침</button>
+        </div>
+      </div>
+      <ul id="log-list" class="space-y-2 max-h-[50vh] overflow-auto text-sm px-1"></ul>
+      <p id="log-empty" class="hidden text-sm text-gray-500 py-10 text-center">로그가 없습니다.</p>
+
+      <div class="flex justify-end mt-4 pt-3 border-t">
+        <button class="btn btn-primary px-6" data-close>닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 로그 상세 모달 -->
+  <div id="modal-log-detail" class="modal" style="z-index: 3000;">
+    <div class="w-full max-w-5xl rounded-xl border bg-white dark:bg-gray-800 p-4"
+      style="max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="flex items-center justify-between border-b pb-3 mb-4">
+        <h3 class="font-semibold text-lg text-indigo-600 dark:text-indigo-400">로그 상세 데이터</h3>
+        <button class="text-2xl text-gray-400 hover:text-gray-600 transition-colors" data-close>&times;</button>
+      </div>
+      <div class="flex-1 overflow-auto rounded-lg border dark:border-gray-700">
+        <div id="log-detail-content"
+          class="text-sm bg-gray-50 dark:bg-gray-900 p-4 min-h-[200px] overflow-x-auto whitespace-pre-wrap font-mono">
+        </div>
+      </div>
+      <div class="flex justify-end mt-4 pt-3 border-t">
+        <button class="btn btn-ghost px-6" data-close>닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 전역 컨텍스트 메뉴(작업) -->
+  <div id="ctx" class="dark:[--bg:rgba(31,41,55,.98)]">
+    <div class="p-1 text-sm">
+      <button
+        class="w-full text-left px-3 py-2 rounded flex items-center gap-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold"
+        data-ctx="edit">
+        <span>✏️</span> 정보 수정
+      </button>
+      <button class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700" data-ctx="save">권한
+        저장</button>
+      <button class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700" data-ctx="reset">비번
+        초기화</button>
+      <button class="w-full text-left px-3 py-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700" data-ctx="coin">포인트
+        지급</button>
+      <div class="my-1 h-px bg-gray-100 dark:bg-gray-800"></div>
+      <button class="w-full text-left px-3 py-2 rounded text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
+        data-ctx="del">삭제</button>
+    </div>
+  </div>
+
+  <!-- 진로 결과 상세 모달 -->
+  <div id="modal-job-detail" class="modal">
+    <div class="w-full max-w-[90vw] lg:max-w-6xl m-6 sm:m-10 rounded-3xl border bg-white dark:bg-gray-800 p-8 sm:p-12 shadow-2xl" style="max-width: 1200px !important;">
+      <div class="flex items-center justify-between mb-6 pb-4 border-b">
+        <h3 class="text-xl font-bold flex items-center gap-2">
+            <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>
+            진로 검사 상세 리포트
+        </h3>
+        <button class="text-2xl text-gray-400 hover:text-gray-600 transition-colors" data-close>&times;</button>
+      </div>
+      <div id="job-detail-content" class="space-y-6 overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar">
+        <!-- JS에서 동적 생성 -->
+      </div>
+      <div class="mt-8 pt-6 border-t flex justify-end">
+        <button class="btn btn-primary px-8 py-2.5 rounded-xl font-bold" data-close>창 닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 포인트 지급 모달 -->
+  <div id="modal-coin" class="modal">
+    <div class="w-full max-w-sm rounded-xl border bg-white dark:bg-gray-800 p-6 shadow-xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold">💰 포인트(코인) 지급</h3>
+        <button class="text-2xl text-gray-400 hover:text-gray-600" data-close>&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-gray-500 uppercase">지급할 금액</label>
+          <input id="coin-amount" type="number" min="1" class="w-full rounded-lg border px-4 py-3 text-lg font-bold dark:bg-gray-900 focus:ring-2 focus:ring-amber-500 outline-none" placeholder="1000" />
+        </div>
+        <p class="text-xs text-gray-400">※ 입력한 금액만큼 해당 사용자의 잔액에 합산됩니다.</p>
+      </div>
+      <div class="mt-6 flex justify-end gap-3">
+        <button class="btn btn-ghost px-6" data-close>취소</button>
+        <button id="coin-submit" class="btn bg-amber-500 hover:bg-amber-600 text-white font-bold border-none px-10">지급 완료</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/job-data.js?v=3"></script>
+  <script src="js/codingon.js"></script>
+  <script src="js/admin.js?v=admin-autologin-20260429"></script>
+  <div id="toast"></div>
+</body>
+
+</html>
