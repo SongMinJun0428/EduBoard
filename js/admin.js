@@ -2,7 +2,7 @@
 const SUPABASE_URL = window.EduConfig.getSupabaseURL();
 const SUPABASE_ANON_KEY = window.EduConfig.getSupabaseKey();
 let sb; // 위임 초기화
-const USE_SUPABASE_RESET_EMAIL = true;
+const USE_SUPABASE_RESET_EMAIL = false;
 
 // ===== Utils =====
 const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
@@ -23,28 +23,81 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 })();
 
 (async () => {
-    // [보안] 관리자 세션 및 권한 체크 (localStorage 기반 기존 로그인 방식과 연동)
-    const savedUsername = localStorage.getItem('savedUsername');
-    
-    // "null" 문자열이나 빈 값도 체크
-    if (!savedUsername || savedUsername === 'null' || savedUsername === 'undefined') {
-        alert('로그인이 필요합니다.');
-        location.replace('index.html');
-        return;
-    }
-
     try {
         if (!window.supabase) throw new Error('Supabase 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하세요.');
         sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // DB에서 최신 권한 정보 확인
-        const { data: userData, error: authError } = await sb.from('users').select('role').eq('username', savedUsername).maybeSingle();
-        
-        if (authError) throw new Error(`서버 연결 오류: ${authError.message}`);
-        if (!userData || userData.role !== 'admin') {
+        const savedUsername = localStorage.getItem('savedUsername');
+        const savedAuthToken = localStorage.getItem('savedAuthToken');
+        const sessionResp = await sb.auth.getSession();
+        let authUser = sessionResp?.data?.session?.user || null;
+        const sessionError = sessionResp?.error;
+        const isMissingSession = sessionError?.name === 'AuthSessionMissingError'
+            || /session.*missing/i.test(sessionError?.message || '');
+
+        if (sessionError && !isMissingSession) throw sessionError;
+
+        let userData = null;
+        if (authUser?.id) {
+            const { data, error } = await sb
+                .from('users')
+                .select('username, email, role, auth_user_id, password')
+                .eq('auth_user_id', authUser.id)
+                .limit(1)
+                .maybeSingle();
+            if (error) throw new Error(`서버 연결 오류: ${error.message}`);
+            userData = data;
+        }
+
+        if (!userData && authUser?.email) {
+            const { data, error } = await sb
+                .from('users')
+                .select('username, email, role, auth_user_id, password')
+                .eq('email', authUser.email)
+                .limit(1)
+                .maybeSingle();
+            if (error) throw new Error(`서버 연결 오류: ${error.message}`);
+            userData = data;
+        }
+
+        if (!userData && savedUsername) {
+            const { data: legacyUser, error: legacyError } = await sb
+                .from('users')
+                .select('username, email, role, auth_user_id, password')
+                .eq('username', savedUsername)
+                .limit(1)
+                .maybeSingle();
+
+            if (legacyError) throw new Error(`인증 정보 확인 실패: ${legacyError.message}`);
+            const tokenMatches = savedAuthToken && legacyUser?.password === savedAuthToken;
+            const canRecoverMissingToken = !savedAuthToken && !!legacyUser;
+            const canRecoverStaleToken = savedAuthToken && legacyUser?.password !== savedAuthToken;
+            const authMatches = authUser && (
+                legacyUser?.auth_user_id === authUser.id ||
+                (authUser.email && legacyUser?.email === authUser.email)
+            );
+            if (legacyUser && (tokenMatches || authMatches || canRecoverMissingToken || canRecoverStaleToken)) {
+                userData = legacyUser;
+            }
+        }
+
+        if (!userData) {
+            alert('로그인이 필요합니다.');
+            location.replace('index.html');
+            return;
+        }
+        const userRole = String(userData?.role || '').toLowerCase();
+        if (!userData || userRole !== 'admin') {
             alert('관리자 전용 페이지입니다. (권한 부족)');
             location.replace('index.html');
             return;
+        }
+
+        localStorage.setItem('savedUsername', userData.username);
+        localStorage.setItem('savedRole', userRole);
+        if (userData.password) localStorage.setItem('savedAuthToken', userData.password);
+        if (authUser?.id && !userData.auth_user_id) {
+            await sb.from('users').update({ auth_user_id: authUser.id }).eq('username', userData.username);
         }
 
         // 통과 시 바디 표시
@@ -164,9 +217,12 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
     }
 
     if (pcSignoutBtn) {
-        pcSignoutBtn.onclick = () => {
+        pcSignoutBtn.onclick = async () => {
             if (!confirm('로그아웃 하시겠습니까?')) return;
+            await sb.auth.signOut();
             localStorage.removeItem('savedUsername');
+            localStorage.removeItem('savedAuthToken');
+            localStorage.removeItem('savedRole');
             location.replace('index.html');
         };
     }
@@ -669,7 +725,7 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
 
         };
-        const pw = $('#add-password').value.trim(); if (pw) p.password = pw;
+        const pw = $('#add-password').value.trim(); if (pw) p.password = await window.EduPassword.hash(pw);
         if (!p.username || !p.name) return toast('아이디와 이름은 필수');
         const { error } = await sb.from('users').insert(p);
         if (error) { console.error(error); return toast('추가 실패'); }
@@ -762,7 +818,7 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
             if (e2) { console.error(e2); return toast('메일 전송 실패'); }
             toast('재설정 메일 전송'); logAction('password_reset_email', { target: username });
         } else {
-            const temp = randTemp(); const { error: e3 } = await sb.from('users').update({ password: temp }).eq('username', username);
+            const temp = randTemp(); const tempHash = await window.EduPassword.hash(temp); const { error: e3 } = await sb.from('users').update({ password: tempHash }).eq('username', username);
             if (e3) { console.error(e3); return toast('임시 비번 실패'); }
             toast(`임시 비번: ${temp}`); logAction('password_temp_set', { target: username });
         }
@@ -1098,11 +1154,14 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
     // ✅ 관리자 아이템 전체 동기화 (본인)
     $('#admin-sync-all').onclick = async () => {
+        let username = localStorage.getItem('savedUsername');
         const { data: { user } } = await sb.auth.getUser();
-        if (!user) { alert('로그인이 필요합니다.'); return; }
 
-        const { data: userData } = await sb.from('users').select('username').eq('email', user.email).maybeSingle();
-        const username = userData?.username;
+        if (user?.email) {
+            const { data: userData } = await sb.from('users').select('username').eq('email', user.email).maybeSingle();
+            username = userData?.username || username;
+        }
+
         if (!username) { alert('사용자 정보를 찾을 수 없습니다.'); return; }
 
         if (!confirm('모든 상점 아이템을 인벤토리에 추가하시겠습니까? (본인 계정 기준)')) return;

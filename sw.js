@@ -1,20 +1,38 @@
-const CACHE_NAME = 'eduboard-v1';
+const CACHE_NAME = 'eduboard-v8';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/js/index.js',
-  '/eduboard_logo_premium.png',
-  '/manifest.json'
+  './',
+  './index.html',
+  './js/index.js',
+  './js/games.js',
+  './js/codingon.js',
+  './js/school-search.js',
+  './css/index.css',
+  './css/auth.css',
+  './img/eduboard_logo_premium.png',
+  './manifest.json'
 ];
 
-// 서비스 워커 설치 및 리소스 캐싱
 self.addEventListener('install', (e) => {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
 });
 
-// 네트워크 요청 제어 (네트워크 우선, 실패 시 캐시)
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))

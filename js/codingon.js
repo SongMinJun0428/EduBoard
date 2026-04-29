@@ -117,7 +117,7 @@ window.initCodingOn = async function() {
   renderCOHome();
   
   // Toggle Admin Nav
-  const role = localStorage.getItem('savedRole');
+  const role = String(localStorage.getItem('savedRole') || '').toLowerCase();
   if (role === 'admin') {
     document.querySelectorAll('#nav-codingon-admin, #side-nav-codingon-admin').forEach(el => el.style.display = 'flex');
   }

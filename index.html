@@ -1,0 +1,2561 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduBoard</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://*.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.supabase.co https://*.naver.com https://*.google.com https://*.daumcdn.net https://*.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com https://open.neis.go.kr; worker-src 'self' blob: https://cdn.jsdelivr.net;">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+
+  <link rel="stylesheet" href="css/index.css?v=coin-fix-20260429">
+  <link rel="stylesheet" href="css/auth.css">
+  <script src="js/config.js"></script>
+  <script src="js/security.js"></script>
+  <script src="js/password-utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+  <script src="js/co_data.js"></script>
+  
+  <!-- 📱 PWA & iOS App Optimization -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EduBoard">
+  <link rel="apple-touch-icon" href="img/eduboard_logo_premium.png">
+  <link rel="shortcut icon" href="img/eduboard_logo_premium.png" type="image/png">
+  <style>
+    /* 🔄 글로벌 로딩 오버레이 */
+    #loader-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(2px);
+      z-index: 9999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .loader-spinner {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #007bff;
+      border-bottom-color: transparent;
+      border-radius: 50%;
+      display: inline-block;
+      box-sizing: border-box;
+      animation: rotation 1s linear infinite;
+    }
+
+    @keyframes rotation {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+  <script>
+    // 🛡️ 핵심 UI 전환 함수 (스크립트 로드 전 클릭 대비)
+    function showBox(boxId) {
+      const loginBox = document.getElementById('login-box');
+      const signupBox = document.getElementById('signup-box');
+      if (boxId === 'login-box') {
+        if (signupBox) signupBox.style.display = 'none';
+        if (loginBox) loginBox.style.display = 'block';
+      } else {
+        if (loginBox) loginBox.style.display = 'none';
+        if (signupBox) signupBox.style.display = 'block';
+        if (typeof nextSignupStep === 'function') nextSignupStep(1);
+      }
+    }
+    function showSignup() { showBox('signup-box'); }
+    function showLogin() { showBox('login-box'); }
+
+    // 🏛️ 학교 검색 모달 제어 (ReferenceError 방지)
+    function openSchoolSearchModal(type) {
+      if (window.realOpenSchoolSearchModal) return window.realOpenSchoolSearchModal(type);
+      const modal = document.getElementById('school-search-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+    function closeSchoolSearchModal() {
+      if (window.realCloseSchoolSearchModal) return window.realCloseSchoolSearchModal();
+      const modal = document.getElementById('school-search-modal');
+      if (modal) modal.style.display = 'none';
+    }
+    function executeSchoolSearch() {
+      if (window.realExecuteSchoolSearch) return window.realExecuteSchoolSearch();
+      alert('데이터를 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    }
+
+    // 🏗️ 회원가입 초기 단계 로직 (로드 지연 대비)
+    function updateAgreementStatus() {
+      const privacy = document.getElementById('privacy-agree')?.checked;
+      const tos = document.getElementById('tos-agree')?.checked;
+      const nextBtn = document.getElementById('btn-next-step-1');
+      
+      const privacyContainer = document.getElementById('privacy-container');
+      const tosContainer = document.getElementById('tos-container');
+      
+      if (privacyContainer) privacyContainer.classList.toggle('checked', !!privacy);
+      if (tosContainer) tosContainer.classList.toggle('checked', !!tos);
+      
+      if (nextBtn) nextBtn.disabled = !(privacy && tos);
+    }
+
+    function nextSignupStep(step) {
+      // index.js가 로드된 경우 실제 함수 호출, 아닐 경우 최소 전환만 수행
+      if (window.realNextSignupStep) {
+        window.realNextSignupStep(step);
+        return;
+      }
+      const steps = document.querySelectorAll('.signup-step');
+      steps.forEach(s => s.classList.remove('active'));
+      const target = document.getElementById(`signup-step-${step}`);
+      if (target) target.classList.add('active');
+    }
+
+    // 💣 캐시 좀비 퇴치 (강제 초기화)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+    }
+    if ('caches' in window) {
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+    }
+  </script>
+</head>
+
+<body>
+  <div id="loader-overlay">
+    <span class="loader-spinner"></span>
+    <p style="margin-top: 1rem; font-weight: 600; color: #007bff;">처리 중입니다...</p>
+  </div>
+
+  <div id="login-screen">
+    <div class="auth-box" id="login-box">
+      <h2>로그인</h2>
+      
+      <div class="auth-input-group">
+        <label for="loginUsername">아이디</label>
+        <input id="loginUsername" type="text" placeholder="아이디를 입력하세요">
+      </div>
+      
+      <div class="auth-input-group">
+        <label for="loginPassword">비밀번호</label>
+        <input id="loginPassword" type="password" placeholder="비밀번호를 입력하세요">
+      </div>
+
+      <button id="login-btn" class="auth-btn-primary" onclick="loginDirect()">로그인</button>
+      
+      <div class="auth-divider">
+        <span>또는 소셜 계정으로 로그인</span>
+      </div>
+
+      <div class="social-login-group">
+        <button class="social-btn google" onclick="loginWithProvider('google')">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+          구글로 시작하기
+        </button>
+        <button class="social-btn kakao" onclick="alert('🔧 다른 기능 접속 테스트를 위해 카카오 로그인은 잠시 비활성화되었습니다.'); return false;" style="background-color: #FEE500; color: #191919; margin-top: 10px;">
+          <svg viewBox="0 0 32 32" width="18" height="18" style="margin-right: 8px;">
+            <path d="M16 4.64C8.653 4.64 2.667 9.168 2.667 14.736c0 3.568 2.475 6.709 6.203 8.523l-1.344 4.88c-.149.523.469.907.896.619l5.653-3.669c.629.085 1.275.133 1.925.133 7.347 0 13.333-4.528 13.333-10.096S23.347 4.64 16 4.64z" fill="#000000" />
+          </svg>
+          카카오로 시작하기
+        </button>
+      </div>
+      
+      <div class="auth-footer-links">
+        아이디가 없으신가요? <a href="#" onclick="showSignup()">회원가입</a>
+      </div>
+      
+      <div class="login-help" style="margin-top: 1rem; font-size: 0.85rem; color: #64748b; display: flex; justify-content: center; gap: 0.75rem;">
+        <a href="find-id.html" style="color: inherit; text-decoration: none;">아이디 찾기</a>
+        <span>|</span>
+        <a href="find-password.html" style="color: inherit; text-decoration: none;">비밀번호 찾기</a>
+      </div>
+      
+      <div id="loginStatus" style="font-size:0.85rem; color:#ef4444; margin-top: 1rem; font-weight: 600;"></div>
+    </div>
+
+    <!-- 회원가입 박스 -->
+    <div class="auth-box" id="signup-box" style="display:none;">
+      <h2>회원가입</h2>
+
+      <div id="signup-step-1" class="signup-step active">
+        <div class="signup-agreements">
+          <div class="agreement-container" id="privacy-container">
+            <div class="agreement-header">
+              <span class="agreement-title">📌 개인정보 수집·이용 동의</span>
+              <button type="button" class="agreement-detail-btn" onclick="showPrivacyDetail()">전문 보기</button>
+            </div>
+            <p class="agreement-text">만 14세 미만 보호자 동의 필수 조항을 포함하며, AI 진로 분석 및 관리 목적으로 최소한의 정보를 안전하게 수집합니다.</p>
+            <label class="agreement-checkbox-label">
+              <input type="checkbox" id="privacy-agree" onchange="updateAgreementStatus()">
+              위 개인정보 수집·이용에 동의합니다.
+            </label>
+          </div>
+
+          <div class="agreement-container" id="tos-container">
+            <div class="agreement-header">
+              <span class="agreement-title">⚖️ 이용 약관 동의</span>
+              <button type="button" class="agreement-detail-btn" onclick="showTosDetail()">전문 보기</button>
+            </div>
+            <p class="agreement-text">비속어 사용 등 타인을 비방하는 행위는 엄격히 금지되며, 위반 시 서비스 이용이 영구 제한될 수 있습니다.</p>
+            <label class="agreement-checkbox-label">
+              <input type="checkbox" id="tos-agree" onchange="updateAgreementStatus()">
+              위 이용 약관에 동의합니다.
+            </label>
+          </div>
+        </div>
+        <button type="button" class="auth-btn-primary" id="btn-next-step-1" onclick="nextSignupStep(2)" disabled>
+          다음 단계로 <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        <div class="auth-footer-links">
+          이미 계정이 있나요? <a href="javascript:void(0)" onclick="showBox('login-box')">로그인</a>
+        </div>
+      </div>
+
+      <div id="signup-step-2" class="signup-step">
+        <div class="auth-input-group">
+          <label for="signupUsername">아이디</label>
+          <input id="signupUsername" type="text" placeholder="아이디를 입력하세요">
+        </div>
+
+        <!-- 🏫 교육청 및 학교 검색 섹션 -->
+        <div class="auth-input-group">
+          <label for="signupAtptCode">교육청 선택</label>
+          <select id="signupAtptCode" class="auth-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 8px;" onchange="document.getElementById('signupSchoolName').value = ''; document.getElementById('signupSchulCode').value = '';">
+            <option value="">전국 전체 (선택)</option>
+            <option value="B10">서울특별시교육청</option>
+            <option value="C10">부산광역시교육청</option>
+            <option value="D10">대구광역시교육청</option>
+            <option value="E10">인천광역시교육청</option>
+            <option value="F10">광주광역시교육청</option>
+            <option value="G10">대전광역시교육청</option>
+            <option value="H10">울산광역시교육청</option>
+            <option value="I10">세종특별자치시교육청</option>
+            <option value="J10">경기도교육청</option>
+            <option value="K10">강원특별자치도교육청</option>
+            <option value="M10">충청북도교육청</option>
+            <option value="N10">충청남도교육청</option>
+            <option value="P10">전북특별자치도교육청</option>
+            <option value="Q10">전라남도교육청</option>
+            <option value="R10">경상북도교육청</option>
+            <option value="S10">경상남도교육청</option>
+            <option value="T10">제주특별자치도교육청</option>
+          </select>
+        </div>
+        <div class="auth-input-group">
+          <label>학교 검색</label>
+          <div style="display: flex; gap: 8px;">
+            <input id="signupSchoolName" type="text" placeholder="학교명을 검색하세요 (예: 한국초)" readonly onclick="openSchoolSearchModal('signup')">
+            <button type="button" class="auth-btn-secondary" style="width: auto; padding: 0 15px; height: 50px;" onclick="openSchoolSearchModal('signup')">🔍 검색</button>
+          </div>
+          <input type="hidden" id="signupSchulCode">
+        </div>
+        <div class="auth-input-group">
+          <label for="signupPassword">비밀번호</label>
+          <div style="position:relative;">
+            <input id="signupPassword" type="password" placeholder="6자 이상 입력하세요" required />
+            <span onclick="togglePassword('signupPassword')" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; opacity:0.6;">👁️</span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+          <div class="auth-input-group" style="margin-bottom:0;">
+            <label>학년</label>
+            <input id="signupGrade" type="number" placeholder="학년" />
+          </div>
+          <div class="auth-input-group" style="margin-bottom:0;">
+            <label>반</label>
+            <input id="signupClass" type="number" placeholder="반" />
+          </div>
+          <div class="auth-input-group" style="margin-bottom:0;">
+            <label>번호</label>
+            <input id="signupNumber" type="number" placeholder="번호" />
+          </div>
+        </div>
+        <div class="auth-input-group">
+          <label for="signupName">이름</label>
+          <input id="signupName" type="text" placeholder="본명을 입력하세요" />
+        </div>
+        <button type="button" class="auth-btn-primary" onclick="nextSignupStep(3)">
+          다음 단계로 <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        <button type="button" class="auth-btn-secondary" onclick="nextSignupStep(1)">
+          <i class="fa-solid fa-arrow-left"></i> 이전으로
+        </button>
+      </div>
+
+      <div id="signup-step-3" class="signup-step">
+        <div class="auth-input-group">
+          <label>이메일 인증</label>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <input id="signupEmailId" type="text" placeholder="아이디" style="flex:1;" />
+            <span style="align-self: center; font-weight: bold; color: #64748b;">@</span>
+            <input id="signupEmailDomain" type="text" placeholder="도메인" style="flex:1;" />
+          </div>
+          <button type="button" id="send-verify-email-btn" class="auth-btn-secondary" onclick="sendVerificationEmail()">
+            📩 인증번호 발송
+          </button>
+        </div>
+        <div id="verify-code-input-group" style="display: none; margin-top: 1rem; border-top: 1px dashed #e2e8f0; padding-top: 1rem;">
+          <div class="auth-input-group">
+            <label>인증번호 6자리</label>
+            <div class="verification-row">
+              <input id="email-verify-code" type="text" placeholder="000000" maxlength="6" />
+              <button type="button" class="auth-btn-primary" onclick="verifySignupCode()" style="height: 50px;">확인</button>
+            </div>
+            <p id="verify-status" style="font-size:0.75rem; text-align:center; font-weight:600; color:#64748b; margin-top:0.5rem;">인증번호를 입력해주세요.</p>
+          </div>
+        </div>
+        <div class="step-divider"></div>
+        <button id="signup-btn" class="auth-btn-primary" onclick="signup()" disabled>
+          <i class="fa-solid fa-user-plus"></i> 회원가입 완료
+        </button>
+        <button type="button" class="auth-btn-secondary" onclick="nextSignupStep(2)">
+          <i class="fa-solid fa-arrow-left"></i> 이전으로
+        </button>
+      </div>
+      <div id="signupStatus" style="font-size:0.85rem;color:red;margin-top:1rem;"></div>
+    </div>
+  </div>
+
+  <div id="main-app" style="display:none;">
+    <header style="display: flex; align-items: center; justify-content: space-between; padding: 15px 25px; background: #fff; border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+      <div class="header-logo" style="display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="showPanel('dashboard')">
+        <img src="img/eduboard_logo_premium.png" alt="EduBoard Logo" style="height: 32px; width: auto;">
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 1.4rem; font-weight: 900; background: linear-gradient(135deg, #0ea5e9, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; line-height: 1.2;">EduBoard</span>
+          <div id="xp-buff-badge" style="display: none; font-size: 0.65rem; background: linear-gradient(90deg, #f59e0b, #ef4444); color: white; padding: 1px 6px; border-radius: 4px; font-weight: 800; width: fit-content; margin-top: -2px;">🔥 XP 2.0x ACTIVE</div>
+        </div>
+      </div>
+
+      <div id="profile-wrapper" style="position: relative;">
+        <button id="profile-button" style="
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;">
+          <div id="header-avatar" class="header-avatar-container"></div>
+          <span id="profile-name-display">이름</span> ▼
+        </button>
+
+        <div id="profile-dropdown" style="
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 120%;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            z-index: 1000;
+            min-width: 140px;">
+          <button onclick="showPanel('inventory-panel')" style="
+              width: 100%;
+              padding: 0.6rem 1rem;
+              background: none;
+              border: none;
+              text-align: left;
+              color: black;
+              cursor: pointer;
+              font-size: 0.95rem;">
+            내 인벤토리
+          </button>
+          <button onclick="showPanel('profile-panel')" style="
+              width: 100%;
+              padding: 0.6rem 1rem;
+              background: none;
+              border: none;
+              text-align: left;
+              color: black;
+              cursor: pointer;
+              font-size: 0.95rem;">
+            내 설정
+          </button>
+          <button onclick="handleLogout('local')" style="
+              width: 100%;
+              padding: 0.6rem 1rem;
+              background: none;
+              border: none;
+              text-align: left;
+              color: black;
+              cursor: pointer;
+              font-size: 0.95rem;">
+            로그아웃
+          </button>
+        </div>
+      </div>
+
+      <!-- ✅ 오버레이 -->
+      <div id="mobile-overlay" class="mobile-overlay mobile-only" onclick="closeMobileMenu()"></div>
+    </header>
+
+    <!-- 📢 전역 확성기 배너 -->
+    <div id="global-broadcast-banner" style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: linear-gradient(90deg, #0ea5e9, #6366f1);
+        color: white;
+        text-align: center;
+        padding: 12px 20px;
+        font-weight: 800;
+        z-index: 10000;
+        box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+        animation: slideDown 0.5s ease-out;">
+      <span id="broadcast-sender" style="color: #fcd34d; margin-right: 8px;">[알림]</span>
+      <span id="broadcast-message">확성기 테스트 메시지입니다!</span>
+    </div>
+
+    <style>
+      @keyframes slideDown {
+        from {
+          transform: translateY(-100%);
+          opacity: 0;
+        }
+
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(0);
+          opacity: 1;
+        }
+
+        to {
+          transform: translateY(-100%);
+          opacity: 0;
+        }
+      }
+    </style>
+
+    <!-- 📱 모바일 사이드 메뉴 -->
+    <div id="mobile-side-menu" class="mobile-side-menu mobile-only">
+      <div class="mobile-side-menu-header">
+        <div class="mobile-user-box">
+          <div id="side-menu-avatar" class="header-avatar-container" style="width: 48px; height: 48px;"></div>
+          <div>
+            <div id="side-menu-name" style="font-weight: 800; font-size: 1rem; color: var(--text-main);">이름</div>
+            <div style="font-size: 0.75rem; color: var(--text-sub);">Premium Member</div>
+          </div>
+        </div>
+        <div onclick="closeMobileMenu()"
+          style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; color: var(--text-sub); cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s;"
+          onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='var(--text-main)'"
+          onmouseout="this.style.background='transparent'; this.style.color='var(--text-sub)'">&times;</div>
+      </div>
+      <ul>
+        <li><a href="#" onclick="showPanel('dashboard'); closeMobileMenu();"><span>🏠</span> 대시보드</a></li>
+        <li><a href="#" onclick="showPanel('notice-panel'); closeMobileMenu();"><span>📢</span> 공지사항</a></li>
+        <li><a href="#" onclick="showPanel('homework-panel'); closeMobileMenu();"><span>📚</span> 자료실</a></li>
+        <li><a href="#" onclick="showPanel('chat-panel'); closeMobileMenu();"><span>💬</span> 대화실</a></li>
+        <li><a href="#" onclick="showPanel('timetable-panel'); closeMobileMenu();"><span>📅</span> 급식/시간표</a></li>
+        <li><a href="#" onclick="showPanel('shop-panel'); closeMobileMenu();"><span>🛍️</span> 포인트 상점</a></li>
+        <li><a href="#" onclick="showPanel('minigame-panel'); closeMobileMenu();"><span>🎮</span> 미니게임</a></li>
+        <li><a href="#" onclick="showPanel('inventory-panel'); closeMobileMenu();"><span>🎒</span> 내 인벤토리</a></li>
+        <li><a href="#" onclick="showPanel('profile-panel'); closeMobileMenu();"><span>⚙️</span> 환경 설정</a></li>
+        <li><a href="#" id="side-nav-codingon" onclick="showPanel('codingon-panel'); closeMobileMenu();" style="display:none;"><span>💻</span> CodingOn</a></li>
+        <li><a href="#" onclick="handleLogout('local')"
+            style="color: #ef4444; margin-top: 10px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px;"><span>🚪</span>
+            로그아웃</a></li>
+      </ul>
+    </div>
+
+    <!-- 📱 모바일 헤더 -->
+    <div class="mobile-only mobile-header">
+      <div class="menu-icon" onclick="toggleMobileMenu()">☰</div>
+      <div class="mobile-title">EduBoard</div>
+      <div id="mobile-profile-trigger" onclick="showPanel('profile-panel')" style="cursor:pointer;">
+        <div id="header-avatar-mobile" class="header-avatar-container" style="width: 32px; height: 32px;"></div>
+      </div>
+    </div>
+
+    <!-- 📱 하단 플로팅 네비게이션 -->
+    <div class="mobile-only bottom-nav">
+      <div class="nav-item active" onclick="showPanel('dashboard')">
+        <span class="icon">🏠</span>
+        <span class="label">홈</span>
+      </div>
+      <div class="nav-item" onclick="showPanel('notice-panel')">
+        <span class="icon">📢</span>
+        <span class="label">공지</span>
+      </div>
+      <div class="nav-item" onclick="showPanel('chat-panel')">
+        <span class="icon">💬</span>
+        <span class="label">대화</span>
+      </div>
+      <div class="nav-item" onclick="showPanel('timetable-panel')">
+        <span class="icon">📅</span>
+        <span class="label">급식</span>
+      </div>
+      <div class="nav-item" onclick="showPanel('shop-panel')">
+        <span class="icon">🛍️</span>
+        <span class="label">상점</span>
+      </div>
+    </div>
+
+    <nav id="main-nav">
+      <a href="#" onclick="showPanel('dashboard')">대시보드</a>
+      <a href="#" onclick="showPanel('notice-panel')">공지사항</a>
+      <a href="#" onclick="showPanel('doc-panel')">수행 등록</a>
+      <a href="#" onclick="showPanel('homework-panel')">파일 공유 & 자료실</a>
+      <a href="#" onclick="showPanel('chat-panel')">대화실</a>
+      <a href="#" onclick="showPanel('timetable-panel')">시간표</a>
+      <a href="#" onclick="showPanel('minigame-panel')">미니게임</a>
+      <a href="#" onclick="showPanel('shop-panel')">상점</a>
+      <a href="#" id="nav-codingon" onclick="showPanel('codingon-panel')" style="display:none;">CodingOn</a>
+    </nav>
+
+    <div class="content">
+      <div id="dashboard" class="panel active">
+        <h2>🏠 대시보드</h2>
+        <div class="dashboard-grid">
+
+          <!-- 📢 최근 공지 -->
+          <div class="accent-card" data-section="notice">
+            <div class="accent-head"
+              style="background: #fff5f5; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #fee2e2;">
+              <div class="accent-title-box" style="display: flex; align-items: center; gap: 10px;">
+                <div class="accent-bar" style="width: 4px; height: 18px; background: #f43f5e; border-radius: 10px;">
+                </div>
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: #9f1239; margin: 0;">📢 최근 공지</h3>
+              </div>
+              <span class="mini" id="dash-notice-date"
+                style="font-size:0.85rem; color:#e11d48; font-weight: 700;"></span>
+            </div>
+            <div class="accent-body" style="padding: 20px;">
+              <div id="dash-notice-list" class="notice-list content-sub-box"></div>
+            </div>
+          </div>
+
+          <!-- 👤 프로필 카드 -->
+          <div class="card" data-section="profile">
+            <div class="card-body">
+              <div class="profile-card">
+                <span class="lvl-badge">Lv <span id="lv-num">1</span></span>
+                <div class="profile-illust">
+                  <div class="profile-avatar" id="dash-avatar">🙂</div>
+                </div>
+                <div class="profile-info">
+                  <div class="info-top">
+                    <div class="profile-name" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <span id="dash-name">사용자</span>
+                      <div id="xp-buff-badge-profile"
+                        style="display: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; box-shadow: 0 2px 4px rgba(217,119,6,0.2); white-space: nowrap; line-height: 1.4;">
+                        XP 2x</div>
+                      <small id="dash-role"
+                        style="color:#64748b; font-weight:normal; font-size: 0.85rem; background: #f1f5f9; padding: 2px 8px; border-radius: 6px;">학생</small>
+                    </div>
+                  </div>
+                  <div class="points-chip" style="margin-bottom: 8px;">
+                    <span class="coin-icon">💰</span>
+                    <span id="coin-balance">0</span>
+                    <span class="coin-label-small" style="font-size:0.85rem; color:#64748b; margin-left:4px;">포인트</span>
+                  </div>
+
+                  <div class="profile-sub" style="margin: 4px 0;">
+                    <div id="dash-school" style="font-weight: 700; color: #1e293b; font-size: 0.95rem;">봉담중학교</div>
+                    <div style="color:#64748b; font-size:0.85rem; margin-top: 2px;">
+                      <span id="dash-grade">-</span>학년 <span id="dash-class">-</span>반 <span id="dash-num">-</span>번
+                    </div>
+                  </div>
+
+                  <div class="lvl-wrap"
+                    style="margin-top: 10px; background: #f8faff; padding: 10px; border-radius: 12px; border: 1px solid #edf2f7;">
+                    <div class="lvl-head"
+                      style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: #64748b; margin-bottom: 6px;">
+                      <span>경험치</span>
+                      <span><span id="exp-cur">0</span> / <span id="exp-need">20</span></span>
+                    </div>
+                    <div class="lvl-bar"
+                      style="height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden;">
+                      <div id="lvl-fill" class="lvl-fill"
+                        style="height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); width: 0%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- 🎯 일일 퀘스트 (Full Width) -->
+              <div class="quest-section"
+                style="margin-top:24px; padding-top:16px; border-top:1px solid #f1f3f5; width:100%;">
+                <h4
+                  style="font-weight:800; color:#1e293b; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+                  🎯 일일 퀘스트 <small style="font-weight:normal; color:#64748b; font-size:0.75rem;">(매일 0시 갱신)</small>
+                </h4>
+                <div id="daily-quest-list" style="display:flex; flex-direction:column; gap:10px;">
+                  <p style="font-size:0.85rem; color:#64748b; text-align:center; padding:10px;">퀘스트를 불러오는 중...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+
+          <!-- 📅 일정 스케줄 -->
+          <div class="accent-card" data-section="schedule">
+            <div class="accent-head"
+              style="background: #f8faff; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f1f5f9;">
+              <div class="accent-title-box" style="display: flex; align-items: center; gap: 10px;">
+                <div class="accent-bar" style="width: 4px; height: 18px; background: #6366f1; border-radius: 10px;">
+                </div>
+                <h3
+                  style="font-size: 1.1rem; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 6px; margin: 0;">
+                  📅 일정관리</h3>
+              </div>
+              <div class="nav-pill-box" style="display: flex; align-items: center; gap: 12px;">
+                <button class="nav-btn-circle" onclick="changeSchedMonth(-1)"
+                  style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #64748b;">❮</button>
+                <span id="sched-month-label"
+                  style="font-weight: 800; color: #4338ca; font-size: 0.9rem; min-width: 60px; text-align: center;"></span>
+                <button class="nav-btn-circle" onclick="changeSchedMonth(1)"
+                  style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #64748b;">❯</button>
+              </div>
+            </div>
+            <div class="accent-body" style="padding: 20px;">
+              <div class="content-sub-box">
+                <div class="sched-week-row"
+                  style="display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:0.8rem; font-weight:bold; color:#94a3b8; margin-bottom:12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+                  <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+                </div>
+                <div id="sched-grid" class="sched-grid"
+                  style="display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background: #f1f5f9; border: 1px solid #f1f5f9; border-radius: 4px; overflow: hidden;">
+                </div>
+              </div>
+              <div class="sched-detail"
+                style="margin-top:16px; padding: 12px; background: #f8faff; border-radius: 12px;">
+                <h4 id="sched-detail-title"
+                  style="font-weight:800; color:#1e293b; margin-bottom:8px; font-size:0.9rem;">
+                  날짜를 선택하세요</h4>
+                <ul id="sched-detail-list" style="list-style:none; padding:0; margin:0; font-size:0.85rem;"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🕒 주간 시간표 -->
+          <div class="accent-card" data-section="timetable">
+            <div class="accent-head"
+              style="background: #fffdf7; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #fdf2e9;">
+              <div class="accent-title-box" style="display: flex; align-items: center; gap: 10px;">
+                <div class="accent-bar" style="width: 4px; height: 18px; background: #f59e0b; border-radius: 10px;">
+                </div>
+                <h3
+                  style="font-size: 1.1rem; font-weight: 800; color: #92400e; display: flex; align-items: center; gap: 6px; margin: 0;">
+                  🕒 주간 시간표 <span id="timetable-date-label"
+                    style="font-size: 0.85rem; font-weight: normal; color: #b45309; margin-left: 8px;"></span></h3>
+                <input type="date" id="timetableDatePicker"
+                  style="position: absolute; opacity: 0; width: 0; height: 0; border: 0; padding: 0; margin: 0; pointer-events: none;" />
+              </div>
+              <div class="nav-pill-box" style="display: flex; align-items: center; gap: 8px;">
+                <button class="nav-btn-circle" onclick="moveTimetable(-1)"
+                  style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid #fef3c7; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #b45309;">❮</button>
+                <button class="nav-btn-circle" onclick="moveTimetable(0)"
+                  style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid #fef3c7; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #b45309;">🔄</button>
+                <button class="nav-btn-circle" onclick="moveTimetable(1)"
+                  style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid #fef3c7; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #b45309;">❯</button>
+              </div>
+            </div>
+            <div class="accent-body" style="padding: 20px;">
+              <div id="dash-admin-timetable-controls"
+                style="display:none; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; padding:10px; border-radius:12px; background:#fff7ed; border:1px solid #fed7aa;">
+                <strong style="font-size:0.86rem; color:#92400e;">관리자 조회</strong>
+                <select id="dash-admin-timetable-grade" style="width:auto; min-width:86px; margin:0; padding:8px 10px; border-radius:10px;">
+                  <option value="1">1학년</option>
+                  <option value="2">2학년</option>
+                  <option value="3">3학년</option>
+                </select>
+                <select id="dash-admin-timetable-class" style="width:auto; min-width:78px; margin:0; padding:8px 10px; border-radius:10px;">
+                  <option value="1">1반</option><option value="2">2반</option><option value="3">3반</option><option value="4">4반</option><option value="5">5반</option>
+                  <option value="6">6반</option><option value="7">7반</option><option value="8">8반</option><option value="9">9반</option><option value="10">10반</option>
+                </select>
+                <button type="button" onclick="loadSelectedDashboardTimetableForAdmin()"
+                  style="width:auto; margin:0; padding:8px 12px; border-radius:10px; background:#f59e0b; color:#fff; border:none; font-weight:800;">조회</button>
+              </div>
+              <ul id="timetable" style="list-style:none; margin:0; padding:0;"></ul>
+              <div id="notice"
+                style="display:none; color:#92400e; padding:16px; font-size:0.9rem; text-align:center; background:#fffdf7; border-radius:12px; margin-top:10px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- 🏆 랭킹 -->
+          <div class="accent-card" id="rank-card" data-section="rank">
+            <div class="accent-head"
+              style="background: #fdfaff; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f5f3ff;">
+              <div class="accent-title-box" style="display: flex; align-items: center; gap: 10px;">
+                <div class="accent-bar" style="width: 4px; height: 18px; background: #a855f7; border-radius: 10px;">
+                </div>
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: #581c87; margin: 0;">🏆 실시간순위</h3>
+              </div>
+              <div class="rank-nav-container" style="display: flex; align-items: center; gap: 8px;">
+                <select id="rank-scope" class="rank-select-styled"
+                  style="padding: 4px 10px; border-radius: 10px; border: 1px solid #e9ecef; font-size: 0.8rem; background: #fff;">
+                  <option value="class">반별</option>
+                  <option value="grade">학년별</option>
+                  <option value="school">전체</option>
+                </select>
+                <select id="rank-metric" class="rank-select-styled"
+                  style="padding: 4px 10px; border-radius: 10px; border: 1px solid #e9ecef; font-size: 0.8rem; background: #fff;">
+                  <option value="coin">💰 포인트</option>
+                  <option value="level">⭐ 레벨</option>
+                </select>
+                <button id="rank-refresh" class="nav-btn-circle"
+                  style="width: 32px; height: 32px; border: 1px solid #e9ecef;">🔄</button>
+              </div>
+            </div>
+            <div class="accent-body" style="padding: 20px;">
+              <ul id="rank-list" class="content-sub-box"
+                style="list-style:none; margin:0; padding:12px; font-size:0.85rem;"></ul>
+              <div id="rank-me"
+                style="margin-top:12px;padding:12px;border:1px dashed #e9ecef;border-radius:12px;background:#f8f9fa;display:none; font-size:0.85rem;">
+              </div>
+            </div>
+          </div>
+
+
+
+          <!-- 🍽️ 급식 -->
+          <div class="accent-card" data-section="meal">
+            <div class="accent-head"
+              style="background: #f0fdf4; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #dcfce7;">
+              <div class="accent-title-box" style="display: flex; align-items: center; gap: 10px;">
+                <div class="accent-bar" style="width: 4px; height: 18px; background: #22c55e; border-radius: 10px;">
+                </div>
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: #166534; margin: 0;">🍽️ 오늘의급식 <span
+                    id="meal-date-label"
+                    style="font-size: 0.85rem; font-weight: normal; color: #15803d; margin-left: 8px;"></span></h3>
+                <input type="date" id="mealDatePicker"
+                  style="position: absolute; opacity: 0; width: 0; height: 0; border: 0; padding: 0; margin: 0; pointer-events: none;" />
+              </div>
+              <div class="nav-pill-box" style="display: flex; align-items: center; gap: 8px;">
+                <button class="nav-btn-circle" onclick="changeDate(-1)"
+                  style="width: 28px; height: 28px; border: 1px solid #dcfce7; background: #fff;">❮</button>
+                <button class="nav-btn-circle" onclick="changeDate(1)"
+                  style="width: 28px; height: 28px; border: 1px solid #dcfce7; background: #fff;">❯</button>
+              </div>
+            </div>
+            <div class="accent-body" style="padding: 20px;">
+              <div id="meal-box" class="content-sub-box" style="font-size:0.9rem; line-height: 1.6; color: #334155;">
+              </div>
+            </div>
+          </div>
+        </div> <!-- End of dashboard-grid -->
+
+      </div>
+    
+    <!-- Panels after the dashboard were outside .content; now wrapping them inside. -->
+    
+
+
+    <div id="codingon-panel" class="panel" style="display:none;">
+      <!-- ... existing codingon-panel content ... -->
+      <div class="panel-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="font-size: 2.8rem; background: #fff; padding: 10px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05);">👨‍💻</div>
+          <div>
+            <h2 style="margin: 0; font-size: 1.8rem;">CodingOn</h2>
+            <p style="margin: 0; color: #64748b; font-size: 0.9rem; font-weight: 500;">봉담중학교 코딩 동아리 커뮤니티</p>
+          </div>
+        </div>
+        
+        <div class="co-sub-nav glass-card" style="display: flex; gap: 8px; padding: 6px; border-radius: 12px; background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.02); overflow-x: auto;">
+          <button class="active" onclick="switchCOTab('home')" style="width: auto; margin: 0; padding: 10px 20px; border-radius: 8px; white-space: nowrap;">🏠 학습 로드맵</button>
+        </div>
+      </div>
+
+      <div id="co-dynamic-content" style="min-height: 400px;"></div>
+    </div>
+
+
+
+
+    <div id="notice-panel" class="panel" style="display:none;">
+      <h2>📢 공지사항</h2>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+        <!-- 새 공지 등록 (Admin) -->
+        <div class="accent-card">
+          <div class="accent-head theme-rose-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>➕ 새 공지 등록</h3>
+            </div>
+          </div>
+          <div class="accent-body">
+            <label>제목</label>
+            <input type="text" id="notice-title" placeholder="공지 제목을 입력하세요" />
+
+            <label>내용</label>
+            <textarea id="notice-content" placeholder="공지 내용을 상세히 입력하세요" style="min-height: 120px;"></textarea>
+
+            <label>이미지 첨부</label>
+            <input type="file" id="notice-image" accept="image/*" style="margin-bottom: 12px;">
+            <div id="filePreviewContainer" class="preview-container"></div>
+
+            <label style="display:flex; align-items:center; cursor:pointer; margin-top:8px;">
+              <input type="checkbox" id="notice-upload-check" style="width:auto; margin:0 8px 0 0;">
+              이 사진을 공지에 포함하기
+            </label>
+
+            <button onclick="addNotice()" style="margin-top: 16px; background: #e11d48;">
+              <span>📝</span> 공지 게시하기
+            </button>
+          </div>
+        </div>
+
+        <!-- 공지 목록 -->
+        <div class="accent-card">
+          <div class="accent-head theme-blue-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>📜 게시된 공지 목록</h3>
+            </div>
+          </div>
+          <div class="accent-body">
+            <div id="notice-list">
+              <p style="text-align:center; color:#64748b; padding:20px;">공지사항을 불러오는 중...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-panel" class="panel cursor-pointer hover:bg-gray-50" style="display:none;"
+      onclick="window.location.href='admin.html'">
+      <h3>⚙️ 관리자 설정</h3>
+    </div>
+
+    <div id="doc-panel" class="panel" style="display:none;">
+      <h2>📄 수행 평가 업로드</h2>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+        <!-- 업로드 단계 -->
+        <div class="accent-card">
+          <div class="accent-head theme-indigo-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>📄 문서 업로드 및 AI 분석</h3>
+            </div>
+          </div>
+          <div class="accent-body">
+            <label>파일 선택 (.pdf, .jpg, .png)</label>
+            <input type="file" id="doc-file" accept=".pdf,.jpg,.png" />
+            <div style="margin-top: 12px; font-size: 0.85rem; color: #64748b; line-height: 1.5;">
+              파일을 업로드하면 AI가 제목, 날짜, 내용을 자동으로 분석하여 입력을 도와줍니다.
+            </div>
+            <button onclick="analyzeDocument()" style="margin-top: 20px; background: #4f46e5;">
+              <span>🔍</span> AI로 문서 분석하기
+            </button>
+          </div>
+        </div>
+
+        <!-- 결과 확인 및 등록 단계 -->
+        <div class="accent-card">
+          <div class="accent-head theme-purple-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>⚖️ 분석 결과 및 등록</h3>
+            </div>
+          </div>
+          <div class="accent-body">
+            <div id="doc-form">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div>
+                  <label>과목</label>
+                  <input id="af-subject" type="text" placeholder="예: 수학">
+                </div>
+                <div>
+                  <label>수행 날짜</label>
+                  <input id="af-date" type="date" oninput="syncYoilFromDate()">
+                </div>
+              </div>
+
+              <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 12px;">
+                <div>
+                  <label>요일</label>
+                  <input id="af-yoil" type="text" readonly placeholder="자동 계산" style="background: #f1f5f9;">
+                </div>
+                <div>
+                  <label>교시</label>
+                  <input id="af-period" type="number" min="1" max="7" placeholder="예: 3">
+                </div>
+              </div>
+
+              <label style="margin-top: 12px;">평가 주제</label>
+              <input id="af-topic" type="text" placeholder="예: 일차방정식 활용">
+            </div>
+
+            <img id="doc-preview"
+              style="max-width:100%; margin:20px 0; display:none; border-radius:12px; border:1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);" />
+
+            <label
+              style="display:flex; align-items:center; cursor:pointer; margin-top: 16px; padding: 12px; background: #f8fafc; border-radius: 8px;">
+              <input type="checkbox" id="upload-image-check" style="width:auto; margin:0 12px 0 0;">
+              <div>
+                <div style="font-weight: 700; font-size: 0.9rem;">이미지 포함</div>
+                <div style="font-size: 0.8rem; color: #64748b;">이 분석용 사진을 공지사항에도 함께 게시합니다.</div>
+              </div>
+            </label>
+
+            <button onclick="registerAnalyzedText()" style="margin-top: 24px; background: #7c3aed;">
+              <span>✅</span> 분석 정보 최종 등록하기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="homework-panel" class="panel" style="display:none;">
+      <h2>📚 파일 공유 & 자료실</h2>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px;">
+        <!-- 새로운 자료 업로드 -->
+        <div class="accent-card">
+          <div class="accent-head theme-indigo-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>📂 새로운 자료 업로드</h3>
+            </div>
+          </div>
+          <div class="accent-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <label>공유 범위</label>
+                <select id="homework-scope">
+                  <option value="school">전교</option>
+                  <option value="grade">같은 학년</option>
+                  <option value="class">같은 반</option>
+                </select>
+              </div>
+              <div>
+                <label>작성자 정보</label>
+                <input type="text" id="homework-userinfo" readonly style="background:#f1f5f9; color:#64748b;">
+              </div>
+            </div>
+
+            <label>제목</label>
+            <input type="text" id="homework-title" placeholder="예: 체험학습 사진 모음">
+
+            <label>파일 선택</label>
+            <input type="file" id="homework-file" multiple>
+
+            <label>코멘트 (선택)</label>
+            <textarea id="homework-comment" placeholder="파일에 대한 설명을 입력해 주세요" style="min-height: 80px;"></textarea>
+
+            <button onclick="submitHomework()" style="background: #4f46e5; margin-top: 12px;">
+              <span>📤</span> 업로드하기
+            </button>
+            <div id="homework-status"
+              style="margin-top:12px; font-weight:700; text-align:center; font-size:0.9rem; color:#4f46e5;"></div>
+          </div>
+        </div>
+
+        <!-- 업로드된 자료 목록 -->
+        <div class="accent-card">
+          <div class="accent-head theme-teal-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>📂 업로드된 자료 목록</h3>
+            </div>
+            <button class="nav-btn-circle" onclick="loadMaterials()" title="목록 새로고침">🔄</button>
+          </div>
+          <div class="accent-body">
+            <ul id="material-list" style="list-style:none; padding:0; margin:0;">
+              <p style="text-align:center; color:#64748b; padding:20px;">자료 목록을 불러오는 중...</p>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="shop-panel" class="panel" style="display:none;">
+      <h2>💰 포인트 상점</h2>
+
+      <div class="accent-card">
+        <div class="accent-head theme-indigo-head"
+          style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="accent-title-box">
+            <div class="accent-bar"></div>
+            <h3>🛍️ 포인트 상점</h3>
+          </div>
+          <!-- 프리미엄 글래스모피즘 포인트 칩 (검은색 텍스트 버전) -->
+          <div
+            style="display: flex; align-items: center; gap: 14px; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 8px 22px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: 0 4px 15px 0 rgba(0, 0, 0, 0.05);">
+            <span style="font-size: 0.9rem; font-weight: 700; color: #334155; letter-spacing: -0.2px;">보유 포인트</span>
+            <div style="width: 1px; height: 16px; background: rgba(0, 0, 0, 0.1);"></div>
+            <span style="font-size: 1.35rem; font-weight: 900; color: #0f172a; letter-spacing: 0.5px;">💰 <span
+                id="shop-coin-balance">0</span><span
+                style="font-size: 0.9rem; font-weight: 700; margin-left: 2px; color: #475569;">P</span></span>
+          </div>
+        </div>
+        <div class="accent-body" style="padding: 20px;">
+          <div id="shop-list" class="shop-grid">
+            <p style="text-align:center; padding: 20px; color: #64748b;">상점 아이템을 불러오는 중...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="inventory-panel" class="panel" style="display:none;">
+      <h2>🎒 나의 인벤토리</h2>
+
+      <div class="accent-card">
+        <div class="accent-head theme-indigo-head">
+          <div class="accent-title-box">
+            <div class="accent-bar"></div>
+            <h3>🎒 획득한 아이템 목록</h3>
+          </div>
+        </div>
+        <div class="accent-body">
+          <!-- 🏷️ 카테고리 필터 -->
+          <div class="inventory-filters"
+            style="display:flex; gap:8px; margin-bottom:16px; overflow-x:auto; padding-bottom:8px;">
+            <button class="filter-btn active" onclick="filterInventory('all')">전체</button>
+            <button class="filter-btn" onclick="filterInventory('캐릭터')">캐릭터</button>
+            <button class="filter-btn" onclick="filterInventory('칭호')">칭호</button>
+            <button class="filter-btn" onclick="filterInventory('꾸미기')">꾸미기</button>
+            <button class="filter-btn" onclick="filterInventory('소비')">소비/아이템</button>
+            <button id="admin-sync-btn" class="filter-btn" style="display:none; background:#4f46e5; color:#fff;"
+              onclick="syncAdminInventory()">모든 아이템 획득 (관리자)</button>
+          </div>
+          <div id="inventory-list">
+            <p style="text-align:center; color:#64748b; padding:20px;">로딩 중...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="profile-panel" class="panel" style="display:none;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 16px;">
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 10px;">👤 <span>내 프로필 설정</span></h2>
+        <div class="settings-tabs">
+          <button id="tab-btn-profile" class="settings-tab active" onclick="switchSettingsTab('profile')">👤 내 프로필</button>
+          <button id="tab-btn-general" class="settings-tab" onclick="switchSettingsTab('general')">⚙️ 사이트 설정</button>
+        </div>
+      </div>
+
+      <!-- 👤 내 프로필 설정 섹션 -->
+      <div id="settings-profile-section" class="settings-section active">
+        <div class="profile-grid-wrapper">
+          <!-- 🎒 내 컬렉션 (장착 관리) - 상단 배치 -->
+          <div class="accent-card glass-card" style="grid-column: 1 / -1; margin-bottom: 8px;">
+            <div class="accent-head theme-emerald-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>🎒 내 컬렉션 (장착 관리)</h3>
+              </div>
+            </div>
+            <div class="accent-body">
+              <div class="profile-preview-box" style="margin-top: -8px; margin-bottom: 24px; background: rgba(79, 70, 229, 0.03);">
+                <div class="preview-avatar-container" id="profile-preview-avatar">👤</div>
+                <div class="preview-info">
+                  <div id="profile-preview-title" class="preview-title">칭호 정보 로딩 중...</div>
+                  <div id="profile-preview-name" class="preview-name">사용자 이름</div>
+                  <div style="font-size:0.85rem; color:#64748b;">
+                    <span id="profile-preview-school">봉담중학교</span> ·
+                    <span id="profile-preview-grade">-</span>학년 <span id="profile-preview-class">-</span>반
+                  </div>
+                </div>
+              </div>
+
+              <!-- 🛠️ 장착 관리 그리드 (복구됨) -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+                <!-- 캐릭터 리스트 -->
+                <div>
+                  <h4 style="font-size:1rem; margin-bottom:12px; display:flex; align-items:center; gap:6px;">👤 보유 캐릭터</h4>
+                  <div id="character-list-grid" class="custom-scrollbar"
+                    style="display:grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap:16px; max-height:400px; overflow-y:auto; padding:6px;">
+                    <p style="color:#94a3b8; font-size:0.85rem;">로딩 중...</p>
+                  </div>
+                </div>
+
+                <!-- 타이틀 & 테두리 -->
+                <div>
+                  <h4 style="font-size:1rem; margin-bottom:12px; display:flex; align-items:center; gap:6px;">🏷️ 타이틀 & 장식</h4>
+                  <div class="custom-scrollbar" style="max-height:400px; overflow-y:auto; padding:6px; display:flex; flex-direction:column; gap:20px;">
+                    <div>
+                      <h5 style="font-size:0.9rem; color:#475569; margin-bottom:8px;">텍스트 칭호</h5>
+                      <div id="title-list-grid" style="display:grid; grid-template-columns: 1fr; gap:10px;">
+                        <p style="color:#94a3b8; font-size:0.85rem;">로딩 중...</p>
+                      </div>
+                    </div>
+                    <div>
+                      <h5 style="font-size:0.9rem; color:#475569; margin-bottom:8px;">프로필 테두리</h5>
+                      <div id="border-list-grid" style="display:grid; grid-template-columns: 1fr; gap:10px;">
+                        <p style="color:#94a3b8; font-size:0.85rem;">로딩 중...</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 효과 및 컬러 -->
+                <div>
+                  <h4 style="font-size:1rem; margin-bottom:12px; display:flex; align-items:center; gap:6px;">✨ 특수 효과</h4>
+                  <div class="custom-scrollbar" style="max-height:400px; overflow-y:auto; padding:6px; display:flex; flex-direction:column; gap:20px;">
+                    <div>
+                      <h5 style="font-size:0.9rem; color:#475569; margin-bottom:8px;">화면 전역 효과</h5>
+                      <div id="effect-list-grid" style="display:grid; grid-template-columns: 1fr; gap:10px;">
+                        <p style="color:#94a3b8; font-size:0.85rem;">로딩 중...</p>
+                      </div>
+                    </div>
+                    <div>
+                      <h5 style="font-size:0.9rem; color:#475569; margin-bottom:8px;">배경 컬러</h5>
+                      <div id="color-list-grid" style="display:grid; grid-template-columns: 1fr; gap:10px;">
+                        <p style="color:#94a3b8; font-size:0.85rem;">로딩 중...</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <button onclick="showPanel('shop-panel')" style="background: #10b981; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700;">상점/인벤토리 바로가기</button>
+                <div id="collection-status" style="font-size: 0.85rem; font-weight: 700; color: #10b981; display: flex; align-items: center; justify-content: center;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 📌 기본 프로필 관리 -->
+          <div class="accent-card glass-card">
+            <div class="accent-head theme-indigo-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>📌 기본 프로필 관리</h3>
+              </div>
+            </div>
+            <div class="accent-body">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
+                <div>
+                  <label>이름</label>
+                  <input id="profile-name" type="text" placeholder="홍길동">
+                </div>
+                <div>
+                  <label>아이디</label>
+                  <input id="profile-username" type="text" placeholder="영어/숫자조합" readonly style="background:#f1f5f9; cursor:not-allowed;">
+                  <input type="hidden" id="profile-username-origin">
+                </div>
+              </div>
+              <div style="margin-bottom: 12px;">
+                <label>이메일</label>
+                <input id="profile-email" type="email" placeholder="example@school.kr">
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div>
+                  <label>학년</label>
+                  <input id="profile-grade" type="text" readonly>
+                </div>
+                <div>
+                  <label>반</label>
+                  <input id="profile-class" type="text" readonly>
+                </div>
+                <div>
+                  <label>번호</label>
+                  <input id="profile-number" type="text" readonly>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: auto;">
+                <button id="btn-profile-save" style="background:#6366f1; color:#fff; border:none;">내 프로필 수정</button>
+                <button id="btn-profile-refresh" style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0;">새로고침</button>
+              </div>
+              <div id="profile-status" style="margin-top:8px; font-size:0.85rem; font-weight:700; color:#4f46e5; text-align:center;"></div>
+            </div>
+          </div>
+
+          <!-- 🔐 비밀번호 변경 -->
+          <div class="accent-card glass-card">
+            <div class="accent-head theme-rose-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>🔐 비밀번호 변경</h3>
+              </div>
+            </div>
+            <div class="accent-body">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                <div>
+                  <label>새 비밀번호</label>
+                  <input id="profile-newpass" type="password" placeholder="8자 이상 권장">
+                </div>
+                <div>
+                  <label>새 비밀번호 확인</label>
+                  <input id="profile-newpass2" type="password" placeholder="동일하게 입력">
+                </div>
+              </div>
+              <button id="btn-profile-pass" style="background:#e11d48; color:#fff; border:none; width:100%;">비밀번호 변경하기</button>
+              <div id="profile-pass-status" style="margin-top:8px; font-size:0.85rem; font-weight:700; color:#e11d48; text-align:center;"></div>
+            </div>
+          </div>
+
+          <!-- 🔗 소셜 계정 연동 관리 (신규) -->
+          <div class="accent-card glass-card">
+            <div class="accent-head theme-sky-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>🔗 소셜 계정 연동 관리</h3>
+              </div>
+            </div>
+            <div class="accent-body">
+              <div id="social-link-status" style="margin-bottom: 16px; padding: 12px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0;">
+                <p style="margin:0; font-size: 0.9rem; color: #475569; display: flex; align-items: center; gap: 8px;">
+                  <span id="social-link-icon" style="font-size: 1.2rem;">⚪</span>
+                  <span id="social-link-text">연동 상태 확인 중...</span>
+                </p>
+              </div>
+              <div id="social-unlink-container" style="display: none;">
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">소셜 연동을 해제하면 다음부터는 아이디와 비밀번호로 로그인해야 합니다.</p>
+                <button onclick="unlinkSocialAccount('google')" style="background:#f1f5f9; color:#ef4444; border:1px solid #fee2e2; width:100%; padding: 10px; border-radius: 10px; font-weight: 700;">Google 연동 해제하기</button>
+              </div>
+              <div id="social-link-container" style="display: none;">
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">계정을 소셜 서비스와 연결하여 더 간편하게 로그인하세요.</p>
+                <button id="link-google-btn" onclick="loginWithProvider('google', 'link')" style="background:#fff; color:#475569; border:1px solid #e2e8f0; width:100%; padding: 10px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                  <img src="https://www.google.com/favicon.ico" style="width: 16px; height: 16px;"> Google 계정 연결하기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ⚙️ 내 설정 섹션 -->
+      <div id="settings-general-section" class="settings-section">
+        <div class="profile-grid-wrapper">
+          <!-- ⚙️ 알림 및 환경 설정 -->
+          <div class="accent-card glass-card">
+            <div class="accent-head theme-orange-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>⚙️ 알림 및 환경 설정</h3>
+              </div>
+            </div>
+            <div class="accent-body">
+              <div class="notification-group" style="margin-bottom: 16px;">
+                <div class="notification-item">
+                  <div class="noti-info">
+                    <div class="noti-title" style="font-weight: 700; font-size: 0.95rem;">공지 알림</div>
+                    <div class="noti-desc" style="color: #64748b; font-size:0.85rem;">새 공지 등록 시 실시간 브라우저 알림</div>
+                  </div>
+                  <label class="switch">
+                    <input id="pref-notice" type="checkbox">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+                <div class="notification-item" style="margin-top: 12px;">
+                  <div class="noti-info">
+                    <div class="noti-title" style="font-weight: 700; font-size: 0.95rem;">숙제/과제 알림</div>
+                    <div class="noti-desc" style="color: #64748b; font-size:0.85rem;">마감 전 리마인더</div>
+                  </div>
+                  <label class="switch">
+                    <input id="pref-homework" type="checkbox" checked>
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+                <div class="notification-item" style="margin-top: 12px;">
+                  <div class="noti-info">
+                    <div class="noti-title" style="font-weight: 700; font-size: 0.95rem;">브라우저 푸시</div>
+                    <div class="noti-desc" style="color: #64748b; font-size:0.85rem;">허용된 브라우저에서 알림 표시</div>
+                  </div>
+                  <label class="switch">
+                    <input id="pref-push" type="checkbox">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div>
+                  <label>테마</label>
+                  <select id="pref-theme">
+                    <option value="light">밝은 모드</option>
+                    <option value="dark">어두운 모드</option>
+                    <option value="system">시스템 기본</option>
+                  </select>
+                </div>
+                <div>
+                  <label>언어</label>
+                  <select id="pref-lang">
+                    <option value="ko">한국어</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <button id="btn-pref-save" style="background:#f97316; color:#fff; border:none;">환경 저장</button>
+                <button id="btn-pref-reset" style="background:#f8fafc; color:#475569; border:1px solid #e2e8f0;">기본값으로</button>
+              </div>
+              <div id="pref-status" class="small-muted" style="text-align:center; margin-top:8px;"></div>
+            </div>
+          </div>
+
+          <!-- 📌 기타 정보 -->
+          <div class="accent-card">
+            <div class="accent-head theme-indigo-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>📌 기타 정보 및 버전</h3>
+              </div>
+            </div>
+            <div class="accent-body">
+              <div class="settings-action-list">
+                <div class="settings-action-row">
+                  <div>
+                    <strong>공지와 이벤트</strong>
+                    <span>최근 공지, 이미지 공지, 학급 알림을 확인합니다.</span>
+                  </div>
+                  <button id="btn-go-notices" type="button">열기</button>
+                </div>
+                <div class="settings-action-row">
+                  <div>
+                    <strong>도움말과 1:1 문의</strong>
+                    <span>관리자에게 바로 문의 대화를 시작합니다.</span>
+                  </div>
+                  <button id="btn-go-help" type="button">문의</button>
+                </div>
+                <div class="settings-action-row">
+                  <div>
+                    <strong>업데이트 상태</strong>
+                    <span>현재 적용된 EduBoard 버전을 확인합니다.</span>
+                  </div>
+                  <button id="btn-check-updates" type="button">확인</button>
+                </div>
+              </div>
+              <div id="app-version" style="margin-top:16px; font-size:0.8rem; color:#94a3b8; text-align:right;">EduBoard
+                v1.09-stable | © 2026 Song MinJun</div>
+              <div id="settings-info-status" class="small-muted" style="margin-top:10px; text-align:right;"></div>
+            </div>
+          </div>
+
+          <!-- 🔐 세션 관리 -->
+          <div class="accent-card">
+            <div class="accent-head theme-rose-head">
+              <div class="accent-title-box">
+                <div class="accent-bar"></div>
+                <h3>🔐 세션 및 계정 관리</h3>
+              </div>
+            </div>
+            <div class="accent-body">
+              <div class="settings-action-list">
+                <div class="settings-action-row">
+                  <div>
+                    <strong>비밀번호 재설정</strong>
+                    <span>등록된 이메일로 재설정 메일을 보냅니다.</span>
+                  </div>
+                  <button id="btn-password-reset" type="button">메일 보내기</button>
+                </div>
+                <div class="settings-action-row danger-soft">
+                  <div>
+                    <strong>이 기기 로그아웃</strong>
+                    <span>현재 브라우저의 로그인만 해제합니다.</span>
+                  </div>
+                  <button id="btn-session-logout" type="button">로그아웃</button>
+                </div>
+                <div class="settings-action-row danger">
+                  <div>
+                    <strong>전체 로그아웃</strong>
+                    <span>가능한 모든 세션에서 로그아웃합니다.</span>
+                  </div>
+                  <button id="btn-session-global-logout" type="button">전체 해제</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div> <!-- End of profile-grid-wrapper -->
+      </div> <!-- End of settings-general-section -->
+    </div> <!-- End of profile-panel -->
+    <!-- 💬 대화실 (실시간 채팅) -->
+    <div id="chat-panel" class="panel" style="display:none; height: 80vh;">
+      <h2 style="margin-bottom: 10px;">💬 모두의 대화실</h2>
+      <div id="chat-toolbar"
+        style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; margin-bottom:12px; border:1px solid #e2e8f0; border-radius:14px; background:#ffffff;">
+        <div style="min-width:0;">
+          <div id="chat-mode-label" style="font-weight:900; color:#1e293b;">전체 대화</div>
+          <div id="chat-mode-subtitle" style="font-size:0.78rem; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">프로필을 눌러 언급, 1:1 대화, 친구 추가를 사용할 수 있습니다.</div>
+        </div>
+        <button id="chat-global-btn" type="button" onclick="exitDirectChat()"
+          style="display:none; width:auto; margin:0; padding:8px 12px; border-radius:10px; background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe; font-weight:800;">전체 대화</button>
+      </div>
+      <div id="chat-friend-list"
+        style="display:none; align-items:center; gap:8px; flex-wrap:wrap; margin:0 0 12px; padding:10px; border-radius:12px; background:#f8fafc; border:1px solid #e2e8f0;"></div>
+      <div id="chat-shell" style="display: flex; flex-direction: column; height: calc(100% - 118px);">
+        <div id="chat-messages-container"
+          style="flex: 1; border: 1px solid #e2e8f0; border-radius: 12px; background: #f5f3ff; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); position: relative;">
+          <div
+            style="text-align: center; color: #556677; font-size: 0.85rem; padding: 20px; background: rgba(255,255,255,0.2); border-radius: 20px; margin: 10px auto; width: fit-content;">
+            대화실에 오신 것을 환영합니다! 바른말 고운말을 사용해 주세요.</div>
+          <!-- 하단 이동 버튼 -->
+          <div id="chat-scroll-bottom"
+            style="display: none; position: absolute; bottom: 20px; right: 20px; background: rgba(255,255,255,0.9); border: 1px solid #ddd; border-radius: 50%; width: 40px; height: 40px; align-items: center; justify-content: center; cursor: pointer; z-index: 10; font-size: 1.2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: #334155;"
+            title="최하단으로 이동">↓</div>
+        </div>
+        <form id="chat-form" style="display: flex; gap: 10px; align-items: stretch; position: relative; z-index: 5;">
+          <input type="text" id="chat-input" placeholder="메시지를 입력하세요 (한국어/이모티콘 지원)..."
+            style="flex: 1; margin-bottom: 0; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; outline: none; transition: border-color 0.2s;"
+            required aria-label="채팅 입력">
+          <button type="submit"
+            style="width: auto; margin-bottom: 0; padding: 12px 24px; background: #fee500; color: #3c1e1e; border: none; border-radius: 8px; font-weight: 800; cursor: pointer; transition: background 0.2s;">전송</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 👤 채팅 프로필 상세 모달 (카톡 스타일) -->
+    <div id="chat-profile-modal"
+      style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; align-items:center; justify-content:center; backdrop-filter: blur(4px);">
+      <div
+        style="background:#fff; width:90%; max-width:320px; border-radius:24px; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.3); position:relative; display:flex; flex-direction:column; align-items:center; animation: profilePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+        <!-- 상단 닫기 버튼 -->
+        <button onclick="document.getElementById('chat-profile-modal').style.display='none'"
+          style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:1.5rem; color:#fff; cursor:pointer; z-index:2; text-shadow: 0 1px 4px rgba(0,0,0,0.5);">×</button>
+
+        <!-- 프로필 배경 (없으면 기본색) -->
+        <div style="width:100%; height:180px; background:#848b94; position:relative;">
+          <div id="cp-bg"
+            style="width:100%; height:100%; background-size:cover; background-position:center; filter: brightness(0.85);">
+          </div>
+        </div>
+
+        <!-- 아바타 -->
+        <div
+          style="width:90px; height:90px; border-radius:32px; background:#f1f5f9; position:relative; margin-top:-45px; border:3px solid #fff; display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index:1;">
+          <img id="cp-avatar" src="" style="width:100%; height:100%; object-fit:cover; display:none;">
+          <span id="cp-avatar-placeholder" style="font-size:3rem;">👤</span>
+        </div>
+
+        <!-- 정보 영역 -->
+        <div style="padding:20px; width:100%; text-align:center; box-sizing:border-box;">
+          <div id="cp-title" style="font-size:0.85rem; color:#6366f1; font-weight:700; margin-bottom:4px;"></div>
+          <div id="cp-name" style="font-size:1.25rem; font-weight:800; color:#1e293b; margin-bottom:8px;"></div>
+          <div id="cp-info" style="font-size:0.9rem; color:#64748b; margin-bottom:20px;"></div>
+
+          <div style="height:1px; background:#f1f5f9; width:100%; margin-bottom:20px;"></div>
+
+          <div class="chat-profile-actions">
+            <button id="cp-action-dm" type="button" class="chat-profile-action">
+              <div class="chat-profile-action-icon">
+                💬</div>
+              <span style="font-size:0.75rem; color:#475569; font-weight:600;">1:1 대화</span>
+            </button>
+            <button id="cp-action-friend" type="button" class="chat-profile-action">
+              <div class="chat-profile-action-icon">
+                ＋</div>
+              <span style="font-size:0.75rem; color:#475569; font-weight:600;">친구 추가</span>
+            </button>
+            <button id="cp-action-mention" type="button" class="chat-profile-action">
+              <div class="chat-profile-action-icon">
+                @</div>
+              <span style="font-size:0.75rem; color:#475569; font-weight:600;">언급하기</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📢 확성기 사용 모달 -->
+    <div id="megaphone-modal"
+      style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10002; align-items:center; justify-content:center; backdrop-filter: blur(4px);">
+      <div
+        style="background:#fff; width:90%; max-width:400px; border-radius:24px; padding:30px; box-shadow:0 20px 40px rgba(0,0,0,0.3); animation: profilePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align:center;">
+        <h3 style="margin-top:0; color:#e11d48; margin-bottom:10px;">📢 확성기 사용</h3>
+        <p style="font-size:0.85rem; color:#64748b; margin-bottom:20px;">전체 사용자에게 보여줄 메시지를 입력하세요.<br>(비속어 사용 시 제재될 수
+          있습니다)</p>
+        <textarea id="megaphone-message-input" placeholder="메시지 내용 (최대 50자)" maxlength="50"
+          style="width:100%; height:80px; padding:12px; border:1px solid #e2e8f0; border-radius:12px; font-size:1rem; outline:none; resize:none; box-sizing:border-box; margin-bottom:20px;"></textarea>
+        <div id="megaphone-status" style="font-size:0.8rem; margin-bottom:15px; min-height:1.2rem;"></div>
+        <div style="display:flex; gap:10px;">
+          <button onclick="closeMegaphoneModal()"
+            style="flex:1; padding:12px; border:1px solid #cbd5e1; background:#f8fafc; color:#475569; border-radius:12px; cursor:pointer; font-weight:600;">취소</button>
+          <button id="megaphone-send-btn" onclick="submitMegaphone()"
+            style="flex:1; padding:12px; border:none; background:#e11d48; color:white; border-radius:12px; cursor:pointer; font-weight:800;">발송하기</button>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      @keyframes profilePop {
+        from {
+          opacity: 0;
+          transform: scale(0.9) translateY(20px);
+        }
+
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+
+      .chat-date-separator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 20px 0;
+        position: relative;
+      }
+
+      .chat-date-separator::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: rgba(0, 0, 0, 0.06);
+        z-index: 1;
+      }
+
+      .chat-date-text {
+        background: rgba(0, 0, 0, 0.15);
+        color: #fff;
+        font-size: 0.75rem;
+        padding: 4px 12px;
+        border-radius: 12px;
+        position: relative;
+        z-index: 2;
+        font-weight: 600;
+      }
+    </style>
+
+    <!-- 📅 급식/시간표 -->
+    <div id="timetable-panel" class="panel" style="display:none;">
+      <h2>🗓️ 주간 시간표</h2>
+      <div class="accent-card">
+        <div class="accent-head theme-blue-head">
+          <div class="accent-title-box">
+            <div class="accent-bar"></div>
+            <h3>🗓️ 나의 주간 시간표</h3>
+          </div>
+          <div class="nav-pill-box">
+            <button class="nav-btn-circle" onclick="moveTimetable(-1)" title="이전 주">❮</button>
+            <button class="nav-btn-circle" onclick="moveTimetable(0)" title="현재 주">🔄</button>
+            <button class="nav-btn-circle" onclick="moveTimetable(1)" title="다음 주">❯</button>
+          </div>
+        </div>
+        <div class="accent-body">
+          <div id="admin-timetable-controls"
+            style="display:none; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px;">
+            <strong style="font-size:0.9rem; color:#1e293b;">관리자 조회</strong>
+            <select id="admin-timetable-grade" style="width:auto; min-width:92px; margin:0; padding:8px 10px;">
+              <option value="1">1학년</option>
+              <option value="2">2학년</option>
+              <option value="3">3학년</option>
+            </select>
+            <select id="admin-timetable-class" style="width:auto; min-width:82px; margin:0; padding:8px 10px;">
+              <option value="1">1반</option>
+              <option value="2">2반</option>
+              <option value="3">3반</option>
+              <option value="4">4반</option>
+              <option value="5">5반</option>
+              <option value="6">6반</option>
+              <option value="7">7반</option>
+              <option value="8">8반</option>
+              <option value="9">9반</option>
+              <option value="10">10반</option>
+            </select>
+            <button type="button" onclick="loadSelectedTimetableForAdmin()"
+              style="width:auto; margin:0; padding:8px 14px; border-radius:10px; background:#2563eb; color:white;">조회</button>
+          </div>
+          <div id="timetable-info" style="margin-bottom:1rem; font-size:0.9rem; color:#64748b; font-weight:700;">
+            <span id="timetable-grade-info">학년 / 반 정보를 불러오는 중...</span>
+          </div>
+          <div id="timetable-container"
+            style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:16px;">
+            <!-- 시간표 데이터 동적 삽입 -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="minigame-panel" class="panel" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0;">🎮 미니게임 광장</h2>
+        <div id="daily-game-reward-status"
+          style="background:#f1f5f9; padding:8px 16px; border-radius:20px; font-weight:800; color:#475569; font-size:0.9rem; border:1px solid #e2e8f0;">
+          🎁 오늘 보상: <span class="reward-count-val">0</span> / 10
+        </div>
+      </div>
+
+      <div id="minigame-grid" class="dashboard-grid"
+        style="grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px;">
+        <!-- 4=10 게임 -->
+        <div class="accent-card">
+          <div class="accent-head theme-amber-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>🧮 4 = 10 퍼즐</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#b45309; padding:2px 8px; border-radius:10px;">
+              두뇌 회전</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              숫자 4개로 10을 만드는 마법의 공식!<br>
+              <span style="color:#d97706; font-weight:700;">💰 입장료: 5P | 보상: 10P</span>
+            </p>
+            <button onclick="startGame('fourEqualsTen')" class="link-btn"
+              style="background:#f59e0b; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+
+        <!-- 🧩 미로 탈출 -->
+        <div class="accent-card">
+          <div class="accent-head theme-blue-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>🧩 미로 탈출</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#1d4ed8; padding:2px 8px; border-radius:10px;">
+              순발력</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              복잡한 미로를 뚫고 출구를 찾으세요!<br>
+              <span style="color:#4f46e5; font-weight:700;">💰 입장료: 5P | 보상: 20P</span>
+            </p>
+            <button onclick="startGame('mazeEscape')" class="link-btn"
+              style="background:#6366f1; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+
+        <!-- 🧠 수학 계산 왕 (New) -->
+        <div class="accent-card">
+          <div class="accent-head theme-teal-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>🧠 수학 계산 왕</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#0f766e; padding:2px 8px; border-radius:10px;">
+              암산</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              쏟아지는 문제를 초스피드로 해결하세요!<br>
+              <span style="color:#059669; font-weight:700;">💰 입장료: 5P | 보상: 10P</span>
+            </p>
+            <button onclick="startGame('mathPower')" class="link-btn"
+              style="background:#10b981; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+
+        <!-- 🧱 Falling Blocks -->
+        <div class="accent-card">
+          <div class="accent-head theme-rose-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>🧱 Falling Blocks</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#be123c; padding:2px 8px; border-radius:10px;">
+              민첩성</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              하늘에서 떨어지는 블록을 피하세요!<br>
+              <span style="color:#e11d48; font-weight:700;">💰 입장료: 5P | 보상: 점수제</span>
+            </p>
+            <button onclick="startGame('fallingBlocks')" class="link-btn"
+              style="background:#f43f5e; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+
+        <!-- 🎨 Color Match -->
+        <div class="accent-card">
+          <div class="accent-head theme-purple-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>🎨 색상 맞추기</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#6d28d9; padding:2px 8px; border-radius:10px;">
+              시각</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              글자의 의미가 아닌 '색상'을 고르세요!<br>
+              <span style="color:#7c3aed; font-weight:700;">💰 입장료: 5P | 보상: 10P</span>
+            </p>
+            <button onclick="startGame('colorMatch')" class="link-btn"
+              style="background:#a855f7; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+
+        <!-- 🔢 Number Memory -->
+        <div class="accent-card">
+          <div class="accent-head theme-indigo-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>🔢 숫자 기억력</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#4338ca; padding:2px 8px; border-radius:10px;">
+              두뇌</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              나타났다 사라지는 숫자를 기억하세요!<br>
+              <span style="color:#1d4ed8; font-weight:700;">💰 입장료: 5P | 보상: 10P</span>
+            </p>
+            <button onclick="startGame('numberMemory')" class="link-btn"
+              style="background:#3b82f6; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+
+        <!-- 🐭 Whack-a-Mole -->
+        <div class="accent-card">
+          <div class="accent-head theme-orange-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>🐭 두더지 잡기</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#c2410c; padding:2px 8px; border-radius:10px;">
+              순발력</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              튀어나오는 두더지를 빠르게 터치하세요!<br>
+              <span style="color:#ea580c; font-weight:700;">💰 입장료: 5P | 보상: 10P</span>
+            </p>
+            <button onclick="startGame('moleWhack')" class="link-btn"
+              style="background:#f97316; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+
+        <!-- 🐍 Snake Classic -->
+        <div class="accent-card">
+          <div class="accent-head theme-green-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>🐍 스네이크</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#15803d; padding:2px 8px; border-radius:10px;">
+              클래식</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              사과를 먹고 몸집을 키워보세요!<br>
+              <span style="color:#16a34a; font-weight:700;">💰 입장료: 5P | 보상: 15P</span>
+            </p>
+            <button onclick="startGame('snakeGame')" class="link-btn"
+              style="background:#22c55e; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+
+        <!-- 💡 Lighting Quiz -->
+        <div class="accent-card">
+          <div class="accent-head theme-teal-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>💡 번개 퀴즈</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#0f766e; padding:2px 8px; border-radius:10px;">
+              지식</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              OX 퀴즈를 누구보다 빠르게 맞히세요!<br>
+              <span style="color:#0891b2; font-weight:700;">💰 입장료: 5P | 보상: 10P</span>
+            </p>
+            <button onclick="startGame('lightingQuiz')" class="link-btn"
+              style="background:#06b6d4; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+
+        <!-- ⚡ Reaction -->
+        <div class="accent-card">
+          <div class="accent-head theme-indigo-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>⚡ Reaction</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#4338ca; padding:2px 8px; border-radius:10px;">
+              순발력</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              초록색이 보이면 즉시 클릭하세요!<br>
+              <span style="color:#4f46e5; font-weight:700;">💰 입장료: 5P | 보상: 10P</span>
+            </p>
+            <button onclick="startGame('reaction')" class="link-btn"
+              style="background:#4f46e5; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+
+        <!-- 🐦 점프 피하기 -->
+        <div class="accent-card">
+          <div class="accent-head theme-cyan-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>🐦 점프 피하기</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#0e7490; padding:2px 8px; border-radius:10px;">
+              타이밍</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              스페이스나 터치로 고도를 조절하세요!<br>
+              <span style="color:#0891b2; font-weight:700;">💰 입장료: 5P | 보상: 10P</span>
+            </p>
+            <button onclick="startGame('flappy')" class="link-btn"
+              style="background:#06b6d4; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+
+        <!-- 🃏 카드 뒤집기 (New!) -->
+        <div class="accent-card">
+          <div class="accent-head theme-emerald-head">
+            <div class="accent-title-box">
+              <div class="accent-bar"></div>
+              <h3>🃏 카드 뒤집기</h3>
+            </div>
+            <div
+              style="font-size:0.8rem; background:rgba(0,0,0,0.05); color:#059669; padding:2px 8px; border-radius:10px;">
+              기억력</div>
+          </div>
+          <div class="accent-body">
+            <p style="color:#64748b; font-size:0.9rem; margin-bottom:16px;">
+              같은 짝의 카드를 모두 찾으세요!<br>
+              <span style="color:#10b981; font-weight:700;">💰 입장료: 5P | 보상: 15P</span>
+            </p>
+            <button onclick="startGame('memoryMatch')" class="link-btn"
+              style="background:#10b981; width:100%; border:none; padding:12px; border-radius:12px; color:white; font-weight:700;">게임
+              시작</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div> <!-- content close -->
+
+  <!-- 🌫️ Modal Overlay for Games -->
+  <!-- 🎮 개별 게임 패널 (View-Swap 방식: .panel 클래스 추가) -->
+  <div id="fourEqualsTen-game" class="game-window panel">
+    <div class="accent-head theme-amber-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>🧮 4 = 10 퍼즐</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+        10
+      </div>
+    </div>
+    <div class="game-body">
+      <p class="description">네 개의 숫자를 사칙연산 (+, -, ×, ÷)과 괄호를 사용하여 10을 만드세요.</p>
+      <div id="game-numbers"
+        style="font-size: 2.5rem; font-weight: 800; text-align: center; margin-bottom: 24px; letter-spacing: 12px; color: #1e293b; background: #f8fafc; padding: 20px; border-radius: 16px; width: 100%; max-width: 500px; box-sizing: border-box;">
+      </div>
+      <input id="game-input" placeholder="예: (1+3)×2+4"
+        style="text-align: center; font-size: 1.1rem; padding: 14px; width: 100%; max-width: 500px; box-sizing: border-box; border-radius: 12px; border: 1.5px solid #e2e8f0; margin-bottom: 16px;">
+      <button class="control-btn" onclick="checkFourEqualsTen()"
+        style="background: #f59e0b; max-width: 500px;">제출하기</button>
+      <p id="game-feedback"
+        style="margin-top: 16px; font-weight: 700; text-align: center; min-height: 24px; width: 100%; max-width: 500px;">
+      </p>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()" style="max-width: 500px;">❌ 게임 나가기</button>
+    </div>
+  </div>
+
+  <div id="mathPower-game" class="game-window panel">
+    <div class="accent-head theme-teal-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>🧠 수학 계산 왕</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+        10
+      </div>
+    </div>
+    <div class="game-body">
+      <p class="description">제한 시간 30초! 최대한 많은 문제를 정답을 맞히세요!</p>
+      <div
+        style="background:#f8fafc; padding:24px; border-radius:16px; margin-bottom:20px; text-align:center; border: 1px solid #f1f5f9; width: 100%; max-width: 500px; box-sizing: border-box;">
+        <div id="math-timer" style="font-size:1rem; color:#ef4444; font-weight:800; margin-bottom:12px;">⏱ 남은 시간:
+          30초
+        </div>
+        <div id="math-question" style="font-size:2.8rem; font-weight:900; color:#1e293b; letter-spacing: 2px;">? + ?
+        </div>
+      </div>
+      <input type="number" id="math-input" placeholder="정답 입력"
+        style="text-align: center; font-size: 1.4rem; padding: 14px; border: 1.5px solid #e2e8f0; border-radius:12px; width:100%; max-width: 500px; margin-bottom:16px; box-sizing: border-box; font-weight: 800;">
+      <button class="control-btn" onclick="checkMathPower()" style="background: #10b981; max-width: 500px;">정답
+        확인</button>
+      <p id="math-feedback"
+        style="margin-top: 16px; font-weight: 700; text-align: center; min-height: 24px; width: 100%; max-width: 500px;">
+      </p>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()" style="max-width: 500px;">❌ 게임 나가기</button>
+    </div>
+  </div>
+
+  <div id="mazeEscape-game" class="game-window panel">
+    <div class="accent-head theme-blue-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>🧩 미로 탈출</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+        10
+      </div>
+    </div>
+    <div class="game-body">
+      <p class="description">방향키 또는 화면 스와이프로 탈출하세요!<br><span style="color:#3b82f6;">⏱ 30초 이내 보상 지급</span></p>
+      <div class="canvas-container">
+        <canvas id="maze-cv" width="300" height="300"></canvas>
+      </div>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()">❌ 게임 나가기</button>
+    </div>
+  </div>
+
+  <div id="fallingBlocks-game" class="game-window panel">
+    <div class="accent-head theme-rose-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>🧱 Falling Blocks</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+        10
+      </div>
+    </div>
+    <div class="game-body">
+      <p class="description">하늘에서 떨어지는 블록을 민첩하게 피하세요!</p>
+      <div class="canvas-container">
+        <canvas id="fall-cv" width="300" height="360"></canvas>
+      </div>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()">❌ 게임 나가기</button>
+    </div>
+  </div>
+
+  <div id="reaction-game" class="game-window panel">
+    <div class="accent-head theme-indigo-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>⚡ Reaction Test</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+        10
+      </div>
+    </div>
+    <div class="game-body">
+      <p class="description">패드가 🟩 초록색으로 변하는 순간 클릭하세요!</p>
+      <div id="rx-pad"
+        style="width: 100%; max-width: 600px; height: 300px; display: flex; align-items: center; justify-content: center; border-radius: 20px; font-size: 1.6rem; font-weight: 800; color: #fff; background: #f1f5f9; color: #64748b; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.1s; margin-bottom: 24px;">
+        Waiting...</div>
+      <button id="rx-start" class="control-btn" style="background: #4f46e5; max-width: 600px;">준비 완료!</button>
+      <div
+        style="width: 100%; max-width: 600px; margin-top: 20px; display: flex; justify-content: space-around; font-size: 0.95rem; background: #f8fafc; padding: 12px; border-radius: 12px; box-sizing: border-box;">
+        <div>⏱ 최근: <span id="rx-last" style="font-weight: 800; color: #4f46e5;">—</span></div>
+        <div>🏆 최고: <span id="rx-best" style="font-weight: 800; color: #0d9488;">—</span></div>
+      </div>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()" style="max-width: 600px; margin-top: 16px;">❌ 게임
+        나가기</button>
+    </div>
+  </div>
+
+  <div id="flappy-game" class="game-window panel">
+    <div class="accent-head theme-cyan-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>🐦 점프 피하기</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+        10
+      </div>
+    </div>
+    <div class="game-body">
+      <p class="description">스페이스바 또는 화면 터치로 고도를 조절하세요!</p>
+      <div id="mini-flappy"
+        style="width: 100%; max-width: 320px; height: 320px; margin: 0 auto 24px; border: 1.5px solid #e2e8f0; border-radius: 20px; overflow: hidden; background: #f8fafc; position: relative;">
+      </div>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()" style="max-width: 320px;">❌ 게임 나가기</button>
+    </div>
+  </div>
+
+  <!-- 🎨 Color Match -->
+  <div id="colorMatch-game" class="game-window panel">
+    <div class="accent-head theme-purple-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>🎨 색상 맞추기</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+        10
+      </div>
+    </div>
+    <div class="game-body">
+      <p class="description">단어의 의미가 아닌 <b>'글자의 색상'</b>을 고르세요!</p>
+      <div id="cm-word"
+        style="font-size:3.5rem; font-weight:900; text-align:center; height:120px; display:flex; align-items:center; justify-content:center; margin-bottom:24px; background: #f8fafc; border-radius: 20px; border: 1px solid #f1f5f9; width: 100%; max-width: 500px; box-sizing: border-box;">
+        빨강</div>
+      <div id="cm-options"
+        style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom: 20px; width: 100%; max-width: 500px;">
+      </div>
+      <div id="cm-timer"
+        style="text-align:center; font-weight:800; color:#ef4444; font-size: 1.1rem; padding: 10px; background: #fff1f2; border-radius: 12px; width: 100%; max-width: 500px; box-sizing: border-box;">
+        남은 시간: 10초
+      </div>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()" style="max-width: 500px; margin-top: 16px;">❌ 게임
+        나가기</button>
+    </div>
+  </div>
+
+  <!-- 🔢 Number Memory -->
+  <div id="numberMemory-game" class="game-window panel">
+    <div class="accent-head theme-indigo-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>🔢 숫자 기억력</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> /
+        10
+      </div>
+    </div>
+    <div class="game-body">
+      <p class="description">화면에 잠시 나타나는 숫자를 순서대로 기억하세요!</p>
+      <div id="nm-display"
+        style="font-size:3.5rem; font-weight:900; text-align:center; padding:40px 0; min-height:120px; background: #f8fafc; border-radius: 20px; margin-bottom: 24px; border: 1px solid #f1f5f9; color: #1e293b; letter-spacing: 4px; width: 100%; max-width: 500px;">
+        ...</div>
+      <div id="nm-input-area" style="display:none; margin-bottom: 20px; width: 100%; max-width: 500px;">
+        <input type="number" id="nm-input" placeholder="숫자를 입력하세요"
+          style="text-align:center; font-size:1.6rem; padding: 14px; width: 100%; border-radius: 12px; border: 1.5px solid #e2e8f0; box-sizing: border-box; font-weight: 800; margin-bottom: 12px;">
+        <button id="nm-submit" class="control-btn" style="background:#1d4ed8;">정답 확인</button>
+      </div>
+      <p id="nm-feedback"
+        style="text-align:center; font-weight:700; margin-top:10px; min-height: 24px; width: 100%; max-width: 500px;">
+      </p>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()" style="max-width: 500px;">❌ 게임 나가기</button>
+    </div>
+  </div>
+
+  <!-- 🐭 Whack-a-Mole -->
+  <div id="moleWhack-game" class="game-window panel">
+    <div class="accent-head theme-orange-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>🐭 두더지 잡기</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569; display: flex; gap: 12px; align-items: center;">
+        <span>🎁 <span class="reward-count-val">0</span> / 10</span>
+        <span style="color: #4f46e5;">🎯 <span id="mw-score">0</span></span>
+        <span style="color: #ef4444;">⏱ <span id="mw-timer">20</span>s</span>
+      </div>
+    </div>
+    <div class="game-body">
+      <p class="description">구멍에서 튀어나오는 두더지를 빠르게 터치하세요!</p>
+      <div id="mw-grid"
+        style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; padding:16px; background:#f1f5f9; border-radius:24px; margin-bottom: 24px; border: 1px solid #e2e8f0; width: 100%; max-width: 400px; box-sizing: border-box;">
+        <div class="mole-hole"
+          style="height:85px; background:#cbd5e1; border-radius:50%; position:relative; overflow:hidden; cursor:pointer; box-shadow: inset 0 4px 8px rgba(0,0,0,0.1);">
+        </div>
+        <div class="mole-hole"
+          style="height:85px; background:#cbd5e1; border-radius:50%; position:relative; overflow:hidden; cursor:pointer; box-shadow: inset 0 4px 8px rgba(0,0,0,0.1);">
+        </div>
+        <div class="mole-hole"
+          style="height:85px; background:#cbd5e1; border-radius:50%; position:relative; overflow:hidden; cursor:pointer; box-shadow: inset 0 4px 8px rgba(0,0,0,0.1);">
+        </div>
+        <div class="mole-hole"
+          style="height:85px; background:#cbd5e1; border-radius:50%; position:relative; overflow:hidden; cursor:pointer; box-shadow: inset 0 4px 8px rgba(0,0,0,0.1);">
+        </div>
+        <div class="mole-hole"
+          style="height:85px; background:#cbd5e1; border-radius:50%; position:relative; overflow:hidden; cursor:pointer; box-shadow: inset 0 4px 8px rgba(0,0,0,0.1);">
+        </div>
+        <div class="mole-hole"
+          style="height:85px; background:#cbd5e1; border-radius:50%; position:relative; overflow:hidden; cursor:pointer; box-shadow: inset 0 4px 8px rgba(0,0,0,0.1);">
+        </div>
+        <div class="mole-hole"
+          style="height:85px; background:#cbd5e1; border-radius:50%; position:relative; overflow:hidden; cursor:pointer; box-shadow: inset 0 4px 8px rgba(0,0,0,0.1);">
+        </div>
+        <div class="mole-hole"
+          style="height:85px; background:#cbd5e1; border-radius:50%; position:relative; overflow:hidden; cursor:pointer; box-shadow: inset 0 4px 8px rgba(0,0,0,0.1);">
+        </div>
+        <div class="mole-hole"
+          style="height:85px; background:#cbd5e1; border-radius:50%; position:relative; overflow:hidden; cursor:pointer; box-shadow: inset 0 4px 8px rgba(0,0,0,0.1);">
+        </div>
+      </div>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()" style="max-width: 400px;">❌ 게임 나가기</button>
+    </div>
+  </div>
+
+  <!-- 🐍 Snake Classic -->
+  <div id="snakeGame-game" class="game-window panel">
+    <div class="accent-head theme-green-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>🐍 스네이크</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569; display: flex; gap: 12px; align-items: center;">
+        <span>🎁 <span class="reward-count-val">0</span> / 10</span>
+        <span>🍎 <span id="sn-score" style="color: #ef4444;">0</span> / 10</span>
+      </div>
+    </div>
+    <div class="game-body">
+      <p class="description">사과 10개를 먹고 성공적인 기록을 남기세요!</p>
+      <div class="canvas-container">
+        <canvas id="snake-cv" width="300" height="300"></canvas>
+      </div>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()">❌ 게임 나가기</button>
+    </div>
+  </div>
+
+  <!-- 💡 Lighting Quiz -->
+  <div id="lightingQuiz-game" class="game-window panel">
+    <div class="accent-head theme-teal-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>💡 번개 퀴즈</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569; display: flex; gap: 12px; align-items: center;">
+        <span>🎁 <span class="reward-count-val">0</span> / 10</span>
+        <span>🔥 <span id="lq-count" style="color: #4f46e5;">0</span> 콤보</span>
+      </div>
+    </div>
+    <div class="game-body">
+      <p class="description">제한된 시간 안에 상식 OX 퀴즈를 해결하세요!</p>
+      <div id="lq-progress"
+        style="height:12px; background:#f1f5f9; border-radius:50px; margin-bottom:24px; overflow:hidden; border: 1px solid #e2e8f0; width: 100%; max-width: 600px;">
+        <div id="lq-bar"
+          style="height:100%; width:100%; background: linear-gradient(90deg, #06b6d4, #22d3ee); transition:width 0.1s linear;">
+        </div>
+      </div>
+      <div id="lq-question"
+        style="font-size:1.6rem; font-weight:800; text-align:center; min-height:140px; display:flex; align-items:center; justify-content:center; background: #f8fafc; border-radius: 20px; padding: 24px; border: 1px solid #f1f5f9; line-height: 1.5; color: #1e293b; width: 100%; max-width: 600px; box-sizing: border-box;">
+        질문 준비 중...</div>
+      <div
+        style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; width: 100%; max-width: 600px;">
+        <button id="lq-yes" class="control-btn"
+          style="background:#10b981; font-size:1.8rem; margin: 0; height: 80px; border-radius: 16px;">O</button>
+        <button id="lq-no" class="control-btn"
+          style="background:#f43f5e; font-size:1.8rem; margin: 0; height: 80px; border-radius: 16px;">X</button>
+      </div>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()" style="max-width: 600px; margin-top: 20px;">❌ 게임
+        나가기</button>
+    </div>
+  </div>
+
+  <!-- 🃏 Memory Match -->
+  <div id="memoryMatch-game" class="game-window panel">
+    <div class="accent-head theme-emerald-head">
+      <div class="accent-title-box">
+        <div class="accent-bar"></div>
+        <h3>🃏 카드 뒤집기</h3>
+      </div>
+      <div style="font-weight:800; font-size: 0.9rem; color: #475569;">🎁 <span class="reward-count-val">0</span> / 10</div>
+    </div>
+    <div class="game-body">
+      <p class="description">12장의 카드 중 같은 짝 6쌍을 모두 찾으세요!</p>
+      <div id="mm-grid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:20px; width:100%; max-width:400px;">
+        <!-- Cards dynamic -->
+      </div>
+      <button class="control-btn exit-btn" onclick="exitMiniGame()" style="max-width: 400px;">❌ 게임 나가기</button>
+    </div>
+  </div>
+
+  </div> <!-- End of .content; all panels are now uniformly wrapped. -->
+
+  <!-- 🚀 CodingOn: 인터렉티브 학습 모달 -->
+  <div id="co-lesson-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:4000; align-items:center; justify-content:center;">
+    <div class="glass-card" style="width: 98%; height: 95%; background: white; display:flex; flex-direction:column; overflow:hidden; border-radius: 20px;">
+      <!-- 모달 헤더 -->
+      <div style="padding: 1rem 2rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fff; z-index: 10;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <h3 id="co-lesson-title" style="margin: 0; color: #1e293b; font-size: 1.2rem;">파이썬 학습</h3>
+          <span id="co-lesson-badge" style="font-size: 0.75rem; padding: 4px 12px; background: #eef2ff; color: #4f46e5; border-radius: 99px; font-weight: 700;">기초</span>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button onclick="runPythonCode()" id="co-run-btn" style="width: auto; margin:0; background: #10b981; color: #fff; padding: 8px 20px; border-radius: 8px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 1rem;">▶</span> 코드 실행
+          </button>
+          <button onclick="closeCOModal()" style="width: auto; margin:0; background: #f1f5f9; color: #64748b; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+      </div>
+
+      <!-- 메인 스플릿 뷰 -->
+      <div style="flex: 1; display: flex; overflow: hidden; background: #f8fafc;">
+        <!-- 왼쪽: 학습 내용 -->
+        <div id="co-lesson-body" class="custom-scrollbar" style="flex: 1.2; padding: 2rem; overflow-y: auto; background: #ffffff; border-right: 1px solid #e2e8f0; line-height: 1.7;">
+          <!-- 내용이 동적으로 삽입됩니다 -->
+          <div style="padding: 2rem; text-align: center; color: #94a3b8;">학습 내용을 불러오는 중...</div>
+        </div>
+
+        <!-- 오른쪽: 코딩 에디터 & 콘솔 -->
+        <div style="flex: 1; display: flex; flex-direction: column; background: #1e293b;">
+          <!-- 에디터 타이틀 바 -->
+          <div style="padding: 8px 20px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+            <div style="color: #94a3b8; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.05em;">PYTHON EDITOR</div>
+            <button onclick="resetEditorCode()" style="background:none; border:none; color: #64748b; font-size: 0.75rem; cursor:pointer;">초기화</button>
+          </div>
+          
+          <!-- 코드 입력창 -->
+          <div style="flex: 2; position: relative; padding: 0;">
+            <textarea id="co-code-editor" spellcheck="false" placeholder="# 여기에 파이썬 코드를 작성하세요..." style="width: 100%; height: 100%; background: #1e293b; color: #e2e8f0; font-family: 'Consolas', 'Monaco', monospace; font-size: 1rem; padding: 20px; border: none; resize: none; outline: none; line-height: 1.5;"></textarea>
+          </div>
+
+          <!-- 콘솔 출력창 -->
+          <div style="flex: 1; background: #0f172a; border-top: 2px solid #334155; display: flex; flex-direction: column;">
+            <div style="padding: 6px 20px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.05); color: #94a3b8; font-size: 0.75rem; font-weight: 700;">CONSOLE OUTPUT</div>
+            <div id="co-console-output" class="custom-scrollbar" style="flex: 1; padding: 15px 20px; font-family: 'Consolas', monospace; font-size: 0.95rem; color: #10b981; overflow-y: auto; white-space: pre-wrap;">코드 실행 결과가 여기에 표시됩니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="imageModal" class="modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:center; justify-content:center;">
+    <span onclick="closeImageModal()"
+      style="color:white;font-size:3rem;position:absolute;top:20px;right:40px;cursor:pointer;">&times;</span>
+    <img id="modalImage" src="" style="max-width:90%; max-height:85%; border-radius:8px; border:2px solid #fff;" />
+  </div>
+
+  <div id="privacy-modal" class="modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+    <div class="modal-card"
+      style="background:white; padding:20px; border-radius:12px; max-width:500px; width:90%; max-height:80%; display:flex; flex-direction:column;">
+      <h3 style="margin-top:0;">개인정보 처리 방침 전문</h3>
+      <div
+        style="flex:1; overflow-y:auto; font-size:0.85rem; line-height:1.6; padding:10px; background:#f9fafb; border-radius:6px; margin-bottom:15px;">
+        <p><strong>1. 수집하는 개인정보 항목</strong><br>
+          EduBoard는 서비스 제공을 위해 아래와 같은 개인정보를 수집합니다.<br>
+          - 필수항목: 아이디, 비밀번호, 이름, 이메일, 학년, 반, 번호</p>
+        <p><strong>2. 개인정보의 수집 및 이용 목적</strong><br>
+          - 회원 관리: 본인 확인, 서비스 이용에 따른 학급 관리<br>
+          - 서비스 제공: 수업 자료 공유, 수행평가 분석 제안(GPT 연동), 미니게임 및 포인트 시스템 운영</p>
+        <p><strong>3. 개인정보의 보유 및 이용 기간</strong><br>
+          - 수집된 정보는 회원 탈퇴 시까지 보유하며, 탈퇴 즉시 파기합니다.<br>
+          - 단, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관합니다.</p>
+        <p><strong>4. 동의 거부 권리 및 불이익</strong><br>
+          - 사용자는 개인정보 수집에 대한 동의를 거부할 권리가 있습니다. 단, 거부 시 회원가입 및 EduBoard 서비스 이용이 제한될 수 있습니다.</p>
+      </div>
+
+      <button onclick="closePrivacyDetail()"
+        style="padding:10px; background:#007bff; color:white; border:none; border-radius:6px; cursor:pointer;">닫기</button>
+    </div>
+  </div>
+
+  <!-- 공지사항 수정 모달 -->
+  <div id="modal-edit-notice" class="modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;"
+    onclick="if(event.target === this) closeEditNoticeModal()">
+    <div class="modal-card"
+      style="position:relative; background:white; padding:24px; border-radius:12px; max-width:500px; width:90%; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 10px 25px rgba(0,0,0,0.2); overflow:hidden;"
+      onclick="event.stopPropagation()">
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:12px; margin-bottom:16px; flex-shrink:0;">
+        <h3 style="margin:0; font-size:1.2rem; color:#1e293b;">✏️ 공지사항 수정</h3>
+        <button onclick="closeEditNoticeModal()"
+          style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.2rem; color:#64748b; cursor:pointer; line-height:1; transition:all 0.2s;"
+          onmouseover="this.style.background='#e2e8f0'; this.style.color='#1e293b'"
+          onmouseout="this.style.background='#f1f5f9'; this.style.color='#64748b'">&times;</button>
+      </div>
+
+      <input type="hidden" id="edit-notice-id">
+      <input type="hidden" id="edit-notice-old-image">
+
+      <!-- 스크롤 가능한 본문 영역 -->
+      <div style="flex:1; overflow-y:auto; padding-right:4px;">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div>
+            <label
+              style="display:block; font-size:0.9rem; font-weight:600; color:#475569; margin-bottom:6px;">제목</label>
+            <input type="text" id="edit-notice-title"
+              style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.95rem;">
+          </div>
+
+          <div>
+            <label
+              style="display:block; font-size:0.9rem; font-weight:600; color:#475569; margin-bottom:6px;">내용</label>
+            <textarea id="edit-notice-content"
+              style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; min-height:150px; font-size:0.95rem; resize:vertical; font-family:inherit;"></textarea>
+          </div>
+
+          <div style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid #e2e8f0;">
+            <label style="display:block; font-size:0.9rem; font-weight:700; color:#475569; margin-bottom:8px;">🖼️
+              이미지
+              관리</label>
+
+            <div id="edit-notice-preview" style="margin-bottom:8px;"></div>
+
+            <label id="edit-notice-remove-label"
+              style="display:flex; align-items:center; font-size:0.85rem; color:#dc3545; cursor:pointer; margin-bottom:12px;">
+              <input type="checkbox" id="edit-notice-remove-img" style="margin-right:8px;"> 기존 이미지 삭제하기
+            </label>
+
+            <div style="border-top:1px dashed #cbd5e1; padding-top:12px; margin-top:8px;">
+              <label style="display:block; font-size:0.85rem; font-weight:600; color:#475569; margin-bottom:6px;">새
+                이미지로 교체</label>
+              <input type="file" id="edit-notice-new-image" accept="image/*" style="font-size:0.8rem; width:100%;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:12px; border-top:1px solid #eee; flex-shrink:0;">
+        <button onclick="closeEditNoticeModal()"
+          style="padding:10px 16px; border:1px solid #cbd5e1; background:#f8fafc; color:#475569; border-radius:6px; cursor:pointer; font-weight:600;">취소</button>
+        <button id="btn-submit-edit-notice" onclick="submitEditNotice()"
+          style="padding:10px 16px; border:none; background:#2563eb; color:white; border-radius:6px; cursor:pointer; font-weight:600;">수정
+          완료</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 자료실 자료 수정 모달 -->
+  <div id="modal-edit-material" class="modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;"
+    onclick="if(event.target === this) closeEditMaterialModal()">
+    <div class="modal-card"
+      style="position:relative; background:white; padding:24px; border-radius:12px; max-width:550px; width:90%; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 10px 25px rgba(0,0,0,0.2); overflow:hidden;"
+      onclick="event.stopPropagation()">
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:12px; margin-bottom:16px; flex-shrink:0;">
+        <h3 style="margin:0; font-size:1.2rem; color:#1e293b;">✏️ 자료 수정</h3>
+        <button onclick="closeEditMaterialModal()"
+          style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.2rem; color:#64748b; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+
+      <input type="hidden" id="edit-material-id">
+
+      <div style="flex:1; overflow-y:auto; padding-right:4px;">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="display:block; font-size:0.9rem; font-weight:700; color:#1e293b; margin-bottom:6px;">👥
+                공유
+                범위</label>
+              <select id="edit-material-scope"
+                style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.95rem; background:white;">
+                <option value="class">같은 반</option>
+                <option value="grade">같은 학년</option>
+                <option value="school">전교</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block; font-size:0.9rem; font-weight:700; color:#1e293b; margin-bottom:6px;">✍️
+                제목</label>
+              <input type="text" id="edit-material-title"
+                style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; font-size:0.95rem;">
+            </div>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:0.9rem; font-weight:700; color:#1e293b; margin-bottom:6px;">💬
+              코멘트</label>
+            <textarea id="edit-material-comment"
+              style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; min-height:80px; font-size:0.95rem; resize:vertical; font-family:inherit;"></textarea>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:0.9rem; font-weight:700; color:#1e293b; margin-bottom:10px;">📁
+              파일
+              관리</label>
+
+            <!-- 파일 매니저 컨테이너 -->
+            <div id="edit-material-manager"
+              style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden;">
+              <!-- 업로드 진행바 (평소엔 숨김) -->
+              <div id="edit-material-progress-container"
+                style="display:none; padding:12px; background:#fff; border-bottom:1px solid #e2e8f0;">
+                <div
+                  style="display:flex; justify-content:space-between; font-size:0.75rem; color:#4f46e5; margin-bottom:4px; font-weight:600;">
+                  <span id="upload-status-text">파일 업로드 중...</span>
+                  <span id="upload-percent-text">0%</span>
+                </div>
+                <div style="height:6px; background:#e2e8f0; border-radius:10px; overflow:hidden;">
+                  <div id="upload-progress-bar"
+                    style="width:0%; height:100%; background:#4f46e5; transition:width 0.2s;"></div>
+                </div>
+              </div>
+
+              <!-- 드래그 앤 드롭 존 -->
+              <div id="edit-material-dropzone"
+                style="padding:24px; text-align:center; border-bottom:1px solid #e2e8f0; background:#fff; cursor:pointer; transition:background 0.2s;">
+                <div style="font-size:1.8rem; margin-bottom:8px;">📤</div>
+                <div style="font-size:0.9rem; font-weight:600; color:#1e293b;">클릭하거나 파일을 여기로 끌어다 놓으세요</div>
+                <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">여러 파일 동시 업로드 가능</div>
+                <input type="file" id="edit-material-new-files" multiple style="display:none;">
+              </div>
+
+              <!-- 파일 그리드 (기존 + 새 파일 통합) -->
+              <div id="edit-material-file-grid"
+                style="padding:12px; display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:8px; max-height:240px; overflow-y:auto;">
+                <!-- JS에서 동적 삽입 -->
+                <p id="edit-material-no-files-msg"
+                  style="grid-column:1/-1; text-align:center; color:#94a3b8; font-size:0.85rem; padding:20px;">첨부된
+                  파일이
+                  없습니다.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px; padding-top:12px; border-top:1px solid #eee; flex-shrink:0;">
+        <button onclick="closeEditMaterialModal()"
+          style="padding:10px 16px; border:1px solid #cbd5e1; background:#f8fafc; color:#475569; border-radius:6px; cursor:pointer; font-weight:600;">취소</button>
+        <button id="btn-submit-edit-material" onclick="submitEditMaterial()"
+          style="padding:10px 16px; border:none; background:#4f46e5; color:white; border-radius:6px; cursor:pointer; font-weight:600;">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 👤 추가 정보 입력 모달 (소셜 로그인용) -->
+  <div id="social-signup-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10010; align-items:center; justify-content:center; backdrop-filter: blur(4px);">
+    <div class="auth-box" style="background: white; transform: none; animation: none; max-width: 400px !important;">
+      <h2 style="margin-bottom: 1rem; -webkit-text-fill-color: var(--auth-primary);">반갑습니다! 👋</h2>
+      <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 1.5rem;">서비스 이용을 위해 학생 정보를 입력해주세요.</p>
+      
+      <div class="auth-input-group">
+        <label>실명</label>
+        <input id="social-name" type="text" placeholder="본명을 입력하세요">
+      </div>
+
+      <!-- 🏫 소셜 가입용 교육청 및 학교 검색 -->
+      <div class="auth-input-group">
+        <label for="socialAtptCode">교육청 선택</label>
+        <select id="socialAtptCode" class="auth-input" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 8px;" onchange="document.getElementById('socialSchoolName').value = ''; document.getElementById('socialSchulCode').value = '';">
+          <option value="">전국 전체 (선택)</option>
+          <option value="B10">서울특별시교육청</option>
+          <option value="C10">부산광역시교육청</option>
+          <option value="D10">대구광역시교육청</option>
+          <option value="E10">인천광역시교육청</option>
+          <option value="F10">광주광역시교육청</option>
+          <option value="G10">대전광역시교육청</option>
+          <option value="H10">울산광역시교육청</option>
+          <option value="I10">세종특별자치시교육청</option>
+          <option value="J10">경기도교육청</option>
+          <option value="K10">강원특별자치도교육청</option>
+          <option value="M10">충청북도교육청</option>
+          <option value="N10">충청남도교육청</option>
+          <option value="P10">전북특별자치도교육청</option>
+          <option value="Q10">전라남도교육청</option>
+          <option value="R10">경상북도교육청</option>
+          <option value="S10">경상남도교육청</option>
+          <option value="T10">제주특별자치도교육청</option>
+        </select>
+      </div>
+      <div class="auth-input-group">
+        <label>학교 검색</label>
+        <div style="display: flex; gap: 8px;">
+          <input id="socialSchoolName" type="text" placeholder="학교명 검색" readonly onclick="openSchoolSearchModal('social')">
+          <button type="button" class="auth-btn-secondary" style="width: auto; padding: 0 10px; height: 50px;" onclick="openSchoolSearchModal('social')">🔍</button>
+        </div>
+        <input type="hidden" id="socialSchulCode">
+      </div>
+
+      <div class="auth-input-group">
+        <label>사이트 전용 비밀번호</label>
+        <input id="social-password" type="password" placeholder="6자 이상 입력">
+      </div>
+
+      <div class="auth-input-group">
+        <label>비밀번호 확인</label>
+        <input id="social-password-confirm" type="password" placeholder="비밀번호 재입력">
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem;">
+        <div class="auth-input-group" style="margin-bottom:0;">
+          <label>학년</label>
+          <input id="social-grade" type="number" placeholder="학년" />
+        </div>
+        <div class="auth-input-group" style="margin-bottom:0;">
+          <label>반</label>
+          <input id="social-class" type="number" placeholder="반" />
+        </div>
+        <div class="auth-input-group" style="margin-bottom:0;">
+          <label>번호</label>
+          <input id="social-number" type="number" placeholder="번호" />
+        </div>
+      </div>
+
+      <button class="auth-btn-primary" onclick="completeSocialSignup()">가입 완료하기</button>
+    </div>
+  </div>
+
+  <!-- 약관 및 정책 모달 -->
+  <div id="tos-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10050; align-items:center; justify-content:center; backdrop-filter: blur(4px);">
+    <div class="auth-box" style="background: white; transform: none; animation: none; max-width: 600px !important; width:90%; padding: 30px;">
+      <h2 style="margin-bottom: 1rem; -webkit-text-fill-color: var(--auth-primary); font-size:1.5rem;">⚖️ 서비스 이용약관</h2>
+      <div style="max-height: 400px; overflow-y: auto; margin-top: 1rem; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; font-size:0.9rem; line-height:1.6; color:#334155; text-align:left; background:#f8fafc;">
+        <h3 style="font-size:1.1rem; color:#1e293b; margin-top:0;">제1조 (목적)</h3>
+        <p>본 약관은 EduBoard가 제공하는 학급 대시보드 및 교육용 게이미피케이션 서비스(이하 "서비스")의 이용과 관련하여 회사와 회원 간의 권리, 의무, 책임사항을 규정함을 목적으로 합니다.</p>
+        <h3 style="font-size:1.1rem; color:#1e293b;">제4조 (이용계약 체결 및 미성년자 보호)</h3>
+        <p>만 14세 미만의 아동은 서비스 이용을 위해 법정대리인(부모 등)의 동의를 얻어야 합니다. 관련 법령에 따라 법정대리인의 동의 여부를 확인하기 위한 추가 절차를 요구할 수 있습니다.</p>
+        <h3 style="font-size:1.1rem; color:#1e293b;">제7조 (회원의 의무)</h3>
+        <p>회원은 타인의 정보 도용, 비방, 욕설, 악성코드 유포 등을 하여서는 안 되며, 위반 시 서비스 제공자는 이용 정지 등의 조치를 취할 수 있습니다.</p>
+        <h3 style="font-size:1.1rem; color:#1e293b;">제8조 (서비스의 제공 등)</h3>
+        <p>서비스 내에 포함된 미니게임의 점수, 가상 포인트 등은 운영 정책에 따라 일괄 초기화되거나 변경될 수 있으며, 자산적 가치를 지니지 않습니다.</p>
+        <h3 style="font-size:1.1rem; color:#1e293b;">제10조 (면책 조항)</h3>
+        <p>본 서비스 내의 각종 정보 및 분석 결과는 참고용 정보이며, 해당 결과에 대한 법적 효력이나 전적인 정확성을 보증하지 않습니다.</p>
+      </div>
+      <button class="auth-btn-secondary" style="margin-top: 1.5rem;" onclick="document.getElementById('tos-modal').style.display='none'">확인 및 닫기</button>
+    </div>
+  </div>
+
+  <!-- 🏫 학교 검색 팝업 모달 -->
+  <div id="school-search-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10020; align-items:center; justify-content:center; backdrop-filter: blur(4px);">
+    <div class="auth-box" style="background: white; transform: none; animation: none; max-width: 450px !important;">
+      <h2 style="margin-bottom: 1rem; -webkit-text-fill-color: var(--auth-primary);">학교 찾기 🔍</h2>
+      <div class="auth-input-group">
+        <div style="display: flex; gap: 8px;">
+          <input id="school-search-input" type="text" placeholder="학교명을 입력하세요 (예: 광명중)">
+          <button type="button" class="auth-btn-primary" style="width: 80px;" onclick="executeSchoolSearch()">검색</button>
+        </div>
+      </div>
+      <div id="school-search-results" style="max-height: 300px; overflow-y: auto; margin-top: 1rem; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <p style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.9rem;">학교명을 검색해주세요.</p>
+      </div>
+      <button class="auth-btn-secondary" style="margin-top: 1rem;" onclick="closeSchoolSearchModal()">닫기</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="js/school-search.js"></script>
+  <script src="js/games.js?v=coin-fix-20260429"></script>
+  <script src="js/codingon.js"></script>
+  <script src="js/index.js?v=coin-fix-20260429"></script>
+  <script>
+    const isLocalDevHost = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !isLocalDevHost) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('✅ EduBoard Service Worker Registered'))
+          .catch(err => console.log('❌ Service Worker Error:', err));
+      });
+    }
+  </script>
+</body>
+
+</html>

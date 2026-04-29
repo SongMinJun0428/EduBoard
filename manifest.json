@@ -8,7 +8,7 @@
   "theme_color": "#0ea5e9",
   "icons": [
     {
-      "src": "eduboard_logo_premium.png",
+      "src": "img/eduboard_logo_premium.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

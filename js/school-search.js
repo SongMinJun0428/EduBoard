@@ -3,18 +3,24 @@ const SchoolSearch = {
   NEIS_KEY: '28ca0f05af184e8ba231d5a949d52db2',
 
   /** 🔍 학교명으로 검색 */
-  async search(keyword) {
+  async search(keyword, atptCode = null) {
     if (!keyword || keyword.length < 2) {
       alert('학교명을 2글자 이상 입력해 주세요.');
       return [];
     }
 
     try {
-      const url = `https://open.neis.go.kr/hub/schoolInfo?KEY=${this.NEIS_KEY}&Type=json&pIndex=1&pSize=20&SCHUL_NM=${encodeURIComponent(keyword)}`;
+      let url = `https://open.neis.go.kr/hub/schoolInfo?KEY=${this.NEIS_KEY}&Type=json&pIndex=1&pSize=20&SCHUL_NM=${encodeURIComponent(keyword)}`;
+      if (atptCode) {
+        url += `&ATPT_OFCDC_SC_CODE=${encodeURIComponent(atptCode)}`;
+      }
       const res = await fetch(url);
       const data = await res.json();
 
       if (!data.schoolInfo) {
+        if (data.RESULT && data.RESULT.CODE !== 'INFO-000') {
+          console.warn('NEIS API Message:', data.RESULT.MESSAGE);
+        }
         return [];
       }
 

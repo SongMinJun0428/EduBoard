@@ -252,6 +252,15 @@ async function saveSeats() {
         // 1️⃣ seat_index 재정렬
         seatData.forEach((s, i) => s.seat_index = i + 1);
 
+        const { data: previousSeats, error: backupError } = await client
+            .from("class_seats")
+            .select("grade,class_num,student_number,name,seat_index,locked")
+            .eq("grade", 2)
+            .eq("class_num", 3)
+            .order("seat_index");
+
+        if (backupError) throw backupError;
+
         // 2️⃣ 기존 데이터 삭제
         let { error: delError } = await client
             .from("class_seats")
@@ -275,7 +284,17 @@ async function saveSeats() {
             .from("class_seats")
             .insert(insertData);
 
-        if (insError) throw insError;
+        if (insError) {
+            if (previousSeats?.length) {
+                const { error: restoreError } = await client
+                    .from("class_seats")
+                    .insert(previousSeats);
+                if (restoreError) {
+                    console.error("Seat restore failed", restoreError);
+                }
+            }
+            throw insError;
+        }
 
         alert("✅ 자리 저장 완료!");
         await loadSeats(); // 저장 후 다시 불러오기

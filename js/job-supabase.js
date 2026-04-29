@@ -1,8 +1,8 @@
 const SUPABASE_URL = window.EduConfig.getSupabaseURL();
 const SUPABASE_ANON_KEY = window.EduConfig.getSupabaseKey();
 
-// 1. Initialize Supabase Client
-window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// 1. Reuse existing Supabase Client from EduBoard
+window.sb = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. Global AI Config defaults
 window.AI_CONFIG = {

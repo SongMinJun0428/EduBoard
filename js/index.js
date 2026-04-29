@@ -4,51 +4,84 @@ if (typeof pdfjsLib !== 'undefined') {
     "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 }
 
-const { createClient } = supabase;
-window.supabaseClient = window.supabase.createClient(
-  window.EduConfig.getSupabaseURL(),
-  window.EduConfig.getSupabaseKey()
-);
+// 🛡️ Supabase SDK는 CDN을 통해 전역 window.supabase로 제공됨
+var supabase = window.supabase;
+if (!supabase) {
+  console.error('❌ Supabase SDK not found. Please check network or CSP.');
+}
+
+// 🛡️ 전역 supabaseClient 변수 안전하게 초기화
+if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+  if (supabase && window.EduConfig) {
+    window.supabaseClient = supabase.createClient(
+      window.EduConfig.getSupabaseURL(),
+      window.EduConfig.getSupabaseKey()
+    );
+  } else {
+    console.error('❌ Cannot initialize Supabase client: missing dependencies.');
+  }
+}
+
 const supabaseClient = window.supabaseClient;
 
 // 🛡️ 보안 및 로딩 신뢰성: 인증 상태 실시간 감지 및 세션 동기화
-supabaseClient.auth.onAuthStateChange(async (event, session) => {
+if (supabaseClient) {
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
   console.log('🛡️ Auth Event:', event);
   
   if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
     if (session && session.user) {
-      // 1. 최소 세션 정보 즉시 저장 (백업용)
-      const rawEmail = session.user.email || '';
-      const username = rawEmail ? rawEmail.split('@')[0] : `kakao_${session.user.id.substring(0, 8)}`;
-      localStorage.setItem('savedUsername', username);
-      localStorage.setItem('savedEmail', rawEmail);
-      localStorage.setItem('savedUserId', session.user.id);
-      
-      // 2. 전체 데이터 즉시 로딩 및 대시보드 진입
-      if (typeof showMain === 'function') showMain();
-      if (typeof loadUserInfo === 'function') {
-        await loadUserInfo();
-      }
-      
-      // 3. 최초 소셜 로그인 시 추가 데이터 요청 여부 확인
-      // 3. 최초 소셜 로그인 시 추가 데이터 요청 여부 확인
-      const { data: userRecord } = await supabaseClient.from('users').select('name').eq('username', username).maybeSingle();
-      if (!userRecord && !location.href.includes('complete')) {
-        // 회원 기록이 없으면 (어떤 세션 이벤트든 상관없이) 추가 정보 입력 모달 표시
-        if (typeof showSocialSignupModal === 'function') showSocialSignupModal();
+      const resolved = await resolveSavedUserSession();
+
+      if (resolved.user) {
+        if (typeof showMain === 'function') showMain();
+        if (typeof loadUserInfo === 'function') await loadUserInfo();
+        if (typeof updateSocialLinkingStatus === 'function') {
+          updateSocialLinkingStatus(resolved.session, resolved.user);
+        }
+        if (typeof showPanel === 'function') showPanel('dashboard');
+        if (typeof initDashboardTop === 'function') initDashboardTop();
+        if (typeof window.afterLoginRefreshDashboard === 'function') {
+          await window.afterLoginRefreshDashboard();
+        }
+      } else {
+        localStorage.setItem('savedEmail', session.user.email || '');
+        localStorage.setItem('savedUserId', session.user.id || '');
       }
     }
   } else if (event === 'SIGNED_OUT') {
-    // 로그아웃 시 클린업
-    localStorage.clear();
-    setCookie('savedUsername', '', -1);
-    if (typeof hideMain === 'function') hideMain();
+    // 로그아웃 시 클린업 (레거시 유저가 아닐 때만)
+    const isLegacy = !!localStorage.getItem('savedAuthToken') || !!localStorage.getItem('savedUsername');
+    if (!isLegacy) {
+      clearSavedSession();
+      if (typeof hideMain === 'function') hideMain();
+    }
   }
-});
+  });
+}
+
+/** 💎 UI 박스 전환 (로그인/회원가입) */
+function showBox(boxId) {
+  const loginBox = document.getElementById('login-box');
+  const signupBox = document.getElementById('signup-box');
+  
+  if (boxId === 'login-box') {
+    if (signupBox) signupBox.style.display = 'none';
+    if (loginBox) loginBox.style.display = 'block';
+  } else {
+    if (loginBox) loginBox.style.display = 'none';
+    if (signupBox) signupBox.style.display = 'block';
+    if (typeof nextSignupStep === 'function') nextSignupStep(1); 
+  }
+}
+
+function showSignup() { showBox('signup-box'); }
+function showLogin() { showBox('login-box'); }
+
 
 const NEIS_KEY = '28ca0f05af184e8ba231d5a949d52db2';
-const ATPT_OFCDC_SC_CODE = 'J10';
-const SD_SCHUL_CODE = '7679111';
+let ATPT_OFCDC_SC_CODE = localStorage.getItem('savedAtptCode') || 'J10';
+let SD_SCHUL_CODE = localStorage.getItem('savedSchulCode') || '7679111';
 
 // 🍪 쿠키 헬퍼 함수
 function setCookie(name, value, days) {
@@ -72,12 +105,33 @@ function getCookie(name) {
   return null;
 }
 
+function clearSavedSession() {
+  [
+    'savedUsername',
+    'savedEmail',
+    'savedUserId',
+    'savedName',
+    'savedStudentNum',
+    'savedGrade',
+    'savedClassNum',
+    'savedAtptCode',
+    'savedSchulCode',
+    'savedSchoolName',
+    'savedRole',
+    'savedTitle',
+    'savedAuthToken'
+  ].forEach((key) => localStorage.removeItem(key));
+
+  setCookie('savedUsername', '', -1);
+}
+
 // 초기 로딩 시 세션 복구 및 설정 (실제 구동은 initApp 또는 DOMContentLoaded 하단에서 수행되도록 연동)
 function syncPersistentSession() {
   const savedUser = localStorage.getItem('savedUsername');
   const cookieUser = getCookie('savedUsername');
+  const savedAuthToken = localStorage.getItem('savedAuthToken');
 
-  if (!savedUser && cookieUser) {
+  if (!savedUser && cookieUser && savedAuthToken) {
     localStorage.setItem('savedUsername', cookieUser);
   } else if (savedUser && !cookieUser) {
     setCookie('savedUsername', savedUser, 7); // 7일 유지
@@ -88,6 +142,92 @@ function initTheme() {
   const savedTheme = prefs.theme || localStorage.getItem('theme') || 'light'; // Default to light
   applyTheme(savedTheme);
 }
+
+/** 🏛️ 전국 학교 검색 UI 로직 */
+let currentSearchType = 'signup'; // 'signup' 또는 'social'
+
+window.realOpenSchoolSearchModal = function(type) {
+  currentSearchType = type;
+  const modal = document.getElementById('school-search-modal');
+  if (modal) modal.style.display = 'flex';
+  document.getElementById('school-search-input').value = '';
+  document.getElementById('school-search-results').innerHTML = '<p style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.9rem;">학교명을 검색해주세요.</p>';
+  document.getElementById('school-search-input').focus();
+};
+
+window.realCloseSchoolSearchModal = function() {
+  document.getElementById('school-search-modal').style.display = 'none';
+};
+
+window.realExecuteSchoolSearch = async function() {
+  const keyword = document.getElementById('school-search-input').value.trim();
+  const resultsEl = document.getElementById('school-search-results');
+  
+  if (keyword.length < 2) {
+    alert('2글자 이상 입력해주세요.');
+    return;
+  }
+
+  resultsEl.innerHTML = '<p style="padding: 20px; text-align: center; color: #6366f1;">🔍 검색 중...</p>';
+  
+  if (!window.SchoolSearch) {
+    alert('학교 검색 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+
+  let atptCode = null;
+  if (currentSearchType === 'signup') {
+    atptCode = document.getElementById('signupAtptCode').value;
+  } else if (currentSearchType === 'social') {
+    const socialSelect = document.getElementById('socialAtptCode');
+    if (socialSelect) atptCode = socialSelect.value;
+  }
+
+  const results = await window.SchoolSearch.search(keyword, atptCode);
+  
+  if (results.length === 0) {
+    resultsEl.innerHTML = '<p style="padding: 20px; text-align: center; color: #ef4444;">검색 결과가 없습니다.</p>';
+    return;
+  }
+
+  resultsEl.innerHTML = '';
+  results.forEach(school => {
+    const row = document.createElement('div');
+    row.style.padding = '12px 16px';
+    row.style.borderBottom = '1px solid #f1f5f9';
+    row.style.cursor = 'pointer';
+    row.style.transition = 'background 0.2s';
+    
+    row.innerHTML = `
+      <div style="font-weight: 700; color: #1e293b; font-size: 0.95rem;">${school.name}</div>
+      <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">${school.address}</div>
+      <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">${school.type}</div>
+    `;
+    
+    row.onmouseover = () => row.style.background = '#f8fafc';
+    row.onmouseout = () => row.style.background = 'none';
+    
+    row.onclick = () => {
+      if (currentSearchType === 'signup') {
+        document.getElementById('signupSchoolName').value = school.name;
+        document.getElementById('signupAtptCode').value = school.atptCode;
+        document.getElementById('signupSchulCode').value = school.schulCode;
+      } else {
+        document.getElementById('socialSchoolName').value = school.name;
+        document.getElementById('socialAtptCode').value = school.atptCode;
+        document.getElementById('socialSchulCode').value = school.schulCode;
+      }
+      realCloseSchoolSearchModal();
+    };
+    resultsEl.appendChild(row);
+  });
+};
+
+// 💎 구버전 매핑 유지
+window.openSchoolSearchModal = window.realOpenSchoolSearchModal;
+window.closeSchoolSearchModal = window.realCloseSchoolSearchModal;
+window.executeSchoolSearch = window.realExecuteSchoolSearch;
+
 
 function applyTheme(theme) {
   const root = document.documentElement;
@@ -192,6 +332,29 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function buildSafeStoragePath(file, folder = 'public') {
+  const original = file?.name || 'upload';
+  const lastDot = original.lastIndexOf('.');
+  const rawExt = lastDot > -1 ? original.slice(lastDot + 1) : '';
+  const mimeExt = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp'
+  }[file?.type] || 'bin';
+  const ext = rawExt.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10) || mimeExt;
+  const base = (lastDot > -1 ? original.slice(0, lastDot) : original)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40) || 'upload';
+  const nonce = Math.random().toString(36).slice(2, 10);
+  return `${folder}/${Date.now()}-${nonce}-${base}.${ext}`;
+}
+
 /** 🔄 글로벌 로딩 제어 */
 function showLoading() {
   const loader = document.getElementById('loader-overlay');
@@ -207,16 +370,39 @@ function hideLoading() {
 }
 
 /** 🌐 소셜 로그인 (OAuth) 처리 */
-async function loginWithProvider(provider) {
+function getOAuthRedirectUrl() {
+  const canUseWebOrigin = ['http:', 'https:', 'capacitor:', 'ionic:'].includes(window.location.protocol);
+  if (!canUseWebOrigin) return window.location.href;
+  return new URL('index.html', window.location.href).href;
+}
+
+async function loginWithProvider(provider, mode = 'login') {
   showLoading();
-  // 🛡️ 고유 사용자 세션을 위해 이메일prefix 추출 로직은 가입 완료 시점에 수행
-  const { data, error } = await supabaseClient.auth.signInWithOAuth({
-    provider: provider,
-    options: {
-      redirectTo: window.location.origin
+  try {
+    const savedUsername = localStorage.getItem('savedUsername');
+    if (mode === 'link' && savedUsername) {
+      sessionStorage.setItem('pendingSocialLinkUsername', savedUsername);
     }
-  });
-  if (error) {
+
+    const options = {
+      redirectTo: getOAuthRedirectUrl()
+    };
+    if (provider === 'google') {
+      options.queryParams = { prompt: 'select_account' };
+    }
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const linkWithCurrentAuthUser = mode === 'link'
+      && session?.user
+      && typeof supabaseClient.auth.linkIdentity === 'function';
+
+    const { error } = linkWithCurrentAuthUser
+      ? await supabaseClient.auth.linkIdentity({ provider, options })
+      : await supabaseClient.auth.signInWithOAuth({ provider, options });
+
+    if (error) throw error;
+  } catch (error) {
+    sessionStorage.removeItem('pendingSocialLinkUsername');
     hideLoading();
     alert('소셜 로그인 오류: ' + error.message);
   }
@@ -246,6 +432,8 @@ async function unlinkSocialAccount(provider) {
 
     if (dbErr) throw dbErr;
 
+    localStorage.removeItem('savedAuthUserId');
+    localStorage.removeItem('savedUserId');
     alert('연동이 해제되었습니다. 다음 로그인부터는 아이디와 비밀번호를 사용해 주세요.');
     location.reload();
   } catch (err) {
@@ -294,10 +482,12 @@ async function completeSocialSignup() {
     const rawEmail = user.email || '';
     const safeUsername = rawEmail ? rawEmail.split('@')[0] : `kakao_${user.id.substring(0, 8)}`;
     
+    const passwordHash = await window.EduPassword.hash(password);
+
     const { error: insErr } = await supabaseClient.from('users').insert([{
       username: safeUsername, 
       email: rawEmail || null,
-      password: password,
+      password: passwordHash,
       name: name,
       grade: grade,
       class_num: classNum,
@@ -323,10 +513,210 @@ async function completeSocialSignup() {
   }
 }
 
+function applyUserSession(user, sessionProof = null) {
+  const previousUsername = localStorage.getItem('savedUsername');
+  localStorage.setItem('savedUsername', user.username);
+  setCookie('savedUsername', user.username, 7);
+  localStorage.setItem('savedUserId', user.auth_user_id || user.id || '');
+  localStorage.setItem('savedAuthUserId', user.auth_user_id || '');
+  localStorage.setItem('savedEmail', user.email || '');
+
+  currentUserName = user.name;
+  currentStudentNumber = user.student_number;
+  currentGrade = user.grade;
+  currentClassNum = user.class_num;
+  currentAtptCode = user.atpt_ofcdc_sc_code || 'J10';
+  currentSchulCode = user.sd_schul_code || '7679111';
+  currentSchoolName = user.school_name || '기본학교';
+  
+  // 🏫 전역 NEIS 코드 업데이트
+  ATPT_OFCDC_SC_CODE = currentAtptCode;
+  SD_SCHUL_CODE = currentSchulCode;
+
+  localStorage.setItem('savedName', currentUserName);
+  localStorage.setItem('savedGrade', currentGrade !== null && currentGrade !== undefined ? currentGrade : '');
+  localStorage.setItem('savedClassNum', currentClassNum !== null && currentClassNum !== undefined ? currentClassNum : '');
+  localStorage.setItem('savedAtptCode', currentAtptCode);
+  localStorage.setItem('savedSchulCode', currentSchulCode);
+  localStorage.setItem('savedSchoolName', currentSchoolName);
+  localStorage.setItem('savedStudentNum', currentStudentNumber || '');
+
+  setUserInfoInput();
+  currentUserRole = String(user.role || 'user').toLowerCase();
+  localStorage.setItem('savedRole', currentUserRole);
+  if (sessionProof) localStorage.setItem('savedAuthToken', sessionProof);
+  else if (sessionProof === false || (previousUsername && previousUsername !== user.username)) {
+    localStorage.removeItem('savedAuthToken');
+  }
+
+  if (window.logActivity) {
+    window.logActivity('login', user.username, 'user', { school: currentSchoolName });
+  }
+
+  const dashName = document.getElementById('dash-name');
+  if (dashName) {
+    if (window.__updateSecurityValue) {
+      window.__updateSecurityValue('dash-name', formatUserDisplayName(user).outerHTML, true);
+    } else {
+      dashName.innerText = '';
+      dashName.appendChild(formatUserDisplayName(user));
+    }
+  }
+
+  const dashRole = document.getElementById('dash-role');
+  if (dashRole) {
+    const roleTxt = currentUserRole === 'admin' ? '관리자' : '학생';
+    if (window.__updateSecurityValue) {
+      window.__updateSecurityValue('dash-role', roleTxt, false);
+    } else {
+      dashRole.textContent = roleTxt;
+    }
+  }
+}
+
+async function restoreLegacySession(savedUsername, savedAuthToken) {
+  if (!savedUsername || !savedAuthToken) return null;
+
+  const { data: user, error } = await supabaseClient
+    .from('users')
+    .select('*')
+    .eq('username', savedUsername)
+    .maybeSingle();
+
+  if (error || !user) return null;
+  return user.password === savedAuthToken ? user : null;
+}
+
+async function fetchUserByLoginValue(loginValue) {
+  for (const column of ['username', 'email']) {
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq(column, loginValue)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (data) return data;
+  }
+  return null;
+}
+
+async function resolveSavedUserSession({ allowSoftRecover = true } = {}) {
+  const savedUsername = localStorage.getItem('savedUsername');
+  const savedAuthToken = localStorage.getItem('savedAuthToken');
+  const pendingSocialLinkUsername = sessionStorage.getItem('pendingSocialLinkUsername');
+
+  let session = null;
+  try {
+    const sessionResp = await supabaseClient.auth.getSession();
+    session = sessionResp?.data?.session || null;
+  } catch (err) {
+    console.warn('Supabase session lookup skipped:', err);
+  }
+
+  if (session?.user) {
+    const user = await fetchUserProfileForAuth(session.user, pendingSocialLinkUsername || savedUsername);
+    if (!user) {
+      return { user: null, session, needsSocialSignup: true };
+    }
+
+    if (!user.auth_user_id) {
+      await supabaseClient.from('users').update({ auth_user_id: session.user.id }).eq('username', user.username);
+      user.auth_user_id = session.user.id;
+    }
+
+    sessionStorage.removeItem('pendingSocialLinkUsername');
+    applyUserSession(user, savedAuthToken || user.password || null);
+    return { user, session, recovered: false };
+  }
+
+  if (!savedUsername) {
+    return { user: null, session: null, recovered: false };
+  }
+
+  const user = await fetchUserByLoginValue(savedUsername);
+  if (!user) {
+    return { user: null, session: null, recovered: false };
+  }
+
+  if (savedAuthToken && user.password === savedAuthToken) {
+    applyUserSession(user, savedAuthToken);
+    return { user, session: null, recovered: false };
+  }
+
+  if (allowSoftRecover) {
+    console.warn('Saved auth token was missing or stale; restoring local session from saved username.');
+    applyUserSession(user, user.password || null);
+    return { user, session: null, recovered: true };
+  }
+
+  return { user: null, session: null, recovered: false };
+}
+
+async function attemptLegacyPasswordLogin(loginValue, password) {
+  const user = await fetchUserByLoginValue(loginValue);
+  if (!user) return null;
+
+  const verify = await window.EduPassword.verify(password, user.password || '');
+  if (!verify.ok) return null;
+
+  let sessionProof = verify.normalized || user.password || '';
+  if (verify.needsUpgrade && verify.normalized) {
+    const { error: migrateError } = await supabaseClient
+      .from('users')
+      .update({ password: verify.normalized })
+      .eq('username', user.username);
+
+    if (!migrateError) {
+      user.password = verify.normalized;
+      sessionProof = verify.normalized;
+    }
+  }
+
+  return { user, sessionProof };
+}
+
+async function fetchUserProfileForAuth(authUser, loginValue) {
+  const pendingSocialLinkUsername = sessionStorage.getItem('pendingSocialLinkUsername');
+  const attempts = pendingSocialLinkUsername && loginValue === pendingSocialLinkUsername
+    ? [
+        ['auth_user_id', authUser?.id],
+        ['username', loginValue],
+        ['email', authUser?.email],
+        ['email', loginValue]
+      ]
+    : [
+        ['auth_user_id', authUser?.id],
+        ['email', authUser?.email],
+        ['username', loginValue],
+        ['email', loginValue]
+      ];
+
+  const seen = new Set();
+  for (const [column, value] of attempts.filter(([, value]) => value)) {
+    const key = `${column}:${value}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq(column, value)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (data) return data;
+  }
+
+  return null;
+}
+
 async function loginDirect() {
-  const userBtn = document.getElementById('login-btn');
-  const loginValue = document.getElementById('loginUsername').value.trim(); // 📧 ID 또는 이메일 통합
+  const userBtn = document.getElementById('login-btn') || document.querySelector('.auth-btn-primary');
+  const loginValue = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value.replace(/\s+/g, '');
+  const statusEl = document.getElementById('loginStatus');
 
   if (!loginValue || !password) {
     alert('정보를 입력해주세요.');
@@ -337,60 +727,45 @@ async function loginDirect() {
   if (userBtn) userBtn.disabled = true;
 
   try {
-    // 🛡️ 보안: ID 또는 이메일 중 일치하는 계정 검색
-    const { data: user } = await supabaseClient
-      .from('users')
-      .select('*')
-      .or(`username.eq."${loginValue}",email.eq."${loginValue}"`)
-      .eq('password', password)
-      .maybeSingle();
-
-    if (user) {
-      // 세션 유지 및 UI 설정
-      localStorage.setItem('savedUsername', user.username);
-      setCookie('savedUsername', user.username, 7);
-      
-      // 전역 상태 업데이트 (전국 학교 코드 포함, 없으면 J10/7679111 기본값)
-      currentUserName = user.name;
-      currentStudentNumber = user.student_number;
-      currentGrade = user.grade;
-      currentClassNum = user.class_num;
-      currentAtptCode = user.atpt_ofcdc_sc_code || 'J10';
-      currentSchulCode = user.sd_schul_code || '7679111';
-      currentSchoolName = user.school_name || '기본학교';
-
-      localStorage.setItem('savedName', currentUserName);
-      localStorage.setItem('savedGrade', currentGrade);
-      localStorage.setItem('savedClassNum', currentClassNum);
-      localStorage.setItem('savedAtptCode', currentAtptCode);
-      localStorage.setItem('savedSchulCode', currentSchulCode);
-      localStorage.setItem('savedSchoolName', currentSchoolName);
-
-      setUserInfoInput();
-      currentUserRole = user.role || 'user';
-
-      // 📝 활동 로그
-      if (window.logActivity) {
-        window.logActivity('login', user.username, 'user', { school: currentSchoolName });
-      }
-
-      document.getElementById('dash-name').innerText = ''; // 초기화 후 안전하게 추가
-      document.getElementById('dash-name').appendChild(formatUserDisplayName(user)); // 🛡️ XSS 방지 처리된 노드 추가
-      
-      document.getElementById('dash-role').textContent = user.role === 'admin' ? '관리자' : '학생';
-
-      await loadTimetableWeek(user.grade, user.class_num);
+    // 1. 레거시 로그인 시도 (DB 직접 대조)
+    const result = await attemptLegacyPasswordLogin(loginValue, password);
+    
+    if (result) {
+      applyUserSession(result.user, result.sessionProof);
+      await loadTimetableWeek(result.user.grade, result.user.class_num);
       showMain();
       await afterLoginRefreshDashboard();
-    } else {
-      document.getElementById('loginStatus').innerText = '정보가 일치하지 않습니다.';
+      return;
     }
+
+    // 2. Supabase Auth 시도 (이메일 기반)
+    const loginTarget = await fetchUserByLoginValue(loginValue);
+
+    if (loginTarget && loginTarget.email) {
+      const { error: authError } = await supabaseClient.auth.signInWithPassword({
+        email: loginTarget.email,
+        password
+      });
+
+      if (!authError) {
+        const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+        const user = await fetchUserProfileForAuth(authUser, loginValue);
+        if (user) {
+          applyUserSession(user, user.password || null);
+          await loadTimetableWeek(user.grade, user.class_num);
+          showMain();
+          await afterLoginRefreshDashboard();
+          return;
+        }
+      }
+    }
+
+    if (statusEl) statusEl.innerText = '정보가 일치하지 않습니다.';
   } catch (err) {
     console.error('Login error:', err);
-    document.getElementById('loginStatus').innerText = '오류 발생: ' + err.message;
+    if (statusEl) statusEl.innerText = '오류 발생: ' + err.message;
   } finally {
     hideLoading();
-    if (userBtn) userBtn.disabled = false;
   }
 }
 
@@ -400,16 +775,17 @@ async function signup() {
   const username = document.getElementById('signupUsername').value.trim();
   const password = document.getElementById('signupPassword').value.trim();
   const emailId = document.getElementById('signupEmailId').value.trim();
-  const domainValue = document.getElementById('signupEmailDomain').value;
-  const customDomain = document.getElementById('signupEmailCustom').value.trim();
-  const email = `${emailId}@${domainValue === '직접입력' ? customDomain : domainValue}`;
+  const domainValue = document.getElementById('signupEmailDomain')?.value.trim() || '';
+  const customDomain = document.getElementById('signupEmailCustom')?.value.trim() || '';
+  const domain = domainValue === '직접입력' ? customDomain : domainValue;
+  const email = `${emailId}@${domain}`;
   const name = document.getElementById('signupName').value.trim();
   const grade = document.getElementById('signupGrade').value.trim();
   const classNum = document.getElementById('signupClass').value.trim();
   const number = document.getElementById('signupNumber').value.trim();
   const agree = document.getElementById('privacy-agree').checked;
   const tosAgree = document.getElementById('tos-agree')?.checked;
-  const isVerified = document.getElementById('signup-btn').classList.contains('verified');
+  const isVerified = signupBtn?.dataset.verified === 'true' || signupBtn?.classList.contains('verified');
 
   if (!agree || !tosAgree) {
     if (signupStatus) signupStatus.innerText = '모든 동의 항목에 체크해 주세요.';
@@ -419,16 +795,12 @@ async function signup() {
     if (signupStatus) signupStatus.innerText = '이메일 인증을 완료해 주세요.';
     return;
   }
-  if (!username || !password || !email || !name || !grade || !classNum || !number) {
+  if (!username || !password || !emailId || !domain || !name || !grade || !classNum || !number) {
     if (signupStatus) signupStatus.innerText = '모든 항목을 입력해 주세요.';
     return;
   }
   if (password.length < 6) {
     if (signupStatus) signupStatus.innerText = '비밀번호는 6자 이상이어야 합니다.';
-    return;
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    if (signupStatus) signupStatus.innerText = '올바른 이메일을 입력해 주세요.';
     return;
   }
 
@@ -448,7 +820,6 @@ async function signup() {
       return;
     }
 
-    // 2. 가입 시도 (전국 학교 정보 포함)
     const schoolName = document.getElementById('signupSchoolName').value;
     const atptCode = document.getElementById('signupAtptCode').value;
     const schulCode = document.getElementById('signupSchulCode').value;
@@ -458,11 +829,13 @@ async function signup() {
       return;
     }
 
+    // 2. 사용자 정보 저장 (Supabase Auth 없이 직접 DB 저장)
+    const passwordHash = await window.EduPassword.hash(password);
     const { error } = await supabaseClient.from('users').insert([{
-      username: username,
-      password: password,
-      email: email,
-      name: name,
+      username,
+      password: passwordHash,
+      email,
+      name,
       grade: parseInt(grade, 10),
       class_num: parseInt(classNum, 10),
       student_number: parseInt(number, 10),
@@ -470,6 +843,7 @@ async function signup() {
       atpt_ofcdc_sc_code: atptCode,
       sd_schul_code: schulCode,
       role: 'user',
+      auth_user_id: null,
       privacy_agreed_at: new Date().toISOString()
     }]);
 
@@ -485,8 +859,6 @@ async function signup() {
     if (signupBtn) signupBtn.disabled = false;
   }
 }
-
-/** 🏗️ 회원가입 단계 이동 (검증 포함) */
 function nextSignupStep(step) {
   const currentStep = document.querySelector('.signup-step.active');
   const currentStepId = currentStep ? currentStep.id : 'signup-step-1';
@@ -572,28 +944,10 @@ function updateAgreementStatus() {
   }
 }
 
-/** 💎 UI 박스 전환 (로그인/회원가입) */
-function showBox(boxId) {
-  const loginBox = document.getElementById('login-box');
-  const signupBox = document.getElementById('signup-box');
-  
-  if (boxId === 'login-box') {
-    signupBox.style.display = 'none';
-    loginBox.style.display = 'block';
-  } else {
-    loginBox.style.display = 'none';
-    signupBox.style.display = 'block';
-    nextSignupStep(1); // 가입 시 항상 1단계부터
-  }
-}
-
-// 기존 함수 매핑 유지
-function showSignup() { showBox('signup-box'); }
-function showLogin() { showBox('login-box'); }
 
 async function logout() {
   await supabaseClient.auth.signOut();
-  localStorage.removeItem('savedUsername');
+  clearSavedSession();
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
 }
@@ -601,16 +955,20 @@ async function logout() {
 async function updateProfile() {
   const newName = document.getElementById('update-name').value;
   const newPass = document.getElementById('update-password').value;
+  const savedUsername = localStorage.getItem('savedUsername');
 
   if (newPass) {
-    const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+    const passwordHash = await window.EduPassword.hash(newPass);
+    const { error } = await supabaseClient.from('users').update({ password: passwordHash }).eq('username', savedUsername);
     if (error) alert('비밀번호 수정 오류:' + error.message);
-    else alert('비밀번호 수정 완료!');
+    else {
+      localStorage.setItem('savedAuthToken', passwordHash);
+      alert('비밀번호 수정 완료!');
+    }
   }
   if (newName) {
-    const user = await supabaseClient.auth.getUser();
-    if (user && user.data.user) {
-      await supabaseClient.from('users').update({ name: newName }).eq('id', user.data.user.id);
+    if (savedUsername) {
+      await supabaseClient.from('users').update({ name: newName }).eq('username', savedUsername);
       alert('이름 수정 완료!');
     }
   }
@@ -662,13 +1020,12 @@ async function addNotice() {
     let imageUrl = '';
     if (uploadChecked && fileInput.files.length) {
       const file = fileInput.files[0];
-      const uniqueName = Date.now() + '_' + file.name;
-      const filePath = `public/${uniqueName}`;
+      const filePath = buildSafeStoragePath(file);
 
       const { error: uploadErr } = await supabaseClient
         .storage
         .from('notice-images')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { upsert: true, contentType: file.type || undefined });
 
       if (uploadErr) throw uploadErr;
 
@@ -796,16 +1153,16 @@ async function loadNotices() {
   const listEl = document.getElementById('notice-list');
   if (!listEl) return;
   listEl.innerHTML = '<div style="text-align:center; padding:2rem; color:#6b7280;">공지사항을 불러오는 중...</div>';
+  listEl.style.display = 'flex';
+  listEl.style.flexDirection = 'column';
+  listEl.style.gap = '14px';
 
   try {
     const { safeG, safeC } = getSafeGradeClass();
+    const role = String(localStorage.getItem('savedRole') || currentUserRole || 'user').toLowerCase();
     let query = supabaseClient.from('notices').select('*');
 
-    if (currentUserRole === 'admin') {
-      if (safeG !== 0) {
-        query = query.or(`grade.is.null,grade.eq.0,and(grade.eq.${safeG},class_num.eq.${safeC})`);
-      }
-    } else {
+    if (role !== 'admin') {
       query = query.or(`grade.is.null,grade.eq.0,and(grade.eq.${safeG},class_num.eq.${safeC})`);
     }
 
@@ -836,61 +1193,65 @@ async function loadNotices() {
     data.forEach(item => {
       const div = document.createElement('div');
       div.className = 'notice-item';
-      div.style.cssText = 'border-bottom: 1px solid #f1f5f9; padding: 1rem 0;';
+      div.style.cssText = 'border:1px solid #e5e7eb; border-radius:16px; padding:16px; background:#fff; box-shadow:0 6px 16px rgba(15,23,42,0.04); display:flex; flex-direction:column; gap:10px; cursor:default;';
 
       const header = document.createElement('div');
-      header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;';
+      header.style.cssText = 'display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:2px;';
 
-      const left = document.createElement('div');
-      left.style.cssText = 'display: flex; align-items: center; gap: 8px; flex-wrap: wrap;';
+      const metaLeft = document.createElement('div');
+      metaLeft.style.cssText = 'display: flex; align-items: center; gap: 8px; flex-wrap: wrap;';
 
-      const title = document.createElement('strong');
-      title.textContent = item.title;
-      title.style.color = '#1e293b';
-      left.appendChild(title);
+      // 🛡️ 작성자 표시
+      const writerWrap = document.createElement('div');
+      writerWrap.style.cssText = 'display:flex; align-items:center;';
+      writerWrap.appendChild(formatUserDisplayName(item.users || { name: item.writer || '알 수 없음' }));
+      metaLeft.appendChild(writerWrap);
 
       if (item.is_edited) {
         const badge = document.createElement('span');
-        badge.textContent = '(수정됨)';
-        badge.style.cssText = 'font-size: 0.7rem; color: #94a3b8; background: #f8fafc; padding: 2px 6px; border-radius: 4px;';
-        left.appendChild(badge);
+        badge.textContent = '수정됨';
+        badge.style.cssText = 'font-size: 0.7rem; color: #94a3b8; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border:1px solid #e2e8f0;';
+        metaLeft.appendChild(badge);
       }
 
-      // 🛡️ 작성자 표시 (formatUserDisplayName 활용)
-      const writerWrap = document.createElement('span');
-      writerWrap.style.cssText = 'font-size: 0.85rem; display: flex; align-items: center;';
-      writerWrap.appendChild(formatUserDisplayName(item.users || { name: item.writer || '알 수 없음' }));
-      left.appendChild(writerWrap);
+      const dateMsg = document.createElement('span');
+      dateMsg.textContent = new Date(item.created_at).toLocaleDateString();
+      dateMsg.style.cssText = 'font-size: 0.75rem; color: #94a3b8;';
+      metaLeft.appendChild(dateMsg);
 
-      header.appendChild(left);
+      header.appendChild(metaLeft);
 
-      // 관리자/작성자 메뉴
+      // 관리자/작성자 메뉴 (세련되게 축소)
       const currentUsername = localStorage.getItem('savedUsername');
-      if (item.username === currentUsername || currentUserRole === 'admin') {
+      if (item.username === currentUsername || role === 'admin') {
         const menuContainer = document.createElement('div');
         menuContainer.className = 'notice-menu-container';
         menuContainer.style.position = 'relative';
 
         const menuBtn = document.createElement('button');
+        menuBtn.type = 'button';
         menuBtn.textContent = '⋮';
-        menuBtn.style.cssText = 'background:none; border:none; font-size:1.2rem; cursor:pointer; color:#94a3b8;';
-        menuBtn.onclick = () => window.toggleNoticeMenu(item.id);
+        menuBtn.title = '공지 메뉴';
+        menuBtn.style.cssText = 'background:#f8fafc; border:1px solid #e2e8f0; width:32px; height:32px; font-size:1.2rem; line-height:1; cursor:pointer; color:#475569; padding:0; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;';
+        menuBtn.onmouseover = () => menuBtn.style.background = '#f1f5f9';
+        menuBtn.onmouseout = () => menuBtn.style.background = '#f8fafc';
+        menuBtn.onclick = (e) => { e.stopPropagation(); window.toggleNoticeMenu(item.id); };
         menuContainer.appendChild(menuBtn);
 
         const dropdown = document.createElement('div');
         dropdown.id = `notice-menu-${item.id}`;
         dropdown.className = 'notice-menu-dropdown';
-        dropdown.style.cssText = 'display:none; position:absolute; right:0; top:100%; background:white; border:1px solid #e2e8f0; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.08); z-index:100; min-width:80px; overflow:hidden;';
+        dropdown.style.cssText = 'display:none; position:absolute; right:0; top:100%; background:white; border:1px solid #e2e8f0; border-radius:10px; box-shadow:0 10px 25px rgba(15,23,42,0.14); z-index:100; min-width:112px; overflow:hidden;';
 
         const editBtn = document.createElement('button');
         editBtn.textContent = '수정';
-        editBtn.style.cssText = 'display:block; width:100%; text-align:left; padding:8px 12px; border:none; background:none; cursor:pointer; font-size:0.85rem; border-bottom:1px solid #f1f5f9;';
+        editBtn.style.cssText = 'display:block; width:100%; text-align:left; padding:10px 16px; border:none; background:#fff; color:#1e293b; cursor:pointer; font-size:0.85rem; font-weight:700; border-bottom:1px solid #f1f5f9;';
         editBtn.onclick = () => window.openEditNoticeModal(item.id);
         dropdown.appendChild(editBtn);
 
         const delBtn = document.createElement('button');
         delBtn.textContent = '삭제';
-        delBtn.style.cssText = 'display:block; width:100%; text-align:left; padding:8px 12px; border:none; background:none; cursor:pointer; font-size:0.85rem; color:#ef4444;';
+        delBtn.style.cssText = 'display:block; width:100%; text-align:left; padding:10px 16px; border:none; background:#fff; cursor:pointer; font-size:0.85rem; font-weight:700; color:#ef4444;';
         delBtn.onclick = () => window.deleteNotice(item.id, item.image_url || '');
         dropdown.appendChild(delBtn);
 
@@ -900,15 +1261,20 @@ async function loadNotices() {
 
       div.appendChild(header);
 
+      const titlePart = document.createElement('h4');
+      titlePart.textContent = item.title;
+      titlePart.style.cssText = 'margin:0; font-size:1.05rem; color:#1e293b; font-weight:800; line-height:1.4;';
+      div.appendChild(titlePart);
+
       const body = document.createElement('div');
-      body.style.cssText = 'font-size: 0.95rem; color: #475569; line-height: 1.6; white-space: pre-wrap; word-break: break-all;';
-      body.textContent = item.content; // 🛡️ textContent로 안전하게 삽입
+      body.style.cssText = 'font-size:0.95rem; color:#475569; line-height:1.65; white-space:pre-wrap; word-break:break-word;';
+      body.textContent = item.content;
       div.appendChild(body);
 
       if (item.image_url) {
         const img = document.createElement('img');
         img.src = item.image_url;
-        img.style.cssText = 'max-width: 100%; margin-top: 0.75rem; border-radius: 8px; cursor: pointer; border: 1px solid #e2e8f0;';
+        img.style.cssText = 'max-width: 100%; max-height: 500px; object-fit: contain; margin-top: 12px; border-radius: 12px; cursor: pointer; border: 1px solid #f1f5f9; background:#f8fafc; display:block;';
         img.onclick = () => window.openImageModal(item.image_url);
         div.appendChild(img);
       }
@@ -981,13 +1347,13 @@ async function loadTimetableWeek(grade, classNum) {
         //console.log(url);
         const res = await fetch(url);
         const data = await res.json();
-        return { dateStr, data };
+        return { dateStr, data, apiType };
       })
     );
 
     container.innerHTML = '';
 
-    for (const { dateStr, data } of results) {
+    for (const { dateStr, data, apiType } of results) {
       const dayBox = document.createElement('div');
       dayBox.className = 'tt-card';
 
@@ -1006,10 +1372,15 @@ async function loadTimetableWeek(grade, classNum) {
       header.innerHTML = `${dayName}요일 <small>${displayDate}</small>`;
       dayBox.appendChild(header);
 
-      if (data.misTimetable && data.misTimetable[1]) {
-        const rows = data.misTimetable[1].row;
+      const tableRows = data?.[apiType]?.[1]?.row
+        || data?.misTimetable?.[1]?.row
+        || data?.elsTimetable?.[1]?.row
+        || data?.hisTimetable?.[1]?.row
+        || [];
+
+      if (tableRows.length > 0) {
         const unique = {};
-        rows.forEach(row => {
+        tableRows.forEach(row => {
           const key = row.PERIO;
           if (!unique[key]) unique[key] = row.ITRT_CNTNT;
         });
@@ -1131,10 +1502,11 @@ async function loadMaterials() {
 
   try {
     const { safeG, safeC } = getSafeGradeClass();
+    const role = String(localStorage.getItem('savedRole') || currentUserRole || 'user').toLowerCase();
 
     let query = supabaseClient.from('homeworks').select('*');
 
-    if (currentUserRole !== 'admin') {
+    if (role !== 'admin') {
       // 권한 필터: 전교(school/null/0), 같은 학년(grade), 또는 같은 반(class)
       query = query.or(`share_scope.eq.school,grade.is.null,grade.eq.0,and(share_scope.eq.grade,grade.eq.${safeG}),and(share_scope.eq.class,grade.eq.${safeG},class_num.eq.${safeC})`);
     }
@@ -1181,7 +1553,7 @@ async function loadMaterials() {
       const scopeTag = `<span style="font-size:.8rem;color:#6b7280; margin-left:8px;">· 범위: ${item.share_scope === 'class' ? '같은 반' : item.share_scope === 'grade' ? '같은 학년' : '전교'}</span>`;
 
       const currentUsername = localStorage.getItem('savedUsername');
-      const isOwner = (item.username === currentUsername) || (currentUserRole === 'admin');
+      const isOwner = (item.username === currentUsername) || (role === 'admin');
 
       let adminBtns = '';
       if (isOwner) {
@@ -1308,64 +1680,81 @@ function showMain() {
   showPanel('dashboard');
 }
 
-function showSignup() {
-  document.getElementById('login-box').style.display = 'none';
-  document.getElementById('signup-box').style.display = 'block';
-}
-
-function showLogin() {
-  document.getElementById('login-box').style.display = 'block';
-  document.getElementById('signup-box').style.display = 'none';
-}
-
 function showPanel(panelId) {
   console.log(`Switching to panel: ${panelId}`);
 
-  // 퀘스트 진행 감지 (함수 시작 부분에서 미리 실행)
-  if (panelId === 'notice-panel') updateQuestProgress('check_notices');
-  if (panelId === 'homework-panel' || panelId === 'doc-panel') updateQuestProgress('visit_materials'); // 자료실 또는 수행등록 모두 방문으로 체크
-  if (panelId === 'timetable-panel') updateQuestProgress('check_timetable');
-  if (panelId === 'shop-panel') updateQuestProgress('visit_shop');
-  if (panelId === 'dashboard') updateQuestProgress('visit_dashboard');
-  if (panelId === 'minigame-panel') {
-    if (typeof window.checkDailyGameStatus === 'function') window.checkDailyGameStatus();
+  const target = document.getElementById(panelId);
+  if (!target) {
+    console.warn(`Panel not found: ${panelId}`);
+    return false;
   }
-  if (panelId === 'codingon-panel') {
-    if (typeof updateQuestProgress === 'function') updateQuestProgress('visit_codingon');
+
+  const questMap = {
+    'notice-panel': 'check_notices',
+    'homework-panel': 'visit_materials',
+    'doc-panel': 'visit_materials',
+    'timetable-panel': 'check_timetable',
+    'shop-panel': 'visit_shop',
+    'dashboard': 'visit_dashboard',
+    'codingon-panel': 'visit_codingon',
+    'chat-panel': 'visit_dashboard'
+  };
+  const questType = questMap[panelId];
+  if (questType && typeof window.updateQuestProgress === 'function') {
+    window.updateQuestProgress(questType).catch(err => console.warn('Quest progress skipped:', err));
+  }
+  if (panelId === 'minigame-panel' && typeof window.checkDailyGameStatus === 'function') {
+    try { window.checkDailyGameStatus(); } catch (err) { console.warn('Daily game status skipped:', err); }
   }
 
   // 모든 패널 숨기기
-  document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.panel').forEach(p => {
+    p.style.display = 'none';
+    p.classList.remove('active');
+  });
 
-  const target = document.getElementById(panelId);
-  if (target) {
-    target.style.display = 'block';
+  target.style.display = 'block';
+  target.classList.add('active');
 
-    // 📱 모바일 하단 네비게이션 활성 상태 동기화
-    updateBottomNav(panelId);
+  // 📱 모바일 하단 네비게이션 활성 상태 동기화
+  updateBottomNav(panelId);
 
-    // 모바일 메뉴가 열려있다면 닫기
-    if (typeof closeMobileMenu === 'function') {
-      closeMobileMenu();
-    }
+  // 모바일 메뉴가 열려있다면 닫기
+  if (typeof closeMobileMenu === 'function') {
+    closeMobileMenu();
+  }
 
+  try {
     if (panelId === 'shop-panel') {
       if (typeof loadShopItems === 'function') loadShopItems();
       if (typeof syncCoinBalance === 'function') window.syncCoinBalance();
     } else if (panelId === 'inventory-panel') {
-      loadInventory();
+      if (typeof loadInventory === 'function') loadInventory();
     } else if (panelId === 'notice-panel') {
       if (typeof loadNotices === 'function') loadNotices();
+    } else if (panelId === 'doc-panel') {
+      if (typeof setUserInfoInput === 'function') setUserInfoInput();
     } else if (panelId === 'homework-panel') {
       if (typeof loadMaterials === 'function') loadMaterials();
+      if (typeof setUserInfoInput === 'function') setUserInfoInput();
     } else if (panelId === 'dashboard') {
       if (typeof initDashboardTop === 'function') initDashboardTop();
     } else if (panelId === 'profile-panel') {
       if (typeof loadOwnedCollection === 'function') loadOwnedCollection();
     } else if (panelId === 'codingon-panel') {
       if (typeof initCodingOn === 'function') initCodingOn();
+    } else if (panelId === 'chat-panel') {
+      if (typeof initChat === 'function') initChat();
+    } else if (panelId === 'timetable-panel') {
+      if (typeof setupAdminTimetableControls === 'function') setupAdminTimetableControls();
+      const { grade, classNum } = getActiveTimetableTarget();
+      if (grade && classNum && typeof loadTimetableWeek === 'function') loadTimetableWeek(grade, classNum);
     }
+  } catch (err) {
+    console.error(`Panel load failed: ${panelId}`, err);
   }
+
+  return false;
 }
 
 /** 📱 하단 네비게이션 아이콘 강조 상태 업데이트 */
@@ -1378,12 +1767,22 @@ function updateBottomNav(panelId) {
     'profile-panel': 'nav-profile'
   };
 
-  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => item.classList.remove('active'));
   const activeId = mapping[panelId];
   if (activeId) {
     const el = document.getElementById(activeId);
-    if (el) el.classList.add('active');
+    if (el) {
+      el.classList.add('active');
+      return;
+    }
   }
+  navItems.forEach(item => {
+    const onclick = item.getAttribute('onclick') || '';
+    if (onclick.includes(`'${panelId}'`) || onclick.includes(`"${panelId}"`)) {
+      item.classList.add('active');
+    }
+  });
 }
 
 // Redundant session check removed. Initialization is handled in the main DOMContentLoaded listener.
@@ -1677,15 +2076,99 @@ function autoResize() {
   docResult.style.height = docResult.scrollHeight + 'px';
 }
 
+function isCurrentAdmin() {
+  return String(localStorage.getItem('savedRole') || currentUserRole || 'user').toLowerCase() === 'admin';
+}
+
+function setupAdminTimetableControls() {
+  const groups = [
+    {
+      controls: document.getElementById('admin-timetable-controls'),
+      gradeSelect: document.getElementById('admin-timetable-grade'),
+      classSelect: document.getElementById('admin-timetable-class')
+    },
+    {
+      controls: document.getElementById('dash-admin-timetable-controls'),
+      gradeSelect: document.getElementById('dash-admin-timetable-grade'),
+      classSelect: document.getElementById('dash-admin-timetable-class')
+    }
+  ];
+
+  const savedGrade = localStorage.getItem('adminTimetableGrade') || localStorage.getItem('savedGrade') || currentGrade || '1';
+  const savedClass = localStorage.getItem('adminTimetableClass') || localStorage.getItem('savedClassNum') || currentClassNum || '1';
+
+  groups.forEach(({ controls, gradeSelect, classSelect }) => {
+    if (!controls || !gradeSelect || !classSelect) return;
+    if (!isCurrentAdmin()) {
+      controls.style.display = 'none';
+      return;
+    }
+    gradeSelect.value = String(savedGrade || '1');
+    classSelect.value = String(savedClass || '1');
+    controls.style.display = 'flex';
+  });
+}
+
+function getActiveTimetableTarget() {
+  if (isCurrentAdmin()) {
+    setupAdminTimetableControls();
+    const grade = document.getElementById('dash-admin-timetable-grade')?.value
+      || document.getElementById('admin-timetable-grade')?.value
+      || localStorage.getItem('adminTimetableGrade')
+      || '1';
+    const classNum = document.getElementById('dash-admin-timetable-class')?.value
+      || document.getElementById('admin-timetable-class')?.value
+      || localStorage.getItem('adminTimetableClass')
+      || '1';
+    return { grade, classNum };
+  }
+  return { grade: currentGrade, classNum: currentClassNum };
+}
+
+window.loadSelectedTimetableForAdmin = function () {
+  const grade = document.getElementById('admin-timetable-grade')?.value || '1';
+  const classNum = document.getElementById('admin-timetable-class')?.value || '1';
+  localStorage.setItem('adminTimetableGrade', grade);
+  localStorage.setItem('adminTimetableClass', classNum);
+  const dashGrade = document.getElementById('dash-admin-timetable-grade');
+  const dashClass = document.getElementById('dash-admin-timetable-class');
+  if (dashGrade) dashGrade.value = grade;
+  if (dashClass) dashClass.value = classNum;
+  timetableOffset = 0;
+  loadTimetableWeek(grade, classNum);
+};
+
+window.loadSelectedDashboardTimetableForAdmin = function () {
+  const grade = document.getElementById('dash-admin-timetable-grade')?.value || '1';
+  const classNum = document.getElementById('dash-admin-timetable-class')?.value || '1';
+  localStorage.setItem('adminTimetableGrade', grade);
+  localStorage.setItem('adminTimetableClass', classNum);
+  const panelGrade = document.getElementById('admin-timetable-grade');
+  const panelClass = document.getElementById('admin-timetable-class');
+  if (panelGrade) panelGrade.value = grade;
+  if (panelClass) panelClass.value = classNum;
+  if (typeof window.loadTimetableDay === 'function') {
+    const picker = document.getElementById('timetableDatePicker');
+    window.loadTimetableDay(picker?.value || undefined);
+  }
+};
+
 function moveTimetable(offset) {
-  timetableOffset += offset;
-  loadTimetableWeek(currentGrade, currentClassNum, timetableOffset);
+  if (offset === 0) {
+    timetableOffset = 0;
+  } else {
+    timetableOffset += offset;
+  }
+  const { grade, classNum } = getActiveTimetableTarget();
+  loadTimetableWeek(grade, classNum);
 }
 
 function setupAdminNav() {
   const existing = document.getElementById('admin-nav');
+  const existingSide = document.getElementById('side-admin-nav');
+  const role = String(localStorage.getItem('savedRole') || currentUserRole || 'user').toLowerCase();
 
-  if (currentUserRole === 'admin') {
+  if (role === 'admin') {
     if (!existing) {
       const nav = document.getElementById('main-nav');
       const a = document.createElement('a');
@@ -1700,13 +2183,24 @@ function setupAdminNav() {
 
       nav.appendChild(a);
     }
+    if (!existingSide) {
+      const sideList = document.querySelector('#mobile-side-menu ul');
+      const logoutItem = sideList?.querySelector('li:last-child');
+      if (sideList) {
+        const li = document.createElement('li');
+        li.innerHTML = `<a href="admin.html" id="side-admin-nav"><span>⚙️</span> 관리자 설정</a>`;
+        if (logoutItem) sideList.insertBefore(li, logoutItem);
+        else sideList.appendChild(li);
+      }
+    }
   } else {
     if (existing) existing.remove();
+    if (existingSide) existingSide.closest('li')?.remove();
   }
 }
 
 function setupCodingOnNav() {
-  const role = currentUserRole || localStorage.getItem('savedRole');
+  const role = String(localStorage.getItem('savedRole') || currentUserRole || 'user').toLowerCase();
   const navCodingOn = document.getElementById('nav-codingon');
   const sideNavCodingOn = document.getElementById('side-nav-codingon');
 
@@ -1722,7 +2216,8 @@ function setupCodingOnNav() {
 
 
 document.querySelectorAll('#main-nav a').forEach(link => {
-  link.addEventListener('click', () => {
+  link.addEventListener('click', (e) => {
+    if (link.getAttribute('href') === '#') e.preventDefault();
     const menuToggle = document.getElementById('menu-toggle');
     if (menuToggle) {
       menuToggle.checked = false;
@@ -1731,7 +2226,8 @@ document.querySelectorAll('#main-nav a').forEach(link => {
 });
 
 function canUserSeeMaterial(item) {
-  if (currentUserRole === 'admin') return true;
+  const role = String(localStorage.getItem('savedRole') || currentUserRole || 'user').toLowerCase();
+  if (role === 'admin') return true;
   const myGrade = currentGrade ?? parseInt(localStorage.getItem('savedGrade') || '0', 10);
   const myClass = currentClassNum ?? parseInt(localStorage.getItem('savedClassNum') || '0', 10);
 
@@ -1908,7 +2404,14 @@ async function startGame(gameType) {
         launch() {
           if (typeof window.initFlappyGame === 'function') window.initFlappyGame();
         }
-      }
+      },
+      memoryMatch: {
+        cost: 5,
+        panelId: 'memoryMatch-game',
+        launch() {
+          if (typeof window.initMemoryMatchGame === 'function') window.initMemoryMatchGame();
+        }
+      },
     };
 
     const cfg = GAME_TABLE[gameType];
@@ -1921,45 +2424,57 @@ async function startGame(gameType) {
     if (typeof window.syncCoinBalance === 'function') await window.syncCoinBalance();
     const cost = Number(cfg.cost) || 0;
     const current = Number(window.currentUserCoin || 0);
+    if (current < cost) {
+      alert(`포인트가 부족합니다. 필요: ${cost}P / 보유: ${current.toLocaleString()}P`);
+      return;
+    }
 
     // 🛑 [보안] 세션 ID 생성
     window.miniGameSessionId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     if (!window._rewardedSessions) window._rewardedSessions = new Set();
 
-    // 🛑 [일일 제한] 보상 획득 횟수 사전 체크 (KST 기준)
-    const now = new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const kstTodayStart = new Date(utc + (9 * 60 * 60 * 1000));
-    kstTodayStart.setHours(0, 0, 0, 0);
-    const utcTodayStart = new Date(kstTodayStart.getTime() - (9 * 60 * 60 * 1000));
+    let rewardCount = 0;
+    if (typeof window.getEffectiveDailyGameRewardCount === 'function') {
+      rewardCount = await window.getEffectiveDailyGameRewardCount(username);
+    } else {
+      const now = new Date();
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const kstTodayStart = new Date(utc + (9 * 60 * 60 * 1000));
+      kstTodayStart.setHours(0, 0, 0, 0);
+      const utcTodayStart = new Date(kstTodayStart.getTime() - (9 * 60 * 60 * 1000));
 
-    const { count: rewardCount } = await supabaseClient
-      .from('user_activity_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('username', username)
-      .eq('action', 'game_reward')
-      .gte('created_at', utcTodayStart.toISOString());
+      const { count: serverRewardCount } = await supabaseClient
+        .from('user_activity_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('username', username)
+        .eq('action', 'game_reward')
+        .gte('created_at', utcTodayStart.toISOString());
+      rewardCount = Number(serverRewardCount || 0);
+    }
 
-    // 모든 UI 카운터 동기화
-    document.querySelectorAll('.reward-count-val').forEach(el => {
-      el.innerText = rewardCount || 0;
-    });
+    if (typeof window.updateGameRewardCounters === 'function') {
+      window.updateGameRewardCounters(rewardCount);
+    } else {
+      document.querySelectorAll('.reward-count-val').forEach(el => {
+        el.innerText = rewardCount || 0;
+      });
+    }
 
     if (rewardCount >= 10) {
-      if (!confirm('오늘 받을 수 있는 최대 보상(10회)을 모두 받으셨습니다. 더 이상 보상이 지급되지 않는데 게임을 시작하시겠습니까?')) {
-        return;
-      }
+      alert('오늘 미니게임 10회 제한을 모두 사용했습니다. 내일 다시 도전해 주세요!');
+      return;
     }
 
     // 포인트 차감 (Supabase)
-    const { error: deductErr } = await supabaseClient.rpc('increment_coin', {
-      u_name: username,
-      amount: -cost
-    });
-
-    if (deductErr) {
-      // RPC 없을 시 fallback
-      await supabaseClient.from('users').update({ coin_balance: current - cost }).eq('username', username);
+    if (typeof window.adjustUserCoinBalance === 'function') {
+      await window.adjustUserCoinBalance(-cost, { username, reason: 'game_start' });
+    } else {
+      const { error: deductErr } = await supabaseClient
+        .from('users')
+        .update({ coin_balance: current - cost })
+        .eq('username', username);
+      if (deductErr) throw deductErr;
+      updateCoinDisplays(current - cost);
     }
 
     // 로그 기록: 게임 시작
@@ -1973,6 +2488,7 @@ async function startGame(gameType) {
 
     // 로컬 잔액 반영 + 표시 갱신
     if (typeof window.syncCoinBalance === 'function') await window.syncCoinBalance();
+    if (typeof showRewardToast === 'function') showRewardToast(`입장료 ${cost}P가 차감되었습니다.`, 'warn');
 
     // 패널 전환 (View-Swap 방식)
     if (typeof showPanel === 'function') {
@@ -2106,9 +2622,10 @@ function updateDateLabels() {
 
   const tLabel = document.getElementById('timetable-date-label');
   const mLabel = document.getElementById('meal-date-label');
+  const tmLabel = document.getElementById('timetable-meal-date-label');
   if (tLabel) tLabel.textContent = dateStr;
   if (mLabel) mLabel.textContent = dateStr;
-
+  if (tmLabel) tmLabel.textContent = dateStr;
   const ymd = `${window.currentDate.getFullYear()}-${String(window.currentDate.getMonth() + 1).padStart(2, '0')}-${String(window.currentDate.getDate()).padStart(2, '0')}`;
 
   const pairs = [
@@ -2197,7 +2714,7 @@ async function initDashboardTop() {
   if ($id('dash-notice-date')) $id('dash-notice-date').textContent =
     `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${w})`;
 
-  const savedRole = localStorage.getItem('savedRole') || 'user';
+  const savedRole = String(localStorage.getItem('savedRole') || 'user').toLowerCase();
   const isAdmin = savedRole === 'admin';
 
   const nm = currentUserName || localStorage.getItem('savedName') || '학생';
@@ -2215,12 +2732,20 @@ async function initDashboardTop() {
     const nameNode = formatUserDisplayName({ name: savedName, equipped_title: equippedTitle });
     
     // 🛡️ [object HTMLSpanElement] 오류 수정: innerHTML 대신 appendChild 사용
-    $id('dash-name').textContent = '';
-    $id('dash-name').appendChild(nameNode);
+    if (window.__updateSecurityValue) {
+      window.__updateSecurityValue('dash-name', nameNode.outerHTML, true);
+    } else {
+      $id('dash-name').textContent = '';
+      $id('dash-name').appendChild(nameNode);
+    }
   }
   if ($id('dash-role')) {
     const roleTxt = isAdmin ? '관리자' : '학생';
-    $id('dash-role').textContent = roleTxt;
+    if (window.__updateSecurityValue) {
+      window.__updateSecurityValue('dash-role', roleTxt, false);
+    } else {
+      $id('dash-role').textContent = roleTxt;
+    }
   }
   if ($id('dash-num')) {
     if (window.__updateSecurityValue) window.__updateSecurityValue('dash-num', num);
@@ -2237,13 +2762,34 @@ async function initDashboardTop() {
 
   await loadRecentNotices3();
   await syncStatsAndRender();
-  await initDailyQuests(); // 퀘스트 초기화 완료를 기다림
+  await initDailyQuests();
+  if (typeof setupAdminTimetableControls === 'function') setupAdminTimetableControls();
+
+  // 🥘 급식/시간표/일정 데이터 로딩 복구
+  const ttTarget = isAdmin && typeof getActiveTimetableTarget === 'function'
+    ? getActiveTimetableTarget()
+    : { grade: grd, classNum: cls };
+
+  if (ttTarget.grade !== '-' && ttTarget.classNum !== '-') {
+    if (typeof loadMeal === 'function') {
+      const today = new Date();
+      const forDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      loadMeal(forDate);
+    }
+    if (typeof window.loadTimetableDay === 'function') {
+      const picker = document.getElementById('timetableDatePicker');
+      window.loadTimetableDay(picker?.value || undefined);
+    } else if (typeof loadTimetableWeek === 'function') {
+      loadTimetableWeek(ttTarget.grade, ttTarget.classNum);
+    }
+  }
 
   // 📅 일정(캘린더) 초기화 추가
   if (typeof renderScheduleCalendar === 'function') {
     renderScheduleCalendar();
   }
 }
+window.initDashboardTop = initDashboardTop; // 전역 바인딩 보장
 
 
 async function loadRecentNotices3() {
@@ -2253,14 +2799,11 @@ async function loadRecentNotices3() {
 
   try {
     const { safeG, safeC } = getSafeGradeClass();
+    const role = String(localStorage.getItem('savedRole') || currentUserRole || 'user').toLowerCase();
 
     let q = supabaseClient.from('notices').select('*');
 
-    if (currentUserRole === 'admin') {
-      if (safeG !== 0) {
-        q = q.or(`grade.is.null,grade.eq.0,and(grade.eq.${safeG},class_num.eq.${safeC})`);
-      }
-    } else {
+    if (role !== 'admin') {
       q = q.or(`grade.is.null,grade.eq.0,and(grade.eq.${safeG},class_num.eq.${safeC})`);
     }
 
@@ -2331,14 +2874,52 @@ async function loadRecentNotices3() {
 /** 🆙 XP 획득 배율 계산 (버프 여부 확인) */
 function getXpMultiplier() {
   const buffEnd = localStorage.getItem('xp_buff_end');
-  const badge = document.getElementById('xp-buff-badge');
+  const badges = document.querySelectorAll('#xp-buff-badge, #xp-buff-badge-profile');
   if (buffEnd && Date.now() < parseInt(buffEnd)) {
-    if (badge) badge.style.display = 'inline-block';
+    badges.forEach(badge => badge.style.display = 'inline-block');
     return 2; // 2배 버프
   }
-  if (badge) badge.style.display = 'none';
+  badges.forEach(badge => badge.style.display = 'none');
   return 1;
 }
+
+function showRewardToast(message, tone = 'success') {
+  let toast = document.getElementById('reward-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'reward-toast';
+    toast.style.cssText = 'position:fixed; right:20px; bottom:90px; z-index:10050; max-width:min(360px, calc(100vw - 32px)); padding:14px 16px; border-radius:16px; color:#fff; font-weight:900; box-shadow:0 18px 45px rgba(15,23,42,0.24); transform:translateY(20px); opacity:0; transition:all .22s ease; pointer-events:none; line-height:1.35;';
+    document.body.appendChild(toast);
+  }
+
+  toast.textContent = message;
+  toast.style.background = tone === 'warn'
+    ? 'linear-gradient(135deg, #f97316, #ef4444)'
+    : 'linear-gradient(135deg, #4f46e5, #06b6d4)';
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+  });
+  clearTimeout(showRewardToast._timer);
+  showRewardToast._timer = setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(20px)';
+  }, 2600);
+}
+window.showRewardToast = showRewardToast;
+
+function updateCoinDisplays(balance) {
+  const value = Number(balance || 0);
+  const formatted = value.toLocaleString();
+  window.currentUserCoin = value;
+  ['coin-balance', 'shop-coin-balance'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (window.__updateSecurityValue) window.__updateSecurityValue(id, formatted);
+    else el.textContent = formatted;
+  });
+}
+window.updateCoinDisplays = updateCoinDisplays;
 
 async function syncStatsAndRender() {
   try {
@@ -2349,6 +2930,9 @@ async function syncStatsAndRender() {
       renderStats({ level: 1, exp: 0, point: 0, need: NEED });
       return;
     }
+
+    // 🆙 버프 배지 업데이트
+    if (typeof getXpMultiplier === 'function') getXpMultiplier();
 
     const { data, error } = await supabaseClient
       .from('users')
@@ -2431,7 +3015,8 @@ async function awardDailyXP(action) {
     }
 
     // 4. 랜덤 XP 생성 (3~10)
-    let inc = Math.floor(Math.random() * (10 - 3 + 1) + 3);
+    const baseInc = Math.floor(Math.random() * (10 - 3 + 1) + 3);
+    let inc = baseInc;
 
     // XP 버프 적용
     const multiplier = getXpMultiplier();
@@ -2454,6 +3039,11 @@ async function awardDailyXP(action) {
 
     if (!updateError) {
       console.log(`[XP Awarded] ${action}: +${inc} XP`);
+      if (multiplier > 1) {
+        showRewardToast(`경험치 2배 적용! 기본 ${baseInc}XP → ${inc}XP를 받았습니다.`);
+      } else {
+        showRewardToast(`경험치 +${inc}XP를 받았습니다.`);
+      }
       // UI 갱신 및 레벨업 체크
       syncStatsAndRender();
     }
@@ -2487,6 +3077,7 @@ function renderStats({ level, exp, point, need }) {
     const pStr = point.toLocaleString();
     setVal('coin-balance', pointEl, pStr);
     setVal('shop-coin-balance', shopPointEl, pStr);
+    window.currentUserCoin = point;
   }
 
   const pct = Math.max(0, Math.min(100, Math.round((exp / need) * 100)));
@@ -2516,7 +3107,7 @@ async function loadCoinBalance() {
     if (shopEl) shopEl.textContent = coin;
   }
 
-  currentUserCoin = coin;
+  updateCoinDisplays(coin);
 }
 
 const ymd = (d) => {
@@ -2545,12 +3136,18 @@ function buildMonthMatrix(ref) {
 async function fetchAssessmentsMonth(ref) {
   const first = ymd(startOfMonth(ref));
   const last = ymd(endOfMonth(ref));
-  const { data, error } = await supabaseClient
+  let query = supabaseClient
     .from('analyzed_docs')
     .select('date, period, subject')
     .gte('date', first).lte('date', last)
-    .eq('grade', currentGrade).eq('class_num', currentClassNum)
     .order('date, period');
+
+  const g = parseInt(currentGrade, 10);
+  const c = parseInt(currentClassNum, 10);
+  if (!isNaN(g)) query = query.eq('grade', g);
+  if (!isNaN(c)) query = query.eq('class_num', c);
+
+  const { data, error } = await query;
   if (error) { console.warn('assessments error', error); return []; }
   return data || [];
 }
@@ -2809,6 +3406,19 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
   const semesterOf = (d) => (d.getMonth() + 1) <= 8 ? 1 : 2;
 
   function getGradeClass() {
+    if (typeof isCurrentAdmin === 'function' && isCurrentAdmin()) {
+      if (typeof setupAdminTimetableControls === 'function') setupAdminTimetableControls();
+      const adminGrade = document.getElementById('dash-admin-timetable-grade')?.value
+        || document.getElementById('admin-timetable-grade')?.value
+        || localStorage.getItem('adminTimetableGrade');
+      const adminClass = document.getElementById('dash-admin-timetable-class')?.value
+        || document.getElementById('admin-timetable-class')?.value
+        || localStorage.getItem('adminTimetableClass');
+      return {
+        grade: parseInt(adminGrade || '1', 10),
+        classNum: parseInt(adminClass || '1', 10)
+      };
+    }
     const g = (typeof currentGrade === 'number' ? currentGrade : parseInt(localStorage.getItem('savedGrade'), 10)) || null;
     const c = (typeof currentClassNum === 'number' ? currentClassNum : parseInt(localStorage.getItem('savedClassNum'), 10)) || null;
     return { grade: g, classNum: c };
@@ -2864,8 +3474,13 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
     const SEM = semesterOf(dateObj);
     const YMD = toNeisYmd(dateObj);
 
+    let apiType = 'misTimetable';
+    const schoolName = currentSchoolName || localStorage.getItem('savedSchoolName') || '';
+    if (schoolName.includes('초등학교')) apiType = 'elsTimetable';
+    else if (schoolName.includes('고등학교')) apiType = 'hisTimetable';
+
     const url =
-      `https://open.neis.go.kr/hub/misTimetable` +
+      `https://open.neis.go.kr/hub/${apiType}` +
       `?KEY=${encodeURIComponent(NEIS_KEY)}` +
       `&Type=json` +
       `&ATPT_OFCDC_SC_CODE=${encodeURIComponent(ATPT_OFCDC_SC_CODE)}` +
@@ -2878,7 +3493,7 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`NEIS 응답 오류 ${res.status}`);
     const json = await res.json();
-    const block = json && json.misTimetable && json.misTimetable[1];
+    const block = json && json[apiType] && json[apiType][1];
     return block ? (block.row || []) : [];
   }
 
@@ -3092,11 +3707,14 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
   }
 
   function renderMeal(dateObj, rows) {
-    const box = document.getElementById("meal-box");
+    const box1 = document.getElementById("meal-box");
+    const box2 = document.getElementById("timetable-meal-box");
     const dayLabel = labelYMD(dateObj);
 
+    const tmplEmpty = `<div style="color:#6b7280">🍽️ ${dayLabel} 급식 정보 없음</div>`;
     if (!rows || rows.length === 0) {
-      box.innerHTML = `<div style="color:#6b7280">🍽️ ${dayLabel} 급식 정보 없음</div>`;
+      if (box1) box1.innerHTML = tmplEmpty;
+      if (box2) box2.innerHTML = tmplEmpty;
       return;
     }
 
@@ -3111,7 +3729,7 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
       return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
     });
 
-    box.innerHTML = `
+    const html = `
             <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
               <strong>오늘 급식</strong>
             </div>
@@ -3124,6 +3742,8 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
               </div>
             `).join("")}
           `;
+    if (box1) box1.innerHTML = html;
+    if (box2) box2.innerHTML = html;
   }
 
   async function loadMeal(forDate) {
@@ -3132,7 +3752,7 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
       + `?KEY=${encodeURIComponent(NEIS_KEY)}&Type=json`
       + `&ATPT_OFCDC_SC_CODE=${encodeURIComponent(ATPT_OFCDC_SC_CODE)}`
       + `&SD_SCHUL_CODE=${encodeURIComponent(SD_SCHUL_CODE)}`
-      + `&MLSV_YMD=${toYMD(d)}`;
+      + `&MLSV_YMD=${toYMD(d).replace(/-/g, '')}`;
 
     try {
       const res = await fetch(url);
@@ -3156,48 +3776,14 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
 
 
 window.addEventListener('DOMContentLoaded', async () => {
-  // 1. Supabase 세션 확인 (OAuth 리다이렉트 처리 포함)
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  
-  let user = null;
-  let savedUsername = localStorage.getItem('savedUsername');
+  const resolved = await resolveSavedUserSession();
+  const user = resolved.user;
 
-  if (session) {
-    // 소셜 로그인 또는 Supabase Auth 세션이 있는 경우
-    const authUser = session.user;
-    
-    // 이전에 연동된 적이 있는지 확인 (중복 계정 방어 로직 추가)
-    const { data: linkedUsers } = await supabaseClient
-      .from('users')
-      .select('*')
-      .or(`auth_user_id.eq.${authUser.id},email.eq.${authUser.email}`)
-      .limit(1);
-
-    if (linkedUsers && linkedUsers.length > 0) {
-      const linkedUser = linkedUsers[0];
-      user = linkedUser;
-      // 아직 auth_user_id가 없다면 업데이트 (자동 연동)
-      if (!user.auth_user_id) {
-        await supabaseClient.from('users').update({ auth_user_id: authUser.id }).eq('id', user.id);
-      }
-      // 세션 유지용 데이터 설정
-      localStorage.setItem('savedUsername', user.username);
-      setCookie('savedUsername', user.username, 7);
-    } else {
-      // 새로운 소셜 사용자 -> 추가 정보 입력 모달 띄우기
-      document.getElementById('social-signup-modal').style.display = 'flex';
-      document.getElementById('social-name').value = authUser.user_metadata.full_name || '';
-      return; // 모달 응답 대기
-    }
-  } else if (savedUsername) {
-    // 기존 아이디/비번 로그인 세션만 있는 경우
-    const { data: legacyUser, error } = await supabaseClient
-      .from('users')
-      .select('*')
-      .eq('username', savedUsername)
-      .maybeSingle();
-    
-    if (legacyUser) user = legacyUser;
+  if (resolved.needsSocialSignup && resolved.session?.user) {
+    const authUser = resolved.session.user;
+    document.getElementById('social-signup-modal').style.display = 'flex';
+    document.getElementById('social-name').value = authUser.user_metadata?.full_name || '';
+    return;
   }
 
   if (!user) {
@@ -3206,7 +3792,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // 2. 전역 변수 및 세션 동기화
-  currentUserRole = user.role || 'user';
+  currentUserRole = String(user.role || 'user').toLowerCase();
   currentGrade = user.grade;
   currentClassNum = user.class_num;
   currentUserName = user.name;
@@ -3225,26 +3811,44 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadCoinBalance();
   
   // 연동 상태 UI 관리 (프로필 패널)
-  updateSocialLinkingStatus(session);
+  updateSocialLinkingStatus(resolved.session, user);
 
   showMain();
   await afterLoginRefreshDashboard();
   listenForBroadcasts();
+  if (typeof initChat === 'function') {
+    initChat().catch(err => console.warn('Chat inbox preload skipped:', err));
+  }
 });
 
 /** 🔗 연동 상태 UI 업데이트 */
-function updateSocialLinkingStatus(session) {
+function updateSocialLinkingStatus(session, user = null) {
+  const linked = user
+    ? !!user.auth_user_id
+    : !!(
+        localStorage.getItem('savedAuthUserId')
+        || session?.user?.app_metadata?.providers?.includes('google')
+      );
+  const socialIcon = document.getElementById('social-link-icon');
+  const socialText = document.getElementById('social-link-text');
+  const unlinkContainer = document.getElementById('social-unlink-container');
+  const linkContainer = document.getElementById('social-link-container');
   const googleBtn = document.getElementById('link-google-btn');
-  if (!googleBtn) return;
 
-  if (session && session.user.app_metadata.providers.includes('google')) {
-    googleBtn.textContent = '연동됨';
-    googleBtn.disabled = true;
-    googleBtn.style.background = '#f1f5f9';
-    googleBtn.style.color = '#94a3b8';
-  } else {
-    googleBtn.textContent = '연동하기';
-    googleBtn.disabled = false;
+  if (socialIcon) socialIcon.textContent = linked ? '🔵' : '⚪';
+  if (socialText) {
+    socialText.textContent = linked
+      ? 'Google 계정과 연동되어 있습니다.'
+      : '연동된 소셜 계정이 없습니다.';
+  }
+  if (unlinkContainer) unlinkContainer.style.display = linked ? 'block' : 'none';
+  if (linkContainer) linkContainer.style.display = linked ? 'none' : 'block';
+
+  if (googleBtn) {
+    googleBtn.textContent = linked ? '연동됨' : 'Google 계정 연결하기';
+    googleBtn.disabled = linked;
+    googleBtn.style.background = linked ? '#f1f5f9' : '#fff';
+    googleBtn.style.color = linked ? '#94a3b8' : '#475569';
   }
 }
 
@@ -4089,7 +4693,6 @@ async function loadUserFromDashboardValues() {
   console.log("👤 이름:", data.name);
   console.log("🆔 아이디:", data.username);
   console.log("📧 이메일:", data.email);
-  console.log("🔒 비밀번호:", data.password);
 
 
 
@@ -4294,9 +4897,10 @@ async function changePassword() {
   statusEl.innerText = "⏳ 비밀번호 변경 중...";
 
   // ✅ DB 업데이트
+  const passwordHash = await window.EduPassword.hash(newPass);
   const { error: upErr } = await supabaseClient
     .from("users")
-    .update({ password: newPass })
+    .update({ password: passwordHash })
     .eq("username", oldUsername);
 
   if (upErr) {
@@ -4307,6 +4911,9 @@ async function changePassword() {
   // 성공 → 입력창 비우기
   document.getElementById("profile-newpass").value = "";
   document.getElementById("profile-newpass2").value = "";
+  if (localStorage.getItem('savedUsername') === oldUsername) {
+    localStorage.setItem('savedAuthToken', passwordHash);
+  }
   statusEl.innerText = "✅ 비밀번호가 변경되었습니다.";
 }
 
@@ -4475,7 +5082,7 @@ async function loadInventory() {
     return;
   }
 
-  const role = localStorage.getItem('savedRole');
+  const role = String(localStorage.getItem('savedRole') || '').toLowerCase();
 
   // 관리자 전용 동기화 버튼 표시 제어
   const adminSyncBtn = document.getElementById('admin-sync-btn');
@@ -4650,7 +5257,7 @@ async function loadInventory() {
 // ✅ 관리자 전용: 모든 아이템 인벤토리 동기화
 window.syncAdminInventory = async function () {
   const username = localStorage.getItem('savedUsername');
-  const role = localStorage.getItem('savedRole');
+  const role = String(localStorage.getItem('savedRole') || '').toLowerCase();
   if (role !== 'admin' || !username) {
     alert('관리자만 사용 가능합니다.');
     return;
@@ -4834,7 +5441,17 @@ window.useItem = async function (id, itemName, currentStatus = false, imageUrl =
         alert(`🎁 [럭키박스 당첨] 축하합니다!\n\n${luckyBoxReward.name}을(를) 획득하셨습니다!`);
 
         if (luckyBoxReward.type === 'coin') {
-          const { error: coinErr } = await supabaseClient.rpc('increment_coin', { x: luckyBoxReward.val, target_user_id: localStorage.getItem('savedUserId') });
+          if (typeof window.adjustUserCoinBalance === 'function') {
+            await window.adjustUserCoinBalance(luckyBoxReward.val, { username, reason: 'lucky_box' });
+          } else {
+            const { data: uData, error: coinReadErr } = await supabaseClient.from('users').select('coin_balance').eq('username', username).single();
+            if (coinReadErr) throw coinReadErr;
+            const { error: coinErr } = await supabaseClient
+              .from('users')
+              .update({ coin_balance: (uData?.coin_balance || 0) + luckyBoxReward.val })
+              .eq('username', username);
+            if (coinErr) throw coinErr;
+          }
         } else if (luckyBoxReward.type === 'exp') {
           // 🆙 XP 즉시 추가 및 동기화
           const { data: uData } = await supabaseClient.from('users').select('xp').eq('username', username).single();
@@ -5255,8 +5872,7 @@ async function handleLogout(scope = 'local') {
     console.warn('Logout warning:', err.message);
   } finally {
     // 🛡️ 에러 여부와 상관없이 로컬 데이터는 반드시 초기화하여 무한루프/세션꼬임 방지
-    localStorage.clear();
-    if (typeof setCookie === 'function') setCookie('savedUsername', '', -1);
+    clearSavedSession();
     
     alert('로그아웃 되었습니다.');
     location.reload();
@@ -5317,6 +5933,42 @@ function loadPreferences() {
   } catch (e) {}
 }
 
+function openHelpChat() {
+  showPanel('chat-panel');
+  window.scrollTo(0, 0);
+  setTimeout(() => {
+    if (typeof startDirectChat === 'function') {
+      startDirectChat('admin', '관리자');
+    }
+  }, 80);
+}
+
+function showUpdateStatus() {
+  const status = document.getElementById('settings-info-status') || document.getElementById('pref-status');
+  const message = '현재 최신 버전입니다. v1.09-stable';
+  if (status) {
+    status.textContent = message;
+    status.style.color = '#4f46e5';
+  }
+  alert(message);
+}
+
+function bindSettingsQuickLinks() {
+  const noticesBtn = document.getElementById('btn-go-notices');
+  if (noticesBtn) {
+    noticesBtn.onclick = () => {
+      showPanel('notice-panel');
+      window.scrollTo(0, 0);
+    };
+  }
+
+  const helpBtn = document.getElementById('btn-go-help');
+  if (helpBtn) helpBtn.onclick = openHelpChat;
+
+  const updateBtn = document.getElementById('btn-check-updates');
+  if (updateBtn) updateBtn.onclick = showUpdateStatus;
+}
+
 /** 🛠️ 설정 페이지 이벤트 바인딩 (단일화) */
 function setupProfileSettings() {
   document.getElementById('btn-session-logout')?.addEventListener('click', () => handleLogout('local'));
@@ -5330,12 +5982,7 @@ function setupProfileSettings() {
       alert('초기화되었습니다.');
     }
   });
-  
-  // 기타 버튼들
-  document.getElementById('btn-go-notices')?.addEventListener('click', () => {
-    showPanel('notice-panel');
-    window.scrollTo(0, 0);
-  });
+  bindSettingsQuickLinks();
 }
 
 // 🌐 전역 노출 (HTML onclick 연동용)
@@ -5349,15 +5996,6 @@ window.handlePasswordReset = handlePasswordReset;
 document.addEventListener('DOMContentLoaded', async () => {
   setupProfileSettings();
   loadPreferences();
-  
-  // 🚪 로그인 상태 확인 및 초기 진입 처리 (신규)
-  const savedUsername = localStorage.getItem('savedUsername');
-  if (savedUsername) {
-    if (typeof showMain === 'function') showMain();
-    if (typeof loadUserInfo === 'function') {
-      await loadUserInfo();
-    }
-  }
 
   // 브라우저 알림 권한 체크 및 실시간 리스너 설정
   const prefs = JSON.parse(localStorage.getItem('eduBoard_preferences') || '{}');
@@ -5395,12 +6033,13 @@ let currentVerificationCode = null;
 
 window.sendVerificationEmail = async function() {
     const emailId = document.getElementById('signupEmailId').value.trim();
-    const domainValue = document.getElementById('signupEmailDomain').value;
-    const customDomain = document.getElementById('signupEmailCustom').value.trim();
-    const email = `${emailId}@${domainValue === '직접입력' ? customDomain : domainValue}`;
+    const domainValue = document.getElementById('signupEmailDomain')?.value.trim() || '';
+    const customDomain = document.getElementById('signupEmailCustom')?.value.trim() || '';
+    const domain = domainValue === '직접입력' ? customDomain : domainValue;
+    const email = `${emailId}@${domain}`;
     const name = document.getElementById('signupName').value.trim();
 
-    if (!emailId || !name) {
+    if (!emailId || !domain || !name) {
         alert("이름과 이메일을 먼저 입력해주세요.");
         return;
     }
@@ -5445,11 +6084,14 @@ window.verifySignupCode = function() {
         status.innerText = "✅ 인증되었습니다.";
         status.style.color = "#10b981";
         signupBtn.dataset.verified = "true";
+        signupBtn.classList.add('verified');
         toggleSignupBtn(); // 버튼 표시 트리거
     } else {
         status.innerText = "❌ 인증번호가 일치하지 않습니다.";
         status.style.color = "#ef4444";
         signupBtn.dataset.verified = "false";
+        signupBtn.classList.remove('verified');
+        toggleSignupBtn();
     }
 };
 
@@ -5459,11 +6101,8 @@ window.toggleSignupBtn = function() {
     const isVerified = document.getElementById('signup-btn').dataset.verified === 'true';
     const signupBtn = document.getElementById('signup-btn');
 
-    if (privacy && tos && isVerified) {
-        signupBtn.style.display = 'block';
-    } else {
-        signupBtn.style.display = 'none';
-    }
+    signupBtn.style.display = 'block';
+    signupBtn.disabled = !(privacy && tos && isVerified);
 };
 
 window.exitMiniGame = exitMiniGame;
@@ -5562,13 +6201,12 @@ window.submitEditNotice = async function () {
     // 새 이미지 업로드가 있으면
     if (fileInput.files.length > 0) {
       const file = fileInput.files[0];
-      const uniqueName = Date.now() + '_' + file.name;
-      const filePath = `public/${uniqueName}`;
+      const filePath = buildSafeStoragePath(file);
 
       const { error: uploadErr } = await supabaseClient
         .storage
         .from('notice-images')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { upsert: true, contentType: file.type || undefined });
 
       if (uploadErr) throw uploadErr;
 
@@ -5978,6 +6616,10 @@ function setupRealtimeNotifications() {
 /** 🔄 로그인 후 대시보드 및 데이터 쇄신 */
 window.afterLoginRefreshDashboard = async function () {
   await initDashboardTop();
+  
+  if (typeof loadUserInfo === 'function') await loadUserInfo();
+  if (typeof loadUserFromDashboardValues === 'function') await loadUserFromDashboardValues();
+  
   await loadNotices();
   await loadMaterials();
   await syncCoinBalance();
@@ -6001,13 +6643,7 @@ window.syncCoinBalance = async function () {
 
     if (user) {
       const balance = user.coin_balance || 0;
-      window.currentUserCoin = balance; // 전역 변수 동기화
-
-      // UI 요소들 업데이트
-      ['coin-balance', 'shop-coin-balance'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = balance.toLocaleString();
-      });
+      updateCoinDisplays(balance);
     }
   } catch (e) { }
 };
@@ -6030,9 +6666,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 📅 일정(캘린더) 내비게이션 바인딩은 이제 onclick 전역 함수(changeSchedMonth)로 처리됩니다.
 
   // 기타 정보 버튼 바인딩
-  document.getElementById('btn-go-notices')?.addEventListener('click', () => showPanel('notice-panel'));
-  document.getElementById('btn-go-help')?.addEventListener('click', () => alert('도움말 및 FAQ 페이지는 준비 중입니다. 1:1 문의는 관리자에게 메세지를 남겨주세요.'));
-  document.getElementById('btn-check-updates')?.addEventListener('click', () => alert('현재 최신 버전을 사용 중입니다. (v1.09-stable)'));
+  bindSettingsQuickLinks();
 });
 /** 🎯 Daily Quest Logic (Supabase-driven) */
 
@@ -6215,11 +6849,17 @@ async function claimQuestReward(userQuestId) {
 
     const { data: user } = await supabaseClient.from('users').select('coin_balance, xp').eq('username', uq.username).single();
     if (user) {
+      const multiplier = typeof getXpMultiplier === 'function' ? getXpMultiplier() : 1;
+      const rewardXp = (uq.quests.reward_xp || 0) * multiplier;
       console.log('User stats before reward:', user);
       await supabaseClient.from('users').update({
         coin_balance: (user.coin_balance || 0) + uq.quests.reward_coin,
-        xp: (user.xp || 0) + uq.quests.reward_xp
+        xp: (user.xp || 0) + rewardXp
       }).eq('username', uq.username);
+
+      if (multiplier > 1) {
+        showRewardToast(`경험치 2배 적용! 퀘스트 보상 ${uq.quests.reward_xp}XP → ${rewardXp}XP`);
+      }
     }
 
     await supabaseClient
@@ -6227,7 +6867,7 @@ async function claimQuestReward(userQuestId) {
       .update({ status: 'rewarded' })
       .eq('id', userQuestId);
 
-    alert(`🎉 보상이 지급되었습니다! (+${uq.quests.reward_coin}포인트, +${uq.quests.reward_xp}XP)`);
+    alert(`🎉 보상이 지급되었습니다! (+${uq.quests.reward_coin}포인트, +${(uq.quests.reward_xp || 0) * (getXpMultiplier ? getXpMultiplier() : 1)}XP)`);
 
     syncStatsAndRender(); // 먼저 스탯 갱신
     initDailyQuests();    // 퀘스트 UI 갱신
@@ -6286,8 +6926,12 @@ window.loadUserInfo = async function () {
     
     // 🛡️ XSS 방지: innerHTML 대신 appendChild/textContent 사용
     if (dashName) {
-      dashName.textContent = '';
-      dashName.appendChild(nameNode.cloneNode(true));
+      if (window.__updateSecurityValue) {
+        window.__updateSecurityValue('dash-name', nameNode.outerHTML, true);
+      } else {
+        dashName.textContent = '';
+        dashName.appendChild(nameNode.cloneNode(true));
+      }
     }
     if (headerName) {
       headerName.textContent = '';
@@ -6299,7 +6943,17 @@ window.loadUserInfo = async function () {
     }
 
     // 대시보드 학급 정보 업데이트 (관리자 및 null 방지)
-    const isAdmin = user.role === 'admin';
+    const userRole = String(user.role || 'user').toLowerCase();
+    const isAdmin = userRole === 'admin';
+    currentUserRole = userRole;
+    currentUserName = user.name || '';
+    currentStudentNumber = user.student_number || '';
+    currentGrade = user.grade;
+    currentClassNum = user.class_num;
+    currentAtptCode = user.atpt_ofcdc_sc_code || currentAtptCode || localStorage.getItem('savedAtptCode') || 'J10';
+    currentSchulCode = user.sd_schul_code || currentSchulCode || localStorage.getItem('savedSchulCode') || '7679111';
+    currentSchoolName = user.school_name || currentSchoolName || localStorage.getItem('savedSchoolName') || '기본학교';
+
     if (dashGrade) dashGrade.textContent = isAdmin ? '-' : (user.grade || '-');
     if (dashClass) dashClass.textContent = isAdmin ? '-' : (user.class_num || '-');
     if (dashNum) {
@@ -6324,10 +6978,21 @@ window.loadUserInfo = async function () {
     localStorage.setItem('savedTitle', user.equipped_title || '');
     localStorage.setItem('savedGrade', user.grade || '');
     localStorage.setItem('savedClassNum', user.class_num || '');
-    localStorage.setItem('savedRole', user.role || 'user'); // 권한 정보 동기화 누락 수정
+    localStorage.setItem('savedRole', userRole); // 권한 정보 동기화 누락 수정
     localStorage.setItem('savedName', user.name || '학생');
+    localStorage.setItem('savedStudentNum', user.student_number || '');
+    localStorage.setItem('savedAtptCode', currentAtptCode);
+    localStorage.setItem('savedSchulCode', currentSchulCode);
+    localStorage.setItem('savedSchoolName', currentSchoolName);
 
-    if (dashRole) dashRole.textContent = (user.role === 'admin' || user.role === 'ADMIN') ? '관리자' : '학생';
+    if (dashRole) {
+      const roleTxt = userRole === 'admin' ? '관리자' : '학생';
+      if (window.__updateSecurityValue) {
+        window.__updateSecurityValue('dash-role', roleTxt, false);
+      } else {
+        dashRole.textContent = roleTxt;
+      }
+    }
 
     // 대시보드 및 헤더 아바타 업데이트 (인스타 스타일, 황금 테두리 지원)
     updateAvatarUI(dashAvatar, user.avatar_url, user.character_icon || '👤', user);
@@ -6342,18 +7007,28 @@ window.loadUserInfo = async function () {
     const lvlFill = document.getElementById('lvl-fill');
     const lvNum = document.getElementById('lv-num');
 
-    if (lvNum) lvNum.innerText = user.level || 1;
-    if (expCur) expCur.innerText = user.exp || 0;
-    const nextExp = (user.level || 1) * 20;
-    if (expNeed) expNeed.innerText = nextExp;
+    const userLevel = Number(user.level || 1);
+    const userXp = Number(user.xp || 0);
+    if (lvNum) {
+      if (window.__updateSecurityValue) window.__updateSecurityValue('lv-num', userLevel);
+      else lvNum.innerText = userLevel;
+    }
+    if (expCur) {
+      if (window.__updateSecurityValue) window.__updateSecurityValue('exp-cur', userXp);
+      else expCur.innerText = userXp;
+    }
+    const nextExp = 20;
+    if (expNeed) {
+      if (window.__updateSecurityValue) window.__updateSecurityValue('exp-need', nextExp);
+      else expNeed.innerText = nextExp;
+    }
     if (lvlFill) {
-      const percent = Math.min(100, ((user.exp || 0) / nextExp) * 100);
+      const percent = Math.min(100, (userXp / nextExp) * 100);
       lvlFill.style.width = percent + '%';
     }
 
     // 포인트 업데이트
-    const coinBalance = document.getElementById('coin-balance');
-    if (coinBalance) coinBalance.innerText = (user.coin_balance || 0).toLocaleString();
+    updateCoinDisplays(user.coin_balance || 0);
 
     // ✅ 프로필 설정 필드 채우기 (새로 추가)
     const pName = document.getElementById('profile-name');
@@ -6412,24 +7087,7 @@ window.loadUserInfo = async function () {
     }
 
     // ✅ 소셜 연동 상태 UI 처리 (신규)
-    const socialIcon = document.getElementById('social-link-icon');
-    const socialText = document.getElementById('social-link-text');
-    const unlinkContainer = document.getElementById('social-unlink-container');
-    const linkContainer = document.getElementById('social-link-container');
-
-    if (socialIcon && socialText && unlinkContainer && linkContainer) {
-      if (user.auth_user_id) {
-        socialIcon.textContent = '🔵';
-        socialText.textContent = 'Google 계정과 연동되어 있습니다.';
-        unlinkContainer.style.display = 'block';
-        linkContainer.style.display = 'none';
-      } else {
-        socialIcon.textContent = '⚪';
-        socialText.textContent = '연동된 소셜 계정이 없습니다.';
-        unlinkContainer.style.display = 'none';
-        linkContainer.style.display = 'block';
-      }
-    }
+    updateSocialLinkingStatus(null, user);
 
     // ✅ 학교 정보 기본값 할당 (경기도 교육청 J10, 7679111)
     const atpt = user.atpt_ofcdc_sc_code || 'J10';
@@ -6560,7 +7218,7 @@ async function initChat() {
 
     const { error: insertErr } = await supabaseClient
       .from('chat_messages')
-      .insert({ username: savedUserId, message: text });
+      .insert({ username: localStorage.getItem('savedUsername'), message: text });
 
     if (insertErr) {
       console.error("Chat send error:", insertErr);
@@ -6573,7 +7231,8 @@ async function initChat() {
     chatSubscription = supabaseClient.channel('public:chat_messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, async (payload) => {
         const rawMsg = payload.new;
-        const { data: uData } = await supabaseClient.from('users').select('equipped_color, avatar_url, equipped_title, name, grade, class_num, student_number').eq('username', rawMsg.username).maybeSingle();
+        // 🛡️ 실시간 메시지 수신 시 사용자 정보를 join이 아닌 개별 쿼리로 가져옴 (안정성)
+        const { data: uData } = await supabaseClient.from('users').select('username, equipped_color, avatar_url, equipped_title, name, grade, class_num, student_number').eq('username', rawMsg.username).maybeSingle();
         const msg = { ...rawMsg, users: uData ? { ...uData } : null };
         appendChatMessage(msg);
       })
@@ -6740,70 +7399,856 @@ function appendChatMessage(msg) {
   }
 }
 
-/** 🏛️ 전국 학교 검색 UI 로직 */
-let currentSearchType = 'signup'; // 'signup' 또는 'social'
+const CHAT_DM_PREFIX = '__EDUBOARD_DM__';
+let chatMode = 'global';
+let chatDmTarget = null;
+let chatAllMessagesCache = [];
+let chatUserMapCache = {};
 
-window.openSchoolSearchModal = function(type) {
-  currentSearchType = type;
-  const modal = document.getElementById('school-search-modal');
-  if (modal) modal.style.display = 'flex';
-  document.getElementById('school-search-input').value = '';
-  document.getElementById('school-search-results').innerHTML = '<p style="padding: 20px; text-align: center; color: #94a3b8; font-size: 0.9rem;">학교명을 검색해주세요.</p>';
-  document.getElementById('school-search-input').focus();
-};
+function chatEscapeHtml(value) {
+  const text = String(value ?? '');
+  if (typeof escapeHtml === 'function') return escapeHtml(text);
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
-window.closeSchoolSearchModal = function() {
-  document.getElementById('school-search-modal').style.display = 'none';
-};
+function chatEscapeAttr(value) {
+  return chatEscapeHtml(value).replace(/`/g, '&#096;');
+}
 
-window.executeSchoolSearch = async function() {
-  const keyword = document.getElementById('school-search-input').value.trim();
-  const resultsEl = document.getElementById('school-search-results');
-  
-  if (keyword.length < 2) {
-    alert('2글자 이상 입력해주세요.');
-    return;
+function getCurrentChatUsername() {
+  return (localStorage.getItem('savedUsername') || '').trim();
+}
+
+function isChatPanelVisible() {
+  const panel = document.getElementById('chat-panel');
+  return !!(panel && panel.classList.contains('active') && getComputedStyle(panel).display !== 'none');
+}
+
+function getChatFriendKey() {
+  return `eduBoard_chatFriends:${getCurrentChatUsername() || 'guest'}`;
+}
+
+function getChatFriends() {
+  try {
+    const friends = JSON.parse(localStorage.getItem(getChatFriendKey()) || '[]');
+    return Array.isArray(friends) ? friends.filter(f => f && f.username) : [];
+  } catch (err) {
+    return [];
   }
+}
 
-  resultsEl.innerHTML = '<p style="padding: 20px; text-align: center; color: #6366f1;">🔍 검색 중...</p>';
-  
-  const results = await window.SchoolSearch.search(keyword);
-  
-  if (results.length === 0) {
-    resultsEl.innerHTML = '<p style="padding: 20px; text-align: center; color: #ef4444;">검색 결과가 없습니다.</p>';
-    return;
+function getChatReadKey() {
+  return `eduBoard_chatRead:${getCurrentChatUsername() || 'guest'}`;
+}
+
+function getChatReadMap() {
+  try {
+    const readMap = JSON.parse(localStorage.getItem(getChatReadKey()) || '{}');
+    return readMap && typeof readMap === 'object' ? readMap : {};
+  } catch (err) {
+    return {};
   }
+}
 
-  resultsEl.innerHTML = '';
-  results.forEach(school => {
-    const row = document.createElement('div');
-    row.style.padding = '12px 16px';
-    row.style.borderBottom = '1px solid #f1f5f9';
-    row.style.cursor = 'pointer';
-    row.style.transition = 'background 0.2s';
-    
-    row.innerHTML = `
-      <div style="font-weight: 700; color: #1e293b; font-size: 0.95rem;">${school.name}</div>
-      <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">${school.address}</div>
-      <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">${school.type}</div>
-    `;
-    
-    row.onmouseover = () => row.style.background = '#f8fafc';
-    row.onmouseout = () => row.style.background = 'none';
-    
-    row.onclick = () => {
-      if (currentSearchType === 'signup') {
-        document.getElementById('signupSchoolName').value = school.name;
-        document.getElementById('signupAtptCode').value = school.atptCode;
-        document.getElementById('signupSchulCode').value = school.schulCode;
-      } else {
-        document.getElementById('socialSchoolName').value = school.name;
-        document.getElementById('socialAtptCode').value = school.atptCode;
-        document.getElementById('socialSchulCode').value = school.schulCode;
-      }
-      closeSchoolSearchModal();
-    };
-    
-    resultsEl.appendChild(row);
+function saveChatReadMap(readMap) {
+  localStorage.setItem(getChatReadKey(), JSON.stringify(readMap || {}));
+}
+
+function markChatThreadRead(username) {
+  const cleanUsername = String(username || '').trim();
+  if (!cleanUsername) return;
+  const readMap = getChatReadMap();
+  readMap[cleanUsername] = Date.now();
+  saveChatReadMap(readMap);
+  updateChatUnreadIndicators();
+}
+
+function getChatMessageTime(msg) {
+  const time = new Date(msg?.created_at || 0).getTime();
+  return Number.isFinite(time) ? time : 0;
+}
+
+function getChatThreads() {
+  const myUsername = getCurrentChatUsername();
+  const threadMap = new Map();
+
+  getChatFriends().forEach(friend => {
+    threadMap.set(friend.username, {
+      username: friend.username,
+      name: friend.name || friend.username,
+      lastTime: 0,
+      lastText: '',
+      unread: 0,
+      friend: true
+    });
   });
+
+  chatAllMessagesCache.forEach(msg => {
+    const payload = parseChatPayload(msg);
+    if (payload.kind !== 'dm') return;
+    const mine = msg.username === myUsername;
+    const incoming = payload.to === myUsername;
+    if (!mine && !incoming) return;
+
+    const otherUsername = mine ? payload.to : msg.username;
+    if (!otherUsername || otherUsername === myUsername) return;
+
+    const userInfo = chatUserMapCache[otherUsername] || {};
+    const fallbackName = mine ? payload.toName : (msg.users?.name || userInfo.name);
+    const existing = threadMap.get(otherUsername) || {
+      username: otherUsername,
+      name: fallbackName || otherUsername,
+      lastTime: 0,
+      lastText: '',
+      unread: 0,
+      friend: false
+    };
+
+    const msgTime = getChatMessageTime(msg);
+    if (msgTime >= existing.lastTime) {
+      existing.lastTime = msgTime;
+      existing.lastText = payload.text || '';
+      existing.name = fallbackName || existing.name || otherUsername;
+    }
+
+    const readAt = Number(getChatReadMap()[otherUsername] || 0);
+    if (incoming && msg.username === otherUsername && msgTime > readAt) {
+      existing.unread += 1;
+    }
+
+    threadMap.set(otherUsername, existing);
+  });
+
+  return [...threadMap.values()].sort((a, b) => {
+    if ((b.unread > 0) !== (a.unread > 0)) return b.unread - a.unread;
+    return (b.lastTime || 0) - (a.lastTime || 0) || String(a.name).localeCompare(String(b.name));
+  });
+}
+
+function getTotalUnreadDmCount() {
+  return getChatThreads().reduce((sum, thread) => sum + Number(thread.unread || 0), 0);
+}
+
+function updateChatUnreadIndicators() {
+  const total = getTotalUnreadDmCount();
+  const subtitle = document.getElementById('chat-mode-subtitle');
+  if (subtitle && chatMode === 'global') {
+    subtitle.textContent = total > 0
+      ? `읽지 않은 1:1 메시지 ${total}개가 있습니다.`
+      : '프로필을 눌러 언급, 1:1 대화, 친구 추가를 사용할 수 있습니다.';
+  }
+
+  document.querySelectorAll('[onclick*="chat-panel"]').forEach(target => {
+    if (!target.dataset.chatBadgeHost) {
+      target.dataset.chatBadgeHost = '1';
+      const pos = getComputedStyle(target).position;
+      if (pos === 'static') target.style.position = 'relative';
+    }
+    let badge = target.querySelector(':scope > .chat-nav-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'chat-nav-badge';
+      target.appendChild(badge);
+    }
+    badge.textContent = total > 9 ? '9+' : String(total);
+    badge.style.display = total > 0 ? 'inline-flex' : 'none';
+  });
+}
+
+function saveChatFriends(friends) {
+  const cleaned = [];
+  friends.forEach(friend => {
+    const username = String(friend.username || '').trim();
+    if (!username || cleaned.some(item => item.username === username)) return;
+    cleaned.push({
+      username,
+      name: String(friend.name || username).trim() || username
+    });
+  });
+  localStorage.setItem(getChatFriendKey(), JSON.stringify(cleaned));
+  renderChatFriends();
+}
+
+function addChatFriend(username, name) {
+  const cleanUsername = String(username || '').trim();
+  const myUsername = getCurrentChatUsername();
+  if (!cleanUsername) return { ok: false, reason: 'empty' };
+  if (cleanUsername === myUsername) return { ok: false, reason: 'self' };
+
+  const friends = getChatFriends();
+  const existing = friends.find(friend => friend.username === cleanUsername);
+  if (existing) {
+    existing.name = name || existing.name || cleanUsername;
+    saveChatFriends(friends);
+    return { ok: false, reason: 'exists' };
+  } else {
+    friends.push({ username: cleanUsername, name: name || cleanUsername });
+  }
+  saveChatFriends(friends);
+  return { ok: true, reason: 'added' };
+}
+
+function renderChatFriends() {
+  const box = document.getElementById('chat-friend-list');
+  if (!box) return;
+
+  const friends = getChatThreads();
+  box.innerHTML = '';
+  if (!friends.length) {
+    box.style.display = 'none';
+    updateChatUnreadIndicators();
+    return;
+  }
+
+  box.style.display = 'flex';
+  const label = document.createElement('span');
+  label.textContent = 'DM';
+  label.style.cssText = 'font-size:0.78rem; font-weight:900; color:#64748b; margin-right:2px; flex:0 0 auto;';
+  box.appendChild(label);
+
+  friends.forEach(friend => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `chat-thread-pill ${friend.unread ? 'unread' : ''} ${chatDmTarget?.username === friend.username ? 'active' : ''}`;
+    btn.innerHTML = `
+      <span class="chat-thread-avatar">${chatEscapeHtml((friend.name || friend.username || '?').slice(0, 1))}</span>
+      <span class="chat-thread-main">
+        <strong>${chatEscapeHtml(friend.name || friend.username)}</strong>
+        <small>${chatEscapeHtml(friend.lastText || (friend.friend ? '친구' : '1:1 대화'))}</small>
+      </span>
+      ${friend.unread ? `<span class="chat-thread-unread">${friend.unread > 9 ? '9+' : friend.unread}</span>` : ''}
+    `;
+    btn.title = `${friend.name || friend.username}님과 1:1 대화`;
+    btn.onclick = () => window.startDirectChat(friend.username, friend.name || friend.username);
+    box.appendChild(btn);
+  });
+  updateChatUnreadIndicators();
+}
+
+function encodeDirectMessage(target, text) {
+  return `${CHAT_DM_PREFIX}${JSON.stringify({
+    to: target.username,
+    toName: target.name || target.username,
+    text
+  })}`;
+}
+
+function parseChatPayload(msg) {
+  const raw = String(msg?.message ?? '');
+  if (!raw.startsWith(CHAT_DM_PREFIX)) {
+    return { kind: 'global', text: raw };
+  }
+
+  try {
+    const data = JSON.parse(raw.slice(CHAT_DM_PREFIX.length));
+    return {
+      kind: 'dm',
+      to: String(data.to || ''),
+      toName: String(data.toName || data.targetName || data.to || ''),
+      text: String(data.text || '')
+    };
+  } catch (err) {
+    return { kind: 'global', text: raw };
+  }
+}
+
+function shouldRenderChatMessage(msg, payload) {
+  if (chatMode === 'global') return payload.kind === 'global';
+  if (!chatDmTarget || payload.kind !== 'dm') return false;
+
+  const myUsername = getCurrentChatUsername();
+  const targetUsername = chatDmTarget.username;
+  return (msg.username === myUsername && payload.to === targetUsername)
+    || (msg.username === targetUsername && payload.to === myUsername);
+}
+
+function formatChatMessageText(text) {
+  return chatEscapeHtml(text).replace(/(^|[\s(])@([^\s@]{1,30})/g, '$1<span class="chat-mention">@$2</span>');
+}
+
+function updateChatModeUI() {
+  const label = document.getElementById('chat-mode-label');
+  const subtitle = document.getElementById('chat-mode-subtitle');
+  const globalBtn = document.getElementById('chat-global-btn');
+  const input = document.getElementById('chat-input');
+
+  if (chatMode === 'dm' && chatDmTarget) {
+    if (label) label.textContent = `1:1 대화: ${chatDmTarget.name || chatDmTarget.username}`;
+    if (subtitle) subtitle.textContent = '이 대화는 나와 상대에게만 표시됩니다.';
+    if (globalBtn) globalBtn.style.display = 'inline-flex';
+    if (input) input.placeholder = `${chatDmTarget.name || chatDmTarget.username}님에게 메시지 보내기...`;
+  } else {
+    if (label) label.textContent = '전체 대화';
+    if (subtitle) subtitle.textContent = '프로필을 눌러 언급, 1:1 대화, 친구 추가를 사용할 수 있습니다.';
+    if (globalBtn) globalBtn.style.display = 'none';
+    if (input) input.placeholder = '메시지를 입력하세요 (한국어/이모티콘 지원)...';
+  }
+
+  renderChatFriends();
+}
+
+function mentionChatUser(name) {
+  const input = document.getElementById('chat-input');
+  if (!input) return;
+  const cleanName = String(name || '').trim();
+  if (!cleanName) return;
+
+  const mention = `@${cleanName} `;
+  const start = Number.isInteger(input.selectionStart) ? input.selectionStart : input.value.length;
+  const end = Number.isInteger(input.selectionEnd) ? input.selectionEnd : input.value.length;
+  input.value = `${input.value.slice(0, start)}${mention}${input.value.slice(end)}`;
+  const nextPos = start + mention.length;
+  input.focus();
+  try { input.setSelectionRange(nextPos, nextPos); } catch (err) {}
+}
+
+window.startDirectChat = function(username, name) {
+  const cleanUsername = String(username || '').trim();
+  if (!cleanUsername) return;
+  chatMode = 'dm';
+  chatDmTarget = {
+    username: cleanUsername,
+    name: String(name || cleanUsername).trim() || cleanUsername
+  };
+  markChatThreadRead(cleanUsername);
+  updateChatModeUI();
+  initChat();
 };
+
+window.exitDirectChat = function() {
+  chatMode = 'global';
+  chatDmTarget = null;
+  updateChatModeUI();
+  initChat();
+};
+
+function addChatEmptyStateIfNeeded() {
+  const msgContainer = document.getElementById('chat-messages-container');
+  if (!msgContainer || msgContainer.querySelector('.chat-msg-row')) return;
+
+  msgContainer.querySelectorAll('.chat-date-separator, .chat-empty-hint').forEach(el => el.remove());
+  const empty = document.createElement('div');
+  empty.className = 'chat-empty-hint';
+  empty.style.cssText = 'text-align:center; color:#94a3b8; font-size:0.85rem; padding:14px;';
+  empty.textContent = chatMode === 'dm' ? '아직 1:1 메시지가 없습니다.' : '첫 번째 메시지를 남겨보세요.';
+  msgContainer.appendChild(empty);
+}
+
+function removeChatMessageFromView(id, rowEl = null) {
+  const targetId = String(id);
+  chatAllMessagesCache = chatAllMessagesCache.filter(msg => String(msg.id) !== targetId);
+
+  if (rowEl?.isConnected) rowEl.remove();
+  document.querySelectorAll('.chat-msg-row').forEach(row => {
+    if (row.dataset.chatId === targetId) row.remove();
+  });
+
+  const msgContainer = document.getElementById('chat-messages-container');
+  if (msgContainer) {
+    const separators = [...msgContainer.querySelectorAll('.chat-date-separator')];
+    separators.forEach(separator => {
+      const next = separator.nextElementSibling;
+      if (!next || next.classList.contains('chat-date-separator')) separator.remove();
+    });
+  }
+
+  renderChatFriends();
+  updateChatUnreadIndicators();
+  addChatEmptyStateIfNeeded();
+}
+
+window.deleteChatMessage = async function(id, rowEl = null) {
+  if (!id) return;
+  if (!confirm('이 메시지를 삭제하시겠습니까? 삭제하면 대화실에서 보이지 않습니다.')) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from('chat_messages')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    removeChatMessageFromView(id, rowEl);
+    showRewardToast('메시지를 삭제했습니다.');
+  } catch (err) {
+    console.error('Chat delete failed:', err);
+    alert('메시지 삭제에 실패했습니다: ' + (err.message || err));
+  }
+};
+
+async function initChat() {
+  const msgContainer = document.getElementById('chat-messages-container');
+  const chatForm = document.getElementById('chat-form');
+  const chatInput = document.getElementById('chat-input');
+
+  if (!msgContainer || !chatForm || !chatInput) return;
+
+  updateChatModeUI();
+  lastRenderedDate = null;
+  msgContainer.innerHTML = `<div class="chat-empty-hint" style="text-align:center; color:#556677; font-size:0.85rem; padding:20px; background:rgba(255,255,255,0.45); border-radius:20px; margin:10px auto; width:fit-content;">${chatMode === 'dm' ? '1:1 대화를 시작해 보세요.' : '대화실에 오신 것을 환영합니다! 바른말 고운말을 사용해 주세요.'}</div>`;
+
+  const { data, error } = await supabaseClient
+    .from('chat_messages')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    console.error('Chat history load error:', error);
+    msgContainer.innerHTML = '<div style="text-align:center; color:#dc3545; font-size:0.85rem; padding:20px;">대화 내역을 불러오지 못했습니다.</div>';
+    return;
+  }
+
+  if (data && data.length > 0) {
+    const usernames = [...new Set(data.filter(item => item.username).map(item => item.username))];
+    const { data: userData } = await supabaseClient
+      .from('users')
+      .select('username, equipped_color, avatar_url, equipped_title, name, grade, class_num, student_number')
+      .in('username', usernames);
+
+    const userMap = {};
+    userData?.forEach(user => { userMap[user.username] = user; });
+    chatUserMapCache = userMap;
+    chatAllMessagesCache = [...data].reverse().map(item => ({ ...item, users: userMap[item.username] || null }));
+    chatAllMessagesCache.forEach(item => appendChatMessage(item));
+    if (isChatPanelVisible() && chatMode === 'dm' && chatDmTarget) {
+      markChatThreadRead(chatDmTarget.username);
+    }
+    renderChatFriends();
+  } else {
+    chatAllMessagesCache = [];
+    chatUserMapCache = {};
+    renderChatFriends();
+  }
+
+  const renderedMessages = msgContainer.querySelectorAll('.chat-msg-row').length;
+  if (!renderedMessages) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'text-align:center; color:#94a3b8; font-size:0.85rem; padding:14px;';
+    empty.textContent = chatMode === 'dm' ? '아직 1:1 메시지가 없습니다.' : '첫 번째 메시지를 남겨보세요.';
+    msgContainer.appendChild(empty);
+  }
+
+  chatForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const text = chatInput.value.trim();
+    const savedUserId = getCurrentChatUsername();
+    if (!text || !savedUserId) return;
+
+    if (chatMode === 'dm' && !chatDmTarget) {
+      alert('1:1 대화 상대를 먼저 선택해 주세요.');
+      return;
+    }
+
+    const outgoingText = chatMode === 'dm'
+      ? encodeDirectMessage(chatDmTarget, text)
+      : text;
+
+    chatInput.value = '';
+
+    const { error: insertErr } = await supabaseClient
+      .from('chat_messages')
+      .insert({ username: savedUserId, message: outgoingText });
+
+    if (insertErr) {
+      console.error('Chat send error:', insertErr);
+      chatInput.value = text;
+      alert('메시지 전송에 실패했습니다.');
+    }
+  };
+
+  if (!chatSubscription) {
+    chatSubscription = supabaseClient.channel('public:chat_messages')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, async (payload) => {
+        const rawMsg = payload.new;
+        const { data: uData } = await supabaseClient
+          .from('users')
+          .select('username, equipped_color, avatar_url, equipped_title, name, grade, class_num, student_number')
+          .eq('username', rawMsg.username)
+          .maybeSingle();
+        const msg = { ...rawMsg, users: uData ? { ...uData } : null };
+        if (msg.users?.username) chatUserMapCache[msg.users.username] = msg.users;
+        chatAllMessagesCache.push(msg);
+
+        const payloadData = parseChatPayload(msg);
+        const me = getCurrentChatUsername();
+        const isIncomingDm = payloadData.kind === 'dm' && payloadData.to === me && msg.username !== me;
+        const isActiveThread = isChatPanelVisible() && chatMode === 'dm' && chatDmTarget?.username === msg.username;
+        if (isIncomingDm) {
+          if (isActiveThread) {
+            markChatThreadRead(msg.username);
+          } else if (typeof window.showRewardToast === 'function') {
+            const fromName = msg.users?.name || msg.username;
+            window.showRewardToast(`새 1:1 메시지: ${fromName}`, 'success');
+          }
+        }
+
+        appendChatMessage(msg);
+        renderChatFriends();
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, (payload) => {
+        const deletedId = payload.old?.id;
+        if (deletedId) removeChatMessageFromView(deletedId);
+      })
+      .subscribe();
+  }
+
+  const scrollBtn = document.getElementById('chat-scroll-bottom');
+  if (scrollBtn && !msgContainer.dataset.scrollBound) {
+    msgContainer.dataset.scrollBound = '1';
+    msgContainer.addEventListener('scroll', () => {
+      scrollBtn.style.display = (msgContainer.scrollHeight - msgContainer.scrollTop - msgContainer.clientHeight > 300) ? 'flex' : 'none';
+    });
+    scrollBtn.onclick = () => {
+      msgContainer.scrollTo({ top: msgContainer.scrollHeight, behavior: 'smooth' });
+    };
+  }
+}
+
+function appendChatMessage(msg) {
+  const msgContainer = document.getElementById('chat-messages-container');
+  if (!msgContainer) return;
+
+  const payload = parseChatPayload(msg);
+  if (!shouldRenderChatMessage(msg, payload)) return;
+
+  if (msg.created_at) {
+    const curDate = new Date(msg.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    if (lastRenderedDate !== curDate) {
+      const dateSep = document.createElement('div');
+      dateSep.className = 'chat-date-separator';
+      dateSep.innerHTML = `<span class="chat-date-text">${chatEscapeHtml(curDate)}</span>`;
+      msgContainer.appendChild(dateSep);
+      lastRenderedDate = curDate;
+    }
+  }
+
+  const savedUserId = getCurrentChatUsername();
+  const isMine = (savedUserId === msg.username);
+  if (payload.kind === 'dm' && !isMine && isChatPanelVisible() && chatMode === 'dm' && chatDmTarget?.username === msg.username) {
+    markChatThreadRead(msg.username);
+  }
+  const uInfo = msg.users || {};
+  const userColor = uInfo.equipped_color || '';
+  const isPremium = String(userColor).includes('컬러');
+
+  const avatarUrl = uInfo.avatar_url || '';
+  const grade = Number(uInfo.grade) > 0 ? `${uInfo.grade}학년 ` : '';
+  const classNum = Number(uInfo.class_num) > 0 ? `${uInfo.class_num}반 ` : '';
+  const studentNum = Number(uInfo.student_number) > 0 ? `${uInfo.student_number}번` : '';
+  const realName = uInfo.name || msg.username;
+  const gradeClassInfo = (grade || classNum || studentNum) ? `(${grade}${classNum}${studentNum.trim()})` : '';
+
+  const rawTitle = uInfo.equipped_title || '';
+  const cleanTitle = rawTitle.replace('[칭호]', '').trim();
+  const titleHtml = cleanTitle ? `<span class="chat-title">[${chatEscapeHtml(cleanTitle)}]</span> ` : '';
+
+  let timeStr = '';
+  if (msg.created_at) {
+    const d = new Date(msg.created_at);
+    timeStr = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: 'numeric', hour12: true }).format(d);
+  }
+  const timeHtml = timeStr ? `<div class="chat-time" style="font-size:0.75rem; color:#94a3b8; margin:0 4px; align-self:flex-end;">${chatEscapeHtml(timeStr)}</div>` : '';
+
+  const row = document.createElement('div');
+  row.className = `chat-msg-row ${isMine ? 'mine' : 'other'} ${isPremium ? 'premium-chat' : ''} ${payload.kind === 'dm' ? 'dm-chat' : ''}`;
+  if (msg.id) row.dataset.chatId = String(msg.id);
+
+  const displayName = `${titleHtml}${chatEscapeHtml(realName)} <span style="font-size:0.75rem; color:#64748b; font-weight:normal;">${chatEscapeHtml(gradeClassInfo)}</span>`;
+  const dmBadge = payload.kind === 'dm' ? '<span class="chat-dm-badge">1:1</span>' : '';
+  const safeMessage = formatChatMessageText(payload.text || '');
+  const bubbleColor = isPremium && userColor ? userColor : (isMine ? '#fee500' : '#fff');
+  const readStateHtml = payload.kind === 'dm'
+    ? `<div class="chat-read-state">${isMine ? '전송됨' : '읽음'}</div>`
+    : '';
+
+  const openProfileDetail = () => {
+    const modal = document.getElementById('chat-profile-modal');
+    if (!modal) return;
+    document.getElementById('cp-name').textContent = realName;
+    document.getElementById('cp-title').textContent = cleanTitle ? `[${cleanTitle}]` : '';
+    document.getElementById('cp-info').textContent = `${grade}${classNum}${studentNum}`;
+
+    const cpAvatar = document.getElementById('cp-avatar');
+    const cpPlaceholder = document.getElementById('cp-avatar-placeholder');
+    if (avatarUrl) {
+      cpAvatar.src = avatarUrl;
+      cpAvatar.style.display = 'block';
+      cpPlaceholder.style.display = 'none';
+    } else {
+      cpAvatar.style.display = 'none';
+      cpPlaceholder.style.display = 'block';
+    }
+
+    const dmBtn = document.getElementById('cp-action-dm');
+    const friendBtn = document.getElementById('cp-action-friend');
+    const mentBtn = document.getElementById('cp-action-mention');
+    const isSelf = msg.username === getCurrentChatUsername();
+
+    if (dmBtn) {
+      dmBtn.style.opacity = isSelf ? '0.45' : '1';
+      dmBtn.onclick = () => {
+        if (isSelf) {
+          alert('본인과는 1:1 대화를 시작할 수 없습니다.');
+          return;
+        }
+        addChatFriend(msg.username, realName);
+        window.startDirectChat(msg.username, realName);
+        modal.style.display = 'none';
+      };
+    }
+
+    if (friendBtn) {
+      friendBtn.style.opacity = isSelf ? '0.45' : '1';
+      friendBtn.onclick = () => {
+        if (isSelf) {
+          alert('본인은 친구로 추가할 수 없습니다.');
+          return;
+        }
+        const result = addChatFriend(msg.username, realName);
+        if (result.reason === 'exists') alert('이미 친구 목록에 있습니다.');
+        else if (result.ok) alert(`${realName}님을 친구 목록에 추가했습니다.`);
+        else alert('친구 추가를 할 수 없습니다.');
+        modal.style.display = 'none';
+      };
+    }
+
+    if (mentBtn) {
+      mentBtn.onclick = () => {
+        mentionChatUser(realName);
+        modal.style.display = 'none';
+      };
+    }
+
+    modal.style.display = 'flex';
+  };
+
+  const avatarHtml = `
+    <div class="chat-avatar" style="width:40px; height:40px; border-radius:15px; background:#e2e8f0; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; cursor:pointer;">
+      ${avatarUrl ? `<img src="${chatEscapeAttr(avatarUrl)}" alt="" style="width:100%; height:100%; object-fit:cover;">` : '<span style="font-size:1.5rem;">👤</span>'}
+    </div>
+  `;
+
+  if (isMine) {
+    row.innerHTML = `
+      ${timeHtml}
+      <div class="chat-content mine-content">
+        <div class="chat-username" style="font-size:0.85rem; margin-bottom:4px; margin-right:4px; font-weight:600; color:#334155; display:flex; justify-content:flex-end; align-items:center; gap:6px;">
+          ${dmBadge}${displayName}
+        </div>
+        <div class="chat-bubble ${isPremium ? 'premium-bubble' : ''}" style="background:${chatEscapeAttr(bubbleColor)}; color:#000; border:none; border-radius:15px 0 15px 15px; padding:10px 15px; box-shadow:0 1px 2px rgba(0,0,0,0.1); line-height:1.4; cursor:pointer;">${safeMessage}</div>
+        ${readStateHtml}
+      </div>
+      ${avatarHtml}
+    `;
+  } else {
+    row.innerHTML = `
+      ${avatarHtml}
+      <div class="chat-content">
+        <div class="chat-username" style="font-size:0.85rem; margin-bottom:4px; margin-left:4px; font-weight:600; color:#334155; display:flex; align-items:center; gap:6px;">
+          ${displayName}${dmBadge}
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <div class="chat-bubble ${isPremium ? 'premium-bubble' : ''}" style="background:${chatEscapeAttr(bubbleColor)}; color:#000; border:none; border-radius:0 15px 15px 15px; padding:10px 15px; box-shadow:0 1px 2px rgba(0,0,0,0.1); line-height:1.4; cursor:pointer;">${safeMessage}</div>
+          ${timeHtml}
+        </div>
+        ${readStateHtml}
+      </div>
+    `;
+  }
+
+  msgContainer.appendChild(row);
+
+  row.querySelector('.chat-avatar')?.addEventListener('click', openProfileDetail);
+  row.querySelector('.chat-bubble')?.addEventListener('click', () => mentionChatUser(realName));
+
+  const canDelete = !!msg.id && (isMine || isCurrentAdmin());
+  if (canDelete) {
+    const tools = document.createElement('div');
+    tools.className = 'chat-message-tools';
+    tools.style.cssText = `display:flex; ${isMine ? 'justify-content:flex-end;' : 'justify-content:flex-start;'} margin-top:4px;`;
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '삭제';
+    delBtn.title = '메시지 삭제';
+    delBtn.style.cssText = 'width:auto; margin:0; padding:3px 8px; border-radius:999px; border:1px solid #fecaca; background:#fff1f2; color:#be123c; font-size:0.7rem; font-weight:900;';
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      window.deleteChatMessage(msg.id, row);
+    };
+    tools.appendChild(delBtn);
+    row.querySelector('.chat-content')?.appendChild(tools);
+  }
+
+  const threshold = 250;
+  const isAtBottom = (msgContainer.scrollHeight - msgContainer.scrollTop - msgContainer.clientHeight) <= (row.clientHeight + threshold);
+  if (isMine || isAtBottom) {
+    msgContainer.scrollTo({ top: msgContainer.scrollHeight, behavior: 'smooth' });
+  }
+}
+
+/** 🔎 아이디/비밀번호 찾기 모달 핸들러 */
+window.openFindInfoModal = function(type) {
+  const modal = document.getElementById('find-info-modal');
+  const title = document.getElementById('find-info-title');
+  const body = document.getElementById('find-info-body');
+  
+  if (type === 'id') {
+    title.textContent = '아이디 찾기';
+    body.innerHTML = `
+      <div class="auth-input-group">
+        <label>이름</label>
+        <input type="text" id="find-id-name" placeholder="가입 시 이름을 입력하세요">
+      </div>
+      <div class="auth-input-group">
+        <label>학년/반/번호 (예: 2315 -> 2학년 3반 15번)</label>
+        <input type="number" id="find-id-info" placeholder="숫자만 입력하세요">
+      </div>
+      <button class="auth-btn-primary" onclick="processFindId()">아이디 확인하기</button>
+      <div id="find-id-result" style="margin-top:1rem; font-size:0.9rem; font-weight:700; color:#31c48d;"></div>
+    `;
+  } else {
+    title.textContent = '비밀번호 재설정';
+    body.innerHTML = `
+      <p style="font-size:0.85rem; color:#64748b; margin-bottom:1rem;">아이디와 이름을 입력하시면 비밀번호를 초기화할 수 있습니다.</p>
+      <div class="auth-input-group">
+        <label>아이디</label>
+        <input type="text" id="find-pw-username" placeholder="아이디를 입력하세요">
+      </div>
+      <div class="auth-input-group">
+        <label>이름</label>
+        <input type="text" id="find-pw-name" placeholder="이름을 입력하세요">
+      </div>
+      <button class="auth-btn-primary" onclick="processResetPw()">비밀번호 초기화 링크 받기</button>
+      <div id="find-pw-result" style="margin-top:1rem; font-size:0.9rem; font-weight:700; color:#31c48d;"></div>
+    `;
+  }
+  modal.style.display = 'flex';
+};
+
+window.closeFindInfoModal = function() {
+  document.getElementById('find-info-modal').style.display = 'none';
+};
+
+// 임시 정보 찾기 로직 (회원 테이블 검색)
+window.processFindId = async () => {
+  const name = document.getElementById('find-id-name').value.trim();
+  const info = document.getElementById('find-id-info').value.trim();
+  const res = document.getElementById('find-id-result');
+  if (!name || !info) { res.textContent = '모든 항목을 입력하세요.'; return; }
+  
+  res.textContent = '검색 중...';
+  const grade = info.substring(0, 1);
+  const classNum = info.substring(1, 2);
+  const studentNum = info.substring(2);
+
+  const { data, error } = await supabaseClient.from('users').select('username').match({ name, grade, class_num: classNum, student_number: studentNum }).maybeSingle();
+  if (data) {
+    res.innerHTML = `가입된 아이디: <span style="color:#4f46e5;">${data.username}</span>`;
+  } else {
+    res.textContent = '일치하는 정보가 없습니다.';
+    res.style.color = '#ef4444';
+  }
+};
+
+window.processResetPw = () => {
+    const username = document.getElementById('find-pw-username').value.trim();
+    const name = document.getElementById('find-pw-name').value.trim();
+    const res = document.getElementById('find-pw-result');
+    if (!username || !name) { res.textContent = '아이디와 이름을 입력하세요.'; return; }
+    
+    // find-password.html로 이동하여 인증 진행 (URL 파라미터 전달)
+    const url = `find-password.html?username=${encodeURIComponent(username)}&name=${encodeURIComponent(name)}`;
+    window.location.href = url;
+};
+
+/** 🚀 네이버 스타일 동적 확장 레이아웃 (Intersection Observer) */
+function initDynamicExpansion() {
+  const options = {
+    root: null, 
+    threshold: 0
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const parentPanel = entry.target.closest('.panel');
+      if (!parentPanel) return;
+      const container = parentPanel.querySelector('.panel-container-dynamic');
+      if (container) {
+        if (!entry.isIntersecting) {
+          container.classList.add('is-expanded');
+        } else {
+          container.classList.remove('is-expanded');
+        }
+      }
+    });
+  }, options);
+
+  document.querySelectorAll('.registration-side').forEach(side => {
+    observer.observe(side);
+  });
+}
+
+// 비밀번호 가시성 토글 (FA 아이콘 연동)
+window.togglePassword = function(id) {
+    const input = document.getElementById(id);
+    const eye = document.getElementById('eye-' + id);
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (eye) { eye.classList.remove('fa-eye'); eye.classList.add('fa-eye-slash'); }
+    } else {
+        input.type = 'password';
+        if (eye) { eye.classList.remove('fa-eye-slash'); eye.classList.add('fa-eye'); }
+    }
+};
+
+// 초기화
+document.addEventListener('DOMContentLoaded', () => {
+    initDynamicExpansion();
+    
+    // 비밀번호 실시간 일치 확인 로직
+    const pwInput = document.getElementById('signupPassword');
+    const pwConfirmInput = document.getElementById('signupPasswordConfirm');
+    const statusDiv = document.getElementById('signupPwMatchStatus');
+
+    if (pwInput && pwConfirmInput) {
+        const checkMatch = () => {
+            if (!pwConfirmInput.value) { statusDiv.style.display = 'none'; return; }
+            statusDiv.style.display = 'block';
+            if (pwInput.value === pwConfirmInput.value) {
+                statusDiv.textContent = '✓ 비밀번호가 일치합니다.';
+                statusDiv.style.color = '#10b981';
+            } else {
+                statusDiv.textContent = '✗ 비밀번호가 일치하지 않습니다.';
+                statusDiv.style.color = '#ef4444';
+            }
+        };
+        pwInput.oninput = checkMatch;
+        pwConfirmInput.oninput = checkMatch;
+    }
+});
+
+window.switchSettingsTab = function(tabId) {
+  const profileSection = document.getElementById('settings-profile-section');
+  const generalSection = document.getElementById('settings-general-section');
+  const profileBtn = document.getElementById('tab-btn-profile');
+  const generalBtn = document.getElementById('tab-btn-general');
+  if (tabId === 'profile') {
+    profileSection?.classList.add('active');
+    generalSection?.classList.remove('active');
+    profileBtn?.classList.add('active');
+    generalBtn?.classList.remove('active');
+  } else {
+    profileSection?.classList.remove('active');
+    generalSection?.classList.add('active');
+    profileBtn?.classList.remove('active');
+    generalBtn?.classList.add('active');
+  }
+};
+
+window.realNextSignupStep = nextSignupStep;
