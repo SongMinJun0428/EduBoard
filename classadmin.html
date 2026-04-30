@@ -149,6 +149,18 @@
 
   </div>
 
+  <div id="seat-action-bar" class="seat-action-bar" aria-live="polite">
+    <div>
+      <div id="seat-action-title" class="seat-action-title">좌석 선택</div>
+      <div id="seat-action-sub" class="seat-action-sub">좌석을 선택하세요</div>
+    </div>
+    <div class="seat-action-buttons">
+      <button type="button" class="btn primary" onclick="startSeatMove()">이동하기</button>
+      <button type="button" class="btn" onclick="toggleSelectedSeatLock()">잠금</button>
+      <button type="button" class="btn" onclick="clearSeatAction()">취소</button>
+    </div>
+  </div>
+
   <script src="js/classadmin.js"></script>
 </body>
 </html>

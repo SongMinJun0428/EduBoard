@@ -284,8 +284,13 @@
         background: #f9fafb;
         border: 1px solid #e2e8f0;
         border-radius: .5rem;
-        padding: .6rem;
-        min-height: 58px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: .5rem;
+        min-height: 72px;
+        line-height: 1.15;
         text-align: center;
         cursor: grab;
         position: relative;
@@ -300,6 +305,18 @@
 
     .seat .s-name {
         overflow-wrap: anywhere;
+    }
+
+    .seat.selected {
+        border-color: #2563eb;
+        background: #dbeafe;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .22);
+    }
+
+    .seat.moving {
+        border-color: #16a34a;
+        background: #dcfce7;
+        box-shadow: 0 0 0 3px rgba(22, 163, 74, .22);
     }
 
     .seat-empty {
@@ -325,6 +342,64 @@
         font-size: 1.25rem;
         font-weight: 900;
         letter-spacing: .2em;
+    }
+
+    .seat-action-bar {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        z-index: 1000;
+        width: min(720px, calc(100% - 24px));
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: .85rem 1rem;
+        border: 1px solid #dbeafe;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, .96);
+        box-shadow: 0 16px 40px rgba(15, 23, 42, .22);
+        transform: translate(-50%, calc(100% + 32px));
+        opacity: 0;
+        pointer-events: none;
+        transition: transform .2s ease, opacity .2s ease;
+        backdrop-filter: blur(8px);
+    }
+
+    .seat-action-bar.active {
+        transform: translate(-50%, 0);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .seat-action-bar.moving {
+        border-color: #86efac;
+        background: rgba(240, 253, 244, .97);
+    }
+
+    .seat-action-title {
+        color: #0f172a;
+        font-size: .98rem;
+        font-weight: 900;
+    }
+
+    .seat-action-sub {
+        color: #64748b;
+        font-size: .82rem;
+        font-weight: 700;
+        margin-top: .1rem;
+    }
+
+    .seat-action-buttons {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        flex: 0 0 auto;
+    }
+
+    .seat-action-buttons .btn {
+        margin: 0;
+        white-space: nowrap;
     }
 
     /* 좌석에 마우스를 올렸을 때 살짝 떠오르는 효과 */
@@ -497,8 +572,29 @@
 
         .seat {
             font-size: .8rem;
-            min-height: 52px;
-            padding: .45rem;
+            min-height: 46px;
+            padding: .3rem .2rem;
+        }
+
+        .seat-action-bar {
+            align-items: stretch;
+            flex-direction: column;
+            gap: .65rem;
+            bottom: 10px;
+            padding: .8rem;
+            border-radius: .9rem;
+        }
+
+        .seat-action-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: .45rem;
+        }
+
+        .seat-action-buttons .btn {
+            width: 100%;
+            min-height: 40px;
+            padding: .45rem .3rem;
         }
 
         #shuffle-overlay .overlay-title {
@@ -526,7 +622,12 @@
 
         .seat {
             font-size: .75rem;
-            padding: .4rem;
+            padding: .25rem .15rem;
+            min-height: 42px;
+        }
+
+        .seat-action-buttons {
+            grid-template-columns: 1fr;
         }
     }
 

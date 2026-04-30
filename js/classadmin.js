@@ -9,6 +9,8 @@ const CLASS_NUM = 2;
    자리 관리
 -------------------- */
 let seatData = [];
+let selectedSeatIndex = null;
+let movingSeatIndex = null;
 const SEAT_RULE_STORAGE_KEY = "classadmin_seat_rules_v1";
 const SEAT_RULE_ALL_VALUE = "__all__";
 const SEAT_RULE_TYPES = {
@@ -89,6 +91,7 @@ function showSeatMessage(message) {
     if (!container) return;
 
     container.innerHTML = `<div class="seat-empty">${message}</div>`;
+    renderSeatActionBar();
 }
 
 function renderSeats() {
@@ -105,6 +108,8 @@ function renderSeats() {
         const div = document.createElement("div");
         div.className = "seat";
         if (s.locked) div.classList.add("locked");
+        if (selectedSeatIndex === i) div.classList.add("selected");
+        if (movingSeatIndex === i) div.classList.add("moving");
         applyVisualSeatPosition(div, i, seatData.length, columnCount);
         
         // [번호] 이름 형식으로 표시 (번호 포함 요청 반영)
@@ -123,25 +128,133 @@ function renderSeats() {
         div.addEventListener("drop", e => {
             e.preventDefault();
             const from = parseInt(e.dataTransfer.getData("from"));
+            clearSeatSelection(false);
             swapSeats(from, i);
+        });
+        div.addEventListener("click", e => {
+            handleSeatTap(i);
         });
         div.addEventListener("contextmenu", async e => {
             e.preventDefault();
-            seatData[i].locked = !seatData[i].locked;
-            if (seatData[i].id) {
-                await client.from("class_seats")
-                    .update({ locked: seatData[i].locked })
-                    .eq("id", seatData[i].id);
-            }
-            renderSeats();
+            await toggleSeatLock(i);
         });
 
         container.appendChild(div);
     });
+
+    renderSeatActionBar();
+}
+
+function handleSeatTap(index) {
+    if (movingSeatIndex !== null) {
+        if (movingSeatIndex === index) {
+            movingSeatIndex = null;
+            selectedSeatIndex = index;
+            renderSeats();
+            return;
+        }
+
+        const from = movingSeatIndex;
+        clearSeatSelection(false);
+        swapSeats(from, index);
+        return;
+    }
+
+    selectedSeatIndex = selectedSeatIndex === index ? null : index;
+    renderSeats();
+}
+
+function renderSeatActionBar() {
+    const bar = document.getElementById("seat-action-bar");
+    if (!bar) return;
+
+    const title = document.getElementById("seat-action-title");
+    const sub = document.getElementById("seat-action-sub");
+    const moveButton = bar.querySelector("[onclick='startSeatMove()']");
+    const lockButton = bar.querySelector("[onclick='toggleSelectedSeatLock()']");
+
+    const activeIndex = movingSeatIndex ?? selectedSeatIndex;
+    const seat = activeIndex !== null ? seatData[activeIndex] : null;
+
+    bar.classList.toggle("active", Boolean(seat));
+    bar.classList.toggle("moving", movingSeatIndex !== null);
+
+    if (!seat) {
+        if (title) title.textContent = "좌석 선택";
+        if (sub) sub.textContent = "좌석을 선택하세요";
+        return;
+    }
+
+    if (title) title.textContent = `${seat.student_number || activeIndex + 1}. ${seat.name}`;
+    if (sub) {
+        sub.textContent = movingSeatIndex !== null
+            ? "바꿀 자리를 탭하세요"
+            : seat.locked
+                ? "잠금 상태"
+                : "작업을 선택하세요";
+    }
+    if (moveButton) {
+        moveButton.textContent = movingSeatIndex !== null ? "이동 중" : "이동하기";
+        moveButton.disabled = movingSeatIndex !== null;
+    }
+    if (lockButton) {
+        lockButton.textContent = seat.locked ? "잠금 해제" : "잠금";
+    }
+}
+
+function startSeatMove() {
+    if (selectedSeatIndex === null || !seatData[selectedSeatIndex]) return;
+
+    if (seatData[selectedSeatIndex].locked) {
+        alert("잠긴 자리는 먼저 잠금 해제해야 이동할 수 있습니다.");
+        return;
+    }
+
+    movingSeatIndex = selectedSeatIndex;
+    renderSeats();
+}
+
+function clearSeatSelection(shouldRender = true) {
+    selectedSeatIndex = null;
+    movingSeatIndex = null;
+    if (shouldRender) {
+        renderSeats();
+    }
+}
+
+function clearSeatAction() {
+    clearSeatSelection();
+}
+
+async function toggleSelectedSeatLock() {
+    const activeIndex = movingSeatIndex ?? selectedSeatIndex;
+    if (activeIndex === null) return;
+    await toggleSeatLock(activeIndex);
+}
+
+async function toggleSeatLock(index) {
+    if (!seatData[index]) return;
+
+    seatData[index].locked = !seatData[index].locked;
+    if (selectedSeatIndex === index) selectedSeatIndex = null;
+    if (movingSeatIndex === index) movingSeatIndex = null;
+
+    if (seatData[index].id) {
+        await client.from("class_seats")
+            .update({ locked: seatData[index].locked })
+            .eq("id", seatData[index].id);
+    }
+
+    renderSeats();
 }
 
 function swapSeats(from, to) {
-    if (seatData[from].locked || seatData[to].locked) return;
+    if (from === to) return;
+    if (seatData[from].locked || seatData[to].locked) {
+        alert("잠긴 자리는 이동할 수 없습니다.");
+        renderSeats();
+        return;
+    }
 
     const temp = seatData[from];
     seatData[from] = seatData[to];
