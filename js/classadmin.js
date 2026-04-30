@@ -2,29 +2,110 @@ const client = window.supabase.createClient(
     window.EduConfig.getSupabaseURL(),
     window.EduConfig.getSupabaseKey()
 );
+const CLASS_GRADE = 3;
+const CLASS_NUM = 2;
 
 /* --------------------
    자리 관리
 -------------------- */
 let seatData = [];
+const SEAT_RULE_STORAGE_KEY = "classadmin_seat_rules_v1";
+const SEAT_RULE_ALL_VALUE = "__all__";
+const SEAT_RULE_TYPES = {
+    together: "붙이기",
+    near: "가깝게",
+    apart: "떨어뜨리기",
+    far: "멀리",
+    veryFar: "완전 떨어뜨리기",
+    avoidPreviousSeat: "지난 자리 피하기",
+    avoidPreviousNeighbor: "지난 옆친구 피하기",
+    front: "앞자리",
+    back: "뒷자리",
+    firstRow: "맨 앞줄",
+    lastRow: "맨 뒷줄",
+    window: "창가 자리",
+    avoidWindow: "창가 피하기"
+};
+const SEAT_RULE_MIN_NAMES = {
+    together: 2,
+    near: 2,
+    apart: 2,
+    far: 2,
+    veryFar: 2,
+    avoidPreviousNeighbor: 2
+};
+let seatRules = loadSeatRules();
 
 async function loadSeats() {
     const { data, error } = await client.from("class_seats")
         .select("id,student_number,name,seat_index,locked")  // ✅ name 불러옴
-        .eq("grade", 2).eq("class_num", 3)
+        .eq("grade", CLASS_GRADE).eq("class_num", CLASS_NUM)
         .order("seat_index");
-    if (error) { console.error(error); return; }
+
+    if (error) {
+        console.error(error);
+        showSeatMessage("자리 데이터를 불러오지 못했습니다.");
+        return;
+    }
+
     seatData = data || [];
+    if (!seatData.length) {
+        seatData = await loadInitialSeatsFromPoints();
+    }
+
+    populateSeatRuleStudentSelects();
+    syncSeatRuleStudentFields();
+    renderSeatRules();
     renderSeats();
+}
+
+async function loadInitialSeatsFromPoints() {
+    const { data, error } = await client
+        .from("class_student_points")
+        .select("student_number,name")
+        .eq("grade", CLASS_GRADE)
+        .eq("class_num", CLASS_NUM)
+        .order("student_number");
+
+    if (error) {
+        console.error(error);
+        showSeatMessage("자리 데이터가 없고 학생 명단도 불러오지 못했습니다.");
+        return [];
+    }
+
+    return (data || [])
+        .filter(student => student.name)
+        .map((student, index) => ({
+            id: null,
+            student_number: student.student_number,
+            name: student.name,
+            seat_index: index + 1,
+            locked: false
+        }));
+}
+
+function showSeatMessage(message) {
+    const container = document.getElementById("seat-map");
+    if (!container) return;
+
+    container.innerHTML = `<div class="seat-empty">${message}</div>`;
 }
 
 function renderSeats() {
     const container = document.getElementById("seat-map");
     container.innerHTML = "";
+
+    if (!seatData.length) {
+        showSeatMessage(`${CLASS_GRADE}학년 ${CLASS_NUM}반 학생/자리 데이터가 없습니다.`);
+        return;
+    }
+
+    const columnCount = getSeatColumnCount();
     seatData.forEach((s, i) => {
         const div = document.createElement("div");
         div.className = "seat";
         if (s.locked) div.classList.add("locked");
+        applyVisualSeatPosition(div, i, seatData.length, columnCount);
         
         // [번호] 이름 형식으로 표시 (번호 포함 요청 반영)
         div.innerHTML = `
@@ -47,9 +128,11 @@ function renderSeats() {
         div.addEventListener("contextmenu", async e => {
             e.preventDefault();
             seatData[i].locked = !seatData[i].locked;
-            await client.from("class_seats")
-                .update({ locked: seatData[i].locked })
-                .eq("id", seatData[i].id);
+            if (seatData[i].id) {
+                await client.from("class_seats")
+                    .update({ locked: seatData[i].locked })
+                    .eq("id", seatData[i].id);
+            }
             renderSeats();
         });
 
@@ -71,29 +154,510 @@ function swapSeats(from, to) {
     highlightSeats([from, to]);
 }
 
+function loadSeatRules() {
+    try {
+        const saved = localStorage.getItem(SEAT_RULE_STORAGE_KEY);
+        if (!saved) return [];
+
+        const parsed = JSON.parse(saved);
+        if (!Array.isArray(parsed)) return [];
+
+        return parsed
+            .map(rule => ({
+                id: rule.id || createSeatRuleId(),
+                type: SEAT_RULE_TYPES[rule.type] ? rule.type : "together",
+                all: Boolean(rule.all),
+                names: Array.isArray(rule.names)
+                    ? [...new Set(rule.names.filter(Boolean).map(name => String(name).trim()))]
+                    : []
+            }))
+            .filter(rule => rule.all || rule.names.length >= getSeatRuleMinNames(rule.type));
+    } catch (e) {
+        console.warn("자리 규칙을 불러오지 못했습니다.", e);
+        return [];
+    }
+}
+
+function saveSeatRules() {
+    localStorage.setItem(SEAT_RULE_STORAGE_KEY, JSON.stringify(seatRules));
+}
+
+function createSeatRuleId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+    }
+    return `rule-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function getSeatRuleMinNames(type) {
+    return SEAT_RULE_MIN_NAMES[type] || 1;
+}
+
+function getSortedSeatStudents() {
+    return [...seatData]
+        .filter(student => student.name)
+        .sort((a, b) => (a.student_number || 999) - (b.student_number || 999))
+        .map(student => student.name);
+}
+
+function getSeatRuleStudentSelects() {
+    return [...document.querySelectorAll(".seat-rule-student-select")];
+}
+
+function populateSeatRuleStudentSelects() {
+    const selects = getSeatRuleStudentSelects();
+    if (!selects.length) return;
+
+    const names = getSortedSeatStudents();
+    selects.forEach((select, index) => {
+        const previousValue = select.value;
+        select.innerHTML = "";
+
+        if (index >= 1) {
+            const emptyOption = document.createElement("option");
+            emptyOption.value = "";
+            emptyOption.textContent = "선택 안 함";
+            select.appendChild(emptyOption);
+        } else {
+            const allOption = document.createElement("option");
+            allOption.value = SEAT_RULE_ALL_VALUE;
+            allOption.textContent = "전체";
+            select.appendChild(allOption);
+        }
+
+        if (!names.length) {
+            const emptyOption = document.createElement("option");
+            emptyOption.value = "";
+            emptyOption.textContent = "학생 없음";
+            select.appendChild(emptyOption);
+            return;
+        }
+
+        names.forEach(name => {
+            const option = document.createElement("option");
+            option.value = name;
+            option.textContent = name;
+            select.appendChild(option);
+        });
+
+        if (previousValue === SEAT_RULE_ALL_VALUE && index === 0) {
+            select.value = previousValue;
+        } else if (names.includes(previousValue) || (index >= 1 && previousValue === "")) {
+            select.value = previousValue;
+        } else if (index === 0 && names.length) {
+            select.value = names[0];
+        } else if (index >= 1) {
+            select.value = "";
+        }
+    });
+}
+
+function syncSeatRuleStudentFields() {
+    const type = document.getElementById("seat-rule-type")?.value || "together";
+    const names = getSortedSeatStudents();
+    const selects = getSeatRuleStudentSelects();
+    const student1 = selects[0];
+    const student2 = selects[1];
+    if (!student1 || !student2) return;
+
+    if (student1.value === SEAT_RULE_ALL_VALUE) {
+        selects.slice(1).forEach(select => {
+            select.value = "";
+        });
+        return;
+    }
+
+    if (getSeatRuleMinNames(type) >= 2) {
+        if (!student2.value) {
+            student2.value = names.find(name => name !== student1.value) || "";
+        }
+        return;
+    }
+
+    selects.slice(1).forEach(select => {
+        select.value = "";
+    });
+}
+
+function getSeatRuleTargetNames(rule) {
+    return rule.all ? getSortedSeatStudents() : rule.names;
+}
+
+function getSeatRuleSignature(rule) {
+    return rule.all
+        ? `${rule.type}:${SEAT_RULE_ALL_VALUE}`
+        : `${rule.type}:${[...rule.names].sort().join("|")}`;
+}
+
+function formatSeatRule(rule) {
+    const target = rule.all ? "전체" : rule.names.join(", ");
+    return `${SEAT_RULE_TYPES[rule.type] || "규칙"}: ${target}`;
+}
+
+function renderSeatRules() {
+    const list = document.getElementById("seat-rule-list");
+    if (!list) return;
+
+    list.innerHTML = "";
+    if (!seatRules.length) {
+        const empty = document.createElement("div");
+        empty.className = "seat-rule-empty";
+        empty.textContent = "등록된 규칙 없음";
+        list.appendChild(empty);
+        return;
+    }
+
+    seatRules.forEach(rule => {
+        const item = document.createElement("div");
+        item.className = "seat-rule-item";
+
+        const badge = document.createElement("span");
+        badge.className = `seat-rule-badge ${rule.type}`;
+        badge.textContent = SEAT_RULE_TYPES[rule.type] || "규칙";
+
+        const names = document.createElement("span");
+        names.className = "seat-rule-names";
+        names.textContent = rule.all ? "전체" : rule.names.join(", ");
+        if (rule.all) names.classList.add("all");
+
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.className = "seat-rule-remove";
+        removeButton.textContent = "삭제";
+        removeButton.onclick = () => removeSeatRule(rule.id);
+
+        item.appendChild(badge);
+        item.appendChild(names);
+        item.appendChild(removeButton);
+        list.appendChild(item);
+    });
+}
+
+function addSeatRule() {
+    const type = document.getElementById("seat-rule-type")?.value || "together";
+    const selectedNames = getSeatRuleStudentSelects().map(select => select.value);
+    const all = selectedNames.includes(SEAT_RULE_ALL_VALUE);
+    const names = all
+        ? []
+        : [...new Set(selectedNames.filter(Boolean))];
+    const safeType = SEAT_RULE_TYPES[type] ? type : "together";
+    const minNames = getSeatRuleMinNames(safeType);
+
+    if (!all && names.length < minNames) {
+        alert(minNames === 1 ? "학생을 1명 이상 선택하세요." : "학생을 2명 이상 선택하세요.");
+        return;
+    }
+
+    const nextRule = {
+        id: createSeatRuleId(),
+        type: safeType,
+        all,
+        names
+    };
+    const signature = getSeatRuleSignature(nextRule);
+
+    if (seatRules.some(rule => getSeatRuleSignature(rule) === signature)) {
+        alert("이미 등록된 규칙입니다.");
+        return;
+    }
+
+    seatRules.push(nextRule);
+    saveSeatRules();
+    renderSeatRules();
+}
+
+function removeSeatRule(ruleId) {
+    seatRules = seatRules.filter(rule => rule.id !== ruleId);
+    saveSeatRules();
+    renderSeatRules();
+}
+
+function clearSeatRules() {
+    if (!seatRules.length) return;
+    if (!confirm("모든 자리 규칙을 삭제할까요?")) return;
+
+    seatRules = [];
+    saveSeatRules();
+    renderSeatRules();
+}
+
+function getSeatColumnCount() {
+    const map = document.getElementById("seat-map");
+    if (map && window.getComputedStyle) {
+        const template = window.getComputedStyle(map).gridTemplateColumns;
+        if (template && template !== "none") {
+            const columns = template.split(" ").filter(Boolean).length;
+            if (columns > 0) return columns;
+        }
+    }
+
+    const selected = parseInt(document.getElementById("column-count")?.value, 10);
+    return Number.isInteger(selected) && selected > 0 ? selected : 6;
+}
+
+function getLastRowVisualOffset(index, totalSeats, columnCount) {
+    if (columnCount !== 6 || totalSeats <= 30 || index < 30) {
+        return 0;
+    }
+    return 1;
+}
+
+function getVisualSeatIndex(index, totalSeats, columnCount) {
+    return index + getLastRowVisualOffset(index, totalSeats, columnCount);
+}
+
+function applyVisualSeatPosition(element, index, totalSeats, columnCount) {
+    const visualIndex = getVisualSeatIndex(index, totalSeats, columnCount);
+    if (visualIndex !== index) {
+        element.style.gridColumn = String((visualIndex % columnCount) + 1);
+        element.style.gridRow = String(Math.floor(visualIndex / columnCount) + 1);
+    }
+}
+
+function areAdjacentIndexes(indexA, indexB, columnCount, totalSeats = seatData.length) {
+    const posA = getSeatPosition(indexA, columnCount, totalSeats);
+    const posB = getSeatPosition(indexB, columnCount, totalSeats);
+
+    return Math.abs(posA.row - posB.row) + Math.abs(posA.col - posB.col) === 1;
+}
+
+function getSeatDistance(indexA, indexB, columnCount, totalSeats = seatData.length) {
+    const posA = getSeatPosition(indexA, columnCount, totalSeats);
+    const posB = getSeatPosition(indexB, columnCount, totalSeats);
+    return Math.abs(posA.row - posB.row) + Math.abs(posA.col - posB.col);
+}
+
+function getSeatPosition(index, columnCount, totalSeats = seatData.length) {
+    const visualIndex = getVisualSeatIndex(index, totalSeats, columnCount);
+    return {
+        row: Math.floor(visualIndex / columnCount),
+        col: visualIndex % columnCount
+    };
+}
+
+function getSeatRowCount(layout, columnCount) {
+    return Math.max(1, Math.ceil(layout.length / columnCount));
+}
+
+function getFrontRowLimit(rowCount) {
+    return Math.min(2, rowCount);
+}
+
+function getBackRowStart(rowCount) {
+    return Math.max(rowCount - 2, 0);
+}
+
+function isWindowColumn(col, columnCount) {
+    return col === 0 || col === columnCount - 1;
+}
+
+function areRuleMembersConnected(indexes, columnCount, totalSeats) {
+    const uniqueIndexes = [...new Set(indexes)];
+    const visited = new Set([uniqueIndexes[0]]);
+    const stack = [uniqueIndexes[0]];
+
+    while (stack.length) {
+        const current = stack.pop();
+        uniqueIndexes.forEach(next => {
+            if (!visited.has(next) && areAdjacentIndexes(current, next, columnCount, totalSeats)) {
+                visited.add(next);
+                stack.push(next);
+            }
+        });
+    }
+
+    return visited.size === uniqueIndexes.length;
+}
+
+function hasAdjacentRulePair(indexes, columnCount, totalSeats) {
+    for (let i = 0; i < indexes.length; i++) {
+        for (let j = i + 1; j < indexes.length; j++) {
+            if (areAdjacentIndexes(indexes[i], indexes[j], columnCount, totalSeats)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function doAllRulePairsPass(indexes, callback) {
+    for (let i = 0; i < indexes.length; i++) {
+        for (let j = i + 1; j < indexes.length; j++) {
+            if (!callback(indexes[i], indexes[j])) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function getPreviousSeatIndex(previousLayout, name) {
+    return previousLayout.findIndex(student => student.name === name);
+}
+
+function getSeatRuleFailures(layout, rules = seatRules, previousLayout = seatData) {
+    const columnCount = getSeatColumnCount();
+    const totalSeats = layout.length;
+    const rowCount = getSeatRowCount(layout, columnCount);
+    const frontRowLimit = getFrontRowLimit(rowCount);
+    const backRowStart = getBackRowStart(rowCount);
+
+    return rules.filter(rule => {
+        const targetNames = getSeatRuleTargetNames(rule);
+        const indexes = targetNames.map(name => layout.findIndex(student => student.name === name));
+        if (indexes.some(index => index === -1)) return true;
+
+        if (rule.type === "together") {
+            return !areRuleMembersConnected(indexes, columnCount, totalSeats);
+        }
+
+        if (rule.type === "near") {
+            return !doAllRulePairsPass(indexes, (indexA, indexB) =>
+                getSeatDistance(indexA, indexB, columnCount, totalSeats) <= 2
+            );
+        }
+
+        if (rule.type === "apart") {
+            return hasAdjacentRulePair(indexes, columnCount, totalSeats);
+        }
+
+        if (rule.type === "far") {
+            return !doAllRulePairsPass(indexes, (indexA, indexB) =>
+                getSeatDistance(indexA, indexB, columnCount, totalSeats) >= 3
+            );
+        }
+
+        if (rule.type === "veryFar") {
+            return !doAllRulePairsPass(indexes, (indexA, indexB) =>
+                getSeatDistance(indexA, indexB, columnCount, totalSeats) >= 4
+            );
+        }
+
+        if (rule.type === "avoidPreviousSeat") {
+            return targetNames.some((name, nameIndex) => {
+                const previousIndex = getPreviousSeatIndex(previousLayout, name);
+                return previousIndex !== -1 && previousIndex === indexes[nameIndex];
+            });
+        }
+
+        if (rule.type === "avoidPreviousNeighbor") {
+            return targetNames.some((nameA, indexA) =>
+                targetNames.some((nameB, indexB) => {
+                    if (indexA >= indexB) return false;
+
+                    const previousIndexA = getPreviousSeatIndex(previousLayout, nameA);
+                    const previousIndexB = getPreviousSeatIndex(previousLayout, nameB);
+                    if (previousIndexA === -1 || previousIndexB === -1) return false;
+
+                    const wasAdjacent = areAdjacentIndexes(previousIndexA, previousIndexB, columnCount, totalSeats);
+                    const isAdjacent = areAdjacentIndexes(indexes[indexA], indexes[indexB], columnCount, totalSeats);
+                    return wasAdjacent && isAdjacent;
+                })
+            );
+        }
+
+        if (rule.type === "front") {
+            return !indexes.every(index => getSeatPosition(index, columnCount, totalSeats).row < frontRowLimit);
+        }
+
+        if (rule.type === "back") {
+            return !indexes.every(index => getSeatPosition(index, columnCount, totalSeats).row >= backRowStart);
+        }
+
+        if (rule.type === "firstRow") {
+            return !indexes.every(index => getSeatPosition(index, columnCount, totalSeats).row === 0);
+        }
+
+        if (rule.type === "lastRow") {
+            return !indexes.every(index => getSeatPosition(index, columnCount, totalSeats).row === rowCount - 1);
+        }
+
+        if (rule.type === "window") {
+            return !indexes.every(index => isWindowColumn(getSeatPosition(index, columnCount, totalSeats).col, columnCount));
+        }
+
+        if (rule.type === "avoidWindow") {
+            return !indexes.every(index => !isWindowColumn(getSeatPosition(index, columnCount, totalSeats).col, columnCount));
+        }
+
+        return false;
+    });
+}
+
+function shuffleArray(items) {
+    const result = [...items];
+    for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = result[i];
+        result[i] = result[j];
+        result[j] = temp;
+    }
+    return result;
+}
+
+function buildRandomSeatLayout() {
+    const shuffledFreeSeats = shuffleArray(seatData.filter(seat => !seat.locked));
+    let nextFreeIndex = 0;
+
+    return seatData.map(seat => {
+        if (seat.locked) return { ...seat };
+        return { ...shuffledFreeSeats[nextFreeIndex++] };
+    });
+}
+
+function createRuleAwareShuffle(previousLayout) {
+    const activeRules = seatRules.filter(rule => {
+        const targetNames = getSeatRuleTargetNames(rule);
+        return targetNames.length >= getSeatRuleMinNames(rule.type) &&
+            targetNames.every(name => seatData.some(student => student.name === name));
+    });
+    const maxAttempts = activeRules.length ? 3000 : 1;
+    let bestLayout = null;
+    let bestFailures = activeRules;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const candidate = buildRandomSeatLayout();
+        const failures = getSeatRuleFailures(candidate, activeRules, previousLayout);
+
+        if (!failures.length) {
+            return { seats: candidate, failures: [] };
+        }
+
+        if (!bestLayout || failures.length < bestFailures.length) {
+            bestLayout = candidate;
+            bestFailures = failures;
+        }
+    }
+
+    return {
+        seats: bestLayout || buildRandomSeatLayout(),
+        failures: bestFailures
+    };
+}
+
 
 // 🔧 실제 섞기 + 기존 효과들 실행 (랜덤 셔플 핵심 로직)
 function basicShuffleCore() {
-    // 1) 잠금 안 된 좌석만 따로 뽑아서 섞기
-    let free = seatData.filter(s => !s.locked);
-    let shuffled = [...free].sort(() => Math.random() - 0.5);
+    const previousLayout = seatData.map(seat => ({ ...seat }));
+    const shuffleResult = createRuleAwareShuffle(previousLayout);
+    const failedRules = shuffleResult.failures;
+    seatData = shuffleResult.seats;
 
-    // 2) 잠긴 자리는 그대로 두고, 나머지만 섞인 순서로 다시 배치
-    let idx = 0;
-    seatData = seatData.map(s => {
-        if (s.locked) return s;
-        return { ...shuffled[idx++] };
-    });
-
-    // 3) 새로운 배열 순서대로 seat_index 다시 부여
+    // 새로운 배열 순서대로 seat_index 다시 부여
     seatData.forEach((s, i) => {
         s.seat_index = i + 1;
     });
 
-    // 4) 화면 다시 그리기
+    // 화면 다시 그리기
     renderSeats();
 
-    // 5) 기존에 만들어 둔 효과들 실행 (있을 때만)
+    if (failedRules.length) {
+        setTimeout(() => {
+            alert(`일부 자리 규칙을 만족하지 못했습니다.\n${failedRules.map(formatSeatRule).join("\n")}`);
+        }, 80);
+    }
+
+    // 기존에 만들어 둔 효과들 실행 (있을 때만)
     if (typeof randomizeSeatVars === "function") {
         randomizeSeatVars();   // 좌석별 랜덤 이동량 (pop 효과용)
     }
@@ -101,7 +665,7 @@ function basicShuffleCore() {
         animateAllSeats();     // 전체 흔들림/반짝임 효과
     }
 
-    // 6) 셔플 직후 웅장하게 "팡" 튀는 보너스 효과
+    // 셔플 직후 웅장하게 "팡" 튀는 보너스 효과
     const seats = document.querySelectorAll("#seat-map .seat");
     seats.forEach(el => {
         el.classList.remove("grand-seat");
@@ -249,14 +813,19 @@ function randomizeSeatVars() {
 
 async function saveSeats() {
     try {
+        if (!seatData.length) {
+            alert("저장할 자리 데이터가 없습니다. 학생 명단을 먼저 확인하세요.");
+            return;
+        }
+
         // 1️⃣ seat_index 재정렬
         seatData.forEach((s, i) => s.seat_index = i + 1);
 
         const { data: previousSeats, error: backupError } = await client
             .from("class_seats")
             .select("grade,class_num,student_number,name,seat_index,locked")
-            .eq("grade", 2)
-            .eq("class_num", 3)
+            .eq("grade", CLASS_GRADE)
+            .eq("class_num", CLASS_NUM)
             .order("seat_index");
 
         if (backupError) throw backupError;
@@ -265,15 +834,15 @@ async function saveSeats() {
         let { error: delError } = await client
             .from("class_seats")
             .delete()
-            .eq("grade", 2)
-            .eq("class_num", 3);
+            .eq("grade", CLASS_GRADE)
+            .eq("class_num", CLASS_NUM);
 
         if (delError) throw delError;
 
         // 3️⃣ seatData -> insert 용으로 정리 (id 제거!)
         const insertData = seatData.map(s => ({
-            grade: 2,
-            class_num: 3,
+            grade: CLASS_GRADE,
+            class_num: CLASS_NUM,
             student_number: s.student_number,
             name: s.name,
             seat_index: s.seat_index,
@@ -316,7 +885,7 @@ async function addAssignment() {
     const title = document.getElementById("assign-title").value;
     const deadline = document.getElementById("assign-deadline").value;
     await client.from("assignments")
-        .insert([{ title, deadline, grade: 2, class_num: 3 }]);
+        .insert([{ title, deadline, grade: CLASS_GRADE, class_num: CLASS_NUM }]);
     alert("✅ 과제 등록 완료");
 }
 
@@ -328,7 +897,7 @@ async function updatePoint() {
     const point = parseInt(document.getElementById("point-value").value);
     await client.from("class_student_points")
         .update({ point })
-        .eq("name", name).eq("grade", 2).eq("class_num", 3);
+        .eq("name", name).eq("grade", CLASS_GRADE).eq("class_num", CLASS_NUM);
     alert("✅ 포인트 수정 완료");
 }
 
@@ -391,12 +960,10 @@ async function addVote() {
     const q = document.getElementById("vote-question").value;
     const opts = document.getElementById("vote-options").value.split(",").map(x => x.trim());
     await client.from("class_votes").insert([
-        { question: q, options: opts, grade: 2, class_num: 3 }
+        { question: q, options: opts, grade: CLASS_GRADE, class_num: CLASS_NUM }
     ]);
     alert("✅ 투표 등록 완료");
 }
-
-document.addEventListener("DOMContentLoaded", loadSeats);
 
 // 학생 목록 불러오기 → 드롭다운 채우기
 async function loadPointStudents() {
@@ -404,8 +971,8 @@ async function loadPointStudents() {
         const { data, error } = await client
             .from("class_student_points")
             .select("name")
-            .eq("grade", 2)
-            .eq("class_num", 3)
+            .eq("grade", CLASS_GRADE)
+            .eq("class_num", CLASS_NUM)
             .order("student_number");
 
         if (error) throw error;
@@ -432,8 +999,8 @@ async function addPoint() {
         const { data, error } = await client
             .from("class_student_points")
             .select("point")
-            .eq("grade", 2)
-            .eq("class_num", 3)
+            .eq("grade", CLASS_GRADE)
+            .eq("class_num", CLASS_NUM)
             .eq("name", name)
             .single();
 
@@ -445,8 +1012,8 @@ async function addPoint() {
         const { error: updateError } = await client
             .from("class_student_points")
             .update({ point: newPoint })
-            .eq("grade", 2)
-            .eq("class_num", 3)
+            .eq("grade", CLASS_GRADE)
+            .eq("class_num", CLASS_NUM)
             .eq("name", name);
 
         if (updateError) throw updateError;
@@ -532,14 +1099,25 @@ function animateAllSeats() {
 // ✅ 그리드 가로 칸 수 변경 (HWP 파일 참고 목적)
 function updateGridLayout(cols) {
     const map = document.getElementById("seat-map");
-    map.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    map.style.gridTemplateColumns = `repeat(${cols}, minmax(46px, 1fr))`;
+}
+
+function getExportSeatGridPosition(index) {
+    const cellIndex = getVisualSeatIndex(index, seatData.length, 6);
+    return {
+        col: (cellIndex % 6) + 1,
+        row: Math.floor(cellIndex / 6) + 1
+    };
 }
 
 // ✅ 자리 배치표 이미지 다운로드 (요청하신 사진 형식으로 완벽 변환)
 async function downloadSeatingChart() {
-    const seatMap = document.getElementById("seat-map");
-    const cols = document.getElementById("column-count").value;
     const now = new Date();
+
+    if (!seatData.length) {
+        alert("다운로드할 자리 데이터가 없습니다.");
+        return;
+    }
     
     // 1️⃣ 임시 컨테이너 생성 (A4 가로 사이즈 정규화: 1414px * 1000px)
     const exportWrapper = document.createElement("div");
@@ -548,15 +1126,12 @@ async function downloadSeatingChart() {
         position: absolute;
         top: 0;
         left: 0;
-        width: 1414px;
-        height: 1000px;
+        width: 1408px;
+        height: 1024px;
         background: white;
-        padding: 40px 60px;
+        padding: 0;
         font-family: 'Malgun Gothic', 'Dotum', sans-serif;
         color: #000;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
         box-sizing: border-box;
         z-index: -9999;
         overflow: hidden;
@@ -564,80 +1139,85 @@ async function downloadSeatingChart() {
 
     // 2️⃣ 제목 (3학년 2반 좌석배치표)
     const title = document.createElement("h1");
-    title.style.cssText = "font-size: 64px; font-weight: bold; margin-bottom: 30px; margin-top: 10px; font-family: 'Malgun Gothic';";
+    title.style.cssText = `
+        position: absolute;
+        top: 42px;
+        left: 0;
+        width: 100%;
+        margin: 0;
+        text-align: center;
+        font-size: 52px;
+        font-weight: 900;
+        letter-spacing: 6px;
+        font-family: 'Malgun Gothic';
+    `;
     title.innerText = "3학년 2반 좌석배치표";
     exportWrapper.appendChild(title);
 
-    // 3️⃣ 메인 레이아웃 (좌측: 좌석 / 우측: 명단)
-    const mainContent = document.createElement("div");
-    mainContent.style.cssText = "display: flex; width: 100%; gap: 30px; align-items: flex-start; flex: 1; padding: 0 10px;";
-    
-    // 3-1. 좌석 배치도 (2-2-2 그룹화 레이아웃)
+    // 3-1. 좌석 배치도 (HWP 양식처럼 6칸 그리드)
     const seatsArea = document.createElement("div");
     seatsArea.style.cssText = `
-        display: flex;
-        gap: 50px;
-        flex: 1;
-        justify-content: center;
-        padding-top: 10px;
+        position: absolute;
+        top: 255px;
+        left: 54px;
+        display: grid;
+        grid-template-columns: repeat(6, 150px);
+        grid-auto-rows: 102px;
+        column-gap: 50px;
+        row-gap: 0;
+        align-items: stretch;
     `;
-    
-    // 3그룹 (각 2열씩) - 32명 기준 10/11/11 분배
-    const groups = [
-        seatData.slice(0, 10),  // 1-2열 (10명)
-        seatData.slice(10, 21), // 3-4열 (11명)
-        seatData.slice(21)      // 5-6열 (11명)
-    ];
-    
-    groups.forEach((groupSeats, gIdx) => {
-        const groupDiv = document.createElement("div");
-        groupDiv.style.cssText = `
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            flex: 1;
-        `;
-        
-        // 중앙 그룹(gIdx=1)은 PDF처럼 첫 칸을 비워 첫 번째 좌석(아이콘 14번 위치)이 상단에 오도록 조정
-        if (gIdx === 1 && groupSeats.length % 2 !== 0) {
-            const emptyCell = document.createElement("div");
-            groupDiv.appendChild(emptyCell);
-        }
 
-        groupSeats.forEach((s) => {
-            const seatBox = document.createElement("div");
-            seatBox.style.cssText = `
-                border: 1px solid #000;
-                height: 95px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                background: #fff;
-            `;
-            
-            seatBox.innerHTML = `
-                <div style="font-size: 22px; margin-bottom: 2px;">${s.student_number}</div>
-                <div style="font-size: 47px; font-weight: bold;">${s.name}</div>
-            `;
-            groupDiv.appendChild(seatBox);
-        });
-        seatsArea.appendChild(groupDiv);
+    seatData.forEach((s, index) => {
+        const position = getExportSeatGridPosition(index);
+        const seatBox = document.createElement("div");
+        seatBox.style.cssText = `
+            grid-column: ${position.col};
+            grid-row: ${position.row};
+            border: 1px solid #000;
+            width: 150px;
+            height: 102px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            box-sizing: border-box;
+            overflow: hidden;
+        `;
+
+        const number = document.createElement("div");
+        number.style.cssText = "font-size: 30px; line-height: 1;";
+        number.textContent = s.student_number || index + 1;
+
+        const name = document.createElement("div");
+        name.style.cssText = "font-size: 34px; font-weight: 400; line-height: 1.12; text-align: center;";
+        name.textContent = s.name || "";
+
+        seatBox.appendChild(number);
+        seatBox.appendChild(name);
+        seatsArea.appendChild(seatBox);
     });
+    exportWrapper.appendChild(seatsArea);
     
     // 3-2. 학생 명단 (우측)
     const studentListArea = document.createElement("div");
-    studentListArea.style.width = "210px";
+    studentListArea.style.cssText = `
+        position: absolute;
+        top: 52px;
+        right: 56px;
+        width: 140px;
+    `;
     
     const table = document.createElement("table");
-    table.style.cssText = "width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 15px;";
+    table.style.cssText = "width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 17px;";
     
     // 테이블 헤더
     const thead = document.createElement("thead");
     thead.innerHTML = `
         <tr style="background: #ffd8a8;">
-            <th style="border: 1px solid #000; padding: 4px; font-weight: normal;">번호</th>
-            <th style="border: 1px solid #000; padding: 4px; font-weight: normal;">이름</th>
+            <th style="border: 1px solid #000; padding: 2px; font-weight: normal; width: 50px;">번호</th>
+            <th style="border: 1px solid #000; padding: 2px; font-weight: normal;">이름</th>
         </tr>
     `;
     table.appendChild(thead);
@@ -649,36 +1229,33 @@ async function downloadSeatingChart() {
     sortedList.forEach(s => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td style="border: 1px solid #000; padding: 2px; text-align: center; height: 18px;">${s.student_number}</td>
-            <td style="border: 1px solid #000; padding: 2px; font-weight: bold; text-align: center;">${s.name}</td>
+            <td style="border: 1px solid #000; padding: 1px; text-align: center; height: 25px;">${s.student_number || ""}</td>
+            <td style="border: 1px solid #000; padding: 1px; text-align: center;">${s.name || ""}</td>
         `;
         tbody.appendChild(tr);
     });
     table.appendChild(tbody);
     studentListArea.appendChild(table);
+    exportWrapper.appendChild(studentListArea);
 
-    mainContent.appendChild(seatsArea);
-    mainContent.appendChild(studentListArea);
-    exportWrapper.appendChild(mainContent);
-
-    // 4️⃣ 교탁 (하단 중앙)
+    // 4️⃣ 교탁 (상단 중앙: 1~6번 줄이 앞좌석)
     const desk = document.createElement("div");
     desk.style.cssText = `
-        margin-top: 15px;
-        margin-bottom: 25px;
-        width: 380px;
-        height: 75px;
-        border: 1.5px solid #3b82f6; 
-        border-radius: 20px;
+        position: absolute;
+        left: 423px;
+        top: 145px;
+        width: 392px;
+        height: 72px;
+        border: 2px solid #6d93e7;
+        border-radius: 12px;
         background: #dcfce7;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 48px;
-        font-weight: bold;
-        letter-spacing: 24px;
+        font-size: 44px;
+        font-weight: 900;
+        letter-spacing: 4px;
         color: #000;
-        padding-left: 24px;
     `;
     desk.innerText = "교탁";
     exportWrapper.appendChild(desk);

@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>2-3반 관리자 페이지</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3-2반 관리자 페이지</title>
   <script src="js/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -10,7 +11,7 @@
 </head>
 <body>
   <header>
-    <h1>🏫 2-3반 관리자 페이지</h1>
+    <h1>🏫 3-2반 관리자 페이지</h1>
     <nav>
       <a href="#seats">자리</a>
       <a href="#assign">과제</a>
@@ -34,15 +35,15 @@
     <!-- 자리 관리 -->
     <div id="seats" class="card">
       <h2>🪑 자리 관리</h2>
-      <div class="seat-controls" style="margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+      <div class="seat-controls">
         <button class="btn" onclick="loadSeats()">📥 불러오기</button>
         <button class="btn primary" onclick="shuffleSeats()">🔄 랜덤 섞기</button>
         <button class="btn primary" onclick="saveSeats()">💾 저장</button>
         <button class="btn" style="background:#10b981; color:white; border:none;" onclick="downloadSeatingChart()">🖼️ 이미지 다운로드</button>
         
-        <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
-          <label style="margin:0; font-size:0.85rem;">가로 칸 수:</label>
-          <select id="column-count" onchange="updateGridLayout(this.value)" style="padding: 4px; border-radius: 4px;">
+        <div class="column-count-control">
+          <label>가로 칸 수:</label>
+          <select id="column-count" onchange="updateGridLayout(this.value)">
             <option value="4">4칸</option>
             <option value="5">5칸</option>
             <option value="6" selected>6칸</option>
@@ -51,7 +52,63 @@
           </select>
         </div>
       </div>
+      <div class="seat-rule-panel">
+        <div class="seat-rule-header">
+          <h3>자리 규칙</h3>
+          <button class="btn small" onclick="clearSeatRules()">전체 삭제</button>
+        </div>
+        <div class="seat-rule-form">
+          <label>규칙
+            <select id="seat-rule-type" onchange="syncSeatRuleStudentFields()">
+              <option value="together">붙이기</option>
+              <option value="near">가깝게</option>
+              <option value="apart">떨어뜨리기</option>
+              <option value="far">멀리</option>
+              <option value="veryFar">완전 떨어뜨리기</option>
+              <option value="avoidPreviousSeat">지난 자리 피하기</option>
+              <option value="avoidPreviousNeighbor">지난 옆친구 피하기</option>
+              <option value="front">앞자리</option>
+              <option value="back">뒷자리</option>
+              <option value="firstRow">맨 앞줄</option>
+              <option value="lastRow">맨 뒷줄</option>
+              <option value="window">창가 자리</option>
+              <option value="avoidWindow">창가 피하기</option>
+            </select>
+          </label>
+          <label>학생 1
+            <select id="seat-rule-student-1" class="seat-rule-student-select"></select>
+          </label>
+          <label>학생 2
+            <select id="seat-rule-student-2" class="seat-rule-student-select">
+              <option value="">선택 안 함</option>
+            </select>
+          </label>
+          <label>학생 3
+            <select id="seat-rule-student-3" class="seat-rule-student-select">
+              <option value="">선택 안 함</option>
+            </select>
+          </label>
+          <label>학생 4
+            <select id="seat-rule-student-4" class="seat-rule-student-select">
+              <option value="">선택 안 함</option>
+            </select>
+          </label>
+          <label>학생 5
+            <select id="seat-rule-student-5" class="seat-rule-student-select">
+              <option value="">선택 안 함</option>
+            </select>
+          </label>
+          <label>학생 6
+            <select id="seat-rule-student-6" class="seat-rule-student-select">
+              <option value="">선택 안 함</option>
+            </select>
+          </label>
+          <button class="btn primary seat-rule-add" onclick="addSeatRule()">규칙 추가</button>
+        </div>
+        <div id="seat-rule-list" class="seat-rule-list"></div>
+      </div>
       <div id="seat-map-container" style="background: white; padding: 20px; border-radius: 8px;">
+        <div class="seat-desk">교탁</div>
         <div id="seat-map"></div>
       </div>
     </div>

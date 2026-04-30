@@ -1,9 +1,14 @@
+    * {
+        box-sizing: border-box;
+    }
+
     body {
         margin: 0;
         font-family: system-ui, sans-serif;
         background: #f8fafc;
         color: #1f2937;
         transition: background .3s, color .3s;
+        line-height: 1.5;
     }
 
     body.dark {
@@ -18,6 +23,8 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
     }
 
     nav {
@@ -93,7 +100,8 @@
         border: 1px solid #d1d5db;
         background: white;
         font-size: .9rem;
-        cursor: pointer
+        cursor: pointer;
+        min-height: 38px;
     }
 
     .btn.primary {
@@ -186,7 +194,7 @@
     /* 자리 스타일 */
     #seat-map {
         display: grid;
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(6, minmax(74px, 1fr));
         /* ✅ 6열 */
         grid-auto-rows: auto;
         gap: 10px;
@@ -224,6 +232,26 @@
         background: #e0f2fe;
         /* 고정된 자리 하늘색 표시 */
         border-color: #0284c7;
+    }
+
+    .seat-desk {
+        width: min(360px, 70%);
+        margin: 1rem auto 18px;
+        padding: .65rem 1rem;
+        border: 2px solid #60a5fa;
+        border-radius: .75rem;
+        background: #dcfce7;
+        color: #0f172a;
+        text-align: center;
+        font-size: 1.25rem;
+        font-weight: 900;
+        letter-spacing: .2em;
+    }
+
+    body.dark .seat-desk {
+        background: #14532d;
+        color: #f8fafc;
+        border-color: #38bdf8;
     }
 
     .notice-item {
@@ -682,6 +710,111 @@
             /* 기본 글자 크기에서 1.5px 감소 */
         }
 
+        header {
+            padding: .9rem 1rem;
+        }
+
+        header h1 {
+            font-size: 1.15rem;
+            letter-spacing: 0;
+        }
+
+        nav {
+            width: 100%;
+        }
+
+        nav a,
+        nav .btn {
+            width: 100%;
+            margin: 0;
+        }
+
+        .hamburger {
+            padding: .35rem .5rem;
+            border-radius: .5rem;
+            background: rgba(255, 255, 255, .14);
+        }
+
+        .wrap {
+            margin: 12px auto;
+            padding: 0 .65rem;
+        }
+
+        .card {
+            padding: .9rem;
+            border-radius: .75rem;
+            margin-bottom: 12px;
+        }
+
+        .grid-2,
+        .grid-4 {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: .55rem .7rem;
+        }
+
+        #seat-map {
+            grid-template-columns: repeat(6, minmax(46px, 1fr));
+            gap: 5px;
+        }
+
+        .seat {
+            min-height: 44px;
+            padding: .45rem .25rem;
+            overflow-wrap: anywhere;
+        }
+
+        .notice-item {
+            gap: .65rem;
+        }
+
+        .notice-thumb {
+            width: 72px;
+            height: 92px;
+        }
+
+        .file-card {
+            grid-template-columns: 72px 1fr;
+            gap: 10px;
+            padding: .75rem;
+        }
+
+        .file-thumb {
+            height: 72px;
+        }
+
+        .file-action {
+            display: none;
+        }
+
+        .quiz-box {
+            padding: 1rem;
+        }
+
+        .points-grid {
+            display: block;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .points-table {
+            min-width: 340px;
+            font-size: .85rem;
+        }
+
+        .points-table th,
+        .points-table td {
+            padding: 8px;
+        }
+
+        #vote-box .btn {
+            margin-bottom: .35rem;
+        }
+
         h1,
         h2,
         h3,
@@ -700,5 +833,28 @@
         .point-score {
             font-size: calc(100% - 1.5px);
             /* 주요 UI 글자도 축소 */
+        }
+    }
+
+    @media (max-width: 400px) {
+        #seat-map {
+            grid-template-columns: repeat(6, minmax(42px, 1fr));
+        }
+
+        .notice-item {
+            flex-direction: column;
+        }
+
+        .notice-thumb {
+            width: 100%;
+            height: 160px;
+        }
+
+        .file-card {
+            grid-template-columns: 1fr;
+        }
+
+        .file-thumb {
+            height: 150px;
         }
     }

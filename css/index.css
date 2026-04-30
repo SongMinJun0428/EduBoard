@@ -5053,6 +5053,8 @@
 @media (max-width: 768px) {
   .content,
   .panel,
+  .game-window,
+  .game-body,
   .panel > *,
   .accent-card,
   .card,
@@ -5077,6 +5079,32 @@
 
   .panel {
     overflow-x: hidden !important;
+  }
+
+  .game-window {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    margin: 16px auto 96px !important;
+    border-radius: 16px !important;
+  }
+
+  .game-window .accent-head {
+    align-items: flex-start !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 16px !important;
+  }
+
+  .game-body {
+    padding: 18px !important;
+  }
+
+  .game-window input,
+  .game-window .control-btn,
+  .game-window .canvas-container,
+  .game-window [style*="max-width"] {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .accent-head,

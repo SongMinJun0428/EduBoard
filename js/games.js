@@ -1057,6 +1057,9 @@
         if (amount === 0) {
             return { balance: current, method: 'noop' };
         }
+        if (amount < 0 && current + amount < 0) {
+            throw new Error(`포인트가 부족합니다. 필요: ${Math.abs(amount)}P / 보유: ${current.toLocaleString()}P`);
+        }
 
         const authTarget = before.auth_user_id || localStorage.getItem('savedAuthUserId') || localStorage.getItem('savedUserId');
         let rpcError = null;

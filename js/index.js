@@ -991,14 +991,23 @@ function updateMobileNavActive(panelId) {
 const originalShowPanel = window.showPanel;
 window.showPanel = function(id) {
   if (typeof originalShowPanel === 'function') {
-    originalShowPanel(id);
+    const result = originalShowPanel(id);
+    updateMobileNavActive(id);
+    return result;
   } else {
     // 만약 이미 전역에 정의되어 있다면 (index.js 또는 다른 파일)
-    document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.panel').forEach(p => {
+      p.style.display = 'none';
+      p.classList.remove('active');
+    });
     const target = document.getElementById(id);
-    if (target) target.style.display = 'block';
+    if (target) {
+      target.style.display = 'block';
+      target.classList.add('active');
+    }
+    updateMobileNavActive(id);
+    return !!target;
   }
-  updateMobileNavActive(id);
 };
 
 async function addNotice() {
@@ -1754,7 +1763,7 @@ function showPanel(panelId) {
     console.error(`Panel load failed: ${panelId}`, err);
   }
 
-  return false;
+  return true;
 }
 
 /** 📱 하단 네비게이션 아이콘 강조 상태 업데이트 */
@@ -2295,6 +2304,12 @@ function safeEval(expr) {
   return fn();
 }
 
+function readDisplayedCoinBalance() {
+  const text = document.getElementById('coin-balance')?.textContent || '';
+  const value = Number(text.replace(/[^\d.-]/g, ''));
+  return Number.isFinite(value) ? value : 0;
+}
+
 function exitMiniGame() {
   if (typeof window.stopAllGames === 'function') window.stopAllGames();
 
@@ -2423,7 +2438,11 @@ async function startGame(gameType) {
     // 잔액 동기화
     if (typeof window.syncCoinBalance === 'function') await window.syncCoinBalance();
     const cost = Number(cfg.cost) || 0;
-    const current = Number(window.currentUserCoin || 0);
+    const syncedCoin = Number(window.currentUserCoin);
+    const current = Math.max(
+      Number.isFinite(syncedCoin) ? syncedCoin : 0,
+      readDisplayedCoinBalance()
+    );
     if (current < cost) {
       alert(`포인트가 부족합니다. 필요: ${cost}P / 보유: ${current.toLocaleString()}P`);
       return;
@@ -2477,22 +2496,32 @@ async function startGame(gameType) {
       updateCoinDisplays(current - cost);
     }
 
-    // 로그 기록: 게임 시작
-    await supabaseClient.from('user_activity_logs').insert({
-      username: username,
-      action: 'game_start',
-      target: gameType,
-      target_type: 'game',
-      details: JSON.stringify({ cost, sessionId: window.miniGameSessionId })
-    });
+    // 로그 기록은 실패해도 게임 시작 자체를 막지 않는다.
+    try {
+      const client = window.supabaseClient || supabaseClient;
+      if (client) {
+        const { error: logError } = await client.from('user_activity_logs').insert({
+          username,
+          action: 'game_start',
+          target: gameType,
+          target_type: 'game',
+          details: { cost, sessionId: window.miniGameSessionId }
+        });
+        if (logError) console.warn('Game start log skipped:', logError);
+      }
+    } catch (logErr) {
+      console.warn('Game start log skipped:', logErr);
+    }
 
     // 로컬 잔액 반영 + 표시 갱신
     if (typeof window.syncCoinBalance === 'function') await window.syncCoinBalance();
     if (typeof showRewardToast === 'function') showRewardToast(`입장료 ${cost}P가 차감되었습니다.`, 'warn');
 
     // 패널 전환 (View-Swap 방식)
-    if (typeof showPanel === 'function') {
-      showPanel(cfg.panelId);
+    const showGamePanel = typeof window.showPanel === 'function' ? window.showPanel : showPanel;
+    if (typeof showGamePanel === 'function') {
+      const shown = showGamePanel(cfg.panelId);
+      if (shown === false) throw new Error('게임 화면을 찾을 수 없습니다.');
     }
 
     // 게임 런칭
@@ -2505,7 +2534,7 @@ async function startGame(gameType) {
       updateQuestProgress('play_game');
     }
   } catch (e) {
-    //console.error(e);
+    console.error('Game start failed:', e);
     alert('게임 시작 중 오류가 발생했습니다: ' + (e.message || e));
   } finally {
     startGame._busy = false;
@@ -2664,11 +2693,11 @@ function changeDate(delta) {
 
 const fileInput = document.getElementById('homework-file');
 const previewContainer = document.getElementById('filePreviewContainer');
-const modal = document.getElementById('fileModal');
+const modal = document.getElementById('fileModal') || document.getElementById('imageModal');
 const modalImage = document.getElementById('modalImage');
 const downloadLink = document.getElementById('downloadLink');
 
-fileInput.addEventListener('change', () => {
+if (fileInput && previewContainer) fileInput.addEventListener('change', () => {
   previewContainer.innerHTML = '';
 
   Array.from(fileInput.files).forEach(file => {
@@ -2679,10 +2708,13 @@ fileInput.addEventListener('change', () => {
         img.src = e.target.result;
         img.alt = file.name;
         img.onclick = () => {
+          if (!modal || !modalImage) return;
           modal.style.display = 'flex';
           modalImage.src = e.target.result;
-          downloadLink.href = e.target.result;
-          downloadLink.download = file.name;
+          if (downloadLink) {
+            downloadLink.href = e.target.result;
+            downloadLink.download = file.name;
+          }
         };
         previewContainer.appendChild(img);
       };
@@ -2692,19 +2724,20 @@ fileInput.addEventListener('change', () => {
 });
 
 function closeModal() {
-  modal.style.display = 'none';
+  if (modal) modal.style.display = 'none';
 }
 
 function openImageModal(url) {
   const modal = document.getElementById('imageModal');
   const img = document.getElementById('modalImage');
+  if (!modal || !img) return;
   img.src = url;
   modal.style.display = 'flex';
 }
 
 function closeImageModal() {
   const modal = document.getElementById('imageModal');
-  modal.style.display = 'none';
+  if (modal) modal.style.display = 'none';
 }
 
 function $id(id) { return document.getElementById(id) }
@@ -6105,7 +6138,17 @@ window.toggleSignupBtn = function() {
     signupBtn.disabled = !(privacy && tos && isVerified);
 };
 
-window.exitMiniGame = exitMiniGame;
+Object.assign(window, {
+  startGame,
+  checkFourEqualsTen,
+  generateFourNumbers,
+  exitMiniGame,
+  closeImageModal,
+  toggleMobileMenu,
+  closeMobileMenu,
+  togglePassword,
+  updateCoinDisplays
+});
 
 /** 📢 공지사항 삭제 */
 window.deleteNotice = async function (id, imageUrl) {

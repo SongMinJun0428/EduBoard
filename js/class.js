@@ -12,6 +12,8 @@ const client = window.supabase.createClient(
     window.EduConfig.getSupabaseURL(),
     window.EduConfig.getSupabaseKey()
 );
+const CLASS_GRADE = 3;
+const CLASS_NUM = 2;
 
 /* 공지 */
 async function loadNotices() {
@@ -19,7 +21,7 @@ async function loadNotices() {
         const { data, error } = await client
             .from("notices")
             .select("title, content, created_at, image_url")
-            .eq("grade", 2).eq("class_num", 3)
+            .eq("grade", CLASS_GRADE).eq("class_num", CLASS_NUM)
             .order("created_at", { ascending: false });
         if (error) throw error;
 
@@ -56,7 +58,7 @@ async function loadAssignments() {
         const { data, error } = await client
             .from("assignments")
             .select("title, deadline")
-            .eq("grade", 2).eq("class_num", 3)
+            .eq("grade", CLASS_GRADE).eq("class_num", CLASS_NUM)
             .order("deadline", { ascending: true });
         if (error) throw error;
         $('assign-list').innerHTML = (data && data.length)
@@ -72,8 +74,8 @@ async function loadTimetableByDate() {
     const API_KEY = "28ca0f05af184e8ba231d5a949d52db2";
     const ATPT_OFCDC_SC_CODE = "J10";   // 경기도교육청
     const SD_SCHUL_CODE = "7679111";    // 봉담중학교
-    const grade = 2;
-    const classNum = 3;
+    const grade = CLASS_GRADE;
+    const classNum = CLASS_NUM;
 
     const input = document.getElementById("timetable-date");
 
@@ -122,8 +124,8 @@ async function loadTimetableByDate() {
 }
 
 async function loadGalleryFromHomeworks() {
-    const grade = 2;
-    const classNum = 3;
+    const grade = CLASS_GRADE;
+    const classNum = CLASS_NUM;
     const container = document.getElementById("files");
 
     container.innerHTML = "<p>📂 파일 불러오는 중...</p>";
@@ -179,6 +181,34 @@ function loadGallery() {
 let seatData = [];      // 학생 이름 배열
 let lockedSeats = {};   // {index: true}
 
+function getSeatMapColumnCount() {
+    const map = $('seat-map');
+    if (map && window.getComputedStyle) {
+        const template = window.getComputedStyle(map).gridTemplateColumns;
+        if (template && template !== "none") {
+            const columns = template.split(" ").filter(Boolean).length;
+            if (columns > 0) return columns;
+        }
+    }
+    return 6;
+}
+
+function getLastRowVisualOffset(index, totalSeats, columnCount) {
+    if (columnCount !== 6 || totalSeats <= 30 || index < 30) {
+        return 0;
+    }
+    return 1;
+}
+
+function applyVisualSeatPosition(element, index, totalSeats) {
+    const columnCount = getSeatMapColumnCount();
+    const offset = getLastRowVisualOffset(index, totalSeats, columnCount);
+    if (offset) {
+        const visualIndex = index + offset;
+        element.style.gridColumn = String((visualIndex % columnCount) + 1);
+        element.style.gridRow = String(Math.floor(visualIndex / columnCount) + 1);
+    }
+}
 
 function renderSeats(list) {
     const container = $('seat-map');
@@ -188,6 +218,7 @@ function renderSeats(list) {
         const seatDiv = document.createElement('div');
         seatDiv.className = 'seat';
         seatDiv.textContent = name;
+        applyVisualSeatPosition(seatDiv, i, list.length);
 
         if (lockedSeats[i]) seatDiv.classList.add('locked');
 
@@ -242,24 +273,30 @@ async function loadSeats() {
         const { data, error } = await client
             .from("class_seats")
             .select("student_number, name, seat_index, locked")
-            .eq("grade", 2)
-            .eq("class_num", 3)
+            .eq("grade", CLASS_GRADE)
+            .eq("class_num", CLASS_NUM)
             .order("seat_index", { ascending: true });
 
         if (error) throw error;
 
-        if (!data || data.length === 0) {
-            $('seat-map').innerHTML = "<p class='muted'>자리 데이터 없음</p>";
+        let seats = data || [];
+        if (!seats.length) {
+            seats = await loadInitialSeatsFromPoints();
+        }
+
+        if (!seats.length) {
+            $('seat-map').innerHTML = `<p class='muted'>${CLASS_GRADE}학년 ${CLASS_NUM}반 자리 데이터 없음</p>`;
             return;
         }
 
         const container = $('seat-map');
         container.innerHTML = '';
 
-        data.forEach(seat => {
+        seats.forEach((seat, index) => {
             const seatDiv = document.createElement('div');
             seatDiv.className = 'seat';
             seatDiv.textContent = seat.name;
+            applyVisualSeatPosition(seatDiv, index, seats.length);
 
             // 고정 좌석은 색상 다르게 표시
             if (seat.locked) {
@@ -273,6 +310,26 @@ async function loadSeats() {
         console.error(e);
         $('seat-map').innerHTML = "❌ 자리 불러오기 오류";
     }
+}
+
+async function loadInitialSeatsFromPoints() {
+    const { data, error } = await client
+        .from("class_student_points")
+        .select("student_number,name")
+        .eq("grade", CLASS_GRADE)
+        .eq("class_num", CLASS_NUM)
+        .order("student_number");
+
+    if (error) throw error;
+
+    return (data || [])
+        .filter(student => student.name)
+        .map((student, index) => ({
+            student_number: student.student_number,
+            name: student.name,
+            seat_index: index + 1,
+            locked: false
+        }));
 }
 
 
@@ -362,8 +419,8 @@ async function submitEnglishAnswers() {
     try {
         const { error } = await client.from("english_quiz_submissions").insert({
             student_name: name,
-            grade: 2,
-            class_num: 3,
+            grade: CLASS_GRADE,
+            class_num: CLASS_NUM,
             quiz_set_id: currentQuizSetId,
             answers
         });
@@ -383,8 +440,8 @@ async function loadClassStudentPoints() {
         const { data, error } = await client
             .from("class_student_points")
             .select("student_number, name, point")
-            .eq("grade", 2)
-            .eq("class_num", 3)
+            .eq("grade", CLASS_GRADE)
+            .eq("class_num", CLASS_NUM)
             .order("student_number");
 
         if (error) throw error;
@@ -431,8 +488,8 @@ async function loadVotePolls() {
         const { data, error } = await client
             .from("class_votes")
             .select("*")
-            .eq("grade", 2)
-            .eq("class_num", 3)
+            .eq("grade", CLASS_GRADE)
+            .eq("class_num", CLASS_NUM)
             .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -500,8 +557,8 @@ async function submitVote(voteId, choice) {
     // ✅ 새로운 투표 저장
     const { error } = await client.from("class_vote_submissions").insert({
         vote_id: voteId,
-        grade: 2,
-        class_num: 3,
+        grade: CLASS_GRADE,
+        class_num: CLASS_NUM,
         name: studentName,
         choice
     });

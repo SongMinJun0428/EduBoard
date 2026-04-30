@@ -286,11 +286,15 @@ function renderCOHome() {
   container.innerHTML = html;
 }
 
+function getActiveLessonModal() {
+  const modals = Array.from(document.querySelectorAll('#co-lesson-modal'));
+  return modals.find(modal => modal.style.display !== 'none') || modals[modals.length - 1] || null;
+}
+
 // 📚 4. Lesson Modal Logic
 window.openLessonModal = function(idx) {
   // Prevent duplicate modals
-  const existing = document.getElementById('co-lesson-modal');
-  if (existing) existing.remove();
+  document.querySelectorAll('#co-lesson-modal').forEach(modal => modal.remove());
 
   const item = window.CO_DATA[idx] || { title: "내용 없음", content: "데이터를 찾을 수 없습니다.", template: "" };
   window.coState.currentStepIdx = idx;
@@ -344,18 +348,20 @@ window.openLessonModal = function(idx) {
   `;
 
   document.body.insertAdjacentHTML('beforeend', modalHtml);
-  document.getElementById('co-code-editor').value = item.template || "";
+  const editor = getActiveLessonModal()?.querySelector('#co-code-editor');
+  if (editor) editor.value = item.template || "";
   document.body.style.overflow = 'hidden';
 };
 
 window.closeLessonModal = function() {
-  const modal = document.getElementById('co-lesson-modal');
-  if (modal) modal.remove();
+  document.querySelectorAll('#co-lesson-modal').forEach(modal => modal.remove());
+  document.body.style.overflow = '';
 };
 
 window.resetEditorCode = function() {
   const item = window.CO_DATA[window.coState.currentStepIdx];
-  if (item) document.getElementById('co-code-editor').value = item.template || "";
+  const editor = getActiveLessonModal()?.querySelector('#co-code-editor');
+  if (item && editor) editor.value = item.template || "";
 };
 
 window.clearConsole = function() {
@@ -365,13 +371,14 @@ window.clearConsole = function() {
 
 // 🐍 5. Python Execution
 window.runCode = async function() {
-  const runBtn = document.getElementById('co-run-btn');
-  const modal = document.getElementById('co-lesson-modal');
+  const modal = getActiveLessonModal();
   if (!modal) return;
 
-  const code = modal.querySelector('#co-code-editor').value;
+  const runBtn = modal.querySelector('#co-run-btn');
+  const code = modal.querySelector('#co-code-editor')?.value || '';
   const consoleEl = modal.querySelector('#co-console');
   const item = window.CO_DATA[window.coState.currentStepIdx];
+  if (!consoleEl) return;
 
   if (!code.trim()) return alert("코드를 입력하세요.");
 
@@ -380,7 +387,7 @@ window.runCode = async function() {
     await initPyodide();
   }
 
-  runBtn.disabled = true;
+  if (runBtn) runBtn.disabled = true;
   consoleEl.innerText = "실행 중...\n";
 
   try {
@@ -404,14 +411,23 @@ window.runCode = async function() {
     consoleEl.style.color = "#fb7185";
   } finally {
     consoleEl.scrollTop = consoleEl.scrollHeight;
-    runBtn.disabled = false;
+    if (runBtn) runBtn.disabled = false;
   }
+};
+
+window.runPythonCode = function() {
+  if (typeof window.runCode === 'function') return window.runCode();
+};
+
+window.closeCOModal = function() {
+  if (typeof window.closeLessonModal === 'function') window.closeLessonModal();
 };
 
 async function verifyAnswer(output) {
   const item = window.CO_DATA[window.coState.currentStepIdx];
   const expected = item.answer ? item.answer.trim() : null;
-  const consoleEl = document.getElementById('co-console');
+  const consoleEl = getActiveLessonModal()?.querySelector('#co-console');
+  if (!consoleEl) return;
 
   if (!expected) {
     consoleEl.innerHTML += `\n\n<div style="color: #4ade80; font-weight:800;">✅ 정답(자동 확인) 처리되었습니다.</div>`;
@@ -620,7 +636,7 @@ async function renderCOApproval() {
 window.resetEditorCode = function() {
   const item = window.CO_DATA[window.coState.currentStepIdx];
   if (item && confirm("현재 작성한 코드를 모두 지우고 초기 상태로 되돌릴까요?")) {
-    const editor = document.getElementById('co-code-editor');
+    const editor = getActiveLessonModal()?.querySelector('#co-code-editor');
     if (editor) editor.value = item.template || "";
   }
 };
