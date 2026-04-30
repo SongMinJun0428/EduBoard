@@ -303,7 +303,18 @@
         /* ✅ 추가 */
     }
 
+    .seat .s-num {
+        color: #64748b;
+        font-size: .76rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
     .seat .s-name {
+        color: #1e293b;
+        font-size: 1rem;
+        font-weight: 900;
+        line-height: 1.08;
         overflow-wrap: anywhere;
     }
 
@@ -500,12 +511,12 @@
         }
 
         .wrap {
-            padding: 0 .5rem;
+            padding: 0 .35rem;
         }
 
         .card {
-            padding: 1rem;
-            border-radius: .7rem;
+            padding: .8rem;
+            border-radius: .8rem;
         }
 
         h2 {
@@ -562,18 +573,27 @@
         }
 
         #seat-map {
-            grid-template-columns: repeat(6, minmax(48px, 1fr));
-            gap: 8px;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 7px;
         }
 
         #seat-map-container {
-            padding: 12px !important;
+            padding: 8px !important;
         }
 
         .seat {
-            font-size: .8rem;
-            min-height: 48px;
-            padding: .34rem .22rem;
+            min-height: 58px;
+            padding: .38rem .12rem;
+            border-radius: .6rem;
+        }
+
+        .seat .s-num {
+            font-size: .82rem;
+            margin-bottom: .1rem;
+        }
+
+        .seat .s-name {
+            font-size: 1.02rem;
         }
 
         .seat-action-bar {
@@ -617,18 +637,25 @@
         }
 
         #seat-map {
-            grid-template-columns: repeat(6, minmax(44px, 1fr));
-            gap: 7px;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 6px;
         }
 
         #seat-map-container {
-            padding: 10px !important;
+            padding: 6px !important;
         }
 
         .seat {
-            font-size: .75rem;
-            padding: .28rem .14rem;
-            min-height: 44px;
+            padding: .34rem .08rem;
+            min-height: 54px;
+        }
+
+        .seat .s-num {
+            font-size: .76rem;
+        }
+
+        .seat .s-name {
+            font-size: .94rem;
         }
 
         .seat-action-buttons {

@@ -114,8 +114,8 @@ function renderSeats() {
         
         // [번호] 이름 형식으로 표시 (번호 포함 요청 반영)
         div.innerHTML = `
-          <div class="s-num" style="font-size: 0.7rem; color: #64748b; font-weight: 600;">${s.student_number || (i+1)}</div>
-          <div class="s-name" style="font-size: 0.95rem; font-weight: 800; color: #1e293b;">${s.name}</div>
+          <div class="s-num">${s.student_number || (i+1)}</div>
+          <div class="s-name">${s.name}</div>
         `;
         
         div.draggable = true;
