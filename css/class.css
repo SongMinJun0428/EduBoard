@@ -758,13 +758,13 @@
         }
 
         #seat-map {
-            grid-template-columns: repeat(6, minmax(46px, 1fr));
-            gap: 5px;
+            grid-template-columns: repeat(6, minmax(48px, 1fr));
+            gap: 8px;
         }
 
         .seat {
-            min-height: 44px;
-            padding: .45rem .25rem;
+            min-height: 48px;
+            padding: .42rem .24rem;
             overflow-wrap: anywhere;
         }
 
@@ -838,7 +838,13 @@
 
     @media (max-width: 400px) {
         #seat-map {
-            grid-template-columns: repeat(6, minmax(42px, 1fr));
+            grid-template-columns: repeat(6, minmax(44px, 1fr));
+            gap: 7px;
+        }
+
+        .seat {
+            min-height: 44px;
+            padding: .34rem .16rem;
         }
 
         .notice-item {
