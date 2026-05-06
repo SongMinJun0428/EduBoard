@@ -1215,15 +1215,214 @@ function updateGridLayout(cols) {
     map.style.gridTemplateColumns = `repeat(${cols}, minmax(46px, 1fr))`;
 }
 
+function getExportSeatGridRowCount() {
+    if (!seatData.length) return 1;
+    const maxCellIndex = seatData.reduce((maxIndex, _, index) => {
+        return Math.max(maxIndex, getVisualSeatIndex(index, seatData.length, 6));
+    }, 0);
+    return Math.floor(maxCellIndex / 6) + 1;
+}
+
 function getExportSeatGridPosition(index) {
     const cellIndex = getVisualSeatIndex(index, seatData.length, 6);
+    const rowCount = getExportSeatGridRowCount();
+    const row = Math.floor(cellIndex / 6);
+    const col = cellIndex % 6;
+
+    // 다운로드 이미지는 교탁에서 바라본 시점이라 좌석만 180도 회전한다.
     return {
-        col: (cellIndex % 6) + 1,
-        row: Math.floor(cellIndex / 6) + 1
+        col: 6 - col,
+        row: rowCount - row
     };
 }
 
-// ✅ 자리 배치표 이미지 다운로드 (요청하신 사진 형식으로 완벽 변환)
+function drawRoundRect(ctx, x, y, width, height, radius, fillStyle, strokeStyle, lineWidth = 1) {
+    ctx.beginPath();
+    if (typeof ctx.roundRect === "function") {
+        ctx.roundRect(x, y, width, height, radius);
+    } else {
+        const r = Math.min(radius, width / 2, height / 2);
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + width - r, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+        ctx.lineTo(x + width, y + height - r);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+        ctx.lineTo(x + r, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+    }
+
+    if (fillStyle) {
+        ctx.fillStyle = fillStyle;
+        ctx.fill();
+    }
+    if (strokeStyle) {
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = strokeStyle;
+        ctx.stroke();
+    }
+}
+
+function drawCenteredText(ctx, text, x, y, width, height, font, color = "#000", maxWidth = width - 8) {
+    ctx.save();
+    ctx.font = font;
+    ctx.fillStyle = color;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(text ?? ""), x + width / 2, y + height / 2, maxWidth);
+    ctx.restore();
+}
+
+function drawSeatingChartCanvas(now) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1414;
+    canvas.height = 1000;
+
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const fontFamily = "'Malgun Gothic', 'Apple SD Gothic Neo', Dotum, sans-serif";
+    const rowCount = getExportSeatGridRowCount();
+    const seatWidth = 150;
+    const seatHeight = rowCount > 6 ? Math.max(78, Math.floor(612 / rowCount)) : 102;
+    const seatLeft = 54;
+    const seatTop = rowCount > 6 ? 150 : 170;
+    const seatColumnGap = 50;
+
+    drawCenteredText(
+        ctx,
+        "3학년 2반 좌석배치표",
+        0,
+        42,
+        canvas.width,
+        62,
+        `900 52px ${fontFamily}`,
+        "#000",
+        900
+    );
+
+    seatData.forEach((s, index) => {
+        const position = getExportSeatGridPosition(index);
+        const x = seatLeft + (position.col - 1) * (seatWidth + seatColumnGap);
+        const y = seatTop + (position.row - 1) * seatHeight;
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(x, y, seatWidth, seatHeight);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#000000";
+        ctx.strokeRect(x, y, seatWidth, seatHeight);
+
+        drawCenteredText(
+            ctx,
+            s.student_number || index + 1,
+            x,
+            y + 14,
+            seatWidth,
+            34,
+            `400 30px ${fontFamily}`,
+            "#000"
+        );
+        drawCenteredText(
+            ctx,
+            s.name || "",
+            x,
+            y + 50,
+            seatWidth,
+            Math.max(42, seatHeight - 52),
+            `400 34px ${fontFamily}`,
+            "#000",
+            seatWidth - 10
+        );
+    });
+
+    const tableX = canvas.width - 56 - 140;
+    const tableY = 52;
+    const numberWidth = 50;
+    const nameWidth = 90;
+    const headerHeight = 28;
+    const rowHeight = 25;
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#000000";
+    ctx.fillStyle = "#ffd8a8";
+    ctx.fillRect(tableX, tableY, numberWidth + nameWidth, headerHeight);
+    ctx.strokeRect(tableX, tableY, numberWidth, headerHeight);
+    ctx.strokeRect(tableX + numberWidth, tableY, nameWidth, headerHeight);
+    drawCenteredText(ctx, "번호", tableX, tableY, numberWidth, headerHeight, `400 17px ${fontFamily}`);
+    drawCenteredText(ctx, "이름", tableX + numberWidth, tableY, nameWidth, headerHeight, `400 17px ${fontFamily}`);
+
+    const sortedList = [...seatData].sort((a, b) => (a.student_number || 0) - (b.student_number || 0));
+    sortedList.forEach((s, index) => {
+        const y = tableY + headerHeight + index * rowHeight;
+        ctx.fillStyle = index % 2 === 1 ? "#fce4d6" : "#ffffff";
+        ctx.fillRect(tableX, y, numberWidth + nameWidth, rowHeight);
+        ctx.strokeStyle = "#000000";
+        ctx.strokeRect(tableX, y, numberWidth, rowHeight);
+        ctx.strokeRect(tableX + numberWidth, y, nameWidth, rowHeight);
+        drawCenteredText(ctx, s.student_number || "", tableX, y, numberWidth, rowHeight, `400 17px ${fontFamily}`);
+        drawCenteredText(ctx, s.name || "", tableX + numberWidth, y, nameWidth, rowHeight, `400 17px ${fontFamily}`);
+    });
+
+    const deskTop = rowCount > 6 ? Math.min(850, seatTop + rowCount * seatHeight + 35) : 835;
+    drawRoundRect(ctx, 423, deskTop, 392, 72, 12, "#dcfce7", "#6d93e7", 2);
+    drawCenteredText(ctx, "교탁", 423, deskTop, 392, 72, `900 44px ${fontFamily}`, "#000", 360);
+
+    return canvas;
+}
+
+function canvasToPngBlob(canvas) {
+    return new Promise((resolve, reject) => {
+        canvas.toBlob(blob => {
+            if (blob) {
+                resolve(blob);
+            } else {
+                reject(new Error("PNG 변환에 실패했습니다."));
+            }
+        }, "image/png");
+    });
+}
+
+async function saveCanvasAsImage(canvas, filename) {
+    const blob = await canvasToPngBlob(canvas);
+    const supportsFileShare = typeof File === "function"
+        && navigator.share
+        && navigator.canShare;
+
+    if (supportsFileShare) {
+        const file = new File([blob], filename, { type: "image/png" });
+        let canShareFile = false;
+        try {
+            canShareFile = navigator.canShare({ files: [file] });
+        } catch {
+            canShareFile = false;
+        }
+
+        if (canShareFile && /Android|iPhone|iPad|iPod|Mobile|KAKAOTALK/i.test(navigator.userAgent)) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: "3학년 2반 좌석배치표"
+                });
+                return;
+            } catch (error) {
+                if (error?.name === "AbortError") return;
+            }
+        }
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.download = filename;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ✅ 자리 배치표 이미지 다운로드
 async function downloadSeatingChart() {
     const now = new Date();
 
@@ -1231,173 +1430,26 @@ async function downloadSeatingChart() {
         alert("다운로드할 자리 데이터가 없습니다.");
         return;
     }
-    
-    // 1️⃣ 임시 컨테이너 생성 (A4 가로 사이즈 정규화: 1414px * 1000px)
-    const exportWrapper = document.createElement("div");
-    exportWrapper.id = "export-capture-container";
-    exportWrapper.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 1408px;
-        height: 1024px;
-        background: white;
-        padding: 0;
-        font-family: 'Malgun Gothic', 'Dotum', sans-serif;
-        color: #000;
-        box-sizing: border-box;
-        z-index: -9999;
-        overflow: hidden;
-    `;
 
-    // 2️⃣ 제목 (3학년 2반 좌석배치표)
-    const title = document.createElement("h1");
-    title.style.cssText = `
-        position: absolute;
-        top: 42px;
-        left: 0;
-        width: 100%;
-        margin: 0;
-        text-align: center;
-        font-size: 52px;
-        font-weight: 900;
-        letter-spacing: 6px;
-        font-family: 'Malgun Gothic';
-    `;
-    title.innerText = "3학년 2반 좌석배치표";
-    exportWrapper.appendChild(title);
-
-    // 3-1. 좌석 배치도 (HWP 양식처럼 6칸 그리드)
-    const seatsArea = document.createElement("div");
-    seatsArea.style.cssText = `
-        position: absolute;
-        top: 255px;
-        left: 54px;
-        display: grid;
-        grid-template-columns: repeat(6, 150px);
-        grid-auto-rows: 102px;
-        column-gap: 50px;
-        row-gap: 0;
-        align-items: stretch;
-    `;
-
-    seatData.forEach((s, index) => {
-        const position = getExportSeatGridPosition(index);
-        const seatBox = document.createElement("div");
-        seatBox.style.cssText = `
-            grid-column: ${position.col};
-            grid-row: ${position.row};
-            border: 1px solid #000;
-            width: 150px;
-            height: 102px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: #fff;
-            box-sizing: border-box;
-            overflow: hidden;
-        `;
-
-        const number = document.createElement("div");
-        number.style.cssText = "font-size: 30px; line-height: 1;";
-        number.textContent = s.student_number || index + 1;
-
-        const name = document.createElement("div");
-        name.style.cssText = "font-size: 34px; font-weight: 400; line-height: 1.12; text-align: center;";
-        name.textContent = s.name || "";
-
-        seatBox.appendChild(number);
-        seatBox.appendChild(name);
-        seatsArea.appendChild(seatBox);
-    });
-    exportWrapper.appendChild(seatsArea);
-    
-    // 3-2. 학생 명단 (우측)
-    const studentListArea = document.createElement("div");
-    studentListArea.style.cssText = `
-        position: absolute;
-        top: 52px;
-        right: 56px;
-        width: 140px;
-    `;
-    
-    const table = document.createElement("table");
-    table.style.cssText = "width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 17px;";
-    
-    // 테이블 헤더
-    const thead = document.createElement("thead");
-    thead.innerHTML = `
-        <tr style="background: #ffd8a8;">
-            <th style="border: 1px solid #000; padding: 2px; font-weight: normal; width: 50px;">번호</th>
-            <th style="border: 1px solid #000; padding: 2px; font-weight: normal;">이름</th>
-        </tr>
-    `;
-    table.appendChild(thead);
-    
-    // 테이블 바디
-    const tbody = document.createElement("tbody");
-    const sortedList = [...seatData].sort((a, b) => (a.student_number || 0) - (b.student_number || 0));
-    
-    sortedList.forEach(s => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td style="border: 1px solid #000; padding: 1px; text-align: center; height: 25px;">${s.student_number || ""}</td>
-            <td style="border: 1px solid #000; padding: 1px; text-align: center;">${s.name || ""}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-    studentListArea.appendChild(table);
-    exportWrapper.appendChild(studentListArea);
-
-    // 4️⃣ 교탁 (상단 중앙: 1~6번 줄이 앞좌석)
-    const desk = document.createElement("div");
-    desk.style.cssText = `
-        position: absolute;
-        left: 423px;
-        top: 145px;
-        width: 392px;
-        height: 72px;
-        border: 2px solid #6d93e7;
-        border-radius: 12px;
-        background: #dcfce7;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 44px;
-        font-weight: 900;
-        letter-spacing: 4px;
-        color: #000;
-    `;
-    desk.innerText = "교탁";
-    exportWrapper.appendChild(desk);
-
-    document.body.appendChild(exportWrapper);
-
-    // 약간의 지연 시간을 주어 렌더링 보장 (브라우저가 레이아웃을 계산할 시간)
-    await new Promise(resolve => setTimeout(resolve, 150));
+    const button = document.querySelector("button[onclick='downloadSeatingChart()']");
+    const previousText = button?.textContent;
+    if (button) {
+        button.disabled = true;
+        button.textContent = "이미지 생성 중...";
+    }
 
     try {
-        const canvas = await html2canvas(exportWrapper, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: "#ffffff",
-            logging: false, 
-            width: 1414,
-            height: 1000
-        });
-
-        const link = document.createElement("a");
-        link.download = `3학년2반_좌석배치표_${now.toISOString().split('T')[0]}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-        
+        const canvas = drawSeatingChartCanvas(now);
+        const filename = `3학년2반_좌석배치표_${now.toISOString().split("T")[0]}.png`;
+        await saveCanvasAsImage(canvas, filename);
     } catch (e) {
         console.error("다운로드 실패", e);
         alert("이미지 생성 중 오류가 발생했습니다.");
     } finally {
-        document.body.removeChild(exportWrapper);
+        if (button) {
+            button.disabled = false;
+            button.textContent = previousText || "🖼️ 이미지 다운로드";
+        }
     }
 }
 
