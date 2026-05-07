@@ -1,10 +1,15 @@
 (function () {
   'use strict';
 
+  // 모든 인증/관리자 요청은 이 Netlify Function으로 모은다.
+  // 브라우저가 Supabase의 민감한 테이블을 직접 수정하지 않게 하기 위한 진입점이다.
   function getEndpoint() {
     return window.EduConfig?.AUTH_API_ENDPOINT || '/.netlify/functions/eduboard-auth';
   }
 
+  // 세션 토큰은 더 이상 localStorage에 보관하지 않는다.
+  // 실제 로그인 세션은 서버가 발급한 httpOnly 쿠키에 들어 있으므로,
+  // 자바스크립트에서는 토큰 값을 읽거나 저장하지 않는다.
   function getSessionToken() {
     return '';
   }
@@ -22,6 +27,9 @@
     localStorage.removeItem('savedEmail');
   }
 
+  // Netlify Function 공통 호출 함수.
+  // credentials: 'include'를 꼭 넣어야 httpOnly 쿠키가 요청에 함께 실린다.
+  // 서버가 { error }를 돌려주면 화면 코드에서 catch로 처리할 수 있게 Error로 바꾼다.
   async function callAuth(action, payload = {}) {
     const response = await fetch(getEndpoint(), {
       method: 'POST',
@@ -91,6 +99,8 @@
     return callAuth('confirmPasswordReset', { resetId, code, newPassword });
   }
 
+  // 퀘스트 보상은 보안상 클라이언트에서 users.xp/users.coin_balance를 직접 수정하지 않는다.
+  // 현재 버프 상태만 서버에 알려주고, 최종 XP/코인/레벨 계산은 서버가 검증 후 처리한다.
   async function claimQuestReward(userQuestId, xpMultiplier = 1) {
     return callAuth('claimQuestReward', { userQuestId, xpMultiplier });
   }

@@ -1023,7 +1023,7 @@ const toAdminNumber = (value, fallback = 0) => {
     $('#prev').onclick = () => { if (page > 1) { page--; apply(); } };
     $('#next').onclick = () => { const pages = Math.max(1, Math.ceil(view.length / pageSize)); if (page < pages) { page++; apply(); } };
 
-    // ✅ 행 작업: 전역 컨텍스트 메뉴(포털)
+    // 행 작업: 전역 컨텍스트 메뉴(포털)
     let ctxUser = null;
     function openCtx(btn, username) {
         ctxUser = username;
@@ -1103,7 +1103,7 @@ const toAdminNumber = (value, fallback = 0) => {
     $('#more-btn').onclick = () => togglePopover($('#more'));
     $('#open-logs').onclick = () => openModal('#modal-logs');
 
-    // ✅ 관리자 아이템 전체 동기화 (본인)
+    // 관리자 아이템 전체 동기화 (본인)
     $('#admin-sync-all').onclick = async () => {
         let username = localStorage.getItem('savedUsername');
         const { data: { user } } = await sb.auth.getUser();

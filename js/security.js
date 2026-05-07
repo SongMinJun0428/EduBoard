@@ -1,5 +1,5 @@
 /**
- * 🛡️ EduBoard Anti-Tamper Security Script
+ * EduBoard Anti-Tamper Security Script
  * --------------------------------------
  * 1. DOM Mutation Protection: Reverts unauthorized HTML/Text changes.
  * 2. State Isolation: Encourages keeping variables private.
@@ -89,19 +89,19 @@
 
     // 4. [Self-XSS Educational Warning]
     // Standard high-visibility warning used by major platforms to prevent trickery.
-    /*
-    console.log(
-        "%cSTOP!",
-        "color: white; font-family: sans-serif; font-size: 4.5em; font-weight: bolder; text-shadow: #000 1px 1px; background-color: red; padding: 10px 20px; border-radius: 8px;"
-    );
-    console.log(
-        "%cThis is a browser feature intended for developers. If someone told you to copy and paste something here to enable a feature or 'hack' someone's account, it is a scam and will give them access to your account.",
-        "font-family: sans-serif; font-size: 1.5em; font-weight: bold; color: red;"
-    );
-    console.log(
-        "%c🛡️ EduBoard Security System Active | Unauthorized modification attempts are logged.",
-        "font-family: sans-serif; font-size: 1em; color: #4f46e5;"
-    );
-    */
+ /*
+ console.log(
+ "%cSTOP!",
+ "color: white; font-family: sans-serif; font-size: 4.5em; font-weight: bolder; text-shadow: #000 1px 1px; background-color: red; padding: 10px 20px; border-radius: 8px;"
+ );
+ console.log(
+ "%cThis is a browser feature intended for developers. If someone told you to copy and paste something here to enable a feature or 'hack' someone's account, it is a scam and will give them access to your account.",
+ "font-family: sans-serif; font-size: 1.5em; font-weight: bold; color: red;"
+ );
+ console.log(
+ "%c EduBoard Security System Active | Unauthorized modification attempts are logged.",
+ "font-family: sans-serif; font-size: 1em; color: #4f46e5;"
+ );
+ */
 
 })();

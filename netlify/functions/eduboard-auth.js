@@ -1,5 +1,9 @@
 const crypto = require("crypto");
 
+// 이 파일은 Netlify Functions에서 실행되는 EduBoard의 보안 API이다.
+// 브라우저에 노출되면 안 되는 작업, 예를 들어 비밀번호 검증, 관리자 쓰기 작업,
+// 퀘스트 보상 지급은 모두 여기에서 Supabase service role 권한으로 처리한다.
+
 const SESSION_DAYS = 7;
 const RESET_CODE_MINUTES = 10;
 const SESSION_COOKIE = "__Host-eduboard_session";
@@ -21,15 +25,20 @@ function response(statusCode, body, extraHeaders = {}) {
   };
 }
 
+// 로그인 성공 시 브라우저에 저장되는 세션 쿠키를 만든다.
+// HttpOnly라서 자바스크립트로 읽을 수 없고, XSS가 있어도 토큰 탈취 위험을 줄일 수 있다.
 function makeSessionCookie(token) {
   const maxAge = SESSION_DAYS * 24 * 60 * 60;
   return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
 }
 
+// 로그아웃할 때 같은 이름의 쿠키를 Max-Age=0으로 내려 보내 브라우저에서 삭제한다.
 function clearSessionCookie() {
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 }
 
+// Netlify Function 요청 헤더에서 특정 쿠키 값을 읽는다.
+// 클라이언트는 세션 토큰을 직접 보내지 않아도 브라우저가 쿠키를 자동으로 포함한다.
 function readCookie(event, name) {
   const cookieHeader = event.headers.cookie || event.headers.Cookie || "";
   const prefix = `${name}=`;
@@ -37,6 +46,8 @@ function readCookie(event, name) {
   return match ? decodeURIComponent(match.slice(prefix.length)) : "";
 }
 
+// 과거 localStorage 토큰 방식과의 호환을 위해 body.sessionToken도 읽지만,
+// 현재 정상 경로는 httpOnly 쿠키를 사용하는 것이다.
 function getRequestSessionToken(event, body) {
   return String(body.sessionToken || readCookie(event, SESSION_COOKIE) || "");
 }
@@ -192,6 +203,8 @@ async function updateRows(table, params, payload) {
   });
 }
 
+// 보상 수령처럼 "실제로 변경된 행이 있는지" 확인해야 하는 작업에서 사용한다.
+// return=representation을 쓰면 PATCH 결과로 변경된 행이 돌아오므로 중복 수령을 막기 쉽다.
 async function updateRowsReturning(table, params, payload) {
   return supabaseRequest(`${table}${qs(params)}`, {
     method: "PATCH",
@@ -216,6 +229,8 @@ async function loadUserByLogin(login) {
 }
 
 async function createSession(username) {
+  // 원본 세션 토큰은 쿠키로만 내려 보내고, DB에는 해시만 저장한다.
+  // DB가 노출되어도 해시만으로는 세션을 재사용할 수 없게 하기 위한 처리다.
   const sessionToken = randomToken();
   const tokenHash = sha256(sessionToken);
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000).toISOString();
@@ -224,6 +239,8 @@ async function createSession(username) {
 }
 
 async function loadSession(sessionToken) {
+  // 쿠키에서 받은 토큰을 다시 해시해서 app_sessions에 저장된 값과 비교한다.
+  // 만료 시간이 지난 세션은 여기에서 자동으로 거부된다.
   if (!sessionToken) return null;
   const tokenHash = sha256(sessionToken);
   const session = await maybeSingle("app_sessions", {
@@ -287,6 +304,17 @@ async function sendResetEmail(toEmail, toName, code) {
     throw new Error("비밀번호 재설정 이메일 환경변수가 없습니다.");
   }
 
+  // EmailJS OTP 템플릿의 passcode/time 변수와 맞춘다.
+  // message도 함께 보내서 이전 템플릿을 쓰는 경우에도 메일 내용이 비지 않게 한다.
+  const expiresText = new Date(Date.now() + RESET_CODE_MINUTES * 60 * 1000).toLocaleString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
   const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -297,6 +325,8 @@ async function sendResetEmail(toEmail, toName, code) {
       template_params: {
         to_name: toName,
         to_email: toEmail,
+        passcode: code,
+        time: expiresText,
         message: `비밀번호 재설정을 위한 인증번호는 [ ${code} ] 입니다. ${RESET_CODE_MINUTES}분 안에 입력해주세요.`
       }
     })
@@ -389,11 +419,15 @@ async function handleAction(event, body) {
   }
 
   if (action === "claimQuestReward") {
+    // 퀘스트 보상은 반드시 로그인 세션을 통과한 사용자만 받을 수 있다.
+    // username을 body에서 믿지 않고, 서버가 검증한 세션의 username만 사용한다.
     const session = await requireSession(requestSessionToken);
     const username = session.user.username;
     const userQuestId = String(body.userQuestId || "").trim();
     if (!userQuestId) throw new Error("Quest reward target is missing.");
 
+    // 사용자의 해당 퀘스트가 completed 상태인지 확인한다.
+    // quests(...)는 FK로 연결된 원본 퀘스트의 보상 정보를 함께 가져오기 위한 Supabase embed select다.
     const uq = await maybeSingle("user_daily_quests", {
       select: "id,username,status,quests(reward_coin,reward_xp)",
       id: `eq.${userQuestId}`,
@@ -403,12 +437,16 @@ async function handleAction(event, body) {
       throw new Error("No completed quest reward is available.");
     }
 
+    // 현재 코인, XP, 레벨을 서버에서 다시 읽는다.
+    // 클라이언트가 보낸 숫자는 신뢰하지 않고, DB 값과 퀘스트 보상 값으로 최종 결과를 계산한다.
     const user = await maybeSingle("users", {
       select: "coin_balance,xp,level",
       username: `eq.${username}`
     });
     if (!user) throw new Error("User not found for quest reward.");
 
+    // xpMultiplier는 1 또는 2만 허용한다.
+    // 클라이언트가 999 같은 값을 보내도 서버에서 1로 떨어뜨려 과지급을 막는다.
     const rewardCoin = cleanNumber(uq.quests.reward_coin) || 0;
     const baseRewardXp = cleanNumber(uq.quests.reward_xp) || 0;
     const xpMultiplier = cleanNumber(body.xpMultiplier) === 2 ? 2 : 1;
@@ -419,6 +457,8 @@ async function handleAction(event, body) {
     let level = cleanNumber(user.level) || 1;
     let levelUps = 0;
 
+    // EduBoard의 레벨 규칙: 20 XP마다 1레벨 상승, 레벨업 1회마다 코인 10개 보너스.
+    // 남은 XP는 다음 레벨 진행도로 유지한다.
     if (xp >= need) {
       levelUps = Math.floor(xp / need);
       level += levelUps;
@@ -426,6 +466,8 @@ async function handleAction(event, body) {
       coinBalance += levelUps * 10;
     }
 
+    // 먼저 퀘스트 상태를 completed -> rewarded로 바꾼다.
+    // 조건에 status=eq.completed를 넣어서 같은 보상을 빠르게 두 번 눌러도 한 번만 성공하게 한다.
     const claimed = await updateRowsReturning("user_daily_quests", {
       id: `eq.${userQuestId}`,
       username: `eq.${username}`,
@@ -435,6 +477,8 @@ async function handleAction(event, body) {
       throw new Error("This quest reward has already been claimed.");
     }
 
+    // 중복 수령 방지에 성공한 뒤에만 사용자 재화를 갱신한다.
+    // 보상 상태와 사용자 스탯을 모두 서버에서 처리해야 RLS를 잠가도 기능이 유지된다.
     await updateRows("users", { username: `eq.${username}` }, {
       coin_balance: coinBalance,
       xp,

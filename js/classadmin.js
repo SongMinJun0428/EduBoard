@@ -6,7 +6,7 @@ const CLASS_GRADE = 3;
 const CLASS_NUM = 2;
 
 /* --------------------
-   자리 관리
+ 자리 관리
 -------------------- */
 let seatData = [];
 let selectedSeatIndex = null;
@@ -40,7 +40,7 @@ let seatRules = loadSeatRules();
 
 async function loadSeats() {
     const { data, error } = await client.from("class_seats")
-        .select("id,student_number,name,seat_index,locked")  // ✅ name 불러옴
+        .select("id,student_number,name,seat_index,locked")  // name 불러옴
         .eq("grade", CLASS_GRADE).eq("class_num", CLASS_NUM)
         .order("seat_index");
 
@@ -749,7 +749,7 @@ function createRuleAwareShuffle(previousLayout) {
 }
 
 
-// 🔧 실제 섞기 + 기존 효과들 실행 (랜덤 셔플 핵심 로직)
+// 실제 섞기 + 기존 효과들 실행 (랜덤 셔플 핵심 로직)
 function basicShuffleCore() {
     const previousLayout = seatData.map(seat => ({ ...seat }));
     const shuffleResult = createRuleAwareShuffle(previousLayout);
@@ -791,7 +791,7 @@ function basicShuffleCore() {
 }
 
 
-// 🎬 화면 가려지고 카운트다운 후 basicShuffleCore 실행
+// 화면 가려지고 카운트다운 후 basicShuffleCore 실행
 function shuffleSeats() {
     const overlay = document.getElementById("shuffle-overlay");
 
@@ -825,7 +825,7 @@ function shuffleSeats() {
 
             // GO! 잠깐 보여준 뒤 실제 셔플 실행
             setTimeout(() => {
-                basicShuffleCore();   // 🔥 실제 자리 섞기 + 기존 효과들
+                basicShuffleCore();   // 실제 자리 섞기 + 기존 효과들
 
                 // 결과 잠깐 보여주고 오버레이 닫기
                 setTimeout(() => {
@@ -837,79 +837,79 @@ function shuffleSeats() {
 }
 
 /*function setCookie(name, value, days) {
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+ const expires = new Date(Date.now() + days * 864e5).toUTCString();
+ document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
 }
 
 function getCookie(name) {
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? decodeURIComponent(match[2]) : null;
+ const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+ return match ? decodeURIComponent(match[2]) : null;
 }
 
 function shuffleSeats() {
-  const cookieKey = "minjun_hojoo_count";
-  const count = parseInt(getCookie(cookieKey) || "0");
+ const cookieKey = "minjun_hojoo_count";
+ const count = parseInt(getCookie(cookieKey) || "0");
 
-  // ✅ 11회 이상이면 기존 방식 사용
-  if (count >= 2) {
-    let free = seatData.filter(s => !s.locked);
-    let shuffled = [...free].sort(() => Math.random() - 0.5);
+ // 11회 이상이면 기존 방식 사용
+ if (count >= 2) {
+ let free = seatData.filter(s => !s.locked);
+ let shuffled = [...free].sort(() => Math.random() - 0.5);
 
-    let idx = 0;
-    seatData = seatData.map(s => {
-      if (s.locked) return s;
-      return { ...shuffled[idx++] };
-    });
+ let idx = 0;
+ seatData = seatData.map(s => {
+ if (s.locked) return s;
+ return { ...shuffled[idx++] };
+ });
 
-    seatData.forEach((s, i) => s.seat_index = i + 1);
-    renderSeats();
+ seatData.forEach((s, i) => s.seat_index = i + 1);
+ renderSeats();
 
-    return;
-  }
+ return;
+ }
 
-  // ✅ 1~10회는 송민준, 곽호주 고정 + 나머지 랜덤
-  const idxMinjun = seatData.findIndex(s => s.name === "송민준");
-  const idxHojoo = seatData.findIndex(s => s.name === "곽호주");
+ // 1~10회는 송민준, 곽호주 고정 + 나머지 랜덤
+ const idxMinjun = seatData.findIndex(s => s.name === "송민준");
+ const idxHojoo = seatData.findIndex(s => s.name === "곽호주");
 
-  if (idxMinjun === -1 || idxHojoo === -1) {
-    alert("❌ 송민준 또는 곽호주 학생을 찾을 수 없습니다.");
-    return;
-  }
+ if (idxMinjun === -1 || idxHojoo === -1) {
+ alert(" 송민준 또는 곽호주 학생을 찾을 수 없습니다.");
+ return;
+ }
 
-  const minjun = seatData[idxMinjun];
-  const hojoo = seatData[idxHojoo];
+ const minjun = seatData[idxMinjun];
+ const hojoo = seatData[idxHojoo];
 
-  // 🔄 송민준/곽호주 제외하고 unlocked 자리만 섞기
-  const others = seatData.filter(s =>
-    !s.locked &&
-    s.name !== "송민준" &&
-    s.name !== "곽호주"
-  );
-  const shuffled = [...others].sort(() => Math.random() - 0.5);
+ // 송민준/곽호주 제외하고 unlocked 자리만 섞기
+ const others = seatData.filter(s =>
+ !s.locked &&
+ s.name !== "송민준" &&
+ s.name !== "곽호주"
+ );
+ const shuffled = [...others].sort(() => Math.random() - 0.5);
 
-  let newSeats = [];
-  let shuffledIndex = 0;
+ let newSeats = [];
+ let shuffledIndex = 0;
 
-  for (let i = 0; i < seatData.length; i++) {
-    if (seatData[i].locked) {
-      newSeats.push(seatData[i]); // 고정 좌석
-    } else if (i === 24) {
-      newSeats.push({ ...minjun }); // 25번 자리에 송민준
-    } else if (i === 25) {
-      newSeats.push({ ...hojoo }); // 26번 자리에 곽호주
-    } else {
-      const next = shuffled[shuffledIndex++];
-      newSeats.push(next ? { ...next } : { ...seatData[i] });
-    }
-  }
+ for (let i = 0; i < seatData.length; i++) {
+ if (seatData[i].locked) {
+ newSeats.push(seatData[i]); // 고정 좌석
+ } else if (i === 24) {
+ newSeats.push({ ...minjun }); // 25번 자리에 송민준
+ } else if (i === 25) {
+ newSeats.push({ ...hojoo }); // 26번 자리에 곽호주
+ } else {
+ const next = shuffled[shuffledIndex++];
+ newSeats.push(next ? { ...next } : { ...seatData[i] });
+ }
+ }
 
-  newSeats.forEach((s, i) => {
-    s.seat_index = i + 1;
-  });
+ newSeats.forEach((s, i) => {
+ s.seat_index = i + 1;
+ });
 
-  seatData = newSeats;
-  renderSeats();
-  setCookie(cookieKey, (count + 1).toString(), 365);
+ seatData = newSeats;
+ renderSeats();
+ setCookie(cookieKey, (count + 1).toString(), 365);
 }
 */
 
@@ -992,7 +992,7 @@ async function saveSeats() {
 
 
 /* --------------------
-   과제
+ 과제
 -------------------- */
 async function addAssignment() {
     const title = document.getElementById("assign-title").value;
@@ -1003,7 +1003,7 @@ async function addAssignment() {
 }
 
 /* --------------------
-   포인트
+ 포인트
 -------------------- */
 async function updatePoint() {
     const name = document.getElementById("point-name").value;
@@ -1015,7 +1015,7 @@ async function updatePoint() {
 }
 
 /* --------------------
-   퀴즈
+ 퀴즈
 -------------------- */
 // 퀴즈 추가
 async function addQuiz() {
@@ -1029,7 +1029,7 @@ async function addQuiz() {
         // 오늘 세트 uuid 가져오기 (없으면 새로 생성)
         let setId = localStorage.getItem("quiz_set_id");
         if (!setId) {
-            setId = crypto.randomUUID();  // ✅ uuid 생성
+            setId = crypto.randomUUID();  // uuid 생성
             localStorage.setItem("quiz_set_id", setId);
         }
 
@@ -1067,7 +1067,7 @@ async function addQuiz() {
 
 
 /* --------------------
-   투표
+ 투표
 -------------------- */
 async function addVote() {
     const q = document.getElementById("vote-question").value;
@@ -1178,7 +1178,7 @@ async function makeAdjacentByName(name1, name2) {
 
     alert("❌ 인접한 자리가 없습니다.");
 }
-// ✅ 드래그로 바꾼 두 자리만 반짝 효과
+// 드래그로 바꾼 두 자리만 반짝 효과
 function highlightSeats(indexArray) {
     const container = document.getElementById("seat-map");
     indexArray.forEach(i => {
@@ -1196,7 +1196,7 @@ function highlightSeats(indexArray) {
     });
 }
 
-// ✅ 전체 랜덤 섞기 할 때 모든 좌석에 효과
+// 전체 랜덤 섞기 할 때 모든 좌석에 효과
 function animateAllSeats() {
     const seats = document.querySelectorAll("#seat-map .seat");
     seats.forEach(el => {
@@ -1209,7 +1209,7 @@ function animateAllSeats() {
     });
 }
 
-// ✅ 그리드 가로 칸 수 변경 (HWP 파일 참고 목적)
+// 그리드 가로 칸 수 변경 (HWP 파일 참고 목적)
 function updateGridLayout(cols) {
     const map = document.getElementById("seat-map");
     map.style.gridTemplateColumns = `repeat(${cols}, minmax(46px, 1fr))`;
@@ -1398,7 +1398,7 @@ async function saveCanvasAsImage(canvas, filename) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// ✅ 자리 배치표 이미지 다운로드
+// 자리 배치표 이미지 다운로드
 async function downloadSeatingChart() {
     const now = new Date();
 

@@ -4,13 +4,13 @@ if (typeof pdfjsLib !== 'undefined') {
     "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 }
 
-// 🛡️ Supabase SDK는 CDN을 통해 전역 window.supabase로 제공됨
+// Supabase SDK는 CDN을 통해 전역 window.supabase로 제공됨
 var supabase = window.supabase;
 if (!supabase) {
   console.error('❌ Supabase SDK not found. Please check network or CSP.');
 }
 
-// 🛡️ 전역 supabaseClient 변수 안전하게 초기화
+// 전역 supabaseClient 변수 안전하게 초기화
 if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
   if (supabase && window.EduConfig) {
     window.supabaseClient = supabase.createClient(
@@ -47,7 +47,7 @@ const SAFE_USER_COLUMNS = [
   'can_edit_name'
 ].join(',');
 
-// 🛡️ 보안 및 로딩 신뢰성: 인증 상태 실시간 감지 및 세션 동기화
+// 보안 및 로딩 신뢰성: 인증 상태 실시간 감지 및 세션 동기화
 if (supabaseClient) {
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
   console.log('🛡️ Auth Event:', event);
@@ -83,7 +83,7 @@ if (supabaseClient) {
   });
 }
 
-/** 💎 UI 박스 전환 (로그인/회원가입) */
+/** UI 박스 전환 (로그인/회원가입) */
 function showBox(boxId) {
   const loginBox = document.getElementById('login-box');
   const signupBox = document.getElementById('signup-box');
@@ -106,7 +106,7 @@ const NEIS_KEY = '28ca0f05af184e8ba231d5a949d52db2';
 let ATPT_OFCDC_SC_CODE = localStorage.getItem('savedAtptCode') || 'J10';
 let SD_SCHUL_CODE = localStorage.getItem('savedSchulCode') || '7679111';
 
-// 🍪 쿠키 헬퍼 함수
+// 쿠키 헬퍼 함수
 function setCookie(name, value, days) {
   let expires = "";
   if (days) {
@@ -166,7 +166,7 @@ function initTheme() {
   applyTheme(savedTheme);
 }
 
-/** 🏛️ 전국 학교 검색 UI 로직 */
+/** 전국 학교 검색 UI 로직 */
 let currentSearchType = 'signup'; // 'signup' 또는 'social'
 
 window.realOpenSchoolSearchModal = function(type) {
@@ -246,7 +246,7 @@ window.realExecuteSchoolSearch = async function() {
   });
 };
 
-// 💎 구버전 매핑 유지
+// 구버전 매핑 유지
 window.openSchoolSearchModal = window.realOpenSchoolSearchModal;
 window.closeSchoolSearchModal = window.realCloseSchoolSearchModal;
 window.executeSchoolSearch = window.realExecuteSchoolSearch;
@@ -289,7 +289,7 @@ const KOR_SUBJECTS = [
   '통합', '자율', '창체', '자율활동', '동아리', '진로', '한문', '스포츠'
 ];
 
-/** 🛡️ 학년/반 데이터를 안전하게 정수로 변환 (null/NaN 방지) */
+/** 학년/반 데이터를 안전하게 정수로 변환 (null/NaN 방지) */
 function getSafeGradeClass() {
   const rawG = currentGrade ?? localStorage.getItem('savedGrade');
   const rawC = currentClassNum ?? localStorage.getItem('savedClassNum');
@@ -339,15 +339,15 @@ let currentUserName = '';
 let currentStudentNumber = '';
 let currentGrade = null;
 let currentClassNum = null;
-let currentAtptCode = null; // 🏫 추가
-let currentSchulCode = null; // 🏫 추가
-let currentSchoolName = ''; // 🏫 추가
+let currentAtptCode = null; // 추가
+let currentSchulCode = null; // 추가
+let currentSchoolName = ''; // 추가
 let timetableOffset = 0;
 
 let currentFourNumbers = [];
 // let currentUserCoin = 0; // 전역 window.currentUserCoin 사용으로 전환
 
-/** 🔐 보안 유틸리티: HTML 특수문자 이스케이프 (XSS 방지) */
+/** 보안 유틸리티: HTML 특수문자 이스케이프 (XSS 방지) */
 function escapeHtml(text) {
   if (!text) return "";
   const div = document.createElement('div');
@@ -378,7 +378,7 @@ function buildSafeStoragePath(file, folder = 'public') {
   return `${folder}/${Date.now()}-${nonce}-${base}.${ext}`;
 }
 
-/** 🔄 글로벌 로딩 제어 */
+/** 글로벌 로딩 제어 */
 function showLoading() {
   const loader = document.getElementById('loader-overlay');
   if (loader) {
@@ -392,7 +392,7 @@ function hideLoading() {
   }
 }
 
-/** 🌐 소셜 로그인 (OAuth) 처리 */
+/** 소셜 로그인 (OAuth) 처리 */
 function getOAuthRedirectUrl() {
   const canUseWebOrigin = ['http:', 'https:', 'capacitor:', 'ionic:'].includes(window.location.protocol);
   if (!canUseWebOrigin) return window.location.href;
@@ -431,7 +431,7 @@ async function loginWithProvider(provider, mode = 'login') {
   }
 }
 
-/** 🔗 소셜 계정 연동 해제 (보안 강화) */
+/** 소셜 계정 연동 해제 (보안 강화) */
 async function unlinkSocialAccount(provider) {
   if (!confirm(`정말로 ${provider} 계정 연동을 해제하시겠습니까?`)) return;
 
@@ -467,7 +467,7 @@ async function unlinkSocialAccount(provider) {
   }
 }
 
-/** 📝 소셜 로그인 후 최초 정보 입력 완료 */
+/** 소셜 로그인 후 최초 정보 입력 완료 */
 async function completeSocialSignup() {
   const name = document.getElementById('social-name').value.trim();
   const password = document.getElementById('social-password').value.trim();
@@ -476,7 +476,7 @@ async function completeSocialSignup() {
   const classNum = parseInt(document.getElementById('social-class').value, 10);
   const number = parseInt(document.getElementById('social-number').value, 10);
   
-  // 🏫 학교 정보 추출
+  // 학교 정보 추출
   const schoolName = document.getElementById('socialSchoolName').value;
   const atptCode = document.getElementById('socialAtptCode').value;
   const schulCode = document.getElementById('socialSchulCode').value;
@@ -522,7 +522,7 @@ function applyUserSession(user, sessionProof = null) {
   currentSchulCode = user.sd_schul_code || '7679111';
   currentSchoolName = user.school_name || '기본학교';
   
-  // 🏫 전역 NEIS 코드 업데이트
+  // 전역 NEIS 코드 업데이트
   ATPT_OFCDC_SC_CODE = currentAtptCode;
   SD_SCHUL_CODE = currentSchulCode;
 
@@ -835,7 +835,7 @@ function nextSignupStep(step) {
   if (signupStatus) signupStatus.innerText = '';
 }
 
-/** ✅ 약관 동의 상태 업데이트 */
+/** 약관 동의 상태 업데이트 */
 function updateAgreementStatus() {
   const privacy = document.getElementById('privacy-agree').checked;
   const tos = document.getElementById('tos-agree').checked;
@@ -883,7 +883,7 @@ async function updateProfile() {
   }
 }
 
-// 📱 모바일 하단 네브 활성화 상태 업데이트
+// 모바일 하단 네브 활성화 상태 업데이트
 function updateMobileNavActive(panelId) {
   const navItems = document.querySelectorAll('.bottom-nav .nav-item');
   navItems.forEach(item => {
@@ -977,12 +977,12 @@ async function addNotice() {
     const { error } = await supabaseClient.from('notices').insert([newNotice]);
     if (error) throw error;
 
-    // 🎯 [Logging] 활동 로그 기록
+    // [Logging] 활동 로그 기록
     if (window.logActivity) {
       window.logActivity('notice_create', title, 'notice', { content: content, image_url: imageUrl });
     }
 
-    // 🎯 [이관] 일일 XP 보상 지급 (notice 등록 시)
+    // [이관] 일일 XP 보상 지급 (notice 등록 시)
     await awardDailyXP('notice');
 
     alert('공지 등록 완료!');
@@ -1000,7 +1000,7 @@ async function addNotice() {
   }
 }
 
-/** 👤 사용자 표시 이름 포맷터 (🛡️ XSS 보안 강화버전) */
+/** 사용자 표시 이름 포맷터 ( XSS 보안 강화버전) */
 function formatUserDisplayName(user) {
   const container = document.createElement('span');
   if (!user) {
@@ -1040,7 +1040,7 @@ function formatUserDisplayName(user) {
   return container;
 }
 
-/** 📢 공지사항 메뉴 토글 */
+/** 공지사항 메뉴 토글 */
 window.toggleNoticeMenu = function (id) {
   const menu = document.getElementById(`notice-menu-${id}`);
   if (!menu) return;
@@ -1050,7 +1050,7 @@ window.toggleNoticeMenu = function (id) {
   menu.style.display = isVisible ? 'none' : 'block';
 };
 
-/** 📁 자료실 메뉴 토글 */
+/** 자료실 메뉴 토글 */
 window.toggleMaterialMenu = function (id) {
   const menu = document.getElementById(`material-menu-${id}`);
   if (!menu) return;
@@ -1119,7 +1119,7 @@ async function loadNotices() {
       const metaLeft = document.createElement('div');
       metaLeft.style.cssText = 'display: flex; align-items: center; gap: 8px; flex-wrap: wrap;';
 
-      // 🛡️ 작성자 표시
+      // 작성자 표시
       const writerWrap = document.createElement('div');
       writerWrap.style.cssText = 'display:flex; align-items:center;';
       writerWrap.appendChild(formatUserDisplayName(item.users || { name: item.writer || '알 수 없음' }));
@@ -1226,7 +1226,7 @@ async function loadTimetableWeek(grade, classNum) {
   currentGrade = grade;
   currentClassNum = classNum;
 
-  // 🏫 전역 저장된 학교 코드가 있으면 사용, 없으면 기존 기본값 사용
+  // 전역 저장된 학교 코드가 있으면 사용, 없으면 기존 기본값 사용
   const atpt = currentAtptCode || localStorage.getItem('savedAtptCode') || 'J10';
   const schul = currentSchulCode || localStorage.getItem('savedSchulCode') || '7679111';
   const schoolName = currentSchoolName || localStorage.getItem('savedSchoolName') || '기본학교';
@@ -1254,7 +1254,7 @@ async function loadTimetableWeek(grade, classNum) {
   try {
     const results = await Promise.all(
       dates.map(async (dateStr) => {
-        // 🏫 학교 급별 API 자동 감지 (초등: els, 중등: mis, 고등: his)
+        // 학교 급별 API 자동 감지 (초등: els, 중등: mis, 고등: his)
         let apiType = 'misTimetable'; // 기본값 (중학교)
         const schoolName = currentSchoolName || localStorage.getItem('savedSchoolName') || '';
         
@@ -1388,7 +1388,7 @@ async function submitHomework() {
 
     if (insertError) throw insertError;
 
-    // 🎯 [Logging] 활동 로그 기록
+    // [Logging] 활동 로그 기록
     if (window.logActivity) {
       window.logActivity('material_create', title, 'material', {
         file_count: insertRecords.length,
@@ -1642,7 +1642,7 @@ function showPanel(panelId) {
   target.style.display = 'block';
   target.classList.add('active');
 
-  // 📱 모바일 하단 네비게이션 활성 상태 동기화
+  // 모바일 하단 네비게이션 활성 상태 동기화
   updateBottomNav(panelId);
 
   // 모바일 메뉴가 열려있다면 닫기
@@ -1683,7 +1683,7 @@ function showPanel(panelId) {
   return true;
 }
 
-/** 📱 하단 네비게이션 아이콘 강조 상태 업데이트 */
+/** 하단 네비게이션 아이콘 강조 상태 업데이트 */
 function updateBottomNav(panelId) {
   const mapping = {
     'dashboard': 'nav-dash',
@@ -1829,7 +1829,7 @@ function $v(id) {
   return el && 'value' in el ? String(el.value).trim() : '';
 }
 
-// ✅ 날짜 → 요일 동기화(이미 있으시면 유지)
+// 날짜 → 요일 동기화(이미 있으시면 유지)
 function syncYoilFromDate() {
   const d = $v('af-date');
   const yoilEl = document.getElementById('af-yoil');
@@ -1839,7 +1839,7 @@ function syncYoilFromDate() {
   yoilEl.value = wd;
 }
 
-// ✅ 기존 함수 교체: 없는 필드가 있어도 에러 없이 동작
+// 기존 함수 교체: 없는 필드가 있어도 에러 없이 동작
 function getAnalyzeForm() {
   const fields = {
     subject: $v('af-subject'),
@@ -2233,7 +2233,7 @@ function exitMiniGame() {
   // 세션 정리
   window.miniGameSessionId = null;
 }
-// ✅ 교체용: 여러 게임을 처리하는 startGame
+// 교체용: 여러 게임을 처리하는 startGame
 async function startGame(gameType) {
   // 중복 클릭 방지
   if (startGame._busy) return;
@@ -2360,7 +2360,7 @@ async function startGame(gameType) {
       return;
     }
 
-    // 🛑 [보안] 세션 ID 생성
+    // [보안] 세션 ID 생성
     window.miniGameSessionId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     if (!window._rewardedSessions) window._rewardedSessions = new Set();
 
@@ -2441,7 +2441,7 @@ async function startGame(gameType) {
       requestAnimationFrame(() => cfg.launch());
     }
 
-    // 🎯 일일 퀘스트 업데이트
+    // 일일 퀘스트 업데이트
     if (typeof updateQuestProgress === 'function') {
       updateQuestProgress('play_game');
     }
@@ -2676,7 +2676,7 @@ async function initDashboardTop() {
     const equippedTitle = localStorage.getItem('savedTitle') || '';
     const nameNode = formatUserDisplayName({ name: savedName, equipped_title: equippedTitle });
     
-    // 🛡️ [object HTMLSpanElement] 오류 수정: innerHTML 대신 appendChild 사용
+    // [object HTMLSpanElement] 오류 수정: innerHTML 대신 appendChild 사용
     if (window.__updateSecurityValue) {
       window.__updateSecurityValue('dash-name', nameNode.outerHTML, true);
     } else {
@@ -2710,7 +2710,7 @@ async function initDashboardTop() {
   await initDailyQuests();
   if (typeof setupAdminTimetableControls === 'function') setupAdminTimetableControls();
 
-  // 🥘 급식/시간표/일정 데이터 로딩 복구
+  // 급식/시간표/일정 데이터 로딩 복구
   const ttTarget = isAdmin && typeof getActiveTimetableTarget === 'function'
     ? getActiveTimetableTarget()
     : { grade: grd, classNum: cls };
@@ -2729,7 +2729,7 @@ async function initDashboardTop() {
     }
   }
 
-  // 📅 일정(캘린더) 초기화 추가
+  // 일정(캘린더) 초기화 추가
   if (typeof renderScheduleCalendar === 'function') {
     renderScheduleCalendar();
   }
@@ -2816,7 +2816,7 @@ async function loadRecentNotices3() {
 
 
 
-/** 🆙 XP 획득 배율 계산 (버프 여부 확인) */
+/** XP 획득 배율 계산 (버프 여부 확인) */
 function getXpMultiplier() {
   const buffEnd = localStorage.getItem('xp_buff_end');
   const badges = document.querySelectorAll('#xp-buff-badge, #xp-buff-badge-profile');
@@ -2883,7 +2883,7 @@ async function syncStatsAndRender() {
       return;
     }
 
-    // 🆙 버프 배지 업데이트
+    // 버프 배지 업데이트
     if (typeof getXpMultiplier === 'function') getXpMultiplier();
 
     const { data, error } = await supabaseClient
@@ -2898,7 +2898,7 @@ async function syncStatsAndRender() {
     let exp = Number.isFinite(+data?.xp) ? +data.xp : 0;
     let point = Number.isFinite(+data?.coin_balance) ? +data.coin_balance : 0;
 
-    // 🆙 레벨업 로직 (20 XP당 1레벨 + 10포인트 보너스)
+    // 레벨업 로직 (20 XP당 1레벨 + 10포인트 보너스)
     if (exp >= NEED) {
       const levelUps = Math.floor(exp / NEED);
       level += levelUps;
@@ -2922,7 +2922,7 @@ async function syncStatsAndRender() {
   }
 }
 
-/** 🎯 [이관] 일일 액션에 따른 랜덤 XP 보상 지급 (3~10 XP) */
+/** [이관] 일일 액션에 따른 랜덤 XP 보상 지급 (3~10 XP) */
 async function awardDailyXP(action) {
   const username = localStorage.getItem('savedUsername');
   if (!username) return;
@@ -3221,7 +3221,7 @@ async function renderScheduleCalendar() {
   }
 }
 
-// 📅 일정(캘린더) 월 이동 전역 함수
+// 일정(캘린더) 월 이동 전역 함수
 window.changeSchedMonth = function (delta) {
   if (!schedRefDate) schedRefDate = new Date();
   schedRefDate.setMonth(schedRefDate.getMonth() + delta);
@@ -3507,7 +3507,7 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
   const selScope = document.getElementById('rank-scope');
   const btnRefresh = document.getElementById('rank-refresh');
 
-  // ✅ 모두가 범위를 바꿀 수 있도록 보장
+  // 모두가 범위를 바꿀 수 있도록 보장
   selScope.disabled = false;
 
   const escapeHtml = (s = '') => String(s)
@@ -3591,12 +3591,12 @@ function renderSchedDetail(dateStr, itemsA, itemsE) {
     ul.innerHTML = `<li style="padding:10px;color:#6b7280">불러오는 중…</li>`;
     meEl.style.display = 'none';
 
-    // ✅ 관리자 여부와 무관하게 항상 같은 기본 쿼리 사용
+    // 관리자 여부와 무관하게 항상 같은 기본 쿼리 사용
     let q = supabaseClient.from('users')
       .select('username,name,grade,class_num,student_number,coin_balance,level,xp,role,equipped_title', { count: 'exact' })
       .neq('role', 'admin'); // 랭킹에서 관리자 제외 (유지)
 
-    // ✅ scope에만 따라 필터
+    // scope에만 따라 필터
     if (scope === 'class') {
       if (g != null) q = q.eq('grade', g);
       if (c != null) q = q.eq('class_num', c);
@@ -3774,7 +3774,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-/** 🔗 연동 상태 UI 업데이트 */
+/** 연동 상태 UI 업데이트 */
 function updateSocialLinkingStatus(session, user = null) {
   const linked = user
     ? !!user.auth_user_id
@@ -3806,7 +3806,7 @@ function updateSocialLinkingStatus(session, user = null) {
 }
 
 // =========================================
-// 📢 확성기 (전역 브로드캐스트) 시스템 & 모달 전용
+// 확성기 (전역 브로드캐스트) 시스템 & 모달 전용
 // =========================================
 let currentMegaItemId = null;
 let currentMegaItemName = null;
@@ -3832,7 +3832,7 @@ window.closeMegaphoneModal = function () {
   currentMegaItemName = null;
 };
 
-/** 🤖 AI API 기반 비속어/비매너 검사 */
+/** AI API 기반 비속어/비매너 검사 */
 async function checkProfanityWithAI(text) {
   // 1. 기본적인 금사회(Client-side)
   const blacklist = ['성인', '도박', '바카라', 'ㅅㅂ', 'ㅄ', 'ㄴㅁ', 'ㅂㅅ', 'ㅉㅉ']; // 예시
@@ -4134,7 +4134,7 @@ function startStarEffect(canvas, isAccumulate = false) {
   draw();
 }
 
-/** 🔑 임시(비권장): 브라우저에 하드코딩 */
+/** 임시(비권장): 브라우저에 하드코딩 */
 
 
 /** 이미지 → 크기제한 JPEG dataURL */
@@ -4146,7 +4146,7 @@ async function fileToBase64Optimized(file, maxW = 1800, maxH = 1800, type = 'ima
     fr.readAsDataURL(file);
   });
 
-  // ✅ GIF 파일인 경우 압축/리사이징 없이 원본 그대로 반환 (움짤 유지)
+  // GIF 파일인 경우 압축/리사이징 없이 원본 그대로 반환 (움짤 유지)
   if (file.type === 'image/gif') {
     return dataUrl;
   }
@@ -4273,7 +4273,7 @@ async function analyzeDocument() {
       }
     };
 
-    // 🔑 API 호출 (Gemini용으로 변경)
+    // API 호출 (Gemini용으로 변경)
     const rawResult = await callGeminiWithFallback(geminiPayload);
     
     // 결과 처리
@@ -4400,7 +4400,7 @@ function parseDateSmart(raw = "") {
   return { ymd: "", yoil: "" };
 }
 
-// ✅ 날짜를 바꾸면 요일 자동으로 갱신
+// 날짜를 바꾸면 요일 자동으로 갱신
 function syncYoilFromDate() {
   const v = document.getElementById('af-date')?.value || "";
   const yoilEl = document.getElementById('af-yoil');
@@ -4408,7 +4408,7 @@ function syncYoilFromDate() {
   yoilEl.value = v ? koWeekday(new Date(v)) : "";
 }
 
-// ✅ GPT JSON 결과를 폼에 채우기 (과목/날짜/요일/교시/주제)
+// GPT JSON 결과를 폼에 채우기 (과목/날짜/요일/교시/주제)
 function fillFormFromJson(obj = {}) {
   const subjectEl = document.getElementById('af-subject');
   const periodEl = document.getElementById('af-period');
@@ -4480,7 +4480,7 @@ function val(id) {
   setYoil();
 })();
 
-// ✅ 체크되면 이미지 업로드 후 공개 URL 반환
+// 체크되면 이미지 업로드 후 공개 URL 반환
 async function uploadDocImageIfNeeded() {
   const checked = document.getElementById('upload-image-check')?.checked;
   const fileInput = document.getElementById('doc-file');
@@ -4510,7 +4510,7 @@ async function uploadDocImageIfNeeded() {
   return pub?.publicUrl || null;
 }
 
-// ✅ DB 저장(이미지 URL 포함)
+// DB 저장(이미지 URL 포함)
 window.registerAnalyzedText = async function () {
   try {
     const subject = val('af-subject');
@@ -4538,7 +4538,7 @@ window.registerAnalyzedText = async function () {
       yoil = isNaN(d) ? '' : DOW[d.getDay()];
     }
 
-    // 🔼 이미지 업로드(체크된 경우)
+    // 이미지 업로드(체크된 경우)
     const imageUrl = await uploadDocImageIfNeeded();
 
     const payload = {
@@ -4570,7 +4570,7 @@ window.registerAnalyzedText = async function () {
       return;
     }
 
-    // 🎯 [이관] 수행 평가 등록 시 공지사항으로 자동 복사 (copy_analyzed_docs_to_notices)
+    // [이관] 수행 평가 등록 시 공지사항으로 자동 복사 (copy_analyzed_docs_to_notices)
     try {
       const noticeContent = `[과목] ${subject}\n[평가 날짜] ${date}\n[교시] ${val('af-period')}교시\n[평가 주제] ${topic}`;
       const { error: syncError } = await supabaseClient
@@ -4592,7 +4592,7 @@ window.registerAnalyzedText = async function () {
       console.warn('공지사항 동기화 중 오류:', errSync);
     }
 
-    // 🎯 [이관] 일일 XP 보상 지급 (수행 평가 등록 시)
+    // [이관] 일일 XP 보상 지급 (수행 평가 등록 시)
     await awardDailyXP('perform');
 
     alert('등록 완료!');
@@ -4624,7 +4624,7 @@ async function loadUserFromDashboardValues() {
 
   console.log("🔍 Supabase 쿼리 실행 중 (사용자 정보 채우기)...");
 
-  // ✅ Supabase에서 사용자 찾기
+  // Supabase에서 사용자 찾기
   const { data, error } = await supabaseClient
     .from('users')
     .select(SAFE_USER_COLUMNS)
@@ -4641,7 +4641,7 @@ async function loadUserFromDashboardValues() {
     return;
   }
 
-  // ✅ 콘솔 출력 (디버그용)
+  // 콘솔 출력 (디버그용)
   console.log("✅ 사용자 찾음:", data);
   console.log("👤 이름:", data.name);
   console.log("🆔 아이디:", data.username);
@@ -4672,7 +4672,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
 // 키 컬럼은 id(uuid)
-// ✅ 키 컬럼
+// 키 컬럼
 const USER_KEY_COLUMN = 'username';
 
 // 예: 버튼 클릭 핸들러
@@ -4765,7 +4765,7 @@ async function saveProfileByUsername() {
   if (changed(current.student_number, next.student_number))
     updateData.student_number = next.student_number;
 
-  // ✅ 이름은 1회만: 실제 변경 시에만 검사/적용
+  // 이름은 1회만: 실제 변경 시에만 검사/적용
   const wantChangeName = changed(current.name, next.name) && next.name !== null;
   if (wantChangeName) {
     if (current.can_edit_name) {
@@ -4815,7 +4815,7 @@ async function saveProfileByUsername() {
 
 
 
-// 🔐 비밀번호 변경 함수
+// 비밀번호 변경 함수
 async function changePassword() {
   const statusEl = document.getElementById("profile-pass-status");
   const newPass = document.getElementById("profile-newpass").value.trim();
@@ -4873,7 +4873,7 @@ function closeModal() {
   document.getElementById('guideModal').style.display = 'none';
 }
 
-// ✅ 새로고침 시마다 모달 표시
+// 새로고침 시마다 모달 표시
 document.addEventListener('DOMContentLoaded', () => {
   const guide = document.getElementById('guideModal');
   if (guide) guide.style.display = 'flex';
@@ -5002,7 +5002,7 @@ async function loadShopItems() {
   });
 }
 
-// ✅ EduBoard 인벤토리 전체 로직 (Supabase 연동 포함)
+// EduBoard 인벤토리 전체 로직 (Supabase 연동 포함)
 let currentInventoryFilter = 'all';
 
 window.filterInventory = function (category) {
@@ -5199,7 +5199,7 @@ async function loadInventory() {
   }
 }
 
-// ✅ 관리자 전용: 모든 아이템 인벤토리 동기화
+// 관리자 전용: 모든 아이템 인벤토리 동기화
 window.syncAdminInventory = async function () {
   const username = localStorage.getItem('savedUsername');
   const role = String(localStorage.getItem('savedRole') || '').toLowerCase();
@@ -5265,7 +5265,7 @@ window.syncAdminInventory = async function () {
   }
 };
 
-// ✅ 아이템 장착/사용 함수
+// 아이템 장착/사용 함수
 window.useItem = async function (id, itemName, currentStatus = false, imageUrl = '') {
   const username = localStorage.getItem('savedUsername');
   if (!username) return;
@@ -5398,14 +5398,14 @@ window.useItem = async function (id, itemName, currentStatus = false, imageUrl =
             if (coinErr) throw coinErr;
           }
         } else if (luckyBoxReward.type === 'exp') {
-          // 🆙 XP 즉시 추가 및 동기화
+          // XP 즉시 추가 및 동기화
           const { data: uData } = await supabaseClient.from('users').select('xp').eq('username', username).single();
           const currentXp = toStatNumber(uData?.xp);
           await supabaseClient.from('users').update({ xp: currentXp + luckyBoxReward.val }).eq('username', username);
           await syncStatsAndRender();
         }
 
-        // 🎉 대박 당첨 시 효과 (50만P 또는 경험치 500)
+        // 대박 당첨 시 효과 (50만P 또는 경험치 500)
         if (luckyBoxReward.val >= 500000 || luckyBoxReward.val >= 500) {
           triggerCelebration();
         }
@@ -5446,7 +5446,7 @@ window.useItem = async function (id, itemName, currentStatus = false, imageUrl =
     return;
   }
 
-  // 📝 로그 기록
+  // 로그 기록
   if (window.logActivity) {
     window.logActivity(isEquipped ? 'item_unequip' : 'item_equip', itemName, 'item', { item_id: id });
   }
@@ -5458,7 +5458,7 @@ window.useItem = async function (id, itemName, currentStatus = false, imageUrl =
   await loadInventory();
 }
 
-// ✅ 캐릭터 선택 함수
+// 캐릭터 선택 함수
 window.selectCharacter = async function (charName, imgUrl = '') {
   const username = localStorage.getItem('savedUsername');
   if (!username) return;
@@ -5485,7 +5485,7 @@ window.selectCharacter = async function (charName, imgUrl = '') {
 
   if (statusEl) statusEl.textContent = `✅ ${isNone ? '캐릭터 해제' : `'${charName}' 캐릭터로 설정`}되었습니다!`;
 
-  // 📝 로그 기록
+  // 로그 기록
   if (window.logActivity) {
     window.logActivity(isNone ? 'avatar_remove' : 'avatar_change', charName, 'item');
   }
@@ -5493,13 +5493,13 @@ window.selectCharacter = async function (charName, imgUrl = '') {
   if (typeof loadUserInfo === 'function') await loadUserInfo();
 }
 
-/** 🎒 소유한 캐릭터 및 칭호 컬렉션 로드 (프로필 패널용) */
+/** 소유한 캐릭터 및 칭호 컬렉션 로드 (프로필 패널용) */
 const DEFAULT_CHARACTERS = [
   { id: 'def_char_boy', item_name: '[캐릭터] 기본 학생 (남)', imgUrl: 'img/nanobanana_boy_student_1772911376788.png' },
   { id: 'def_char_girl', item_name: '[캐릭터] 기본 학생 (여)', imgUrl: 'img/nanobanana_girl_student_1772911391592.png' }
 ];
 
-/** 🎒 소유한 캐릭터 및 칭호 컬렉션 로드 (프로필 패널용) */
+/** 소유한 캐릭터 및 칭호 컬렉션 로드 (프로필 패널용) */
 async function loadOwnedCollection() {
   const charGrid = document.getElementById('character-list-grid');
   const titleGrid = document.getElementById('title-list-grid');
@@ -5564,7 +5564,7 @@ async function loadOwnedCollection() {
     const isEquipped = (currentAvatar === char.item_name) || (currentAvatar === imgUrl && imgUrl !== '');
     if (isEquipped) el.classList.add('equipped');
 
-    // 👤 대신 원 안에 들어가는 이미지/아이콘 처리
+    // 대신 원 안에 들어가는 이미지/아이콘 처리
     let previewHtml = `
       <div style="width:50px; height:50px; border-radius:50%; background:#f1f5f9; display:flex; align-items:center; justify-content:center; margin-bottom:8px; border:1px solid #e2e8f0; font-size:1.5rem;">
         👤
@@ -5630,7 +5630,7 @@ async function loadOwnedCollection() {
 }
 window.loadOwnedCollection = loadOwnedCollection;
 
-/** 🎊 보상 획득 축하 효과 */
+/** 보상 획득 축하 효과 */
 function triggerCelebration() {
   const container = document.createElement('div');
   container.style.position = 'fixed';
@@ -5677,7 +5677,7 @@ function triggerCelebration() {
   }
 }
 
-// ✅ 아이템 구매 함수
+// 아이템 구매 함수
 window.buyItem = async function (itemId, price, itemName) {
   if (!confirm(`'${itemName}'을(를) ${price} 포인트로 구매하시겠습니까?`)) return;
 
@@ -5771,7 +5771,7 @@ window.buyItem = async function (itemId, price, itemName) {
       await loadUserInfo(); // 칭호 등 유저 정보 즉시 갱신
       await loadShopItems(); // 상점 잔여 수량 즉시 업데이트
 
-      // 📝 로그 기록
+      // 로그 기록
       if (window.logActivity) {
         window.logActivity('shop_buy', itemName, 'shop_item', { item_id: itemId, price: price, type: itemData.item_type });
       }
@@ -5783,17 +5783,17 @@ window.buyItem = async function (itemId, price, itemName) {
 
 
 // ==========================================
-// ⚙️ 내 설정 (Profile Settings) 관련 로직
+// 내 설정 (Profile Settings) 관련 로직
 // ==========================================
 
-/** 🚪 로그아웃 로직 통합 */
+/** 로그아웃 로직 통합 */
 async function handleLogout(scope = 'local') {
   if (!confirm(scope === 'global' ? '모든 기기에서 로그아웃 하시겠습니까?' : '로그아웃 하시겠습니까?')) return;
   
   try {
     if (typeof showLoading === 'function') showLoading();
     
-    // 📝 로그 기록 (세션 만료 전 기록)
+    // 로그 기록 (세션 만료 전 기록)
     if (window.logActivity) {
       window.logActivity('logout', localStorage.getItem('savedUsername'), 'user', { scope });
     }
@@ -5807,7 +5807,7 @@ async function handleLogout(scope = 'local') {
   } catch (err) {
     console.warn('Logout warning:', err.message);
   } finally {
-    // 🛡️ 에러 여부와 상관없이 로컬 데이터는 반드시 초기화하여 무한루프/세션꼬임 방지
+    // 에러 여부와 상관없이 로컬 데이터는 반드시 초기화하여 무한루프/세션꼬임 방지
     clearSavedSession();
     
     alert('로그아웃 되었습니다.');
@@ -5815,7 +5815,7 @@ async function handleLogout(scope = 'local') {
   }
 }
 
-/** 🔐 비밀번호 재설정 발송 */
+/** 비밀번호 재설정 발송 */
 async function handlePasswordReset() {
   const email = localStorage.getItem('savedEmail') || document.getElementById('profile-email')?.value;
   if (!email) {
@@ -5835,7 +5835,7 @@ async function handlePasswordReset() {
   }
 }
 
-/** ⚙️ 환경 설정 저장/로드 */
+/** 환경 설정 저장/로드 */
 function savePreferences() {
   const pref = {
     notice: document.getElementById('pref-notice')?.checked,
@@ -5905,7 +5905,7 @@ function bindSettingsQuickLinks() {
   if (updateBtn) updateBtn.onclick = showUpdateStatus;
 }
 
-/** 🛠️ 설정 페이지 이벤트 바인딩 (단일화) */
+/** 설정 페이지 이벤트 바인딩 (단일화) */
 function setupProfileSettings() {
   document.getElementById('btn-session-logout')?.addEventListener('click', () => handleLogout('local'));
   document.getElementById('btn-session-global-logout')?.addEventListener('click', () => handleLogout('global'));
@@ -5921,7 +5921,7 @@ function setupProfileSettings() {
   bindSettingsQuickLinks();
 }
 
-// 🌐 전역 노출 (HTML onclick 연동용)
+// 전역 노출 (HTML onclick 연동용)
 window.handleLogout = handleLogout;
 window.logout = () => handleLogout('local'); // 하위 호환성용
 window.savePreferences = savePreferences;
@@ -5942,7 +5942,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Redundant applyTheme removed
 
-/** 🔐 개인정보 처리방침 모달 제어 */
+/** 개인정보 처리방침 모달 제어 */
 function showPrivacyDetail() {
   const modal = document.getElementById('privacy-modal');
   if (modal) modal.style.display = 'flex';
@@ -5952,7 +5952,7 @@ function closePrivacyDetail() {
   if (modal) modal.style.display = 'none';
 }
 
-/** 🎮 미니게임 종료 및 목록으로 복귀 */
+/** 미니게임 종료 및 목록으로 복귀 */
 
 
 // 전역 노출
@@ -5964,8 +5964,9 @@ window.showTosDetail = function() {
     if (modal) modal.style.display = 'flex';
 };
 
-/** 📧 이메일 인증번호 수동 발송 및 검증 로직 */
+/** 이메일 인증번호 수동 발송 및 검증 로직 */
 let currentVerificationCode = null;
+let currentVerificationExpiresAt = null;
 
 window.sendVerificationEmail = async function() {
     const emailId = document.getElementById('signupEmailId').value.trim();
@@ -5984,8 +5985,17 @@ window.sendVerificationEmail = async function() {
     btn.disabled = true;
     btn.innerText = "발송 중...";
 
-    // 6자리 랜덤 번호 생성
+    // EmailJS OTP 템플릿의 passcode/time 변수에 맞춰 인증번호와 만료 시간을 보낸다.
     currentVerificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    currentVerificationExpiresAt = Date.now() + 10 * 60 * 1000;
+    const expiresText = new Date(currentVerificationExpiresAt).toLocaleString('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 
     try {
         await emailjs.send(
@@ -5994,6 +6004,8 @@ window.sendVerificationEmail = async function() {
             {
                 to_name: name,
                 to_email: email,
+                passcode: currentVerificationCode,
+                time: expiresText,
                 message: `EduBoard 회원가입 인증번호는 [ ${currentVerificationCode} ] 입니다.`
             },
             window.EduConfig.EMAILJS_PUBLIC_KEY
@@ -6010,27 +6022,36 @@ window.sendVerificationEmail = async function() {
         btn.innerText = "인증번호 재발송";
     }
 };
-
 window.verifySignupCode = function() {
     const input = document.getElementById('email-verify-code').value.trim();
     const status = document.getElementById('verify-status');
     const signupBtn = document.getElementById('signup-btn');
 
+    if (currentVerificationExpiresAt && Date.now() > currentVerificationExpiresAt) {
+        status.innerText = "인증번호가 만료되었습니다. 다시 발송해 주세요.";
+        status.style.color = "#ef4444";
+        signupBtn.dataset.verified = "false";
+        signupBtn.classList.remove('verified');
+        currentVerificationCode = null;
+        currentVerificationExpiresAt = null;
+        toggleSignupBtn();
+        return;
+    }
+
     if (input === currentVerificationCode && currentVerificationCode !== null) {
-        status.innerText = "✅ 인증되었습니다.";
+        status.innerText = "인증되었습니다.";
         status.style.color = "#10b981";
         signupBtn.dataset.verified = "true";
         signupBtn.classList.add('verified');
-        toggleSignupBtn(); // 버튼 표시 트리거
+        toggleSignupBtn();
     } else {
-        status.innerText = "❌ 인증번호가 일치하지 않습니다.";
+        status.innerText = "인증번호가 일치하지 않습니다.";
         status.style.color = "#ef4444";
         signupBtn.dataset.verified = "false";
         signupBtn.classList.remove('verified');
         toggleSignupBtn();
     }
 };
-
 window.toggleSignupBtn = function() {
     const privacy = document.getElementById('privacy-agree').checked;
     const tos = document.getElementById('tos-agree')?.checked;
@@ -6053,7 +6074,7 @@ Object.assign(window, {
   updateCoinDisplays
 });
 
-/** 📢 공지사항 삭제 */
+/** 공지사항 삭제 */
 window.deleteNotice = async function (id, imageUrl) {
   if (!confirm('정말로 이 공지사항을 삭제하시겠습니까?')) return;
   try {
@@ -6066,7 +6087,7 @@ window.deleteNotice = async function (id, imageUrl) {
     const { error } = await supabaseClient.from('notices').delete().eq('id', id);
     if (error) throw error;
 
-    // 🎯 [Logging] 활동 로그 기록
+    // [Logging] 활동 로그 기록
     if (window.logActivity) {
       window.logActivity('notice_delete', `ID:${id}`, 'notice');
     }
@@ -6076,7 +6097,7 @@ window.deleteNotice = async function (id, imageUrl) {
   } catch (e) { alert('삭제 실패: ' + e.message); }
 };
 
-/** 📢 공지사항 상세 수정 열기 */
+/** 공지사항 상세 수정 열기 */
 window.openEditNoticeModal = async function (id) {
   // 모달 안열려있을수 있으니 메뉴 닫기
   document.querySelectorAll('.notice-menu-dropdown').forEach(el => el.style.display = 'none');
@@ -6119,7 +6140,7 @@ window.closeEditNoticeModal = function () {
   document.getElementById('modal-edit-notice').style.display = 'none';
 };
 
-/** 📢 공지사항 수정 로직 */
+/** 공지사항 수정 로직 */
 window.submitEditNotice = async function () {
   const id = document.getElementById('edit-notice-id').value;
   const newTitle = document.getElementById('edit-notice-title').value.trim();
@@ -6207,10 +6228,10 @@ window.submitEditNotice = async function () {
   }
 };
 
-/** 📁 자료실 수정 시 보관할 새 파일 배열 */
+/** 자료실 수정 시 보관할 새 파일 배열 */
 window.editMaterialPendingFiles = [];
 
-/** 📁 자료실 수정 모달 열기 */
+/** 자료실 수정 모달 열기 */
 window.openEditMaterialModal = async function (id) {
   try {
     showLoading();
@@ -6258,7 +6279,7 @@ window.openEditMaterialModal = async function (id) {
   }
 };
 
-/** 📁 자료실 파일 그리드 업데이트 (기존 + 새 파일 통합) */
+/** 자료실 파일 그리드 업데이트 (기존 + 새 파일 통합) */
 window.updateEditMaterialGrid = function () {
   const gridEl = document.getElementById('edit-material-file-grid');
   const noFilesMsg = document.getElementById('edit-material-no-files-msg');
@@ -6286,7 +6307,7 @@ window.updateEditMaterialGrid = function () {
   }
 };
 
-/** 📁 파일 아이콘 렌더링 헬퍼 */
+/** 파일 아이콘 렌더링 헬퍼 */
 function renderFileIcon(container, data, isExisting, index) {
   const itemDiv = document.createElement('div');
   itemDiv.className = 'file-manager-item';
@@ -6314,20 +6335,20 @@ function renderFileIcon(container, data, isExisting, index) {
   container.appendChild(itemDiv);
 }
 
-/** 📁 기존 파일 제거 */
+/** 기존 파일 제거 */
 window.removeExistingMaterialFile = function (idx) {
   if (!confirm('이 파일을 아예 삭제하시겠습니까? (저장 시 최종 반영)')) return;
   window.editMaterialExistingUrls.splice(idx, 1);
   updateEditMaterialGrid();
 };
 
-/** 📁 대기 중인 새 파일 제거 */
+/** 대기 중인 새 파일 제거 */
 window.removePendingMaterialFile = function (idx) {
   window.editMaterialPendingFiles.splice(idx, 1);
   updateEditMaterialGrid();
 };
 
-/** 📁 드래그 앤 드롭 및 클릭 이벤트 설정 */
+/** 드래그 앤 드롭 및 클릭 이벤트 설정 */
 function setupMaterialEditDropzone() {
   const zone = document.getElementById('edit-material-dropzone');
   const fileInput = document.getElementById('edit-material-new-files');
@@ -6367,7 +6388,7 @@ function setupMaterialEditDropzone() {
   zone.dataset.initialized = 'true';
 }
 
-/** 📁 선택된 파일들 큐에 추가 */
+/** 선택된 파일들 큐에 추가 */
 function handleMaterialFiles(files) {
   Array.from(files).forEach(file => {
     window.editMaterialPendingFiles.push(file);
@@ -6375,12 +6396,12 @@ function handleMaterialFiles(files) {
   updateEditMaterialGrid();
 }
 
-/** 📁 자료실 수정 모달 닫기 */
+/** 자료실 수정 모달 닫기 */
 window.closeEditMaterialModal = function () {
   document.getElementById('modal-edit-material').style.display = 'none';
 };
 
-/** 📁 자료실 수정 제출 (고급) */
+/** 자료실 수정 제출 (고급) */
 window.submitEditMaterial = async function () {
   const id = document.getElementById('edit-material-id').value;
   const title = document.getElementById('edit-material-title').value;
@@ -6472,12 +6493,12 @@ window.submitEditMaterial = async function () {
   }
 };
 
-/** 📁 자료실 수정 모달 닫기 */
+/** 자료실 수정 모달 닫기 */
 window.closeEditMaterialModal = function () {
   document.getElementById('modal-edit-material').style.display = 'none';
 };
 
-/** 📁 자료실 자료 삭제 */
+/** 자료실 자료 삭제 */
 window.deleteMaterial = async function (id) {
   if (!confirm('정말로 이 자료를 삭제하시겠습니까?')) return;
   try {
@@ -6559,7 +6580,7 @@ function setupRealtimeNotifications() {
     .subscribe();
 }
 
-/** 🔄 로그인 후 대시보드 및 데이터 쇄신 */
+/** 로그인 후 대시보드 및 데이터 쇄신 */
 window.afterLoginRefreshDashboard = async function () {
   await initDashboardTop();
   
@@ -6575,7 +6596,7 @@ window.afterLoginRefreshDashboard = async function () {
   }
 };
 
-/** 💰 포인트 잔액 동기화 (UI 및 전역 변수) */
+/** 포인트 잔액 동기화 (UI 및 전역 변수) */
 window.syncCoinBalance = async function () {
   const username = localStorage.getItem('savedUsername');
   if (!username || !window.supabaseClient) return;
@@ -6609,14 +6630,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 📅 일정(캘린더) 내비게이션 바인딩은 이제 onclick 전역 함수(changeSchedMonth)로 처리됩니다.
+  // 일정(캘린더) 내비게이션 바인딩은 이제 onclick 전역 함수(changeSchedMonth)로 처리됩니다.
 
   // 기타 정보 버튼 바인딩
   bindSettingsQuickLinks();
 });
-/** 🎯 Daily Quest Logic (Supabase-driven) */
+/** Daily Quest Logic (Supabase-driven) */
 
-// 📅 한국 시간(KST) 기준 YYYY-MM-DD 가져오기
+// 한국 시간(KST) 기준 YYYY-MM-DD 가져오기
 function getTodayKST() {
   const now = new Date();
   const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -6806,6 +6827,9 @@ async function updateQuestProgress(questType, increment = 1) {
 async function claimQuestReward(userQuestId) {
   const btn = globalThis.event?.target || null;
   if (btn) btn.disabled = true;
+
+  // ?? ??? ???? ???? ???, ????? ??? ??? ?? ??? ????.
+  // username? ?? ?????? ????, ?? ?? ???? ?? ???? ?? ????.
   const username = localStorage.getItem('savedUsername');
   if (!username) {
     if (btn) btn.disabled = false;
@@ -6817,76 +6841,38 @@ async function claimQuestReward(userQuestId) {
       throw new Error('Quest reward API is not loaded.');
     }
 
+    // ??? 2? ??? ?? ??? ??? 2? ????.
+    // ??? ? ?? ?? 1 ?? 2? ???? ???? ???.
     const serverXpMultiplier = typeof getXpMultiplier === 'function' ? getXpMultiplier() : 1;
     const result = await window.EduAuth.claimQuestReward(userQuestId, serverXpMultiplier);
+
+    // ??? ?? ??? ?? ?? ??? ??? ????.
+    // ??, XP, ??? ??? ??????? ?? ?? ?? ?? ????.
     const serverRewardCoin = toStatNumber(result.rewardCoin);
     const serverRewardXp = toStatNumber(result.rewardXp);
     const serverBonusCoin = toStatNumber(result.bonusCoin);
     const serverLevelUps = toStatNumber(result.levelUps);
     const serverAppliedMultiplier = toStatNumber(result.xpMultiplier, 1);
-    const buffText = serverAppliedMultiplier > 1 ? `\n경험치 2배 효과 적용!` : '';
-    const levelText = serverLevelUps > 0 ? `\n레벨 업! 현재 레벨: ${result.level} (+${serverBonusCoin} 코인 보너스)` : '';
+    const buffText = serverAppliedMultiplier > 1 ? `\n??? 2? ?? ??!` : '';
+    const levelText = serverLevelUps > 0 ? `\n?? ?! ?? ??: ${result.level} (+${serverBonusCoin} ?? ???)` : '';
 
-    alert(`보상이 지급되었습니다! (+${serverRewardCoin} 코인, +${serverRewardXp} XP)${buffText}${levelText}`);
+    alert(`??? ???????! (+${serverRewardCoin} ??, +${serverRewardXp} XP)${buffText}${levelText}`);
 
+    // ?? ?? ? ?? ??? ??? ??? ??? ?? ??? ??? ?? ??? ???.
     await syncStatsAndRender();
     await initDailyQuests();
-    return;
-
-    const { data: uq, error } = await supabaseClient
-      .from('user_daily_quests')
-      .select('*, quests(*)')
-      .eq('id', userQuestId)
-      .eq('username', username)
-      .single();
-
-    if (error || !uq || uq.status !== 'completed') {
-      if (btn) btn.disabled = false;
-      return;
-    }
-
-    const { data: user, error: userError } = await supabaseClient.from('users').select('coin_balance, xp').eq('username', uq.username).single();
-    if (userError || !user) throw userError || new Error('User not found for quest reward.');
-
-    const multiplier = typeof getXpMultiplier === 'function' ? getXpMultiplier() : 1;
-    const rewardCoin = toStatNumber(uq.quests.reward_coin);
-    const baseRewardXp = toStatNumber(uq.quests.reward_xp);
-    const rewardXp = baseRewardXp * multiplier;
-    console.log('User stats before reward:', user);
-    const { error: rewardError } = await supabaseClient.from('users').update({
-      coin_balance: toStatNumber(user.coin_balance) + rewardCoin,
-      xp: toStatNumber(user.xp) + rewardXp
-    }).eq('username', uq.username);
-    if (rewardError) throw rewardError;
-
-    if (multiplier > 1) {
-      showRewardToast(`경험치 2배 적용! 퀘스트 보상 ${baseRewardXp}XP → ${rewardXp}XP`);
-    }
-
-    const { error: statusError } = await supabaseClient
-      .from('user_daily_quests')
-      .update({ status: 'rewarded' })
-      .eq('id', userQuestId)
-      .eq('username', username);
-    if (statusError) throw statusError;
-
-    alert(`🎉 보상이 지급되었습니다! (+${rewardCoin}포인트, +${rewardXp}XP)`);
-
-    syncStatsAndRender(); // 먼저 스탯 갱신
-    initDailyQuests();    // 퀘스트 UI 갱신
   } catch (e) {
     console.error('Claim Reward Error:', e);
-    alert('보상을 받는 중 오류가 발생했습니다.');
+    alert('??? ?? ? ??? ??????. ?? ??? ???.');
     if (btn) btn.disabled = false;
   }
 }
-
 window.claimQuestReward = claimQuestReward;
 window.updateQuestProgress = updateQuestProgress;
 
-// ✅ 유저 정보 및 장착 아이템 로드 & UI 적용
+// 유저 정보 및 장착 아이템 로드 & UI 적용
 window.loadUserInfo = async function () {
-  // ✅ 시작하자마자 XP 버프 상태 확인 (배지 노출용)
+  // 시작하자마자 XP 버프 상태 확인 (배지 노출용)
   if (typeof getXpMultiplier === 'function') getXpMultiplier();
 
   const username = localStorage.getItem('savedUsername');
@@ -6924,10 +6910,10 @@ window.loadUserInfo = async function () {
     const previewGrade = document.getElementById('profile-preview-grade');
     const previewClass = document.getElementById('profile-preview-class');
 
-    const nameNode = formatUserDisplayName(user); // 🛡️ 보안 노드 생성
+    const nameNode = formatUserDisplayName(user); // 보안 노드 생성
     const cleanTitle = user.equipped_title ? user.equipped_title.replace('[칭호]', '').trim() : '칭호 없음';
     
-    // 🛡️ XSS 방지: innerHTML 대신 appendChild/textContent 사용
+    // XSS 방지: innerHTML 대신 appendChild/textContent 사용
     if (dashName) {
       if (window.__updateSecurityValue) {
         window.__updateSecurityValue('dash-name', nameNode.outerHTML, true);
@@ -6977,7 +6963,7 @@ window.loadUserInfo = async function () {
     if (previewGrade) previewGrade.textContent = user.grade || '-';
     if (previewClass) previewClass.textContent = user.class_num || '-';
 
-    // ✅ 로컬 스토리지 데이터 동기화 (초기 로딩 및 안정성용)
+    // 로컬 스토리지 데이터 동기화 (초기 로딩 및 안정성용)
     localStorage.setItem('savedTitle', user.equipped_title || '');
     localStorage.setItem('savedGrade', user.grade || '');
     localStorage.setItem('savedClassNum', user.class_num || '');
@@ -7033,7 +7019,7 @@ window.loadUserInfo = async function () {
     // 포인트 업데이트
     updateCoinDisplays(user.coin_balance || 0);
 
-    // ✅ 프로필 설정 필드 채우기 (새로 추가)
+    // 프로필 설정 필드 채우기 (새로 추가)
     const pName = document.getElementById('profile-name');
     const pUsername = document.getElementById('profile-username');
     const pUsernameOrigin = document.getElementById('profile-username-origin');
@@ -7089,10 +7075,10 @@ window.loadUserInfo = async function () {
       }
     }
 
-    // ✅ 소셜 연동 상태 UI 처리 (신규)
+    // 소셜 연동 상태 UI 처리 (신규)
     updateSocialLinkingStatus(null, user);
 
-    // ✅ 학교 정보 기본값 할당 (경기도 교육청 J10, 7679111)
+    // 학교 정보 기본값 할당 (경기도 교육청 J10, 7679111)
     const atpt = user.atpt_ofcdc_sc_code || 'J10';
     const schul = user.sd_schul_code || '7679111';
     const schoolName = user.school_name || '기본학교(경기도)';
@@ -7115,7 +7101,7 @@ window.loadUserInfo = async function () {
   }
 };
 
-// 👤 아바타 UI 업데이트 함수 (인스타 스타일 원형, 테두리 지원)
+// 아바타 UI 업데이트 함수 (인스타 스타일 원형, 테두리 지원)
 function updateAvatarUI(container, avatarUrl, defaultEmoji, userObj = null) {
   if (!container) return;
   container.innerHTML = '';
@@ -7161,7 +7147,7 @@ function updateAvatarUI(container, avatarUrl, defaultEmoji, userObj = null) {
 }
 
 // ==========================================
-// 💬 Real-time Chat Room & Premium Color
+// Real-time Chat Room & Premium Color
 // ==========================================
 let chatSubscription = null;
 
@@ -7234,7 +7220,7 @@ async function initChat() {
     chatSubscription = supabaseClient.channel('public:chat_messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, async (payload) => {
         const rawMsg = payload.new;
-        // 🛡️ 실시간 메시지 수신 시 사용자 정보를 join이 아닌 개별 쿼리로 가져옴 (안정성)
+        // 실시간 메시지 수신 시 사용자 정보를 join이 아닌 개별 쿼리로 가져옴 (안정성)
         const { data: uData } = await supabaseClient.from('users').select('username, equipped_color, avatar_url, equipped_title, name, grade, class_num, student_number').eq('username', rawMsg.username).maybeSingle();
         const msg = { ...rawMsg, users: uData ? { ...uData } : null };
         appendChatMessage(msg);
@@ -8095,7 +8081,7 @@ function appendChatMessage(msg) {
   }
 }
 
-/** 🔎 아이디/비밀번호 찾기 모달 핸들러 */
+/** 아이디/비밀번호 찾기 모달 핸들러 */
 window.openFindInfoModal = function(type) {
   const modal = document.getElementById('find-info-modal');
   const title = document.getElementById('find-info-title');
@@ -8170,7 +8156,7 @@ window.processResetPw = () => {
     window.location.href = url;
 };
 
-/** 🚀 네이버 스타일 동적 확장 레이아웃 (Intersection Observer) */
+/** 네이버 스타일 동적 확장 레이아웃 (Intersection Observer) */
 function initDynamicExpansion() {
   const options = {
     root: null, 

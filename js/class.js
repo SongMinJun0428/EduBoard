@@ -111,7 +111,7 @@ async function loadTimetableByDate() {
 
     const input = document.getElementById("timetable-date");
 
-    // ✅ input 값이 있으면 그걸 쓰고, 없으면 오늘 날짜
+    // input 값이 있으면 그걸 쓰고, 없으면 오늘 날짜
     let dateStr;
     if (input.value && input.value.trim() !== "") {
         dateStr = input.value.replace(/-/g, "");
@@ -595,7 +595,7 @@ async function submitVote(voteId, choice) {
     const studentName = prompt("이름을 입력하세요");
     if (!studentName) return;
 
-    // 🔍 이미 투표했는지 확인
+    // 이미 투표했는지 확인
     const { data: existing, error: checkError } = await client
         .from("class_vote_submissions")
         .select("id")
@@ -614,7 +614,7 @@ async function submitVote(voteId, choice) {
         return;
     }
 
-    // ✅ 새로운 투표 저장
+    // 새로운 투표 저장
     const { error } = await client.from("class_vote_submissions").insert({
         vote_id: voteId,
         grade: CLASS_GRADE,

@@ -4,7 +4,7 @@
  * Organization: Lessons in /lessons, Quizzes in /quizzes
  */
 
-// ✅ State Management
+// State Management
 window.coState = {
   xp: 0,
   level: 1,
@@ -27,7 +27,7 @@ const CO_LEVELS = [
   { xp: 360, icon: "👑", name: "코딩 총사령관", level: 9 }
 ];
 
-// 🗺️ FULL ROADMAP (60 Items total)
+// FULL ROADMAP (60 Items total)
 const CO_ROADMAP = [
   // Step 0: 입문
   { id: "print.html", title: "0-1. print() 기초", type: "lesson", xp: 1 },
@@ -106,7 +106,7 @@ const CO_ROADMAP = [
   { id: "python.hw3-3.html", title: "Q7-14. 공배수 판별", type: "quiz", xp: 5 }
 ];
 
-// 🚀 1. Initialization
+// 1. Initialization
 window.initCodingOn = async function() {
   const username = localStorage.getItem("savedUsername");
   if (!username) return;
@@ -140,7 +140,7 @@ async function initPyodide() {
   }
 }
 
-// 🛡️ 2. Data Persistence (Main Supabase)
+// 2. Data Persistence (Main Supabase)
 async function loadCOUserData(username) {
   try {
     const { data, error } = await supabaseClient
@@ -291,7 +291,7 @@ function getActiveLessonModal() {
   return modals.find(modal => modal.style.display !== 'none') || modals[modals.length - 1] || null;
 }
 
-// 📚 4. Lesson Modal Logic
+// 4. Lesson Modal Logic
 window.openLessonModal = function(idx) {
   // Prevent duplicate modals
   document.querySelectorAll('#co-lesson-modal').forEach(modal => modal.remove());
@@ -369,7 +369,7 @@ window.clearConsole = function() {
   if (consoleEl) consoleEl.innerText = "";
 };
 
-// 🐍 5. Python Execution
+// 5. Python Execution
 window.runCode = async function() {
   const modal = getActiveLessonModal();
   if (!modal) return;
@@ -469,7 +469,7 @@ async function advanceProgression() {
   }
 }
 
-// ⚙️ 6. Admin Logic
+// 6. Admin Logic
 window.renderCOAdmin = async function(subTab = 'list') {
   const container = document.getElementById('co-admin-content');
   if (!container) return;

@@ -1,8 +1,8 @@
-/** 🎓 전국 초·중·고 학교 검색 시스템 (NEIS API) */
+/** 전국 초·중·고 학교 검색 시스템 (NEIS API) */
 const SchoolSearch = {
   NEIS_KEY: '28ca0f05af184e8ba231d5a949d52db2',
 
-  /** 🔍 학교명으로 검색 */
+ /** 학교명으로 검색 */
   async search(keyword, atptCode = null) {
     if (!keyword || keyword.length < 2) {
       alert('학교명을 2글자 이상 입력해 주세요.');

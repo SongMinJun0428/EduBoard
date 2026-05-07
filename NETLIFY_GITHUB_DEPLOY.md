@@ -36,9 +36,9 @@ Site settings -> Environment variables
 ```text
 SUPABASE_URL=https://ucmzrkwrsezfdjnnwsww.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=Supabase service_role key
-EMAILJS_SERVICE_ID=service_cnktiz9
-EMAILJS_TEMPLATE_ID=template_ozh7f4v
-EMAILJS_PUBLIC_KEY=ylQL6_ZfhS-QQi2LT
+EMAILJS_SERVICE_ID=service_eyu0hbt
+EMAILJS_TEMPLATE_ID=template_tpffacl
+EMAILJS_PUBLIC_KEY=2U-mo3uDa-tKMVd5H
 ```
 
 중요:

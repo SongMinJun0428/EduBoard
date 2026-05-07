@@ -1,5 +1,5 @@
 /**
- * 🎮 EduBoard Minigames Implementation
+ * EduBoard Minigames Implementation
  * 1. 4=10 Puzzle Logic
  * 2. Maze Escape (Canvas)
  * 3. Falling Blocks (Canvas)
@@ -10,7 +10,7 @@
 (function () {
     let currentGameLoop = null;
 
-    /** 🧮 4=10 Puzzle: 숫자 생성기 */
+ /** 4=10 Puzzle: 숫자 생성기 */
     window.generateFourNumbers = function () {
         const numbers = [];
         for (let i = 0; i < 4; i++) {
@@ -27,7 +27,7 @@
         if (input) input.value = '';
     };
 
-    /** 🧩 Maze Escape: Solvable Maze Generation (Recursive Backtracking) */
+ /** Maze Escape: Solvable Maze Generation (Recursive Backtracking) */
     window.initMazeGame = function (canvasId) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
@@ -152,7 +152,7 @@
         draw();
     };
 
-    /** 🧱 Falling Blocks */
+ /** Falling Blocks */
     window.initFallingBlocks = function (canvasId) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
@@ -224,7 +224,7 @@
         update();
     };
 
-    /** ⚡ Reaction Test */
+ /** Reaction Test */
     window.initReactionGame = function (config) {
         const pad = document.getElementById(config.padId);
         const startBtn = document.getElementById(config.startBtnId);
@@ -277,7 +277,7 @@
         };
     };
 
-    /** 🧠 수학 계산 왕 (Math Power) */
+ /** 수학 계산 왕 (Math Power) */
     window.initMathPowerGame = function () {
         const questionEl = document.getElementById('math-question');
         const timerEl = document.getElementById('math-timer');
@@ -335,7 +335,7 @@
         currentGameLoop = { stop: () => clearInterval(timer) };
     };
 
-    /** 🎨 색상 맞추기 (Color Match) */
+ /** 색상 맞추기 (Color Match) */
     window.initColorMatchGame = function () {
         const wordEl = document.getElementById('cm-word');
         const optionsEl = document.getElementById('cm-options');
@@ -405,7 +405,7 @@
         currentGameLoop = { stop: () => clearInterval(timer) };
     };
 
-    /** 🔢 숫자 기억력 (Number Memory) */
+ /** 숫자 기억력 (Number Memory) */
     window.initNumberMemoryGame = function () {
         const displayEl = document.getElementById('nm-display');
         const inputArea = document.getElementById('nm-input-area');
@@ -456,7 +456,7 @@
         currentGameLoop = { stop: () => { } };
     };
 
-    /** 🐭 두더지 잡기 (Whack-a-Mole) */
+ /** 두더지 잡기 (Whack-a-Mole) */
     window.initMoleWhackGame = function () {
         const holes = document.querySelectorAll('.mole-hole');
         const scoreEl = document.getElementById('mw-score');
@@ -520,7 +520,7 @@
         currentGameLoop = { stop: () => { clearInterval(timer); clearTimeout(moleTimer); } };
     };
 
-    /** 🐍 스네이크 (Snake Classic) */
+ /** 스네이크 (Snake Classic) */
     window.initSnakeGame = function (canvasId) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
@@ -613,7 +613,7 @@
         currentGameLoop = { stop: () => { clearInterval(timer); window.onkeydown = null; } };
     };
 
-    /** 💡 번개 퀴즈 (Lighting Quiz) */
+ /** 번개 퀴즈 (Lighting Quiz) */
     window.initLightingQuiz = function () {
         const questionEl = document.getElementById('lq-question');
         const countEl = document.getElementById('lq-count');
@@ -681,7 +681,7 @@
         currentGameLoop = { stop: () => { clearInterval(timer); yesBtn.onclick = null; noBtn.onclick = null; } };
     };
 
-    /** 🐦 점프 피하기 */
+ /** 점프 피하기 */
     window.initFlappyGame = function () {
         const board = document.getElementById('mini-flappy');
         if (!board) return;
@@ -855,7 +855,7 @@
         startCountdown();
     };
 
-    /** 🛑 모든 게임 중지 */
+ /** 모든 게임 중지 */
     window.stopAllGames = function () {
         if (currentGameLoop && typeof currentGameLoop.stop === 'function') {
             currentGameLoop.stop();
@@ -867,7 +867,7 @@
         window.onclick = null;
     };
 
-    /** 📝 통합 로그 시스템 (Server-Side Logging) */
+ /** 통합 로그 시스템 (Server-Side Logging) */
     window.logActivity = async function (action, target, targetType, details = {}) {
         const username = localStorage.getItem('savedUsername');
         const userId = localStorage.getItem('savedUserId');
@@ -1105,7 +1105,7 @@
         return { balance, method: 'direct' };
     };
 
-    /** 🎁 보상 지급 및 검증 (세션 + 일일 제한) - 전역 함수로 격상 */
+ /** 보상 지급 및 검증 (세션 + 일일 제한) - 전역 함수로 격상 */
     window.rewardPoints = async function (amount) {
         amount = Math.max(0, Math.floor(Number(amount) || 0));
         if (amount <= 0) return;
@@ -1117,7 +1117,7 @@
             return;
         }
 
-        // 🛡️ 보안: 이 세션에서 이미 보상을 받았는지 확인 (중복 지급 방지)
+        // 보안: 이 세션에서 이미 보상을 받았는지 확인 (중복 지급 방지)
         if (window._rewardedSessions && window._rewardedSessions.has(sessionId)) {
             console.warn('Reward Warning: Session already rewarded', sessionId);
             return;
@@ -1168,7 +1168,7 @@
         }
     };
 
-    /** 📊 매일 첫 로드 시 보상 현황 업데이트용 */
+ /** 매일 첫 로드 시 보상 현황 업데이트용 */
     window.checkDailyGameStatus = async function () {
         const username = localStorage.getItem('savedUsername');
         if (!username) return;
@@ -1182,7 +1182,7 @@
         }
     };
 
-    /** 🃏 Memory Match: 카드 뒤집기 게임 */
+ /** Memory Match: 카드 뒤집기 게임 */
     window.initMemoryMatchGame = function () {
         const grid = document.getElementById('mm-grid');
         if (!grid) return;

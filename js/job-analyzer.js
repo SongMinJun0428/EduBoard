@@ -1,8 +1,8 @@
 window.Analyzer = {
     
-    /**
-     * Determines the main Result Type based on tag counts
-     */
+ /**
+ * Determines the main Result Type based on tag counts
+ */
     calculateMainType(tagCounts) {
         let maxNormalizedScore = -1;
         let topType = RESULT_TYPES[0];
@@ -44,9 +44,9 @@ window.Analyzer = {
         };
     },
 
-    /**
-     * Generates summaries for each category
-     */
+ /**
+ * Generates summaries for each category
+ */
     generateCategorySummaries(state) {
         return CATEGORIES.map(cat => {
             const topTags = state.getTopTagsForCategory(cat.id, 2);
@@ -61,9 +61,9 @@ window.Analyzer = {
         });
     },
 
-    /**
-     * Pseudo-AI logic to generate dynamic insight sentences
-     */
+ /**
+ * Pseudo-AI logic to generate dynamic insight sentences
+ */
     generateAISentences(state, topType) {
         const sentences = [];
         const topOverall = state.getAllTopTags(3);

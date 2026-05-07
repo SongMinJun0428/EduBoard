@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Additional View Styles (injected via JS or inline)
-   ========================================================================== */
+ Additional View Styles (injected via JS or inline)
+ ========================================================================== */
 const UI = {
     container: document.getElementById('main-content'),
 
