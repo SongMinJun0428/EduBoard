@@ -4,7 +4,6 @@ const SUPABASE_ANON_KEY = window.EduConfig.getSupabaseKey();
 let sb; // 위임 초기화
 const USE_SUPABASE_RESET_EMAIL = false;
 const ADMIN_USER_COLUMNS = [
-    'id',
     'username',
     'email',
     'name',

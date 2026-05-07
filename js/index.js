@@ -24,7 +24,6 @@ if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
 
 const supabaseClient = window.supabaseClient;
 const SAFE_USER_COLUMNS = [
-  'id',
   'username',
   'email',
   'name',
@@ -40,14 +39,12 @@ const SAFE_USER_COLUMNS = [
   'level',
   'xp',
   'avatar_url',
-  'character_icon',
   'equipped_title',
   'equipped_border',
   'equipped_effect',
   'equipped_color',
   'can_edit_username',
-  'can_edit_name',
-  'permissions'
+  'can_edit_name'
 ].join(',');
 
 // 🛡️ 보안 및 로딩 신뢰성: 인증 상태 실시간 감지 및 세션 동기화
@@ -630,8 +627,8 @@ async function resolveSavedUserSession({ allowSoftRecover = false } = {}) {
 async function attemptLegacyPasswordLogin(loginValue, password) {
   if (!window.EduAuth) throw new Error('인증 모듈을 불러오지 못했습니다.');
   const result = await window.EduAuth.login(loginValue, password);
-  if (!result?.user || !result?.sessionToken) return null;
-  return { user: result.user, sessionProof: result.sessionToken };
+  if (!result?.user) return null;
+  return { user: result.user, sessionProof: result.sessionToken || false };
 }
 
 async function fetchUserProfileForAuth(authUser, loginValue) {
@@ -5759,19 +5756,7 @@ window.buyItem = async function (itemId, price, itemName) {
         .eq('username', username);
       if (titleErr) console.warn('칭호 자동 장착 실패:', titleErr);
     } else if (itemData.item_type === 'permission') {
-      // 권한 부여 로직: users 테이블의 permissions (jsonb/text[]) 컬럼에 추가한다고 가정
-      // 만약 컬럼이 없으면 여기서 에러가 날 수 있으나, 요청에 따라 구현
-      try {
-        const { data: u } = await supabaseClient.from('users').select('permissions').eq('username', username).single();
-        let perms = u?.permissions || [];
-        if (!Array.isArray(perms)) perms = [];
-        if (!perms.includes(itemData.effect_data)) {
-          perms.push(itemData.effect_data);
-          await supabaseClient.from('users').update({ permissions: perms }).eq('username', username);
-        }
-      } catch (pErr) {
-        console.warn('권한 부여 실패 (컬럼 부재 가능성):', pErr);
-      }
+      console.info('Permission item purchased; users.permissions column is not enabled in this schema.');
     }
 
     if (insertError) {
@@ -5813,6 +5798,9 @@ async function handleLogout(scope = 'local') {
       window.logActivity('logout', localStorage.getItem('savedUsername'), 'user', { scope });
     }
 
+    if (window.EduAuth) {
+      await window.EduAuth.logout();
+    }
     const { error } = await supabaseClient.auth.signOut({ scope });
     if (error) throw error;
 
