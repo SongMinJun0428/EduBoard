@@ -1386,36 +1386,12 @@ function canvasToPngBlob(canvas) {
 
 async function saveCanvasAsImage(canvas, filename) {
     const blob = await canvasToPngBlob(canvas);
-    const supportsFileShare = typeof File === "function"
-        && navigator.share
-        && navigator.canShare;
-
-    if (supportsFileShare) {
-        const file = new File([blob], filename, { type: "image/png" });
-        let canShareFile = false;
-        try {
-            canShareFile = navigator.canShare({ files: [file] });
-        } catch {
-            canShareFile = false;
-        }
-
-        if (canShareFile && /Android|iPhone|iPad|iPod|Mobile|KAKAOTALK/i.test(navigator.userAgent)) {
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: "3학년 2반 좌석배치표"
-                });
-                return;
-            } catch (error) {
-                if (error?.name === "AbortError") return;
-            }
-        }
-    }
-
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.download = filename;
     link.href = url;
+    link.type = "image/png";
+    link.style.display = "none";
     document.body.appendChild(link);
     link.click();
     link.remove();
