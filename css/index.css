@@ -4506,6 +4506,19 @@
   outline-offset: -2px !important;
 }
 
+#sched-grid .sched-cell.selected .sched-day,
+#sched-grid .sched-cell.selected .sched-more {
+  color: #ffffff !important;
+}
+
+#sched-grid .sched-cell.selected .sched-item,
+#sched-grid .sched-cell.selected .sched-evt {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.95) !important;
+  color: #1d4ed8 !important;
+  font-weight: 700;
+}
+
 /* Keep long school events inside each calendar day on desktop and mobile. */
 #sched-grid,
 .sched-grid,
@@ -4580,6 +4593,32 @@
     line-height: 1.18 !important;
     padding: 1px 2px !important;
   }
+}
+
+/* Balance the dashboard's left and right cards so schedule/timetable widths match. */
+@media (min-width: 1025px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+.dashboard-grid > .accent-card,
+.dashboard-grid > .card,
+.accent-card[data-section="schedule"],
+.accent-card[data-section="timetable"] {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.accent-card[data-section="schedule"] .accent-body,
+.accent-card[data-section="timetable"] .accent-body,
+.accent-card[data-section="schedule"] .content-sub-box,
+.accent-card[data-section="timetable"] .content-sub-box {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* ============================================================
