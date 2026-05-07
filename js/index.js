@@ -5974,20 +5974,20 @@ window.sendVerificationEmail = async function() {
     const emailId = document.getElementById('signupEmailId').value.trim();
     const domainValue = document.getElementById('signupEmailDomain')?.value.trim() || '';
     const customDomain = document.getElementById('signupEmailCustom')?.value.trim() || '';
-    const domain = domainValue === '직접입력' ? customDomain : domainValue;
+    const domain = domainValue === '????' ? customDomain : domainValue;
     const email = `${emailId}@${domain}`;
     const name = document.getElementById('signupName').value.trim();
 
     if (!emailId || !domain || !name) {
-        alert("이름과 이메일을 먼저 입력해주세요.");
+        alert("??? ???? ?? ??????.");
         return;
     }
 
     const btn = document.getElementById('send-verify-email-btn');
     btn.disabled = true;
-    btn.innerText = "발송 중...";
+    btn.innerText = "?? ?...";
 
-    // EmailJS OTP 템플릿의 passcode/time 변수에 맞춰 인증번호와 만료 시간을 보낸다.
+    // EmailJS OTP ???? passcode/time ??? ?? ????? ?? ??? ???.
     currentVerificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     currentVerificationExpiresAt = Date.now() + 10 * 60 * 1000;
     const expiresText = new Date(currentVerificationExpiresAt).toLocaleString('ko-KR', {
@@ -6000,20 +6000,14 @@ window.sendVerificationEmail = async function() {
     });
 
     try {
-        await emailjs.send(
-            window.EduConfig.EMAILJS_SERVICE_ID,
-            window.EduConfig.EMAILJS_TEMPLATE_ID,
-            {
-                to_name: name,
-                to_email: email,
-                name: name,
-                email: email,
-                passcode: currentVerificationCode,
-                time: expiresText,
-                message: `EduBoard 회원가입 인증번호는 [ ${currentVerificationCode} ] 입니다.`
-            },
-            window.EduConfig.EMAILJS_PUBLIC_KEY
-        );
+        if (!window.EduAuth?.sendSignupVerificationEmail) {
+            throw new Error('인증 메일 서버 API가 아직 로드되지 않았습니다.');
+        }
+        await window.EduAuth.sendSignupVerificationEmail({
+            name,
+            email,
+            code: currentVerificationCode
+        });
 
         alert("인증번호가 발송되었습니다. 메일을 확인해주세요.");
         document.getElementById('verify-code-input-group').style.display = 'block';

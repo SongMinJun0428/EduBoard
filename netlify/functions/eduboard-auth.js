@@ -333,7 +333,48 @@ async function sendResetEmail(toEmail, toName, code) {
       }
     })
   });
-  if (!res.ok) throw new Error("인증번호 이메일 전송에 실패했습니다.");
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`EmailJS 오류 (${res.status}): ${text || "인증번호 이메일 전송에 실패했습니다."}`);
+  }
+}
+
+async function sendSignupVerificationEmail(toEmail, toName, code) {
+  if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
+    throw new Error("회원가입 인증 이메일 환경변수가 없습니다.");
+  }
+
+  const expiresText = new Date(Date.now() + 10 * 60 * 1000).toLocaleString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      service_id: EMAILJS_SERVICE_ID,
+      template_id: EMAILJS_TEMPLATE_ID,
+      user_id: EMAILJS_PUBLIC_KEY,
+      template_params: {
+        to_name: toName,
+        to_email: toEmail,
+        name: toName,
+        email: toEmail,
+        passcode: code,
+        time: expiresText,
+        message: `EduBoard 회원가입 인증번호는 [ ${code} ] 입니다.`
+      }
+    })
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`EmailJS 오류 (${res.status}): ${text || "회원가입 인증번호 이메일 전송에 실패했습니다."}`);
+  }
 }
 
 async function handleAction(event, body) {
@@ -411,6 +452,17 @@ async function handleAction(event, body) {
   if (action === "logout") {
     if (requestSessionToken) await deleteRows("app_sessions", { token_hash: `eq.${sha256(requestSessionToken)}` });
     return response(200, { ok: true }, { "Set-Cookie": clearSessionCookie() });
+  }
+
+  if (action === "sendSignupVerificationEmail") {
+    const name = String(body.name || "").trim();
+    const email = String(body.email || "").trim();
+    const code = String(body.code || "").trim();
+    if (!name || !email || !/^\S+@\S+\.\S+$/.test(email)) throw new Error("이름과 이메일을 확인해 주세요.");
+    if (!/^\d{6}$/.test(code)) throw new Error("인증번호 형식이 올바르지 않습니다.");
+    await enforceRateLimit(event, "signup_verification_email", email, 5, 10 * 60, 30 * 60);
+    await sendSignupVerificationEmail(email, name, code);
+    return response(200, { ok: true });
   }
 
   if (action === "changePassword") {

@@ -99,6 +99,10 @@
     return callAuth('confirmPasswordReset', { resetId, code, newPassword });
   }
 
+  async function sendSignupVerificationEmail({ name, email, code }) {
+    return callAuth('sendSignupVerificationEmail', { name, email, code });
+  }
+
   // 퀘스트 보상은 보안상 클라이언트에서 users.xp/users.coin_balance를 직접 수정하지 않는다.
   // 현재 버프 상태만 서버에 알려주고, 최종 XP/코인/레벨 계산은 서버가 검증 후 처리한다.
   async function claimQuestReward(userQuestId, xpMultiplier = 1) {
@@ -178,6 +182,7 @@
     logout,
     changePassword,
     signup,
+    sendSignupVerificationEmail,
     requestPasswordReset,
     confirmPasswordReset,
     claimQuestReward,
