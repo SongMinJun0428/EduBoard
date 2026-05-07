@@ -4506,6 +4506,82 @@
   outline-offset: -2px !important;
 }
 
+/* Keep long school events inside each calendar day on desktop and mobile. */
+#sched-grid,
+.sched-grid,
+.sched-week-row {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+#sched-grid {
+  overflow: hidden !important;
+}
+
+#sched-grid .sched-cell,
+.sched-cell {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.sched-items {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.sched-item,
+.sched-evt,
+.sched-more {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  line-height: 1.25;
+}
+
+.sched-item {
+  padding: 2px 4px;
+  border-radius: 4px;
+  text-align: left;
+}
+
+.sched-more {
+  font-size: 10px;
+  color: #64748b;
+}
+
+@media (max-width: 750px) {
+  #sched-grid {
+    grid-template-rows: repeat(6, minmax(86px, auto)) !important;
+  }
+
+  #sched-grid .sched-cell,
+  .sched-cell {
+    min-height: 86px !important;
+    padding: 4px !important;
+  }
+
+  .sched-items {
+    gap: 1px !important;
+  }
+
+  .sched-item,
+  .sched-evt,
+  .sched-more {
+    font-size: 9px !important;
+    line-height: 1.18 !important;
+    padding: 1px 2px !important;
+  }
+}
+
 /* ============================================================
    Layout, Chat, Settings, Mobile Polish
 ============================================================ */
