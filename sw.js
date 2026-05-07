@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eduboard-v8';
+const CACHE_NAME = 'eduboard-v9-emailjs-otp';
 const ASSETS = [
   './',
   './index.html',
@@ -34,6 +34,20 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
+  const shouldAlwaysRefresh =
+    e.request.mode === 'navigate' ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css');
+
+  if (shouldAlwaysRefresh) {
+    e.respondWith(
+      fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
   );
