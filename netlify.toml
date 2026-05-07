@@ -8,6 +8,10 @@
     Cache-Control = "no-store"
 
 [[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-store"
+[[headers]]
   for = "/index.html"
   [headers.values]
     Cache-Control = "no-store"

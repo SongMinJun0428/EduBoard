@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eduboard-v9-emailjs-otp';
+const CACHE_NAME = 'eduboard-v11-encoding-restore';
 const ASSETS = [
   './',
   './index.html',

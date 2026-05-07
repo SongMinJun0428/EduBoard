@@ -1,0 +1,17 @@
+/
+  Cache-Control: no-store
+
+/index.html
+  Cache-Control: no-store
+
+/*.html
+  Cache-Control: no-store
+
+/sw.js
+  Cache-Control: no-store
+
+/js/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/.netlify/functions/*
+  Cache-Control: no-store
