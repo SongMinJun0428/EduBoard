@@ -325,6 +325,8 @@ async function sendResetEmail(toEmail, toName, code) {
       template_params: {
         to_name: toName,
         to_email: toEmail,
+        name: toName,
+        email: toEmail,
         passcode: code,
         time: expiresText,
         message: `비밀번호 재설정을 위한 인증번호는 [ ${code} ] 입니다. ${RESET_CODE_MINUTES}분 안에 입력해주세요.`
@@ -401,7 +403,8 @@ async function handleAction(event, body) {
   }
 
   if (action === "session") {
-    const session = await requireSession(requestSessionToken);
+    const session = await loadSession(requestSessionToken);
+    if (!session) return response(200, { user: null });
     return response(200, { user: publicUser(session.user) });
   }
 

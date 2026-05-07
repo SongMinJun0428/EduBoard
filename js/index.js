@@ -6006,6 +6006,8 @@ window.sendVerificationEmail = async function() {
             {
                 to_name: name,
                 to_email: email,
+                name: name,
+                email: email,
                 passcode: currentVerificationCode,
                 time: expiresText,
                 message: `EduBoard 회원가입 인증번호는 [ ${currentVerificationCode} ] 입니다.`
@@ -6017,8 +6019,9 @@ window.sendVerificationEmail = async function() {
         document.getElementById('verify-code-input-group').style.display = 'block';
         document.getElementById('verify-status').innerText = "인증번호를 입력해주세요.";
     } catch (err) {
-        console.error("Mail Error:", err);
-        alert("메일 발송에 실패했습니다. 이메일 주소를 확인해주세요.");
+        const detail = err?.text || err?.message || '';
+        console.error("Mail Error:", err?.status || '', detail, err);
+        alert(`메일 발송에 실패했습니다.${detail ? `\n${detail}` : ''}`);
     } finally {
         btn.disabled = false;
         btn.innerText = "인증번호 재발송";
