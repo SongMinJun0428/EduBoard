@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EduBoard</title>
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://*.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.supabase.co https://*.naver.com https://*.google.com https://*.daumcdn.net https://*.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com https://open.neis.go.kr; worker-src 'self' blob: https://cdn.jsdelivr.net;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://api.emailjs.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://*.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://*.supabase.co https://*.naver.com https://*.google.com https://*.daumcdn.net https://*.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://*.googleapis.com https://open.neis.go.kr https://api.emailjs.com; worker-src 'self' blob: https://cdn.jsdelivr.net;">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
@@ -16,7 +16,7 @@
   <script src="js/config.js"></script>
   <script src="js/security.js"></script>
   <script src="js/password-utils.js"></script>
-  <script src="js/auth-api.js?v=quest-reward-ko-20260507"></script>
+  <script src="js/auth-api.js?v=emailjs-otp-20260507"></script>
   <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
   <script src="js/co_data.js"></script>
   
@@ -2546,7 +2546,7 @@
   <script src="js/school-search.js"></script>
   <script src="js/games.js?v=schema-fix-20260507"></script>
   <script src="js/codingon.js"></script>
-  <script src="js/index.js?v=quest-reward-ko-20260507"></script>
+  <script src="js/index.js?v=emailjs-otp-20260507"></script>
   <script>
     const isLocalDevHost = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !isLocalDevHost) {

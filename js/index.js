@@ -2492,6 +2492,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const domainSelect = document.getElementById('signupEmailDomain');
   const customInput = document.getElementById('signupEmailCustom');
 
+  if (!domainSelect || !customInput) return;
+
   domainSelect.addEventListener('change', () => {
     if (domainSelect.value === '직접입력') {
       customInput.style.display = 'block';
