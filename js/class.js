@@ -1,13 +1,9 @@
 const $ = (id) => document.getElementById(id);
 
-/* 메뉴 토글 */
 function toggleMenu() { $('nav').classList.toggle('show'); }
 
-/* 다크 모드 */
 function toggleDark() { document.body.classList.toggle('dark'); }
 
-/* Supabase 클라이언트 */
-/* Supabase 클라이언트 */
 const client = window.supabase.createClient(
     window.EduConfig.getSupabaseURL(),
     window.EduConfig.getSupabaseKey()
@@ -15,6 +11,26 @@ const client = window.supabase.createClient(
 const CLASS_GRADE = 3;
 const CLASS_NUM = 2;
 
+function clearElement(element) {
+    while (element && element.firstChild) element.removeChild(element.firstChild);
+}
+
+function appendText(parent, tagName, text, className) {
+    const element = document.createElement(tagName);
+    if (className) element.className = className;
+    element.textContent = text == null ? "" : String(text);
+    parent.appendChild(element);
+    return element;
+}
+
+function safeAssetUrl(value) {
+    try {
+        const url = new URL(String(value || ""), window.location.href);
+        return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+    } catch (e) {
+        return "";
+    }
+}
 /* 공지 */
 async function loadNotices() {
     try {
@@ -25,35 +41,45 @@ async function loadNotices() {
             .order("created_at", { ascending: false });
         if (error) throw error;
 
+        const list = $('notice-list');
+        clearElement(list);
+
         if (data && data.length) {
-            $('notice-list').innerHTML = data.map(n => {
+            data.forEach(n => {
                 const date = new Date(n.created_at).toLocaleDateString("ko-KR", {
                     year: "numeric", month: "2-digit", day: "2-digit"
                 });
-                return `
-          <div class="notice-item">
-            ${n.image_url
-                        ? `<img src="${n.image_url}" class="notice-thumb" alt="공지 이미지" onclick="openModal('${n.image_url}')">`
-                        : ""}
-            <div class="notice-body">
-              <div class="notice-title">📌 ${n.title}</div>
-              <div class="notice-date">${date}</div>
-              <div class="notice-content">${n.content}</div>
-            </div>
-          </div>
-        `;
-            }).join("");
+                const item = document.createElement("div");
+                item.className = "notice-item";
+
+                const imageUrl = safeAssetUrl(n.image_url);
+                if (imageUrl) {
+                    const image = document.createElement("img");
+                    image.src = imageUrl;
+                    image.className = "notice-thumb";
+                    image.alt = "공지 이미지";
+                    image.addEventListener("click", () => openModal(imageUrl));
+                    item.appendChild(image);
+                }
+
+                const body = document.createElement("div");
+                body.className = "notice-body";
+                appendText(body, "div", `📢 ${n.title || ""}`, "notice-title");
+                appendText(body, "div", date, "notice-date");
+                appendText(body, "div", n.content || "", "notice-content");
+                item.appendChild(body);
+                list.appendChild(item);
+            });
         } else {
-            $('notice-list').innerHTML = "<p>공지 없음</p>";
+            appendText(list, "p", "공지 없음");
         }
     } catch (e) {
         console.error(e);
-        $('notice-list').innerHTML = "❌ 공지 불러오기 오류";
+        $('notice-list').textContent = "공지 불러오기 오류";
     }
 }
 
-/* 과제 */
-async function loadAssignments() {
+/* 과제 */async function loadAssignments() {
     try {
         const { data, error } = await client
             .from("assignments")
@@ -61,15 +87,21 @@ async function loadAssignments() {
             .eq("grade", CLASS_GRADE).eq("class_num", CLASS_NUM)
             .order("deadline", { ascending: true });
         if (error) throw error;
-        $('assign-list').innerHTML = (data && data.length)
-            ? "<ul>" + data.map(a => `<li>${a.title} (${a.deadline})</li>`).join("") + "</ul>"
-            : "과제 없음";
+
+        const list = $('assign-list');
+        clearElement(list);
+        if (data && data.length) {
+            const ul = document.createElement("ul");
+            data.forEach(a => appendText(ul, "li", `${a.title || ""} (${a.deadline || ""})`));
+            list.appendChild(ul);
+        } else {
+            list.textContent = "과제 없음";
+        }
     } catch (e) {
         console.error(e);
-        $('assign-list').innerHTML = "❌ 과제 불러오기 오류";
+        $('assign-list').textContent = "과제 불러오기 오류";
     }
 }
-
 async function loadTimetableByDate() {
     const API_KEY = "28ca0f05af184e8ba231d5a949d52db2";
     const ATPT_OFCDC_SC_CODE = "J10";   // 경기도교육청
@@ -111,7 +143,10 @@ async function loadTimetableByDate() {
 
             rows.forEach(r => {
                 const item = document.createElement("div");
-                item.innerHTML = `<strong>${r.PERIO}교시</strong> : ${r.ITRT_CNTNT}`;
+                const period = document.createElement("strong");
+                period.textContent = `${r.PERIO}교시`;
+                item.appendChild(period);
+                item.appendChild(document.createTextNode(` : ${r.ITRT_CNTNT || ""}`));
                 container.appendChild(item);
             });
         } else {
@@ -128,7 +163,7 @@ async function loadGalleryFromHomeworks() {
     const classNum = CLASS_NUM;
     const container = document.getElementById("files");
 
-    container.innerHTML = "<p>📂 파일 불러오는 중...</p>";
+    container.textContent = "파일 불러오는 중...";
 
     try {
         const { data, error } = await client
@@ -138,41 +173,51 @@ async function loadGalleryFromHomeworks() {
 
         if (error) throw error;
 
-        // 🔎 필터링 (공유 범위 조건)
         const filtered = (data || []).filter(file => {
             return file.share_scope === 'all' ||
                 (file.share_scope === 'grade' && file.grade === grade) ||
                 (file.share_scope === 'class' && file.grade === grade && file.class_num === classNum);
         });
 
+        clearElement(container);
         if (filtered.length === 0) {
-            container.innerHTML = "<p class='muted'>📂 열람 가능한 파일이 없습니다.</p>";
+            appendText(container, "p", "열람 가능한 파일이 없습니다.", "muted");
             return;
         }
 
-        container.innerHTML = filtered.map(file => `
-  <div class="file-card" onclick='openFileModal(${JSON.stringify(file)})'>
-    <img src="${file.file_url}" alt="파일 이미지" class="file-thumb" />
-    <div class="file-info">
-      <div class="file-title">📄 ${file.title}</div>
-      <div class="file-meta">${file.name} ・ ${file.comment}</div>
-      <div class="file-scope muted">${file.share_scope === 'all' ? '전체공개' :
-                file.share_scope === 'grade' ? `${file.grade}학년 전체` :
-                    `${file.grade}-${file.class_num}반`
-            }</div>
-    </div>
-  </div>
-`).join("");
+        filtered.forEach(file => {
+            const card = document.createElement("div");
+            card.className = "file-card";
+            card.addEventListener("click", () => openFileModal(file));
 
+            const imageUrl = safeAssetUrl(file.file_url);
+            if (imageUrl) {
+                const image = document.createElement("img");
+                image.src = imageUrl;
+                image.alt = "파일 이미지";
+                image.className = "file-thumb";
+                card.appendChild(image);
+            }
 
-
-
+            const info = document.createElement("div");
+            info.className = "file-info";
+            appendText(info, "div", `📄 ${file.title || ""}`, "file-title");
+            appendText(info, "div", `${file.name || ""} · ${file.comment || ""}`, "file-meta");
+            const scope = file.share_scope === 'all'
+                ? "전체공개"
+                : file.share_scope === 'grade'
+                    ? `${file.grade}학년 전체`
+                    : `${file.grade}-${file.class_num}반`;
+            appendText(info, "div", scope, "file-scope muted");
+            card.appendChild(info);
+            container.appendChild(card);
+        });
     } catch (e) {
         console.error(e);
-        container.innerHTML = "<p class='muted'>❌ 파일 불러오기 실패</p>";
+        clearElement(container);
+        appendText(container, "p", "파일 불러오기 실패", "muted");
     }
 }
-
 function loadGallery() {
     loadGalleryFromHomeworks();  // homeworks 테이블에서 불러오도록 변경
 }
@@ -350,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadEnglishQuiz()
 });
 function openModal(src) {
-    document.getElementById("modal-img").src = src;
+    document.getElementById("modal-img").src = safeAssetUrl(src);
     document.getElementById("image-modal").style.display = "flex";
 }
 
@@ -359,7 +404,7 @@ function closeModal() {
 }
 
 function openFileModal(file) {
-    $('modal-preview').src = file.file_url;
+    $('modal-preview').src = safeAssetUrl(file.file_url);
     $('modal-title').textContent = file.title;
     $('modal-meta').textContent = `${file.name}`;
     $('modal-comment').textContent = file.comment;
@@ -384,26 +429,39 @@ async function loadEnglishQuiz() {
             .order("created_at", { ascending: false })
             .limit(5);
 
+        const container = $('quiz-questions');
+        clearElement(container);
         if (error || !data.length) {
-            $('quiz-questions').innerHTML = "❌ 퀴즈 없음";
+            container.textContent = "퀴즈 없음";
             return;
         }
 
         currentQuizSetId = data[0].quiz_set_id;
 
-        $('quiz-questions').innerHTML = data.map(q => `
-      <div style="margin-bottom:10px;">
-        <div><strong>Q${q.number}:</strong> ${q.question}</div>
-        <input type="text" id="answer-${q.number}" placeholder="답변 입력" style="width:100%; padding:6px;" />
-      </div>
-    `).join("");
+        data.forEach(q => {
+            const block = document.createElement("div");
+            block.style.marginBottom = "10px";
+            const question = document.createElement("div");
+            const strong = document.createElement("strong");
+            strong.textContent = `Q${q.number}:`;
+            question.appendChild(strong);
+            question.appendChild(document.createTextNode(` ${q.question || ""}`));
+            block.appendChild(question);
 
+            const input = document.createElement("input");
+            input.type = "text";
+            input.id = `answer-${q.number}`;
+            input.placeholder = "답 입력";
+            input.style.width = "100%";
+            input.style.padding = "6px";
+            block.appendChild(input);
+            container.appendChild(block);
+        });
     } catch (e) {
         console.error(e);
-        $('quiz-questions').innerHTML = "❌ 오류 발생";
+        $('quiz-questions').textContent = "오류 발생";
     }
 }
-
 async function submitEnglishAnswers() {
     const name = $('student-name').value.trim();
     if (!name || !currentQuizSetId) {
@@ -446,39 +504,34 @@ async function loadClassStudentPoints() {
 
         if (error) throw error;
 
+        const container = $('points-list');
+        clearElement(container);
         if (!data || data.length === 0) {
-            $('points-list').innerHTML = "<p class='muted'>❌ 학생 포인트 데이터 없음</p>";
+            appendText(container, "p", "학생 포인트 데이터 없음", "muted");
             return;
         }
 
-        let html = `
-      <table class="points-table">
-        <thead>
-          <tr>
-            <th>번호</th>
-            <th>이름</th>
-            <th>포인트</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
+        const table = document.createElement("table");
+        table.className = "points-table";
+        const thead = document.createElement("thead");
+        const headRow = document.createElement("tr");
+        ["번호", "이름", "포인트"].forEach(label => appendText(headRow, "th", label));
+        thead.appendChild(headRow);
+        table.appendChild(thead);
 
+        const tbody = document.createElement("tbody");
         data.forEach(row => {
-            html += `
-        <tr>
-          <td>${row.student_number}</td>
-          <td>${row.name}</td>
-          <td>⭐ ${row.point}</td>
-        </tr>
-      `;
+            const tr = document.createElement("tr");
+            appendText(tr, "td", row.student_number);
+            appendText(tr, "td", row.name);
+            appendText(tr, "td", `💰 ${row.point || 0}`);
+            tbody.appendChild(tr);
         });
-
-        html += "</tbody></table>";
-        $('points-list').innerHTML = html;
-
+        table.appendChild(tbody);
+        container.appendChild(table);
     } catch (e) {
         console.error(e);
-        $('points-list').innerHTML = "❌ 포인트 불러오기 오류";
+        $('points-list').textContent = "포인트 불러오기 오류";
     }
 }
 let currentVote = null;
@@ -494,43 +547,50 @@ async function loadVotePolls() {
 
         if (error) throw error;
 
+        const box = $("vote-box");
+        clearElement(box);
         if (!data || data.length === 0) {
-            $("vote-box").innerHTML = "<p class='muted'>현재 진행 중인 투표가 없습니다.</p>";
+            appendText(box, "p", "현재 진행 중인 투표가 없습니다.", "muted");
             return;
         }
 
-        $("vote-box").innerHTML = data.map(vote => {
-            // ✅ 옵션 안전 처리
+        data.forEach(vote => {
             let options = [];
             try {
-                if (typeof vote.options === "string") {
-                    options = JSON.parse(vote.options);
-                } else {
-                    options = vote.options || [];
-                }
+                options = typeof vote.options === "string" ? JSON.parse(vote.options) : vote.options || [];
             } catch (e) {
-                console.error("❌ 옵션 파싱 실패", e, vote.options);
-                options = [];
+                console.error("옵션 파싱 실패", e, vote.options);
             }
 
-            return `
-        <div class="vote-card" style="margin-bottom:1rem; padding:1rem; border:1px solid #e5e7eb; border-radius:0.75rem; background:#f9fafb;">
-          <p style="font-weight:600; margin-bottom:0.5rem;">${vote.question}</p>
-          ${options.map(opt => `
-            <button class="btn" onclick="submitVote(${vote.id}, '${opt}')">${opt}</button>
-          `).join(" ")}
-          <div id="vote-result-${vote.id}" class="muted" style="margin-top:.5rem"></div>
-        </div>
-      `;
-        }).join("");
+            const card = document.createElement("div");
+            card.className = "vote-card";
+            card.style.marginBottom = "1rem";
+            card.style.padding = "1rem";
+            card.style.border = "1px solid #e5e7eb";
+            card.style.borderRadius = "0.75rem";
+            card.style.background = "#f9fafb";
+            const question = appendText(card, "p", vote.question || "");
+            question.style.fontWeight = "600";
+            question.style.marginBottom = "0.5rem";
 
+            options.forEach(opt => {
+                const button = appendText(card, "button", opt, "btn");
+                button.type = "button";
+                button.addEventListener("click", () => submitVote(vote.id, opt));
+            });
+
+            const result = document.createElement("div");
+            result.id = `vote-result-${vote.id}`;
+            result.className = "muted";
+            result.style.marginTop = ".5rem";
+            card.appendChild(result);
+            box.appendChild(card);
+        });
     } catch (e) {
         console.error(e);
-        $("vote-box").innerHTML = "❌ 투표 불러오기 실패";
+        $("vote-box").textContent = "투표 불러오기 실패";
     }
 }
-
-
 async function submitVote(voteId, choice) {
     const studentName = prompt("이름을 입력하세요");
     if (!studentName) return;

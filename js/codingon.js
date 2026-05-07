@@ -17,93 +17,93 @@ window.coState = {
 // Level Icons & Names (Expanded)
 const CO_LEVELS = [
   { xp: 0, icon: "👶", name: "Hello World", level: 1 },
-  { xp: 100, icon: "🪴", name: "코드 탐험가", level: 2 },
-  { xp: 300, icon: "🌼", name: "로직 숙련자", level: 3 },
-  { xp: 600, icon: "🌿", name: "알고리즘 개척자", level: 4 },
-  { xp: 1000, icon: "🍀", name: "데이터 마스터", level: 5 },
-  { xp: 1500, icon: "✨", name: "함수 장인", level: 6 },
-  { xp: 2100, icon: "🔥", name: "파이썬 연금술사", level: 7 },
-  { xp: 2800, icon: "🤖", name: "AI 빌더", level: 8 },
-  { xp: 3600, icon: "👑", name: "코딩 총사령관", level: 9 }
+  { xp: 10, icon: "🪴", name: "코드 탐험가", level: 2 },
+  { xp: 30, icon: "🌼", name: "로직 숙련자", level: 3 },
+  { xp: 60, icon: "🌿", name: "알고리즘 개척자", level: 4 },
+  { xp: 100, icon: "🍀", name: "데이터 마스터", level: 5 },
+  { xp: 150, icon: "✨", name: "함수 장인", level: 6 },
+  { xp: 210, icon: "🔥", name: "파이썬 연금술사", level: 7 },
+  { xp: 280, icon: "🤖", name: "AI 빌더", level: 8 },
+  { xp: 360, icon: "👑", name: "코딩 총사령관", level: 9 }
 ];
 
 // 🗺️ FULL ROADMAP (60 Items total)
 const CO_ROADMAP = [
   // Step 0: 입문
-  { id: "print.html", title: "0-1. print() 기초", type: "lesson", xp: 10 },
-  { id: "python.hw1.html", title: "Q0-1. 다이아몬드 출력", type: "quiz", xp: 50 },
+  { id: "print.html", title: "0-1. print() 기초", type: "lesson", xp: 1 },
+  { id: "python.hw1.html", title: "Q0-1. 다이아몬드 출력", type: "quiz", xp: 5 },
 
   // Step 1: 연산 기초
-  { id: "python1.html", title: "1-1. 사칙연산", type: "lesson", xp: 15 },
-  { id: "python2.html", title: "1-2. 타입 변환", type: "lesson", xp: 15 },
-  { id: "python.hw2-1.html", title: "Q1-1. 몫과 나머지", type: "quiz", xp: 40 },
-  { id: "python.hw2-2.html", title: "Q1-2. 거듭제곱 계산", type: "quiz", xp: 40 },
+  { id: "python1.html", title: "1-1. 사칙연산", type: "lesson", xp: 2 },
+  { id: "python2.html", title: "1-2. 타입 변환", type: "lesson", xp: 2 },
+  { id: "python.hw2-1.html", title: "Q1-1. 몫과 나머지", type: "quiz", xp: 4 },
+  { id: "python.hw2-2.html", title: "Q1-2. 거듭제곱 계산", type: "quiz", xp: 4 },
 
   // Step 2: 변수와 입력
-  { id: "python4.html", title: "2-1. 변수 만들기", type: "lesson", xp: 20 },
-  { id: "python2-2.html", title: "2-2. 변수 다루기", type: "lesson", xp: 20 },
-  { id: "python2-3.html", title: "2-3. 변수와 계산", type: "lesson", xp: 20 },
-  { id: "python2-4.html", title: "2-4. 값 입력 받기", type: "lesson", xp: 20 },
-  { id: "python2-5.html", title: "2-5. 다양한 출력", type: "lesson", xp: 20 },
-  { id: "python2-6.html", title: "2-6. 변수 예제", type: "lesson", xp: 20 },
-  { id: "python.hw2-3.html", title: "Q2-1. 이익률 계산", type: "quiz", xp: 50 },
-  { id: "python.hw2-4.html", title: "Q2-2. 소금물 농도", type: "quiz", xp: 50 },
-  { id: "python.hw2.1-6.html", title: "Q2-3. 출생 연도", type: "quiz", xp: 50 },
+  { id: "python4.html", title: "2-1. 변수 만들기", type: "lesson", xp: 2 },
+  { id: "python2-2.html", title: "2-2. 변수 다루기", type: "lesson", xp: 2 },
+  { id: "python2-3.html", title: "2-3. 변수와 계산", type: "lesson", xp: 2 },
+  { id: "python2-4.html", title: "2-4. 값 입력 받기", type: "lesson", xp: 2 },
+  { id: "python2-5.html", title: "2-5. 다양한 출력", type: "lesson", xp: 2 },
+  { id: "python2-6.html", title: "2-6. 변수 예제", type: "lesson", xp: 2 },
+  { id: "python.hw2-3.html", title: "Q2-1. 이익률 계산", type: "quiz", xp: 5 },
+  { id: "python.hw2-4.html", title: "Q2-2. 소금물 농도", type: "quiz", xp: 5 },
+  { id: "python.hw2.1-6.html", title: "Q2-3. 출생 연도", type: "quiz", xp: 5 },
 
   // Step 3: 비교와 논리
-  { id: "python3-1.html", title: "3-1. 불과 비교 연산자", type: "lesson", xp: 25 },
-  { id: "python3-2.html", title: "3-2. is, in, type", type: "lesson", xp: 25 },
-  { id: "python3-3.html", title: "3-3. bool 변환", type: "lesson", xp: 25 },
-  { id: "python3-4.html", title: "3-4. 논리 연산자", type: "lesson", xp: 25 },
-  { id: "python3-5.html", title: "3-5. 비교 예제", type: "lesson", xp: 25 },
-  { id: "python3.html", title: "3-6. 숫자 계산 응용", type: "lesson", xp: 25 },
-  { id: "python.hw3-1.html", title: "Q3-1. 짝수 판별", type: "quiz", xp: 60 },
-  { id: "python.hw3-2.html", title: "Q3-2. 배수 판별", type: "quiz", xp: 60 },
-  { id: "python.hw3-6.html", title: "Q3-3. 윤년 판별", type: "quiz", xp: 60 },
+  { id: "python3-1.html", title: "3-1. 불과 비교 연산자", type: "lesson", xp: 3 },
+  { id: "python3-2.html", title: "3-2. is, in, type", type: "lesson", xp: 3 },
+  { id: "python3-3.html", title: "3-3. bool 변환", type: "lesson", xp: 3 },
+  { id: "python3-4.html", title: "3-4. 논리 연산자", type: "lesson", xp: 3 },
+  { id: "python3-5.html", title: "3-5. 비교 예제", type: "lesson", xp: 3 },
+  { id: "python3.html", title: "3-6. 숫자 계산 응용", type: "lesson", xp: 3 },
+  { id: "python.hw3-1.html", title: "Q3-1. 짝수 판별", type: "quiz", xp: 6 },
+  { id: "python.hw3-2.html", title: "Q3-2. 배수 판별", type: "quiz", xp: 6 },
+  { id: "python.hw3-6.html", title: "Q3-3. 윤년 판별", type: "quiz", xp: 6 },
 
   // Step 4: 자료구조 기초 (리스트, 튜플)
-  { id: "python5-1.html", title: "4-1. 문자열 활용", type: "lesson", xp: 30 },
-  { id: "python5-2.html", title: "4-2. 리스트 활용", type: "lesson", xp: 30 },
-  { id: "python5-3.html", title: "4-3. 튜플 활용", type: "lesson", xp: 30 },
-  { id: "python5-4.html", title: "4-4. range 활용", type: "lesson", xp: 30 },
-  { id: "python5-5.html", title: "4-5. 시퀀스 자료형", type: "lesson", xp: 30 },
-  { id: "python5-6.html", title: "4-6. 전종 기초 예제", type: "lesson", xp: 30 },
-  { id: "python.hw2.1-10.html", title: "Q4-1. 문자열 이어붙이기", type: "quiz", xp: 50 },
-  { id: "python.hw3-5.html", title: "Q4-2. 문자열 포함 여부", type: "quiz", xp: 50 },
+  { id: "python5-1.html", title: "4-1. 문자열 활용", type: "lesson", xp: 3 },
+  { id: "python5-2.html", title: "4-2. 리스트 활용", type: "lesson", xp: 3 },
+  { id: "python5-3.html", title: "4-3. 튜플 활용", type: "lesson", xp: 3 },
+  { id: "python5-4.html", title: "4-4. range 활용", type: "lesson", xp: 3 },
+  { id: "python5-5.html", title: "4-5. 시퀀스 자료형", type: "lesson", xp: 3 },
+  { id: "python5-6.html", title: "4-6. 전종 기초 예제", type: "lesson", xp: 3 },
+  { id: "python.hw2.1-10.html", title: "Q4-1. 문자열 이어붙이기", type: "quiz", xp: 5 },
+  { id: "python.hw3-5.html", title: "Q4-2. 문자열 포함 여부", type: "quiz", xp: 5 },
 
   // Step 5: 기초 함수
-  { id: "python4-1.html", title: "5-1. 함수의 호출", type: "lesson", xp: 35 },
-  { id: "python4-2.html", title: "5-2. 함수의 반환", type: "lesson", xp: 35 },
-  { id: "python4-3.html", title: "5-3. 함수 예제-1", type: "lesson", xp: 35 },
-  { id: "python4-4.html", title: "5-4. 솔루션 함수", type: "lesson", xp: 35 },
-  { id: "python4-5.html", title: "5-5. 함수 예제-2", type: "lesson", xp: 35 },
-  { id: "python.hw3-4.html", title: "Q5-1. 두 수 비교", type: "quiz", xp: 60 },
+  { id: "python4-1.html", title: "5-1. 함수의 호출", type: "lesson", xp: 4 },
+  { id: "python4-2.html", title: "5-2. 함수의 반환", type: "lesson", xp: 4 },
+  { id: "python4-3.html", title: "5-3. 함수 예제-1", type: "lesson", xp: 4 },
+  { id: "python4-4.html", title: "5-4. 솔루션 함수", type: "lesson", xp: 4 },
+  { id: "python4-5.html", title: "5-5. 함수 예제-2", type: "lesson", xp: 4 },
+  { id: "python.hw3-4.html", title: "Q5-1. 두 수 비교", type: "quiz", xp: 6 },
 
   // Step 6: 조건문 심화
-  { id: "python6-1.html", title: "6-1. if 조건문", type: "lesson", xp: 40 },
-  { id: "python6-2.html", title: "6-2. if 활용하기", type: "lesson", xp: 40 },
-  { id: "python6-3.html", title: "6-3. else 사용하기", type: "lesson", xp: 40 },
-  { id: "python6-4.html", title: "6-4. 조건문 중첩", type: "lesson", xp: 40 },
-  { id: "python6-5.html", title: "6-5. elif 사용하기", type: "lesson", xp: 40 },
-  { id: "python6-6.html", title: "6-6. 조건문 종합", type: "lesson", xp: 40 },
-  { id: "python.hw3-7.html", title: "Q6-1. 미성년자 판별", type: "quiz", xp: 70 },
-  { id: "python.hw3-8.html", title: "Q6-2. 제곱수 판별", type: "quiz", xp: 70 },
+  { id: "python6-1.html", title: "6-1. if 조건문", type: "lesson", xp: 4 },
+  { id: "python6-2.html", title: "6-2. if 활용하기", type: "lesson", xp: 4 },
+  { id: "python6-3.html", title: "6-3. else 사용하기", type: "lesson", xp: 4 },
+  { id: "python6-4.html", title: "6-4. 조건문 중첩", type: "lesson", xp: 4 },
+  { id: "python6-5.html", title: "6-5. elif 사용하기", type: "lesson", xp: 4 },
+  { id: "python6-6.html", title: "6-6. 조건문 종합", type: "lesson", xp: 4 },
+  { id: "python.hw3-7.html", title: "Q6-1. 미성년자 판별", type: "quiz", xp: 7 },
+  { id: "python.hw3-8.html", title: "Q6-2. 제곱수 판별", type: "quiz", xp: 7 },
 
   // Step 7: 기타 연습 문제들 (나머지 퀴즈들)
-  { id: "python.hw2-5.html", title: "Q7-1. 소금물 역산", type: "quiz", xp: 50 },
-  { id: "python.hw2-6.html", title: "Q7-2. 평균 속력", type: "quiz", xp: 50 },
-  { id: "python.hw2-7.html", title: "Q7-3. 전력질주", type: "quiz", xp: 50 },
-  { id: "python.hw2.1-1.html", title: "Q7-4. 두 정수의 합", type: "quiz", xp: 30 },
-  { id: "python.hw2.1-2.html", title: "Q7-5. 두 정수의 차", type: "quiz", xp: 30 },
-  { id: "python.hw2.1-3.html", title: "Q7-6. 두 정수의 곱", type: "quiz", xp: 30 },
-  { id: "python.hw2.1-4.html", title: "Q7-7. 두 정수의 몫", type: "quiz", xp: 30 },
-  { id: "python.hw2.1-5.html", title: "Q7-8. 두 정수의 나머지", type: "quiz", xp: 30 },
-  { id: "python.hw2.1-7.html", title: "Q7-9. 연산 응용", type: "quiz", xp: 30 },
-  { id: "python.hw2.1-8.html", title: "Q7-10. 특수문자", type: "quiz", xp: 30 },
-  { id: "python.hw2.1-9.html", title: "Q7-11. 실수 정수부", type: "quiz", xp: 30 },
-  { id: "python.hw2.1-11.html", title: "Q7-12. 계산식 출력", type: "quiz", xp: 40 },
-  { id: "python.hw2.1-12.html", title: "Q7-13. 변수 형식", type: "quiz", xp: 40 },
-  { id: "python.hw3-3.html", title: "Q7-14. 공배수 판별", type: "quiz", xp: 50 }
+  { id: "python.hw2-5.html", title: "Q7-1. 소금물 역산", type: "quiz", xp: 5 },
+  { id: "python.hw2-6.html", title: "Q7-2. 평균 속력", type: "quiz", xp: 5 },
+  { id: "python.hw2-7.html", title: "Q7-3. 전력질주", type: "quiz", xp: 5 },
+  { id: "python.hw2.1-1.html", title: "Q7-4. 두 정수의 합", type: "quiz", xp: 3 },
+  { id: "python.hw2.1-2.html", title: "Q7-5. 두 정수의 차", type: "quiz", xp: 3 },
+  { id: "python.hw2.1-3.html", title: "Q7-6. 두 정수의 곱", type: "quiz", xp: 3 },
+  { id: "python.hw2.1-4.html", title: "Q7-7. 두 정수의 몫", type: "quiz", xp: 3 },
+  { id: "python.hw2.1-5.html", title: "Q7-8. 두 정수의 나머지", type: "quiz", xp: 3 },
+  { id: "python.hw2.1-7.html", title: "Q7-9. 연산 응용", type: "quiz", xp: 3 },
+  { id: "python.hw2.1-8.html", title: "Q7-10. 특수문자", type: "quiz", xp: 3 },
+  { id: "python.hw2.1-9.html", title: "Q7-11. 실수 정수부", type: "quiz", xp: 3 },
+  { id: "python.hw2.1-11.html", title: "Q7-12. 계산식 출력", type: "quiz", xp: 4 },
+  { id: "python.hw2.1-12.html", title: "Q7-13. 변수 형식", type: "quiz", xp: 4 },
+  { id: "python.hw3-3.html", title: "Q7-14. 공배수 판별", type: "quiz", xp: 5 }
 ];
 
 // 🚀 1. Initialization
@@ -436,7 +436,7 @@ async function verifyAnswer(output) {
   }
 
   if (output === expected) {
-    consoleEl.innerHTML += `\n\n<div style="color: #4ade80; font-weight:800;">✅ 정답입니다! +${item.xp || 10} XP</div>`;
+    consoleEl.innerHTML += `\n\n<div style="color: #4ade80; font-weight:800;">✅ 정답입니다! +${item.xp || 1} XP</div>`;
     await advanceProgression();
   } else {
     consoleEl.innerHTML += `\n\n<div style="color: #fbbf24; font-weight:800;">❌ 오답입니다. 결과가 정확히 일치해야 합니다.</div>`;
@@ -449,7 +449,14 @@ async function advanceProgression() {
   if (currentIdx === window.coState.unlockedSteps) {
     window.coState.unlockedSteps++;
     const item = window.CO_DATA[window.coState.currentStepIdx];
-    window.coState.xp += item.xp || 10;
+    const earnedCoXp = item.xp || 1;
+    window.coState.xp += earnedCoXp;
+    
+    // 메인 XP와 연동 (낮은 비율로 지급)
+    if (typeof window.awardDailyXP === 'function') {
+        const mainXp = earnedCoXp; // 100% 반영
+        window.awardDailyXP('codingon_clear', mainXp);
+    }
     
     const newInfo = getCOLevelInfo(window.coState.xp);
     if (newInfo.level > window.coState.level) {

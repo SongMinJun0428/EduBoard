@@ -3,6 +3,25 @@ const SUPABASE_URL = window.EduConfig.getSupabaseURL();
 const SUPABASE_ANON_KEY = window.EduConfig.getSupabaseKey();
 let sb; // 위임 초기화
 const USE_SUPABASE_RESET_EMAIL = false;
+const ADMIN_USER_COLUMNS = [
+    'id',
+    'username',
+    'email',
+    'name',
+    'role',
+    'auth_user_id',
+    'grade',
+    'class_num',
+    'student_number',
+    'coin_balance',
+    'level',
+    'xp',
+    'school_name',
+    'atpt_ofcdc_sc_code',
+    'sd_schul_code',
+    'can_edit_username',
+    'can_edit_name'
+].join(',');
 
 // ===== Utils =====
 const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
@@ -10,6 +29,10 @@ let toastTimer; function toast(m) { clearTimeout(toastTimer); const t = $('#toas
 const roleBadge = r => `<span class="badge ${({ admin: 'role-admin', teacher: 'role-teacher', class_admin: 'role-class_admin', student: 'role-student', user: 'role-user' })[r] || 'role-user'}">${r || '-'}</span>`;
 const chunked = (a, n) => { const o = []; for (let i = 0; i < a.length; i += n)o.push(a.slice(i, i + n)); return o; }
 const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
+const toAdminNumber = (value, fallback = 0) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+};
 
 // ===== Theme/Auth =====
 // ===== Theme Initialization =====
@@ -27,59 +50,8 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         if (!window.supabase) throw new Error('Supabase 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하세요.');
         sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const savedUsername = localStorage.getItem('savedUsername');
-        const savedAuthToken = localStorage.getItem('savedAuthToken');
-        const sessionResp = await sb.auth.getSession();
-        let authUser = sessionResp?.data?.session?.user || null;
-        const sessionError = sessionResp?.error;
-        const isMissingSession = sessionError?.name === 'AuthSessionMissingError'
-            || /session.*missing/i.test(sessionError?.message || '');
-
-        if (sessionError && !isMissingSession) throw sessionError;
-
-        let userData = null;
-        if (authUser?.id) {
-            const { data, error } = await sb
-                .from('users')
-                .select('username, email, role, auth_user_id, password')
-                .eq('auth_user_id', authUser.id)
-                .limit(1)
-                .maybeSingle();
-            if (error) throw new Error(`서버 연결 오류: ${error.message}`);
-            userData = data;
-        }
-
-        if (!userData && authUser?.email) {
-            const { data, error } = await sb
-                .from('users')
-                .select('username, email, role, auth_user_id, password')
-                .eq('email', authUser.email)
-                .limit(1)
-                .maybeSingle();
-            if (error) throw new Error(`서버 연결 오류: ${error.message}`);
-            userData = data;
-        }
-
-        if (!userData && savedUsername) {
-            const { data: legacyUser, error: legacyError } = await sb
-                .from('users')
-                .select('username, email, role, auth_user_id, password')
-                .eq('username', savedUsername)
-                .limit(1)
-                .maybeSingle();
-
-            if (legacyError) throw new Error(`인증 정보 확인 실패: ${legacyError.message}`);
-            const tokenMatches = savedAuthToken && legacyUser?.password === savedAuthToken;
-            const canRecoverMissingToken = !savedAuthToken && !!legacyUser;
-            const canRecoverStaleToken = savedAuthToken && legacyUser?.password !== savedAuthToken;
-            const authMatches = authUser && (
-                legacyUser?.auth_user_id === authUser.id ||
-                (authUser.email && legacyUser?.email === authUser.email)
-            );
-            if (legacyUser && (tokenMatches || authMatches || canRecoverMissingToken || canRecoverStaleToken)) {
-                userData = legacyUser;
-            }
-        }
+        const customSession = await window.EduAuth?.getSession();
+        const userData = customSession?.user || null;
 
         if (!userData) {
             alert('로그인이 필요합니다.');
@@ -95,10 +67,6 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
         localStorage.setItem('savedUsername', userData.username);
         localStorage.setItem('savedRole', userRole);
-        if (userData.password) localStorage.setItem('savedAuthToken', userData.password);
-        if (authUser?.id && !userData.auth_user_id) {
-            await sb.from('users').update({ auth_user_id: authUser.id }).eq('username', userData.username);
-        }
 
         // 통과 시 바디 표시
         document.body.style.display = 'block';
@@ -375,9 +343,14 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
             if (e.target.classList.contains('del-job-log')) {
                 if (!confirm('해당 기록을 삭제하시겠습니까?')) return;
                 const id = e.target.dataset.id;
-                const { error } = await sb.from('career_test_results').delete().eq('id', id);
-                if (error) toast('삭제 실패');
-                else { toast('삭제됨'); loadJobResults(); }
+                try {
+                    await window.EduAuth.adminDeleteCareerResult(id);
+                    toast('삭제됨');
+                    loadJobResults();
+                } catch (error) {
+                    console.error(error);
+                    toast('삭제 실패');
+                }
             }
             if (e.target.classList.contains('view-job-detail')) {
                 const id = e.target.dataset.id;
@@ -591,12 +564,12 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
           </td>
           <td data-label="성장 Stats" class="text-center">
             <div class="flex items-center gap-1.5 justify-end">
-                <span class="text-xs font-bold">Lvl.${u.level ?? '1'}</span>
-                <span class="text-[10px] text-slate-400 font-mono">(${u.xp ?? '0'} XP)</span>
+                <span class="text-xs font-bold">Lvl.${toAdminNumber(u.level, 1)}</span>
+                <span class="text-[10px] text-slate-400 font-mono">(${toAdminNumber(u.xp)} XP)</span>
             </div>
           </td>
           <td data-label="포인트" class="text-right pr-6 font-mono text-blue-600 font-bold whitespace-nowrap">
-            ${(u.coin_balance ?? 0).toLocaleString()} <span class="text-[10px] text-slate-400 font-normal">P</span>
+            ${toAdminNumber(u.coin_balance).toLocaleString()} <span class="text-[10px] text-slate-400 font-normal">P</span>
           </td>
           <td data-label="작업" class="text-center w-24">
             <button class="btn h-8 px-3 text-xs bg-slate-50 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/50 rounded-lg flex items-center gap-1.5 transition-all" data-menu="${u.username}">
@@ -619,7 +592,7 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
 
     async function loadUsers() {
-        const { data, error } = await sb.from('users').select('*');
+        const { data, error } = await sb.from('users').select(ADMIN_USER_COLUMNS);
         if (error) { console.error(error); return toast('사용자 목록 로딩 실패'); }
         all = data || [];
         apply();
@@ -633,8 +606,8 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
             if (userErr) throw userErr;
 
             const userCount = userData?.length || 0;
-            const totalCoins = userData?.reduce((sum, u) => sum + (u.coin_balance || 0), 0) || 0;
-            const maxLevel = userData?.reduce((max, u) => Math.max(max, u.level || 0), 0) || 0;
+            const totalCoins = userData?.reduce((sum, u) => sum + toAdminNumber(u.coin_balance), 0) || 0;
+            const maxLevel = userData?.reduce((max, u) => Math.max(max, toAdminNumber(u.level)), 0) || 0;
             
             const classSet = new Set();
             userData?.forEach(u => {
@@ -678,7 +651,8 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         if (!tb || !th) return;
         
         tb.innerHTML = '<tr><td colspan="10" class="text-center py-10">로딩 중...</td></tr>';
-        const { data, error } = await sb.from(table).select('*').limit(500);
+        const columns = table === 'users' ? ADMIN_USER_COLUMNS : '*';
+        const { data, error } = await sb.from(table).select(columns).limit(500);
         if (error) { tb.innerHTML = `<tr><td colspan="10" class="text-center py-10 text-red-500">${error.message}</td></tr>`; return; }
 
         if (!data || data.length === 0) {
@@ -702,15 +676,23 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
     // ===== Actions =====
     async function updateRole(username, role) {
-        const { error } = await sb.from('users').update({ role }).eq('username', username);
-        if (error) { console.error(error); return toast('권한 저장 실패'); }
+        try {
+            await window.EduAuth.adminUpdateRole(username, role);
+        } catch (error) {
+            console.error(error);
+            return toast('권한 저장 실패: ' + error.message);
+        }
         toast('권한 저장 완료'); logAction('role_update', { target: username, role });
         renderStats();
     }
     async function deleteUser(username) {
         if (!confirm(`${username} 계정을 삭제할까요?`)) return;
-        const { error } = await sb.from('users').delete().eq('username', username);
-        if (error) { console.error(error); return toast('삭제 실패'); }
+        try {
+            await window.EduAuth.adminDeleteUser(username);
+        } catch (error) {
+            console.error(error);
+            return toast('삭제 실패: ' + error.message);
+        }
         toast('삭제 완료'); logAction('user_delete', { target: username }); loadUsers();
     }
     async function addUser() {
@@ -719,17 +701,20 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
             name: $('#add-name').value.trim(),
             email: $('#add-email').value.trim() || null,
             grade: Number($('#add-grade').value || 0) || null,
-            class_num: Number($('#add-class').value || 0) || null,
-            student_number: Number($('#add-number').value || 0) || null,
+            classNum: Number($('#add-class').value || 0) || null,
+            studentNumber: Number($('#add-number').value || 0) || null,
             role: $('#add-role').value
-
-
         };
-        const pw = $('#add-password').value.trim(); if (pw) p.password = await window.EduPassword.hash(pw);
+        const pw = $('#add-password').value.trim(); if (pw) p.password = pw;
         if (!p.username || !p.name) return toast('아이디와 이름은 필수');
-        const { error } = await sb.from('users').insert(p);
-        if (error) { console.error(error); return toast('추가 실패'); }
-        toast('추가 완료'); logAction('user_create', p);
+        try {
+            await window.EduAuth.adminCreateUser(p);
+        } catch (error) {
+            console.error(error);
+            return toast('추가 실패: ' + error.message);
+        }
+        const { password: _password, ...logPayload } = p;
+        toast('추가 완료'); logAction('user_create', logPayload);
         closeModal('#modal-add');
         ['#add-username', '#add-name', '#add-email', '#add-grade', '#add-class', '#add-number', '#add-password'].forEach(s => $(s).value = ''); $('#add-role').value = 'student';
         loadUsers();
@@ -739,8 +724,12 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         const role = $('#bulk-role').value; if (!role) return toast('일괄 권한을 선택하세요');
         const ids = [...$$('.row-check:checked')].map(i => i.dataset.username); if (!ids.length) return;
         if (!confirm(`${ids.length}명의 권한을 '${role}'(으)로 일괄 변경할까요?`)) return;
-        const { error } = await sb.from('users').update({ role }).in('username', ids);
-        if (error) { console.error(error); return toast('일괄 변경 실패'); }
+        try {
+            await window.EduAuth.adminBulkUpdateRole(ids, role);
+        } catch (error) {
+            console.error(error);
+            return toast('일괄 변경 실패: ' + error.message);
+        }
         toast(`일괄 변경 완료 (${ids.length}명)`); logAction('role_bulk_update', { targets: ids, role }); loadUsers();
     }
     async function bulkGivePoints() {
@@ -752,13 +741,11 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
         if (!confirm(`${ids.length}명에게 각각 ${amount}P를 지급할까요?`)) return;
 
-        // Supabase RPC if exists, or batch update loop
-        for (const chunk of chunked(ids, 50)) {
-            const { data, error: getErr } = await sb.from('users').select('username, coin_balance').in('username', chunk);
-            if (getErr) continue;
-            const updates = data.map(u => ({ username: u.username, coin_balance: (u.coin_balance || 0) + amount }));
-            const { error: upErr } = await sb.from('users').upsert(updates);
-            if (upErr) console.error('Bulk point error for chunk', upErr);
+        try {
+            await window.EduAuth.adminBulkGivePoints(ids, amount);
+        } catch (error) {
+            console.error(error);
+            return toast('일괄 지급 실패: ' + error.message);
         }
 
         toast(`일괄 지급 완료 (${ids.length}명)`);
@@ -768,64 +755,30 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
     async function promote() {
         if (!confirm('신학기 자동 승급(1→2, 2→3)을 실행할까요?\n(학생 권한인 사용자만 학년이 1씩 올라갑니다)')) return;
 
-        // 1. RPC 시도
-        const { error: rpcError } = await sb.rpc('promote_students_safe', {});
-        if (!rpcError) {
-            toast('자동 승급 완료 (RPC)');
-            logAction('promote', { via: 'rpc' });
-            await loadUsers();
-            return;
+        try {
+            const { count } = await window.EduAuth.adminPromoteStudents();
+            toast(`자동 승급 완료 (${count || 0}명)`);
+            logAction('promote', { count: count || 0, via: 'edge-function' });
+        } catch (error) {
+            console.error(error);
+            return toast('자동 승급 실패: ' + error.message);
         }
-
-        // 2. Fallback: 클라이언트 사이드 일괄 업데이트
-        toast('일괄 승급 처리 중...');
-        const { data, error: e2 } = await sb.from('users').select('username,grade').eq('role', 'student').limit(5000);
-        if (e2) { console.error(e2); return toast('데이터 로드 실패: ' + e2.message); }
-
-        if (!data || data.length === 0) return toast('승급할 학생이 없습니다.');
-
-        const ups = data.filter(u => u.grade && !isNaN(parseInt(u.grade)))
-            .map(u => {
-                const current = parseInt(u.grade, 10);
-                return {
-                    username: u.username,
-                    grade: (current >= 1 && current <= 2) ? current + 1 : current
-                };
-            });
-
-        if (ups.length === 0) return toast('유효한 학년 정보가 있는 학생이 없습니다.');
-
-        let successCount = 0;
-        for (const c of chunked(ups, 100)) {
-            const { error: e3 } = await sb.from('users').upsert(c);
-            if (e3) {
-                console.error('Batch error:', e3);
-            } else {
-                successCount += c.length;
-            }
-        }
-
-        toast(`자동 승급 완료 (${successCount}명)`);
-        logAction('promote', { count: successCount, total: ups.length });
         await loadUsers();
         renderStats();
     }
     async function resetByUsername(username) {
-        const { data, error } = await sb.from('users').select('email').eq('username', username).maybeSingle();
-        if (error || !data?.email) return toast('이메일이 없습니다');
-        if (USE_SUPABASE_RESET_EMAIL) {
-            const { error: e2 } = await sb.auth.resetPasswordForEmail(data.email, { redirectTo: location.origin + '/reset.html' });
-            if (e2) { console.error(e2); return toast('메일 전송 실패'); }
-            toast('재설정 메일 전송'); logAction('password_reset_email', { target: username });
-        } else {
-            const temp = randTemp(); const tempHash = await window.EduPassword.hash(temp); const { error: e3 } = await sb.from('users').update({ password: tempHash }).eq('username', username);
-            if (e3) { console.error(e3); return toast('임시 비번 실패'); }
-            toast(`임시 비번: ${temp}`); logAction('password_temp_set', { target: username });
+        try {
+            const { tempPassword } = await window.EduAuth.adminSetTempPassword(username);
+            toast(`임시 비번: ${tempPassword}`);
+            logAction('password_temp_set', { target: username });
+        } catch (err) {
+            console.error(err);
+            toast('임시 비번 실패: ' + err.message);
         }
     }
 
     async function openEditModal(username) {
-        const { data, error } = await sb.from('users').select('*').eq('username', username).maybeSingle();
+        const { data, error } = await sb.from('users').select(ADMIN_USER_COLUMNS).eq('username', username).maybeSingle();
         if (error || !data) return toast('사용자 정보를 가져올 수 없습니다.');
 
         $('#edit-username').value = data.username;
@@ -856,8 +809,21 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
         if (!p.name) return toast('이름은 필수 항목입니다.');
 
-        const { error } = await sb.from('users').update(p).eq('username', username);
-        if (error) { console.error(error); return toast('정보 수정 실패'); }
+        try {
+            await window.EduAuth.adminUpdateUserInfo(username, {
+                name: p.name,
+                email: p.email,
+                grade: p.grade,
+                classNum: p.class_num,
+                studentNumber: p.student_number,
+                level: p.level,
+                xp: p.xp,
+                coinBalance: p.coin_balance
+            });
+        } catch (error) {
+            console.error(error);
+            return toast('정보 수정 실패: ' + error.message);
+        }
 
         toast('정보 수정 완료');
         logAction('user_info_update', { target: username, ...p });
@@ -868,21 +834,7 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
     // ===== Logs (optional) =====
     async function logAction(action, details = {}) {
         try {
-            const { data: { user } } = await sb.auth.getUser();
-
-            const payload = {
-                user_id: user?.id || null,
-                username: user?.user_metadata?.username || null,
-                email: user?.email || null,
-                action,
-                target: details?.target || null,
-                target_type: details?.target_type || null,
-                details,
-                ip_address: await getIP(),               // IP 가져오기
-                user_agent: navigator.userAgent || null
-            };
-
-            await sb.from('user_activity_logs').insert(payload);
+            await window.EduAuth.adminLogAction(action, details);
         } catch (e) {
             console.error('logAction 오류', e);
         }
@@ -1186,10 +1138,8 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
                 return;
             }
 
-            const { error } = await sb.from('inventory').insert(toInsert);
-            if (error) throw error;
-
-            toast(`✅ ${toInsert.length}개의 아이템이 추가되었습니다.`);
+            const { count } = await window.EduAuth.adminSyncInventory(username);
+            toast(`✅ ${count || 0}개의 아이템이 추가되었습니다.`);
         } catch (err) {
             console.error(err);
             alert('오류 발생: ' + err.message);
@@ -1202,8 +1152,14 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
     $('#csv-out').onclick = () => download('users_export.csv', toCSV(view));
     $('#csv-in').onchange = async (e) => {
         const f = e.target.files?.[0]; if (!f) return; const rows = parseCSV(await f.text()); const good = rows.filter(r => r.username && r.name);
-        for (const c of chunked(good, 200)) { const { error } = await sb.from('users').upsert(c); if (error) console.error(error); }
-        toast(`CSV 업로드 완료 (${good.length}명)`); e.target.value = ''; loadUsers();
+        try {
+            const { count } = await window.EduAuth.adminUpsertUsers(good);
+            toast(`CSV 업로드 완료 (${count || good.length}명)`);
+        } catch (error) {
+            console.error(error);
+            toast('CSV 업로드 실패: ' + error.message);
+        }
+        e.target.value = ''; loadUsers();
     };
 
     // 모달
@@ -1289,16 +1245,12 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
 
         if (!p.name) return toast('아이템 이름을 입력하세요');
 
-        let error;
-        if (id) {
-            const { error: e } = await sb.from('shop_items').update(p).eq('id', id);
-            error = e;
-        } else {
-            const { error: e } = await sb.from('shop_items').insert([p]);
-            error = e;
+        try {
+            await window.EduAuth.adminSaveShopItem(id || null, p);
+        } catch (error) {
+            console.error(error);
+            return toast('저장 실패: ' + error.message);
         }
-
-        if (error) { console.error(error); return toast('저장 실패: ' + error.message); }
         toast(id ? '수정 완료' : '추가 완료');
         logAction(id ? 'shop_item_update' : 'shop_item_create', p);
         closeModal('#modal-shop');
@@ -1330,8 +1282,12 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
         if (delBtn) {
             const id = delBtn.dataset.id;
             if (!confirm('정말 이 아이템을 삭제할까요?')) return;
-            const { error } = await sb.from('shop_items').delete().eq('id', id);
-            if (error) { console.error(error); return toast('삭제 실패'); }
+            try {
+                await window.EduAuth.adminDeleteShopItem(id);
+            } catch (error) {
+                console.error(error);
+                return toast('삭제 실패');
+            }
             toast('삭제 완료');
             logAction('shop_item_delete', { item_id: id });
             loadShopItemsAdmin();
@@ -1350,22 +1306,11 @@ const randTemp = () => 'temp-' + Math.random().toString(36).slice(2, 10);
             return toast('지급할 포인트를 올바르게 입력하세요');
         }
 
-        const { data, error: getError } = await sb.from('users')
-            .select('coin_balance')
-            .eq('username', targetUserForCoin)
-            .maybeSingle();
-
-        if (getError || !data) return toast('유저 정보를 불러올 수 없습니다');
-
-        const newBalance = (data.coin_balance || 0) + amount;
-
-        const { error: updateError } = await sb.from('users')
-            .update({ coin_balance: newBalance })
-            .eq('username', targetUserForCoin);
-
-        if (updateError) {
-            console.error(updateError);
-            return toast('포인트 지급 실패');
+        try {
+            await window.EduAuth.adminGivePoints(targetUserForCoin, amount);
+        } catch (error) {
+            console.error(error);
+            return toast('포인트 지급 실패: ' + error.message);
         }
 
         toast(`포인트 ${amount} 지급 완료`);

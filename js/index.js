@@ -23,6 +23,32 @@ if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
 }
 
 const supabaseClient = window.supabaseClient;
+const SAFE_USER_COLUMNS = [
+  'id',
+  'username',
+  'email',
+  'name',
+  'role',
+  'auth_user_id',
+  'grade',
+  'class_num',
+  'student_number',
+  'school_name',
+  'atpt_ofcdc_sc_code',
+  'sd_schul_code',
+  'coin_balance',
+  'level',
+  'xp',
+  'avatar_url',
+  'character_icon',
+  'equipped_title',
+  'equipped_border',
+  'equipped_effect',
+  'equipped_color',
+  'can_edit_username',
+  'can_edit_name',
+  'permissions'
+].join(',');
 
 // 🛡️ 보안 및 로딩 신뢰성: 인증 상태 실시간 감지 및 세션 동기화
 if (supabaseClient) {
@@ -463,8 +489,8 @@ async function completeSocialSignup() {
     return;
   }
 
-  if (password.length < 6) {
-    alert('비밀번호는 6자 이상이어야 합니다.');
+  if (password.length < 8) {
+    alert('비밀번호는 8자 이상이어야 합니다.');
     return;
   }
 
@@ -475,39 +501,9 @@ async function completeSocialSignup() {
 
   showLoading();
   try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) throw new Error('로그인 정보가 없습니다.');
-
-    // 🛡️ 카카오톡 등 이메일 필수 동의가 없는 소셜 로그인을 위한 안전 장치
-    const rawEmail = user.email || '';
-    const safeUsername = rawEmail ? rawEmail.split('@')[0] : `kakao_${user.id.substring(0, 8)}`;
-    
-    const passwordHash = await window.EduPassword.hash(password);
-
-    const { error: insErr } = await supabaseClient.from('users').insert([{
-      username: safeUsername, 
-      email: rawEmail || null,
-      password: passwordHash,
-      name: name,
-      grade: grade,
-      class_num: classNum,
-      student_number: number,
-      school_name: schoolName,
-      atpt_ofcdc_sc_code: atptCode,
-      sd_schul_code: schulCode,
-      role: 'user', // 기본 권한
-      auth_user_id: user.id
-    }]);
-
-    if (insErr) {
-      if (insErr.code === '23505') throw new Error('이미 사용 중인 아이디/이메일입니다.');
-      throw insErr;
-    }
-
-    alert('전국 EduBoard 가입을 환영합니다!');
-    location.reload();
+    throw new Error('현재 보안 모드에서는 소셜 계정 자동 가입을 사용하지 않습니다. 아이디/비밀번호 회원가입을 이용해주세요.');
   } catch (err) {
-    alert('정보 저장 실패: ' + err.message);
+    alert(err.message || '정보 저장 실패');
   } finally {
     hideLoading();
   }
@@ -575,23 +571,15 @@ function applyUserSession(user, sessionProof = null) {
 }
 
 async function restoreLegacySession(savedUsername, savedAuthToken) {
-  if (!savedUsername || !savedAuthToken) return null;
-
-  const { data: user, error } = await supabaseClient
-    .from('users')
-    .select('*')
-    .eq('username', savedUsername)
-    .maybeSingle();
-
-  if (error || !user) return null;
-  return user.password === savedAuthToken ? user : null;
+  const resolved = await window.EduAuth?.getSession();
+  return resolved?.user || null;
 }
 
 async function fetchUserByLoginValue(loginValue) {
   for (const column of ['username', 'email']) {
     const { data, error } = await supabaseClient
       .from('users')
-      .select('*')
+      .select(SAFE_USER_COLUMNS)
       .eq(column, loginValue)
       .limit(1)
       .maybeSingle();
@@ -602,9 +590,14 @@ async function fetchUserByLoginValue(loginValue) {
   return null;
 }
 
-async function resolveSavedUserSession({ allowSoftRecover = true } = {}) {
+async function resolveSavedUserSession({ allowSoftRecover = false } = {}) {
+  const customSession = await window.EduAuth?.getSession();
+  if (customSession?.user) {
+    applyUserSession(customSession.user, customSession.sessionToken || window.EduAuth.getSessionToken());
+    return { user: customSession.user, session: null, recovered: false };
+  }
+
   const savedUsername = localStorage.getItem('savedUsername');
-  const savedAuthToken = localStorage.getItem('savedAuthToken');
   const pendingSocialLinkUsername = sessionStorage.getItem('pendingSocialLinkUsername');
 
   let session = null;
@@ -627,54 +620,18 @@ async function resolveSavedUserSession({ allowSoftRecover = true } = {}) {
     }
 
     sessionStorage.removeItem('pendingSocialLinkUsername');
-    applyUserSession(user, savedAuthToken || user.password || null);
+    applyUserSession(user, false);
     return { user, session, recovered: false };
-  }
-
-  if (!savedUsername) {
-    return { user: null, session: null, recovered: false };
-  }
-
-  const user = await fetchUserByLoginValue(savedUsername);
-  if (!user) {
-    return { user: null, session: null, recovered: false };
-  }
-
-  if (savedAuthToken && user.password === savedAuthToken) {
-    applyUserSession(user, savedAuthToken);
-    return { user, session: null, recovered: false };
-  }
-
-  if (allowSoftRecover) {
-    console.warn('Saved auth token was missing or stale; restoring local session from saved username.');
-    applyUserSession(user, user.password || null);
-    return { user, session: null, recovered: true };
   }
 
   return { user: null, session: null, recovered: false };
 }
 
 async function attemptLegacyPasswordLogin(loginValue, password) {
-  const user = await fetchUserByLoginValue(loginValue);
-  if (!user) return null;
-
-  const verify = await window.EduPassword.verify(password, user.password || '');
-  if (!verify.ok) return null;
-
-  let sessionProof = verify.normalized || user.password || '';
-  if (verify.needsUpgrade && verify.normalized) {
-    const { error: migrateError } = await supabaseClient
-      .from('users')
-      .update({ password: verify.normalized })
-      .eq('username', user.username);
-
-    if (!migrateError) {
-      user.password = verify.normalized;
-      sessionProof = verify.normalized;
-    }
-  }
-
-  return { user, sessionProof };
+  if (!window.EduAuth) throw new Error('인증 모듈을 불러오지 못했습니다.');
+  const result = await window.EduAuth.login(loginValue, password);
+  if (!result?.user || !result?.sessionToken) return null;
+  return { user: result.user, sessionProof: result.sessionToken };
 }
 
 async function fetchUserProfileForAuth(authUser, loginValue) {
@@ -700,7 +657,7 @@ async function fetchUserProfileForAuth(authUser, loginValue) {
     seen.add(key);
     const { data, error } = await supabaseClient
       .from('users')
-      .select('*')
+      .select(SAFE_USER_COLUMNS)
       .eq(column, value)
       .limit(1)
       .maybeSingle();
@@ -727,7 +684,7 @@ async function loginDirect() {
   if (userBtn) userBtn.disabled = true;
 
   try {
-    // 1. 레거시 로그인 시도 (DB 직접 대조)
+    // 기존 users 테이블 계정으로 로그인하되, 비밀번호 검증은 Netlify Function에서만 수행한다.
     const result = await attemptLegacyPasswordLogin(loginValue, password);
     
     if (result) {
@@ -736,28 +693,6 @@ async function loginDirect() {
       showMain();
       await afterLoginRefreshDashboard();
       return;
-    }
-
-    // 2. Supabase Auth 시도 (이메일 기반)
-    const loginTarget = await fetchUserByLoginValue(loginValue);
-
-    if (loginTarget && loginTarget.email) {
-      const { error: authError } = await supabaseClient.auth.signInWithPassword({
-        email: loginTarget.email,
-        password
-      });
-
-      if (!authError) {
-        const { data: { user: authUser } } = await supabaseClient.auth.getUser();
-        const user = await fetchUserProfileForAuth(authUser, loginValue);
-        if (user) {
-          applyUserSession(user, user.password || null);
-          await loadTimetableWeek(user.grade, user.class_num);
-          showMain();
-          await afterLoginRefreshDashboard();
-          return;
-        }
-      }
     }
 
     if (statusEl) statusEl.innerText = '정보가 일치하지 않습니다.';
@@ -799,8 +734,8 @@ async function signup() {
     if (signupStatus) signupStatus.innerText = '모든 항목을 입력해 주세요.';
     return;
   }
-  if (password.length < 6) {
-    if (signupStatus) signupStatus.innerText = '비밀번호는 6자 이상이어야 합니다.';
+  if (password.length < 8) {
+    if (signupStatus) signupStatus.innerText = '비밀번호는 8자 이상이어야 합니다.';
     return;
   }
 
@@ -808,18 +743,6 @@ async function signup() {
   if (signupBtn) signupBtn.disabled = true;
 
   try {
-    // 1. 중복 확인
-    const { data: existingUser } = await supabaseClient
-      .from('users')
-      .select('username')
-      .eq('username', username)
-      .maybeSingle();
-
-    if (existingUser) {
-      if (signupStatus) signupStatus.innerText = '이미 존재하는 아이디입니다.';
-      return;
-    }
-
     const schoolName = document.getElementById('signupSchoolName').value;
     const atptCode = document.getElementById('signupAtptCode').value;
     const schulCode = document.getElementById('signupSchulCode').value;
@@ -829,25 +752,18 @@ async function signup() {
       return;
     }
 
-    // 2. 사용자 정보 저장 (Supabase Auth 없이 직접 DB 저장)
-    const passwordHash = await window.EduPassword.hash(password);
-    const { error } = await supabaseClient.from('users').insert([{
+    await window.EduAuth.signup({
       username,
-      password: passwordHash,
+      password,
       email,
       name,
-      grade: parseInt(grade, 10),
-      class_num: parseInt(classNum, 10),
-      student_number: parseInt(number, 10),
-      school_name: schoolName,
-      atpt_ofcdc_sc_code: atptCode,
-      sd_schul_code: schulCode,
-      role: 'user',
-      auth_user_id: null,
-      privacy_agreed_at: new Date().toISOString()
-    }]);
-
-    if (error) throw error;
+      grade,
+      classNum,
+      studentNumber: number,
+      schoolName,
+      atptCode,
+      schulCode
+    });
 
     alert('회원가입이 완료되었습니다! 로그인해 주세요.');
     showBox('login-box');
@@ -946,7 +862,8 @@ function updateAgreementStatus() {
 
 
 async function logout() {
-  await supabaseClient.auth.signOut();
+  if (window.EduAuth) await window.EduAuth.logout();
+  try { await supabaseClient.auth.signOut(); } catch (err) { console.warn('Supabase Auth signOut skipped:', err); }
   clearSavedSession();
   document.getElementById('main-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
@@ -958,13 +875,8 @@ async function updateProfile() {
   const savedUsername = localStorage.getItem('savedUsername');
 
   if (newPass) {
-    const passwordHash = await window.EduPassword.hash(newPass);
-    const { error } = await supabaseClient.from('users').update({ password: passwordHash }).eq('username', savedUsername);
-    if (error) alert('비밀번호 수정 오류:' + error.message);
-    else {
-      localStorage.setItem('savedAuthToken', passwordHash);
-      alert('비밀번호 수정 완료!');
-    }
+    await window.EduAuth.changePassword(newPass);
+    alert('비밀번호 수정 완료!');
   }
   if (newName) {
     if (savedUsername) {
@@ -1689,6 +1601,14 @@ function showMain() {
   showPanel('dashboard');
 }
 
+function hideMain() {
+  const mainApp = document.getElementById('main-app');
+  const loginScreen = document.getElementById('login-screen');
+  if (mainApp) mainApp.style.display = 'none';
+  if (loginScreen) loginScreen.style.display = 'flex';
+  if (typeof closeMobileMenu === 'function') closeMobileMenu();
+}
+
 function showPanel(panelId) {
   console.log(`Switching to panel: ${panelId}`);
 
@@ -2209,17 +2129,12 @@ function setupAdminNav() {
 }
 
 function setupCodingOnNav() {
-  const role = String(localStorage.getItem('savedRole') || currentUserRole || 'user').toLowerCase();
   const navCodingOn = document.getElementById('nav-codingon');
   const sideNavCodingOn = document.getElementById('side-nav-codingon');
 
-  if (role === 'student' || role === 'admin') {
-    if (navCodingOn) navCodingOn.style.display = 'inline-block';
-    if (sideNavCodingOn) sideNavCodingOn.style.display = 'block';
-  } else {
-    if (navCodingOn) navCodingOn.style.display = 'none';
-    if (sideNavCodingOn) sideNavCodingOn.style.display = 'none';
-  }
+  // 코딩온 누구나 가능하게 (권한 체크 제거)
+  if (navCodingOn) navCodingOn.style.display = 'inline-block';
+  if (sideNavCodingOn) sideNavCodingOn.style.display = 'block';
 }
 
 
@@ -2942,7 +2857,8 @@ function showRewardToast(message, tone = 'success') {
 window.showRewardToast = showRewardToast;
 
 function updateCoinDisplays(balance) {
-  const value = Number(balance || 0);
+  const numericBalance = Number(balance);
+  const value = Number.isFinite(numericBalance) ? numericBalance : 0;
   const formatted = value.toLocaleString();
   window.currentUserCoin = value;
   ['coin-balance', 'shop-coin-balance'].forEach(id => {
@@ -2953,6 +2869,12 @@ function updateCoinDisplays(balance) {
   });
 }
 window.updateCoinDisplays = updateCoinDisplays;
+
+function toStatNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+window.toStatNumber = toStatNumber;
 
 async function syncStatsAndRender() {
   try {
@@ -3067,7 +2989,7 @@ async function awardDailyXP(action) {
     // 6. DB 업데이트 (XP만 더함. 레벨업은 syncStatsAndRender가 처리함)
     const { error: updateError } = await supabaseClient
       .from('users')
-      .update({ xp: (user.xp || 0) + inc })
+      .update({ xp: toStatNumber(user.xp) + inc })
       .eq('username', username);
 
     if (!updateError) {
@@ -3820,6 +3742,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (!user) {
+    hideMain();
     showLogin();
     return;
   }
@@ -4707,7 +4630,7 @@ async function loadUserFromDashboardValues() {
   // ✅ Supabase에서 사용자 찾기
   const { data, error } = await supabaseClient
     .from('users')
-    .select('*')
+    .select(SAFE_USER_COLUMNS)
     .eq('username', username)
     .maybeSingle();
 
@@ -4929,24 +4852,16 @@ async function changePassword() {
 
   statusEl.innerText = "⏳ 비밀번호 변경 중...";
 
-  // ✅ DB 업데이트
-  const passwordHash = await window.EduPassword.hash(newPass);
-  const { error: upErr } = await supabaseClient
-    .from("users")
-    .update({ password: passwordHash })
-    .eq("username", oldUsername);
-
-  if (upErr) {
-    statusEl.innerText = "❌ 비밀번호 변경 실패: " + upErr.message;
+  try {
+    await window.EduAuth.changePassword(newPass);
+  } catch (err) {
+    statusEl.innerText = "❌ 비밀번호 변경 실패: " + err.message;
     return;
   }
 
   // 성공 → 입력창 비우기
   document.getElementById("profile-newpass").value = "";
   document.getElementById("profile-newpass2").value = "";
-  if (localStorage.getItem('savedUsername') === oldUsername) {
-    localStorage.setItem('savedAuthToken', passwordHash);
-  }
   statusEl.innerText = "✅ 비밀번호가 변경되었습니다.";
 }
 
@@ -5481,14 +5396,14 @@ window.useItem = async function (id, itemName, currentStatus = false, imageUrl =
             if (coinReadErr) throw coinReadErr;
             const { error: coinErr } = await supabaseClient
               .from('users')
-              .update({ coin_balance: (uData?.coin_balance || 0) + luckyBoxReward.val })
+              .update({ coin_balance: toStatNumber(uData?.coin_balance) + luckyBoxReward.val })
               .eq('username', username);
             if (coinErr) throw coinErr;
           }
         } else if (luckyBoxReward.type === 'exp') {
           // 🆙 XP 즉시 추가 및 동기화
           const { data: uData } = await supabaseClient.from('users').select('xp').eq('username', username).single();
-          const currentXp = Number.isFinite(uData?.xp) ? uData.xp : 0;
+          const currentXp = toStatNumber(uData?.xp);
           await supabaseClient.from('users').update({ xp: currentXp + luckyBoxReward.val }).eq('username', username);
           await syncStatsAndRender();
         }
@@ -6725,6 +6640,59 @@ function getTodayKST() {
   return `${y}-${m}-${d}`;
 }
 
+let dailyQuestEnsureState = null;
+
+async function ensureDailyQuests(username, today) {
+  const key = `${username}:${today}`;
+  if (dailyQuestEnsureState?.key === key) {
+    return dailyQuestEnsureState.promise;
+  }
+
+  const promise = (async () => {
+    let { data: myQuests, error } = await supabaseClient
+      .from('user_daily_quests')
+      .select('*, quests(*)')
+      .eq('username', username)
+      .eq('assigned_date', today);
+
+    if (error) throw error;
+    if (myQuests && myQuests.length > 0) return myQuests;
+
+    const { data: allQuests, error: questError } = await supabaseClient
+      .from('quests')
+      .select('*');
+
+    if (questError) throw questError;
+    if (!allQuests || allQuests.length === 0) return [];
+
+    const shuffled = [...allQuests].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 3);
+
+    const insertData = selected.map(q => ({
+      username,
+      quest_id: q.id,
+      assigned_date: today,
+      current_value: 0,
+      status: 'assigned'
+    }));
+
+    const { data: inserted, error: insErr } = await supabaseClient
+      .from('user_daily_quests')
+      .insert(insertData)
+      .select('*, quests(*)');
+
+    if (insErr) throw insErr;
+    return inserted || [];
+  })();
+
+  dailyQuestEnsureState = { key, promise };
+  try {
+    return await promise;
+  } finally {
+    if (dailyQuestEnsureState?.key === key) dailyQuestEnsureState = null;
+  }
+}
+
 async function initDailyQuests() {
   const listEl = $id('daily-quest-list');
   if (!listEl) return;
@@ -6736,40 +6704,7 @@ async function initDailyQuests() {
   console.log('Quest Init for Date:', today);
 
   try {
-    // 1. 오늘의 퀘스트가 이미 할당되었는지 확인
-    let { data: myQuests, error } = await supabaseClient
-      .from('user_daily_quests')
-      .select('*, quests(*)')
-      .eq('username', username)
-      .eq('assigned_date', today);
-
-    if (error) throw error;
-
-    // 2. 할당된 퀘스트가 없으면 무작위로 3개 할당
-    if (!myQuests || myQuests.length === 0) {
-      const { data: allQuests } = await supabaseClient.from('quests').select('*');
-      if (!allQuests || allQuests.length === 0) return;
-
-      const shuffled = [...allQuests].sort(() => 0.5 - Math.random());
-      const selected = shuffled.slice(0, 3);
-
-      const insertData = selected.map(q => ({
-        username,
-        quest_id: q.id,
-        assigned_date: today,
-        current_value: 0,
-        status: 'assigned'
-      }));
-
-      const { data: inserted, error: insErr } = await supabaseClient
-        .from('user_daily_quests')
-        .insert(insertData)
-        .select('*, quests(*)');
-
-      if (insErr) throw insErr;
-      myQuests = inserted;
-    }
-
+    const myQuests = await ensureDailyQuests(username, today);
     renderDailyQuests(myQuests);
   } catch (err) {
     console.error('Quest Loading Error:', err);
@@ -6782,11 +6717,18 @@ function renderDailyQuests(userQuests) {
   if (!listEl) return;
   listEl.innerHTML = '';
 
-  userQuests.forEach(uq => {
+  // 퀘스트가 6개씩 뜨는 현상 방지: 최대 3개만 표시
+  const questsToShow = userQuests.slice(0, 3);
+
+  questsToShow.forEach(uq => {
     const q = uq.quests;
     if (!q) return;
 
-    const pct = Math.min(100, Math.round((uq.current_value / q.target_value) * 100));
+    const currentValue = toStatNumber(uq.current_value);
+    const targetValue = Math.max(1, toStatNumber(q.target_value, 1));
+    const rewardCoin = toStatNumber(q.reward_coin);
+    const rewardXp = toStatNumber(q.reward_xp);
+    const pct = Math.min(100, Math.round((currentValue / targetValue) * 100));
     const isCompleted = uq.status === 'completed' || uq.status === 'rewarded';
     const isRewarded = uq.status === 'rewarded';
 
@@ -6805,13 +6747,13 @@ function renderDailyQuests(userQuests) {
     item.innerHTML = `
       <div class="quest-top">
         <span class="quest-title">${q.title}</span>
-        <span class="quest-reward">+${q.reward_coin}포인트 / +${q.reward_xp}XP</span>
+        <span class="quest-reward">+${rewardCoin}포인트 / +${rewardXp}XP</span>
       </div>
       <div class="quest-progress-bg">
         <div class="quest-progress-fill" style="width: ${pct}%"></div>
       </div>
       <div class="quest-bottom">
-        <span style="font-size:0.7rem; color:#94a3b8;">(${uq.current_value}/${q.target_value})</span>
+        <span style="font-size:0.7rem; color:#94a3b8;">(${currentValue}/${targetValue})</span>
         ${actionBtn}
       </div>
     `;
@@ -6827,17 +6769,8 @@ async function updateQuestProgress(questType, increment = 1) {
   console.log(`Quest Progress Update Attempt: ${questType} (assign_date: ${today})`);
 
   try {
-    const { data: uqs, error } = await supabaseClient
-      .from('user_daily_quests')
-      .select('*, quests(*)')
-      .eq('username', username)
-      .eq('assigned_date', today)
-      .eq('status', 'assigned');
-
-    if (error) {
-      console.error('Quest Progress Error (DB):', error);
-      return;
-    }
+    const uqs = (await ensureDailyQuests(username, today))
+      .filter(uq => uq.status === 'assigned');
 
     if (!uqs || uqs.length === 0) {
       console.log('No matching assigned quests found for today.');
@@ -6854,13 +6787,18 @@ async function updateQuestProgress(questType, increment = 1) {
 
     console.log(`Matching Quest Found: ${target.quests.title}. Updating progress...`);
 
-    const newValue = target.current_value + increment;
-    const newStatus = newValue >= target.quests.target_value ? 'completed' : 'assigned';
+    const currentValue = toStatNumber(target.current_value);
+    const incrementValue = toStatNumber(increment, 1);
+    const targetValue = Math.max(1, toStatNumber(target.quests.target_value, 1));
+    const newValue = Math.min(targetValue, currentValue + incrementValue);
+    const newStatus = newValue >= targetValue ? 'completed' : 'assigned';
 
-    await supabaseClient
+    const { error: progressError } = await supabaseClient
       .from('user_daily_quests')
       .update({ current_value: newValue, status: newStatus })
-      .eq('id', target.id);
+      .eq('id', target.id)
+      .eq('username', username);
+    if (progressError) throw progressError;
 
     // 대시보드인 경우 또는 대시보드로 돌아갈 때를 대비해 DOM이 있으면 업데이트
     const listEl = document.getElementById('daily-quest-list');
@@ -6878,39 +6816,53 @@ async function updateQuestProgress(questType, increment = 1) {
 }
 
 async function claimQuestReward(userQuestId) {
-  const btn = event?.target;
+  const btn = globalThis.event?.target || null;
   if (btn) btn.disabled = true;
+  const username = localStorage.getItem('savedUsername');
+  if (!username) {
+    if (btn) btn.disabled = false;
+    return;
+  }
 
   try {
     const { data: uq, error } = await supabaseClient
       .from('user_daily_quests')
       .select('*, quests(*)')
       .eq('id', userQuestId)
+      .eq('username', username)
       .single();
 
-    if (error || !uq || uq.status !== 'completed') return;
-
-    const { data: user } = await supabaseClient.from('users').select('coin_balance, xp').eq('username', uq.username).single();
-    if (user) {
-      const multiplier = typeof getXpMultiplier === 'function' ? getXpMultiplier() : 1;
-      const rewardXp = (uq.quests.reward_xp || 0) * multiplier;
-      console.log('User stats before reward:', user);
-      await supabaseClient.from('users').update({
-        coin_balance: (user.coin_balance || 0) + uq.quests.reward_coin,
-        xp: (user.xp || 0) + rewardXp
-      }).eq('username', uq.username);
-
-      if (multiplier > 1) {
-        showRewardToast(`경험치 2배 적용! 퀘스트 보상 ${uq.quests.reward_xp}XP → ${rewardXp}XP`);
-      }
+    if (error || !uq || uq.status !== 'completed') {
+      if (btn) btn.disabled = false;
+      return;
     }
 
-    await supabaseClient
+    const { data: user, error: userError } = await supabaseClient.from('users').select('coin_balance, xp').eq('username', uq.username).single();
+    if (userError || !user) throw userError || new Error('User not found for quest reward.');
+
+    const multiplier = typeof getXpMultiplier === 'function' ? getXpMultiplier() : 1;
+    const rewardCoin = toStatNumber(uq.quests.reward_coin);
+    const baseRewardXp = toStatNumber(uq.quests.reward_xp);
+    const rewardXp = baseRewardXp * multiplier;
+    console.log('User stats before reward:', user);
+    const { error: rewardError } = await supabaseClient.from('users').update({
+      coin_balance: toStatNumber(user.coin_balance) + rewardCoin,
+      xp: toStatNumber(user.xp) + rewardXp
+    }).eq('username', uq.username);
+    if (rewardError) throw rewardError;
+
+    if (multiplier > 1) {
+      showRewardToast(`경험치 2배 적용! 퀘스트 보상 ${baseRewardXp}XP → ${rewardXp}XP`);
+    }
+
+    const { error: statusError } = await supabaseClient
       .from('user_daily_quests')
       .update({ status: 'rewarded' })
-      .eq('id', userQuestId);
+      .eq('id', userQuestId)
+      .eq('username', username);
+    if (statusError) throw statusError;
 
-    alert(`🎉 보상이 지급되었습니다! (+${uq.quests.reward_coin}포인트, +${(uq.quests.reward_xp || 0) * (getXpMultiplier ? getXpMultiplier() : 1)}XP)`);
+    alert(`🎉 보상이 지급되었습니다! (+${rewardCoin}포인트, +${rewardXp}XP)`);
 
     syncStatsAndRender(); // 먼저 스탯 갱신
     initDailyQuests();    // 퀘스트 UI 갱신
@@ -6935,7 +6887,7 @@ window.loadUserInfo = async function () {
   try {
     const { data: user, error } = await supabaseClient
       .from('users')
-      .select('*')
+      .select(SAFE_USER_COLUMNS)
       .eq('username', username)
       .maybeSingle();
 
