@@ -91,6 +91,10 @@
     return callAuth('confirmPasswordReset', { resetId, code, newPassword });
   }
 
+  async function claimQuestReward(userQuestId) {
+    return callAuth('claimQuestReward', { userQuestId });
+  }
+
   async function signup(profile) {
     return callAuth('signup', profile);
   }
@@ -166,6 +170,7 @@
     signup,
     requestPasswordReset,
     confirmPasswordReset,
+    claimQuestReward,
     adminSetTempPassword,
     adminCreateUser,
     adminUpdateRole,

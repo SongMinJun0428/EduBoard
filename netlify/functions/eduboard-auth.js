@@ -192,6 +192,14 @@ async function updateRows(table, params, payload) {
   });
 }
 
+async function updateRowsReturning(table, params, payload) {
+  return supabaseRequest(`${table}${qs(params)}`, {
+    method: "PATCH",
+    headers: { prefer: "return=representation" },
+    body: JSON.stringify(payload)
+  });
+}
+
 async function deleteRows(table, params) {
   return supabaseRequest(`${table}${qs(params)}`, {
     method: "DELETE",
@@ -378,6 +386,69 @@ async function handleAction(event, body) {
     if (newPassword.length < 8) throw new Error("비밀번호는 8자 이상이어야 합니다.");
     await updateRows("users", { username: `eq.${session.user.username}` }, { password: hashPassword(newPassword) });
     return response(200, { ok: true });
+  }
+
+  if (action === "claimQuestReward") {
+    const session = await requireSession(requestSessionToken);
+    const username = session.user.username;
+    const userQuestId = String(body.userQuestId || "").trim();
+    if (!userQuestId) throw new Error("Quest reward target is missing.");
+
+    const uq = await maybeSingle("user_daily_quests", {
+      select: "id,username,status,quests(reward_coin,reward_xp)",
+      id: `eq.${userQuestId}`,
+      username: `eq.${username}`
+    });
+    if (!uq || uq.status !== "completed" || !uq.quests) {
+      throw new Error("No completed quest reward is available.");
+    }
+
+    const user = await maybeSingle("users", {
+      select: "coin_balance,xp,level",
+      username: `eq.${username}`
+    });
+    if (!user) throw new Error("User not found for quest reward.");
+
+    const rewardCoin = cleanNumber(uq.quests.reward_coin) || 0;
+    const rewardXp = cleanNumber(uq.quests.reward_xp) || 0;
+    const need = 20;
+    let coinBalance = (cleanNumber(user.coin_balance) || 0) + rewardCoin;
+    let xp = (cleanNumber(user.xp) || 0) + rewardXp;
+    let level = cleanNumber(user.level) || 1;
+    let levelUps = 0;
+
+    if (xp >= need) {
+      levelUps = Math.floor(xp / need);
+      level += levelUps;
+      xp = xp % need;
+      coinBalance += levelUps * 10;
+    }
+
+    const claimed = await updateRowsReturning("user_daily_quests", {
+      id: `eq.${userQuestId}`,
+      username: `eq.${username}`,
+      status: "eq.completed"
+    }, { status: "rewarded" });
+    if (!Array.isArray(claimed) || !claimed.length) {
+      throw new Error("This quest reward has already been claimed.");
+    }
+
+    await updateRows("users", { username: `eq.${username}` }, {
+      coin_balance: coinBalance,
+      xp,
+      level
+    });
+
+    return response(200, {
+      ok: true,
+      rewardCoin,
+      rewardXp,
+      level,
+      xp,
+      coinBalance,
+      levelUps,
+      bonusCoin: levelUps * 10
+    });
   }
 
   if (action === "adminSetTempPassword") {

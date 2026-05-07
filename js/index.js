@@ -6813,6 +6813,23 @@ async function claimQuestReward(userQuestId) {
   }
 
   try {
+    if (!window.EduAuth?.claimQuestReward) {
+      throw new Error('Quest reward API is not loaded.');
+    }
+
+    const result = await window.EduAuth.claimQuestReward(userQuestId);
+    const serverRewardCoin = toStatNumber(result.rewardCoin);
+    const serverRewardXp = toStatNumber(result.rewardXp);
+    const serverBonusCoin = toStatNumber(result.bonusCoin);
+    const serverLevelUps = toStatNumber(result.levelUps);
+    const levelText = serverLevelUps > 0 ? `\nLevel up! Lv ${result.level} (+${serverBonusCoin} bonus points)` : '';
+
+    alert(`Quest reward received! (+${serverRewardCoin} points, +${serverRewardXp} XP)${levelText}`);
+
+    await syncStatsAndRender();
+    await initDailyQuests();
+    return;
+
     const { data: uq, error } = await supabaseClient
       .from('user_daily_quests')
       .select('*, quests(*)')
