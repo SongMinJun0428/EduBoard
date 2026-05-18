@@ -214,8 +214,28 @@ const toAdminNumber = (value, fallback = 0) => {
         if (error) return toast('진로 결과 로드 실패');
         
         currentJobData = data || [];
-        renderJobTable(currentJobData);
-        renderJobStats(currentJobData);
+        applyJobFilters();
+    }
+
+    function applyJobFilters() {
+        const kw = ($('#job-search')?.value || '').toLowerCase().trim();
+        const typeFilter = $('#job-type-filter')?.value || 'all';
+
+        const filtered = currentJobData.filter(r => {
+            const isFutureJob = r.details && r.details.game_type === 'futurejob';
+            if (typeFilter === 'futurejob' && !isFutureJob) return false;
+            if (typeFilter === 'job' && isFutureJob) return false;
+
+            const matchesSearch = !kw || 
+                (r.name || '').toLowerCase().includes(kw) || 
+                (r.main_type || '').toLowerCase().includes(kw) ||
+                (r.top_tags || '').toLowerCase().includes(kw);
+
+            return matchesSearch;
+        });
+
+        renderJobTable(filtered);
+        renderJobStats(filtered);
     }
 
     function renderJobTable(data) {
@@ -228,10 +248,23 @@ const toAdminNumber = (value, fallback = 0) => {
             const tr = document.createElement('tr');
             const dateStr = new Date(row.created_at).toLocaleString('ko-KR', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
             
+            const isFutureJob = row.details && row.details.game_type === 'futurejob';
+            const testTypeBadge = isFutureJob 
+                ? `<span class="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300">핵심역량</span>`
+                : `<span class="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">유망직업</span>`;
+
+            const typeBadgeColor = isFutureJob
+                ? 'bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300'
+                : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300';
+
             tr.innerHTML = `
                 <td data-label="검사 일시" class="px-4 py-3 text-xs text-gray-400">${dateStr}</td>
-                <td data-label="학생 정보" class="px-4 py-3 font-medium">${escapeHtml(row.name || '익명')} (${row.grade || '-'}학년)</td>
-                <td data-label="주요 유형" class="px-4 py-3"><span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">${escapeHtml(row.main_type || '-')}</span></td>
+                <td data-label="학생 정보" class="px-4 py-3 font-medium flex items-center flex-wrap gap-1">
+                    <span>${escapeHtml(row.name || '익명')}</span> 
+                    <span class="text-xs text-gray-500">(${row.grade || '-'})</span>
+                    ${testTypeBadge}
+                </td>
+                <td data-label="주요 유형" class="px-4 py-3"><span class="px-2 py-0.5 rounded-full ${typeBadgeColor} text-xs font-bold">${escapeHtml(row.main_type || '-')}</span></td>
                 <td data-label="핵심 키워드" class="px-4 py-3 text-xs text-gray-500">${escapeHtml(row.top_tags || '-')}</td>
                 <td data-label="작업" class="px-4 py-3 text-center">
                     <div class="flex justify-center gap-2">
@@ -297,18 +330,33 @@ const toAdminNumber = (value, fallback = 0) => {
     function exportJobResultsToCSV() {
         if (!currentJobData.length) return toast('내보낼 데이터가 없습니다.');
 
-        const headers = ['검사일시', '이름', '학년', '주요유형', '키워드', 'AI리포트', '답변이유'];
+        const headers = ['검사종류', '검사일시', '이름', '학년', '주요유형/역량', '핵심키워드', '상세내용(AI리포트/TOP 6)', '답변이유/점수'];
         const rows = currentJobData.map(r => {
             const d = r.details || {};
-            const reasons = d.categoryReasons ? Object.values(d.categoryReasons).join(' | ') : '';
+            const isFutureJob = d.game_type === 'futurejob';
+            
+            const testTypeName = isFutureJob ? '미래직업 핵심역량 진단' : 'AI 미래 유망 직업 진단';
+            
+            let detailReport = '';
+            let detailData = '';
+            
+            if (isFutureJob) {
+                detailReport = d.top_6 ? d.top_6.join(', ') : '';
+                detailData = d.scores ? Object.entries(d.scores).map(([k,v]) => `${k}:${v}`).join(' | ') : '';
+            } else {
+                detailReport = d.ai_report || '';
+                detailData = d.categoryReasons ? Object.values(d.categoryReasons).join(' | ') : '';
+            }
+            
             return [
+                testTypeName,
                 new Date(r.created_at).toLocaleString(),
                 r.name || '',
                 r.grade || '',
                 r.main_type || '',
                 r.top_tags || '',
-                (d.ai_report || '').replace(/\n/g, ' '),
-                reasons.replace(/\n/g, ' ')
+                detailReport.replace(/\n/g, ' '),
+                detailData.replace(/\n/g, ' ')
             ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
         });
 
@@ -316,7 +364,7 @@ const toAdminNumber = (value, fallback = 0) => {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", `job_results_${new Date().toISOString().slice(0,10)}.csv`);
+        link.setAttribute("download", `career_results_${new Date().toISOString().slice(0,10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -324,15 +372,8 @@ const toAdminNumber = (value, fallback = 0) => {
     }
 
     // Job Search/Filter
-    $('#job-search')?.addEventListener('input', (e) => {
-        const kw = e.target.value.toLowerCase();
-        const filtered = currentJobData.filter(r => 
-            (r.name || '').toLowerCase().includes(kw) || 
-            (r.main_type || '').toLowerCase().includes(kw) ||
-            (r.top_tags || '').toLowerCase().includes(kw)
-        );
-        renderJobTable(filtered);
-    });
+    $('#job-search')?.addEventListener('input', applyJobFilters);
+    $('#job-type-filter')?.addEventListener('change', applyJobFilters);
 
     $('#job-csv-out')?.addEventListener('click', exportJobResultsToCSV);
 
@@ -363,7 +404,112 @@ const toAdminNumber = (value, fallback = 0) => {
         const d = row.details || {};
         const content = $('#job-detail-content');
         if (!content) return;
-        
+
+        if (d.game_type === 'futurejob') {
+            const detailScores = d.scores || {};
+            const top6Names = d.top_6 || [];
+            
+            const ALL_COMPS = {
+                "문제해결력": "복잡한 문제를 분석하고 창의적 해결책을 찾는 능력",
+                "의사소통": "상대방에게 생각을 명확하게 전달하고 경청하는 능력",
+                "디지털리터러시": "디지털 도구·데이터를 비판적으로 활용하는 능력",
+                "협업능력": "다양한 사람들과 목표를 위해 함께 일하는 능력",
+                "비판적사고": "정보를 분석해 논리적으로 판단하는 능력",
+                "창의적사고": "기존 틀을 벗어나 새로운 아이디어를 만드는 능력",
+                "자기관리": "시간·감정·목표를 스스로 계획하고 실행하는 능력",
+                "공감능력": "타인의 감정을 이해하고 적절히 반응하는 능력",
+                "적응력": "변화하는 환경에 빠르게 적응하고 유연하게 대처하는 능력",
+                "윤리적판단": "가치와 원칙에 따라 올바른 판단을 내리는 능력",
+                "정보분석": "데이터와 정보를 수집·해석해 의미를 찾는 능력",
+                "리더십": "목표를 향해 팀을 이끌고 동기를 부여하는 능력"
+            };
+            const COMP_NAMES = Object.keys(ALL_COMPS);
+            const PALETTE = [
+                '#ff5e7d', '#4ea8ff', '#ffc83d', '#3ecf8e',
+                '#a78bfa', '#f97316', '#06b6d4', '#ec4899',
+                '#84cc16', '#f59e0b', '#8b5cf6', '#14b8a6'
+            ];
+
+            const sorted = COMP_NAMES.map(c => ({ c, v: detailScores[c] || 0 })).sort((a, b) => b.v - a.v);
+            const top6 = sorted.slice(0, 6);
+            
+            const medals = ['🥇 1위', '🥈 2위', '🥉 3위', '🏅 4위', '🏅 5위', '🏅 6위'];
+            const rankColors = ['text-amber-500', 'text-slate-400', 'text-blue-400', 'text-indigo-500', 'text-indigo-500', 'text-indigo-500'];
+            const borderColors = [
+                'border-amber-200 bg-amber-50/10 dark:border-amber-900/50 dark:bg-amber-950/20', 
+                'border-slate-200 bg-slate-50/10 dark:border-slate-800/50 dark:bg-slate-900/20', 
+                'border-blue-200 bg-blue-50/10 dark:border-blue-900/50 dark:bg-blue-950/20', 
+                'border-indigo-100 bg-indigo-50/5 dark:border-indigo-900/30 dark:bg-indigo-950/10', 
+                'border-indigo-100 bg-indigo-50/5 dark:border-indigo-900/30 dark:bg-indigo-950/10', 
+                'border-indigo-100 bg-indigo-50/5 dark:border-indigo-900/30 dark:bg-indigo-950/10'
+            ];
+
+            let top6Html = top6.map(({ c, v }, i) => {
+                const colorIdx = COMP_NAMES.indexOf(c);
+                const color = PALETTE[colorIdx] || '#6366f1';
+                return `
+                    <div class="flex items-center gap-4 p-4 rounded-2xl border-2 ${borderColors[i]} shadow-sm transition-all hover:scale-[1.01]">
+                        <div class="text-lg font-black ${rankColors[i]} min-w-[65px]">${medals[i]}</div>
+                        <div class="flex-1">
+                            <div class="font-bold text-gray-800 dark:text-gray-200 text-sm md:text-base">${c}</div>
+                            <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">${ALL_COMPS[c] || ''}</div>
+                        </div>
+                        <div class="text-xl font-black" style="color: ${color}">${v}점</div>
+                    </div>
+                `;
+            }).join('');
+
+            let fullListHtml = sorted.map(({ c, v }, i) => {
+                const colorIdx = COMP_NAMES.indexOf(c);
+                const color = PALETTE[colorIdx] || '#6366f1';
+                const isTop6 = top6Names.includes(c);
+                return `
+                    <div class="flex justify-between items-center p-3 border rounded-xl dark:border-gray-700 bg-white dark:bg-gray-850 hover:shadow-sm transition-all" style="border-left-width: 4px; border-left-color: ${color}">
+                        <span class="text-xs md:text-sm font-bold ${isTop6 ? 'text-gray-850 dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'}" style="color: ${isTop6 ? color : ''}">${c}</span>
+                        <span class="font-mono text-sm md:text-base font-bold" style="color: ${color}">${v}</span>
+                    </div>
+                `;
+            }).join('');
+
+            content.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <!-- Left: Info & Top 6 -->
+                    <div class="lg:col-span-7 space-y-6">
+                        <div class="bg-gradient-to-br from-pink-50 to-indigo-50 dark:from-pink-950/20 dark:to-indigo-950/20 p-6 rounded-3xl border border-pink-100/50 dark:border-pink-900/30">
+                            <div class="text-[10px] font-bold text-pink-600 dark:text-pink-400 uppercase mb-2 tracking-widest opacity-80">미래직업 핵심역량 진단 결과</div>
+                            <div class="font-black text-2xl text-slate-800 dark:text-slate-100 mb-1">${escapeHtml(row.name || '익명')}</div>
+                            <div class="text-sm text-indigo-600 dark:text-indigo-400 font-semibold">${row.grade}학년 · ID: ${row.username}</div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h4 class="text-base font-black flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                                <i class="fas fa-trophy text-amber-500"></i>
+                                핵심 역량 TOP 6
+                            </h4>
+                            <div class="space-y-2">
+                                ${top6Html}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: All 12 Indicators -->
+                    <div class="lg:col-span-5 space-y-6">
+                        <div class="space-y-4">
+                            <h4 class="text-base font-black flex items-center gap-2 text-gray-800 dark:text-gray-100">
+                                <i class="fas fa-chart-bar text-indigo-600"></i>
+                                전체 12가지 역량 수치
+                            </h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                                ${fullListHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            openModal('#modal-job-detail');
+            return;
+        }
+
         let reasonsHtml = '';
         let reasonsObj = d.categoryReasons;
         if (typeof reasonsObj === 'string') {

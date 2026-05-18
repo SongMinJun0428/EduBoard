@@ -1,0 +1,2134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>미래 직업 핵심 역량 진단 & 저장소</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Gmarket+Sans:wght@300;500;700&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Supabase Client JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            /* Premium Light Aurora Pastel Color Palette */
+            --bg: #f8fafc;
+            --surface: rgba(255, 255, 255, 0.75);
+            --card: #ffffff;
+            --border: rgba(99, 102, 241, 0.12);
+            --border-hover: rgba(99, 102, 241, 0.25);
+            --text: #1e293b;
+            --muted: #64748b;
+            --a: #ec4899;      /* Option A Pink */
+            --b: #6366f1;      /* Option B Indigo/Blue */
+            --gold: #f59e0b;
+            --green: #10b981;
+            --purple: #8b5cf6;
+            --shadow: 0 12px 40px -10px rgba(99, 102, 241, 0.06);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+            --border-radius-lg: 24px;
+            --border-radius-md: 16px;
+            --border-radius-sm: 10px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Noto Sans KR', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* ── Animated Background Blur bubbles ── */
+        .bg-blur {
+            position: fixed;
+            filter: blur(90px);
+            z-index: -1;
+            border-radius: 50%;
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        .bg-blur-1 {
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, #6366f1, transparent 70%);
+        }
+
+        .bg-blur-2 {
+            bottom: -15%;
+            right: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, #ec4899, transparent 70%);
+        }
+
+        /* ── Header & Navigation ── */
+        .app-header {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: rgba(248, 250, 252, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .logo-icon {
+            font-size: 1.5rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        .logo-text {
+            font-family: 'Gmarket Sans', sans-serif;
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--b), var(--a));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 6px;
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid var(--border);
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .nav-tab {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            padding: 8px 16px;
+            border-radius: 9px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-tab:hover {
+            color: var(--text);
+            background: rgba(99, 102, 241, 0.03);
+        }
+
+        .nav-tab.active {
+            color: #fff;
+            background: linear-gradient(135deg, var(--b), #4f46e5);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+        }
+
+        /* ── Container Layout ── */
+        .app-container {
+            flex: 1;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px 16px 80px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .view-section {
+            display: none;
+            width: 100%;
+            animation: fadeIn 0.4s ease-out both;
+        }
+
+        .view-section.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Config & Intro Section ── */
+        #intro-view {
+            text-align: center;
+            padding: 30px 0;
+            gap: 24px;
+        }
+
+        .intro-eyebrow {
+            display: inline-block;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 100px;
+            padding: 6px 18px;
+            font-size: 0.72rem;
+            letter-spacing: 2px;
+            color: var(--b);
+            text-transform: uppercase;
+            font-family: 'Gmarket Sans', sans-serif;
+            font-weight: 700;
+        }
+
+        #intro-view h1 {
+            font-family: 'Gmarket Sans', sans-serif;
+            font-size: clamp(1.8rem, 5.5vw, 2.8rem);
+            font-weight: 700;
+            line-height: 1.25;
+            letter-spacing: -1px;
+            color: var(--text);
+        }
+
+        #intro-view h1 em {
+            font-style: normal;
+            background: linear-gradient(135deg, var(--b), var(--a));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #intro-view p {
+            font-size: 0.95rem;
+            color: var(--muted);
+            line-height: 1.7;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .intro-form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--border-radius-lg);
+            padding: 24px;
+            max-width: 480px;
+            width: 100%;
+            margin: 15px auto 0;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            text-align: left;
+        }
+
+        .form-title {
+            font-family: 'Gmarket Sans', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--b);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .db-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .db-input-group label {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .db-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: var(--border-radius-sm);
+            border: 1px solid var(--border);
+            background: #ffffff;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: var(--text);
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .db-input:focus {
+            border-color: var(--b);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .start-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--b), #4f46e5);
+            border: none;
+            border-radius: 14px;
+            padding: 15px 20px;
+            color: #fff;
+            font-family: 'Gmarket Sans', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.2);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .start-btn:active {
+            transform: translateY(0);
+        }
+
+        /* ── Game Section ── */
+        .game-top {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
+        .q-label {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .q-label strong {
+            color: var(--b);
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+
+        .prog-track {
+            flex: 1;
+            height: 6px;
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .prog-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--a), var(--b));
+            border-radius: 10px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .score-peek {
+            font-size: 0.78rem;
+            color: var(--muted);
+            white-space: nowrap;
+            font-family: 'Gmarket Sans', sans-serif;
+        }
+
+        .score-peek strong {
+            color: var(--green);
+            font-size: 1.05rem;
+        }
+
+        .scenario-wrap {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scenario-wrap::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--b), transparent);
+        }
+
+        .scenario-tag {
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 10px;
+            font-family: 'Gmarket Sans', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .scenario-txt {
+            font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+            line-height: 1.8;
+            font-weight: 500;
+            color: var(--text);
+            word-break: keep-all;
+        }
+
+        .choose-prompt {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-bottom: 14px;
+            font-weight: 600;
+        }
+
+        .choices {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .choice {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px 20px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 170px;
+            justify-content: center;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .choice.a-card:hover {
+            border-color: var(--a);
+            box-shadow: 0 8px 25px rgba(236, 72, 153, 0.12);
+            transform: translateY(-3px);
+        }
+
+        .choice.b-card:hover {
+            border-color: var(--b);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.12);
+            transform: translateY(-3px);
+        }
+
+        .choice.chosen.a-card {
+            border-color: var(--a);
+            background: rgba(236, 72, 153, 0.05);
+            box-shadow: 0 0 25px rgba(236, 72, 153, 0.2);
+            transform: scale(1.02);
+        }
+
+        .choice.chosen.b-card {
+            border-color: var(--b);
+            background: rgba(99, 102, 241, 0.05);
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.2);
+            transform: scale(1.02);
+        }
+
+        .choice.dimmed {
+            opacity: 0.15;
+            pointer-events: none;
+            transform: scale(0.96);
+        }
+
+        .choice-letter {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .a-card .choice-letter { color: var(--a); }
+        .b-card .choice-letter { color: var(--b); }
+
+        .choice-comp {
+            font-family: 'Gmarket Sans', sans-serif;
+            font-size: clamp(0.95rem, 2vw, 1.15rem);
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .choice-desc {
+            font-size: 0.78rem;
+            color: var(--muted);
+            line-height: 1.5;
+            max-width: 250px;
+            word-break: keep-all;
+        }
+
+        /* ── Live Scores Section ── */
+        .live-scores {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
+        .ls-title {
+            font-size: 0.75rem;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 14px;
+            font-family: 'Gmarket Sans', sans-serif;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ls-title span {
+            color: var(--b);
+        }
+
+        .ls-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ls-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ls-name {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text);
+            width: 90px;
+            flex-shrink: 0;
+        }
+
+        .ls-bar-wrap {
+            flex: 1;
+            height: 6px;
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .ls-bar {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, var(--b), var(--a));
+            transition: width 0.4s cubic-bezier(0.1, 0.8, 0.25, 1);
+        }
+
+        .ls-num {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--b);
+            min-width: 20px;
+            text-align: right;
+        }
+
+        /* ── Premium Syncing Loader ── */
+        .premium-loader {
+            width: 80px;
+            height: 80px;
+            border: 5px solid rgba(99, 102, 241, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--b);
+            border-bottom-color: var(--a);
+            animation: premium-spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            position: relative;
+        }
+
+        .premium-loader::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            bottom: 15px;
+            border: 5px solid rgba(236, 72, 153, 0.1);
+            border-radius: 50%;
+            border-left-color: var(--a);
+            border-right-color: var(--b);
+            animation: premium-spin-reverse 1s linear infinite;
+        }
+
+        @keyframes premium-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes premium-spin-reverse {
+            to { transform: rotate(-360deg); }
+        }
+
+        /* ── Result & Podium View ── */
+        #result-view {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .result-hero {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .result-hero p {
+            font-size: 0.72rem;
+            letter-spacing: 3px;
+            color: var(--green);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            font-family: 'Gmarket Sans', sans-serif;
+            font-weight: 700;
+        }
+
+        .result-hero h2 {
+            font-family: 'Gmarket Sans', sans-serif;
+            font-size: clamp(1.5rem, 4.5vw, 2.4rem);
+            font-weight: 700;
+            line-height: 1.3;
+            color: var(--text);
+        }
+
+        .result-hero h2 em {
+            font-style: normal;
+            background: linear-gradient(135deg, var(--b), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .podium {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .pod-item {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+            animation: rankIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+            box-shadow: var(--shadow);
+        }
+
+        .pod-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+        }
+
+        .pod-item.r1 { border-color: rgba(245, 158, 11, 0.35); }
+        .pod-item.r1::before { background: var(--gold); }
+        .pod-item.r2 { border-color: rgba(100, 116, 139, 0.2); }
+        .pod-item.r2::before { background: #cbd5e1; }
+        .pod-item.r3 { border-color: rgba(147, 197, 253, 0.2); }
+        .pod-item.r3::before { background: #93c5fd; }
+        .pod-item.r4, .pod-item.r5, .pod-item.r6 { border-color: rgba(99, 102, 241, 0.15); }
+        .pod-item.r4::before, .pod-item.r5::before, .pod-item.r6::before { background: var(--b); }
+
+        @keyframes rankIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .pod-rank {
+            font-size: 1.8rem;
+            min-width: 40px;
+            text-align: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+        }
+
+        .r1 .pod-rank { color: var(--gold); }
+        .r2 .pod-rank { color: #94a3b8; }
+        .r3 .pod-rank { color: #60a5fa; }
+        .r4 .pod-rank, .r5 .pod-rank, .r6 .pod-rank { color: var(--b); font-size: 1.25rem; }
+
+        .pod-info {
+            flex: 1;
+        }
+
+        .pod-name {
+            font-family: 'Gmarket Sans', sans-serif;
+            font-size: clamp(0.95rem, 2vw, 1.15rem);
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .pod-desc {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-top: 4px;
+            line-height: 1.55;
+            word-break: keep-all;
+        }
+
+        .pod-score {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--b);
+            min-width: 44px;
+            text-align: right;
+        }
+
+        .full-list-title {
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-top: 10px;
+            margin-bottom: 12px;
+            font-family: 'Gmarket Sans', sans-serif;
+            font-weight: 700;
+        }
+
+        .full-list {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 10px;
+        }
+
+        .full-item {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left-width: 4px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+        }
+
+        .full-item:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-hover);
+        }
+
+        .full-item-name {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .full-item-score {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .retry-btn {
+            width: 100%;
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            color: var(--b);
+            font-family: 'Gmarket Sans', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: var(--shadow);
+            margin-top: 10px;
+        }
+
+        .retry-btn:hover {
+            background: var(--b);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* ── Database Explorer card ── */
+        .db-explorer-header {
+            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .db-explorer-title h2 {
+            font-family: 'Gmarket Sans', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .db-explorer-title p {
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .search-bar-wrap {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 16px 14px 44px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: #ffffff;
+            font-family: inherit;
+            font-size: 0.88rem;
+            color: var(--text);
+            outline: none;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--b);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+        }
+
+        /* ── Class Live Analytics Dashboard Card ── */
+        .class-analytics-card {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--border);
+            border-radius: var(--border-radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .analytics-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .analytics-icon {
+            font-size: 1.5rem;
+            color: var(--b);
+            background: rgba(99, 102, 241, 0.08);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .analytics-podium {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .analytics-item {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: var(--shadow);
+        }
+
+        .analytics-item:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+        }
+
+        /* ── db results grid ── */
+        .db-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .db-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 14px;
+            transition: all 0.25s;
+            position: relative;
+            animation: fadeIn 0.35s ease-out both;
+        }
+
+        .db-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-hover);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.1);
+        }
+
+        .db-card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .db-card-grade {
+            background: rgba(99, 102, 241, 0.05);
+            color: var(--b);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+        }
+
+        .db-card-name {
+            font-family: 'Gmarket Sans', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .db-card-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 8px;
+            margin-top: 4px;
+        }
+
+        .db-card-subtags {
+            font-size: 0.72rem;
+            color: var(--muted);
+            line-height: 1.5;
+            margin-top: 4px;
+        }
+
+        .db-card-actions {
+            display: flex;
+            gap: 6px;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+            margin-top: 4px;
+        }
+
+        .db-btn-view {
+            flex: 1;
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid rgba(99, 102, 241, 0.12);
+            color: var(--b);
+            border-radius: 9px;
+            padding: 9px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .db-btn-view:hover {
+            background: var(--b);
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+        }
+
+        .db-btn-delete {
+            background: rgba(236, 72, 153, 0.05);
+            border: 1px solid rgba(236, 72, 153, 0.12);
+            color: var(--a);
+            border-radius: 9px;
+            padding: 9px 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .db-btn-delete:hover {
+            background: var(--a);
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(236, 72, 153, 0.25);
+        }
+
+        .db-loading, .db-empty, .db-error {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 50px 20px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            box-shadow: var(--shadow);
+        }
+
+        .db-loading i {
+            font-size: 1.8rem;
+            color: var(--b);
+        }
+
+        .db-empty i {
+            font-size: 2rem;
+            color: var(--gold);
+        }
+
+        .db-error i {
+            font-size: 2rem;
+            color: var(--a);
+        }
+
+        /* ── Fullscreen Detail Modal ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 680px;
+            max-height: 88vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.15);
+            display: flex;
+            flex-direction: column;
+            animation: modalScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
+        @keyframes modalScale {
+            from { transform: scale(0.92); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.85);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .modal-title h3 {
+            font-family: 'Gmarket Sans', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .modal-title p {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        .modal-close {
+            background: rgba(99, 102, 241, 0.05);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+            background: rgba(99, 102, 241, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* ── CSS Toast Notifications ── */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-left: 5px solid var(--b);
+            border-radius: 12px;
+            padding: 14px 18px;
+            color: var(--text);
+            font-size: 0.82rem;
+            font-weight: 700;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 260px;
+            pointer-events: auto;
+            animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+
+        .toast.success { border-left-color: var(--green); }
+        .toast.error { border-left-color: var(--a); }
+
+        @keyframes slideIn {
+            from { transform: translateX(40px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast.fade-out {
+            animation: slideOut 0.3s cubic-bezier(0.6, -0.28, 0.735, 0.045) both;
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(40px); opacity: 0; }
+        }
+
+        /* ── Mobile First Responsive Stack ── */
+        @media (max-width: 640px) {
+            .app-header {
+                flex-direction: column;
+                gap: 12px;
+                padding: 12px;
+            }
+            .choices {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .choice {
+                min-height: auto;
+                padding: 20px 14px;
+            }
+            .db-grid {
+                grid-template-columns: 1fr;
+            }
+            .analytics-podium {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            .intro-form-card {
+                padding: 20px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Animated Background Blur shapes -->
+    <div class="bg-blur bg-blur-1"></div>
+    <div class="bg-blur bg-blur-2"></div>
+
+    <!-- ══════ App Header & Nav Tabs ══════ -->
+    <header class="app-header">
+        <a href="#" class="logo">
+            <span class="logo-icon">🚀</span>
+            <span class="logo-text">미래직업 핵심역량 진단</span>
+        </a>
+        <nav class="nav-tabs">
+            <button class="nav-tab active" id="tab-game" onclick="switchTab('game')">
+                <i class="fas fa-gamepad"></i> 진단 게임
+            </button>
+            <button class="nav-tab" id="tab-explorer" onclick="switchTab('explorer')">
+                <i class="fas fa-database"></i> 결과 저장소
+            </button>
+        </nav>
+    </header>
+
+    <!-- ══════ Main Application Container ══════ -->
+    <main class="app-container">
+
+        <!-- ── TAB 1: 게임 화면 ── -->
+        <section id="game-section" class="view-section active">
+            
+            <!-- ── 인트로 및 기본 설정 정보 화면 ── -->
+            <div id="intro-view" class="screen-view active">
+                <div class="intro-eyebrow">중3 기술·가정 · 미래 진로 탐구</div>
+                <h1>미래 직업에서<br>가장 중요한<br><em>역량은?</em></h1>
+                <p>20가지 긴급한 상황 속에서 나에게 더 필요하다고 여겨지는 핵심 역량을 주도적으로 선택하세요. 나의 성향을 분석해 <strong>직업 역량 TOP 6</strong>를 도출합니다!</p>
+
+                <!-- Config Form Panel modeled exactly like job.html -->
+                <div class="intro-form-card">
+                    <div class="form-title">💡 진단자 정보 설정</div>
+                    
+                    <div class="db-input-group">
+                        <label for="cfg-name">이름 (또는 닉네임)</label>
+                        <input type="text" id="cfg-name" class="db-input" placeholder="이름을 입력하세요" required>
+                    </div>
+                    
+                    <div class="db-input-group">
+                        <label for="cfg-grade">학년/소속 <span style="color: var(--pink);">*</span></label>
+                        <select id="cfg-grade" class="db-input" style="background: #ffffff;" required>
+                            <option value="" disabled selected>학년/소속을 선택해 주세요</option>
+                            <option value="초등">초등학생</option>
+                            <option value="중등">중학생</option>
+                            <option value="고등">고등학생</option>
+                            <option value="기타">기타 소속</option>
+                            <option value="테스트">💡 기능 테스트 (데이터 자동 채우기)</option>
+                        </select>
+                    </div>
+
+                    <!-- Gemini Scorer Engine Badge -->
+                    <div style="background: rgba(99, 102, 241, 0.04); padding: 14px; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.15); margin-bottom: 16px;">
+                        <p style="font-size: 0.8rem; color: var(--text); line-height: 1.6; margin: 0;">
+                            <strong>✨ 차세대 AI(Gemini) 분석 스코어러 연동</strong><br>
+                            구글 제미나이 AI 스코어링 시스템이 완벽하게 지원됩니다.<br>
+                            진단 완료 즉시 클라우드 데이터베이스에 실시간으로 자동 기록됩니다.
+                        </p>
+                    </div>
+
+                    <button class="start-btn" onclick="validateAndStartGame()">
+                        진단 시작하기 <i class="fas fa-play" style="font-size: 0.85rem;"></i>
+                    </button>
+                </div>
+                
+                <p style="font-size: 0.78rem; color: var(--muted); margin-top: 10px;"><i class="far fa-clock"></i> 총 20문항 · 약 3분 소요</p>
+            </div>
+
+            <!-- ── 게임 플레이 화면 ── -->
+            <div id="play-view" class="screen-view" style="display: none;">
+                <div class="game-top">
+                    <div class="q-label">Q<strong id="qNum">1</strong><span style="font-size: 0.78rem; color: var(--muted);">/20</span></div>
+                    <div class="prog-track">
+                        <div class="prog-fill" id="progFill" style="width: 5%"></div>
+                    </div>
+                    <div class="score-peek">실시간 TOP: <strong id="topComp">-</strong></div>
+                </div>
+                
+                <div class="scenario-wrap">
+                    <div class="scenario-tag"><i class="fas fa-satellite"></i> 📍 돌발 미래 상황</div>
+                    <div class="scenario-txt" id="scenarioTxt"></div>
+                    <!-- 💡 상황 설명 부연 코멘트 영역 -->
+                    <div class="scenario-context" id="scenarioContext" style="margin-top: 14px; font-size: 0.8rem; color: var(--muted); border-top: 1px dashed var(--border); padding-top: 10px; line-height: 1.5; text-align: left; word-break: keep-all;"></div>
+                </div>
+                
+                <div class="choose-prompt">나에게 더 필요한 대처 능력 또는 자질은 무엇인가요?</div>
+                
+                <div class="choices">
+                    <div class="choice a-card" id="cardA" onclick="pick('a')">
+                        <div class="choice-letter">A</div>
+                        <div class="choice-comp" id="compA"></div>
+                        <div class="choice-desc" id="descA"></div>
+                    </div>
+                    <div class="choice b-card" id="cardB" onclick="pick('b')">
+                        <div class="choice-letter">B</div>
+                        <div class="choice-comp" id="compB"></div>
+                        <div class="choice-desc" id="descB"></div>
+                    </div>
+                </div>
+                
+                <div class="live-scores">
+                    <div class="ls-title">실시간 누적 역량 수치 <span>(실시간 반영)</span></div>
+                    <div class="ls-rows" id="lsRows"></div>
+                </div>
+            </div>
+
+            <!-- ── 클라우드 동기화 로딩 화면 ── -->
+            <div id="sync-view" class="screen-view" style="display: none; text-align: center; padding: 60px 20px;">
+                <div class="premium-loader" style="margin: 0 auto 30px;"></div>
+                <h2 style="font-size: 1.6rem; color: var(--b); margin-bottom: 12px; font-weight: 800; font-family: 'Gmarket Sans', sans-serif;">AI 분석 및 클라우드 동기화 중...</h2>
+                <p style="font-size: 0.95rem; color: var(--muted); line-height: 1.8; max-width: 500px; margin: 0 auto; word-break: keep-all;">
+                    <strong id="syncName" style="color: var(--b);"></strong>님의 진단 상세 정보(12가지 역량 및 선택 지표)를<br>
+                    실시간 학급 데이터베이스에 안전하게 동기화하고 있습니다.<br>
+                    잠시만 기다려 주세요!
+                </p>
+            </div>
+
+            <!-- ── 결과 상세 화면 ── -->
+            <div id="result-view" class="screen-view" style="display: none;">
+                <div class="result-hero">
+                    <p>🏆 DIAGNOSTIC COMPLETE</p>
+                    <h2>나의 미래 직업<br><em>핵심 역량 TOP 6</em></h2>
+                </div>
+                
+                <div class="podium" id="podium"></div>
+
+                <!-- 💡 나만의 미래 역량 종합 리포트 피드백 보드 -->
+                <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(236, 72, 153, 0.03)); border: 1px solid var(--border); border-radius: 20px; padding: 24px; text-align: left; box-shadow: var(--shadow); position: relative; overflow: hidden; margin-top: 10px;">
+                    <div style="font-family: 'Gmarket Sans', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--b); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        🎯 <span id="matchingTitle">역량</span> 특화형 시나리오 진단 분석
+                    </div>
+                    <p id="matchingDesc" style="font-size: 0.88rem; color: var(--text); line-height: 1.7; word-break: keep-all; margin: 0;">
+                        <!-- 맞춤 설명 -->
+                    </p>
+                </div>
+
+                <div style="width: 100%;">
+                    <div class="full-list-title">전체 12가지 역량 진단 상세 수치</div>
+                    <div class="full-list" id="fullList"></div>
+                </div>
+
+                <!-- 자동 저장 성공 축하 메시지 보드 -->
+                <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 20px; padding: 24px; text-align: center; box-shadow: var(--shadow);">
+                    <i class="fas fa-check-circle" style="color: var(--green); font-size: 2.5rem; margin-bottom: 12px; display: block;"></i>
+                    <h4 style="margin-bottom: 6px; font-weight: 700; color: var(--text);">클라우드 데이터베이스 전송 성공</h4>
+                    <p style="font-size: 0.8rem; color: var(--muted);">선생님 전용 '결과 저장소' 탭에서 학급 친구들의 종합 통계를 실시간으로 확인할 수 있습니다.</p>
+                </div>
+
+                <button class="retry-btn" onclick="retry()">
+                    <i class="fas fa-redo"></i> 다시 진단하기
+                </button>
+            </div>
+        </section>
+
+        <!-- ── TAB 2: 데이터베이스 탐색기 화면 ── -->
+        <section id="explorer-section" class="view-section">
+            <div class="db-explorer-header">
+                <div class="db-explorer-title">
+                    <h2>학급 결과 저장소</h2>
+                    <p>학우들의 진단 통계 현황과 나침반 차트를 실시간으로 탐색할 수 있습니다.</p>
+                </div>
+                <div class="search-bar-wrap">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="searchInput" class="search-input" placeholder="이름 또는 학급/학년을 입력하여 결과 실시간 탐색..." oninput="handleSearch()">
+                </div>
+            </div>
+
+            <!-- 학급 실시간 종합 역량 대시보드 (선생님 핵심 솔루션) -->
+            <div class="class-analytics-card" id="classAnalyticsCard" style="display: none; margin-bottom: 24px;">
+                <div class="analytics-header">
+                    <div class="analytics-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-family: 'Gmarket Sans', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--text);">
+                            📊 <span id="analyticsTitle">학급 전체</span> 실시간 종합 역량 분석
+                        </h3>
+                        <p style="font-size: 0.75rem; color: var(--muted); margin-top: 3px;">
+                            검색/조회된 학우 총 <span id="analyticsCount" style="color: var(--b); font-weight: 700;">0</span>명의 진단 데이터를 종합 합산한 6대 역량입니다.
+                        </p>
+                    </div>
+                </div>
+                <div class="analytics-podium" id="analyticsPodium">
+                    <!-- 실시간 합산 결과 상위 6개 렌더링 -->
+                </div>
+            </div>
+
+            <div class="db-grid" id="dbListContainer">
+                <!-- Javascript로 로드됨 -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ══════ Fullscreen Result Detail Modal ══════ -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <h3 id="modalName">홍길동 학생의 진단표</h3>
+                    <p id="modalGrade">3학년 1반 · 저장 일시: 2026.05.18</p>
+                </div>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 💡 상황별/역량별 상세 분석 리포트 -->
+                <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(236, 72, 153, 0.03)); border: 1px solid var(--border); border-radius: 16px; padding: 18px; text-align: left; margin-bottom: 12px; box-shadow: var(--shadow);">
+                    <div style="font-family: 'Gmarket Sans', sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--b); margin-bottom: 8px;">
+                        🎯 <span id="modalMatchingTitle">역량</span> 특화형 시나리오 진단 분석
+                    </div>
+                    <p id="modalMatchingDesc" style="font-size: 0.8rem; color: var(--text); line-height: 1.6; word-break: keep-all; margin: 0;">
+                        <!-- 맞춤 설명 -->
+                    </p>
+                </div>
+
+                <div class="podium" id="modalPodium"></div>
+                
+                <div style="width: 100%;">
+                    <div class="full-list-title" style="margin-top: 0;">전체 12가지 역량 수치 현황</div>
+                    <div class="full-list" id="modalFullList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ══════ Core JavaScript ══════ -->
+    <script>
+        /* ─── 1. 12가지 역량 설명 ─── */
+        const COMPS = {
+            "문제해결력": "복잡한 문제를 분석하고 창의적 해결책을 찾는 능력",
+            "의사소통": "상대방에게 생각을 명확하게 전달하고 경청하는 능력",
+            "디지털리터러시": "디지털 도구·데이터를 비판적으로 활용하는 능력",
+            "협업능력": "다양한 사람들과 목표를 위해 함께 일하는 능력",
+            "비판적사고": "정보를 분석해 논리적으로 판단하는 능력",
+            "창의적사고": "기존 틀을 벗어나 새로운 아이디어를 만드는 능력",
+            "자기관리": "시간·감정·목표를 스스로 계획하고 실행하는 능력",
+            "공감능력": "타인의 감정을 이해하고 적절히 반응하는 능력",
+            "적응력": "변화하는 환경에 빠르게 적응하고 유연하게 대처하는 능력",
+            "윤리적판단": "가치와 원칙에 따라 올바른 판단을 내리는 능력",
+            "정보분석": "데이터와 정보를 수집·해석해 의미를 찾는 능력",
+            "리더십": "목표를 향해 팀을 이끌고 동기를 부여하는 능력"
+        };
+        const COMP_NAMES = Object.keys(COMPS);
+        const PALETTE = [
+            '#ff5e7d', '#4ea8ff', '#ffc83d', '#3ecf8e',
+            '#a78bfa', '#f97316', '#06b6d4', '#ec4899',
+            '#84cc16', '#f59e0b', '#8b5cf6', '#14b8a6'
+        ];
+
+        /* ─── 2. 20개 문항 시나리오 및 설명 해석 사전 ─── */
+        const COMP_ANALYSES = {
+            "문제해결력": "당신은 위기 상황에서 침착하게 본질적인 원인을 규명하고 최적의 돌파구를 찾는 '해결사형 인재'입니다. 매뉴얼이 없고 모두가 당황하는 돌발 미래 상황에서 당황하지 않고 빛을 발하는 역량을 가지고 있습니다.",
+            "의사소통": "당신은 자신의 생각을 명확하게 표현할 뿐만 아니라 타인의 의도와 감정을 배려 깊게 청취하는 '소통 마스터형 인재'입니다. 복잡한 다자간 이해관계나 글로벌 원격 협력 상황에서 중심 역할을 수행하기에 최적화되어 있습니다.",
+            "디지털리터러시": "당신은 디지털 기술과 AI 도구, 방대한 데이터 중에서 가치 있는 정보를 비판적이고 유연하게 활용할 수 있는 '테크니컬 지휘자형 인재'입니다. 새로운 기술을 두려워하지 않고 실전에 영리하게 녹여내는 강점이 있습니다.",
+            "협업능력": "당신은 다양한 역량과 가치관을 가진 동료들과 소통하며 시너지를 만들어 내는 '조화로운 오케스트라형 인재'입니다. 팀워크가 필요한 대규모 프로젝트에서 없어서는 안 될 든든한 가교 역할을 해냅니다.",
+            "비판적사고": "당신은 사실과 주장을 명확히 분리하고, AI나 시스템이 내놓은 그럴듯한 왜곡 속에서도 숨은 모순과 한계를 꿰뚫어 보는 '지적 파수꾼형 인재'입니다. 논리적 판단과 팩트체킹이 필수적인 분야에서 강력한 신뢰를 줍니다.",
+            "창의적사고": "당신은 익숙한 규칙과 상식을 넘어 전혀 생각지 못한 기발한 아이디어와 관점을 제시하는 '패러다임 혁신가형 인재'입니다. 모호하고 정의되지 않은 기획 단계나 브랜드 리뉴얼 등 무(無)에서 유(有)를 창조하는 곳에 탁월합니다.",
+            "자기관리": "당신은 자율적이고 불규칙한 환경에서도 목표 달성을 위해 자신의 시간과 감정, 우선순위를 능동적으로 통제할 수 있는 '자기 주도형 프로페셔널'입니다. 재택근무나 독립적 업무 스타일에서 극대화된 책임감을 발휘합니다.",
+            "공감능력": "당신은 타인의 미세한 감정 변화를 읽어내고, 기계나 AI가 흉내 낼 수 없는 심리적 따뜻함과 지지를 주는 '감성 가디언형 인재'입니다. 초고도 기술 사회에서 인간성 존중의 가치를 지키고 조율하는 중추적 역할을 수행합니다.",
+            "적응력": "당신은 급격한 변화의 소용돌이 속에서도 유연하게 대처하며, 새로운 역할과 지식을 빠르게 흡수해 성장하는 '카멜레온형 체인저'입니다. 트렌드와 직업의 변화 주기가 극단적으로 빠른 미래 사회에 가장 최적화되어 있습니다.",
+            "윤리적판단": "당신은 눈앞의 이익이나 편의보다 인간 존엄성, 환경 보호, 정직이라는 보편적 윤리 기준을 굳건히 고수하는 '정의로운 나침반형 인재'입니다. AI와 바이오테크 시대의 가치 기준을 올바르게 세울 핵심 인물입니다.",
+            "정보분석": "당신은 쏟아지는 수백만 건의 데이터와 복잡한 노이즈 속에서 유의미한 패턴을 신속하게 도출해 내는 '데이터 고속 탐색 인재'입니다. 트렌드와 의사결정의 성공 가능성을 데이터로 뒷받침하는 핵심 역할을 합니다.",
+            "리더십": "당신은 혼란스러운 상황 속에서 팀원들에게 명확한 비전과 동기를 불어넣으며, 흔들림 없이 목표 지점으로 이끌고 가는 '비전 제시형 리더'입니다. 위기 극복 및 강력한 조직 화합을 도모하는 강점을 가집니다."
+        };
+
+        const QS = [
+            { s: "2035년, AI가 설계한 식단을 손님이 거부합니다. 손님은 '내 취향이 아니에요'라고 합니다.", a: "공감능력", b: "디지털리터러시", context: "영양학적으로 완벽한 AI 식단과 손님의 인간적인 감정 사이에서 조율해야 하는 상황입니다." },
+            { s: "무인 공장에서 로봇 오류로 납기일이 위기에 처했습니다. 원인을 즉시 찾아야 합니다.", a: "문제해결력", b: "정보분석", context: "시스템 붕괴 직전의 긴박한 공장 상황에서 빠른 분석과 결단력이 필요합니다." },
+            { s: "전 세계 팀원 10명과 원격으로 프로젝트를 진행합니다. 의견 충돌이 생겼습니다.", a: "협업능력", b: "의사소통", context: "시차가 다른 시공간에서 다양한 가치관을 조율하여 원활한 협업을 이끌어내야 합니다." },
+            { s: "SNS에 가짜 뉴스가 빠르게 퍼지고 있습니다. 팩트체커로서 신속히 판단해야 합니다.", a: "비판적사고", b: "정보분석", context: "디지털 정보의 대홍수 속에서 진실과 왜곡을 철저히 검증해야 하는 팩트체킹 상황입니다." },
+            { s: "새로운 AI 도구가 매달 쏟아지는 시대, 콘텐츠 크리에이터로 살아남으려면?", a: "적응력", b: "디지털리터러시", context: "기술 변화의 격랑 속에서 새로운 도구를 도입할지, 창작의 본질을 지킬지 선택해야 합니다." },
+            { s: "클라이언트가 '완전히 새로운 느낌'을 원하는 브랜드 리뉴얼 프로젝트를 맡았습니다.", a: "창의적사고", b: "의사소통", context: "모호한 요구조건 속에서 창의적 영감을 발휘하고 고객을 납득시켜야 합니다." },
+            { s: "유전자 편집 신약 임상 결과가 효과적이지만 윤리 논란이 예상됩니다.", a: "윤리적판단", b: "비판적사고", context: "의학적 성공의 열매와 생명 윤리라는 보편적 가치 사이에서 갈등하는 상황입니다." },
+            { s: "재택근무 중 마감이 겹쳐 우선순위를 스스로 정해야 합니다. 상사가 연락이 닿지 않습니다.", a: "자기관리", b: "문제해결력", context: "자율성이 보장된 비대면 근무 환경에서 자기 조절력과 책임감이 요구되는 상황입니다." },
+            { s: "노인 돌봄 로봇 개발 중, 어르신이 로봇에 정서적 거리감을 느낀다고 합니다.", a: "공감능력", b: "창의적사고", context: "기술의 최첨단 기술력과 노년층의 심리적 따뜻함 사이의 간극을 메우는 딜레마입니다." },
+            { s: "스타트업 초기 멤버로 합류했지만 방향이 없습니다. 팀이 당신에게 이끌어달라고 합니다.", a: "리더십", b: "자기관리", context: "혼돈스럽고 나침반이 없는 초기 조직에서 비전을 제시하고 팀을 이끌어야 합니다." },
+            { s: "수백만 건의 고객 데이터를 분석해 새로운 소비 패턴을 발견해야 합니다.", a: "정보분석", b: "디지털리터러시", context: "방대한 디지털 노이즈 중에서 비즈니스 인사이트를 얻어내야 하는 고도의 분석 상황입니다." },
+            { s: "글로벌 기업 협상 자리에서 문화적 오해로 대화가 막혔습니다.", a: "의사소통", b: "공감능력", context: "서로 다른 비즈니스 관행과 문화를 넘어 감정을 소통하고 타협을 이끌어내야 합니다." },
+            { s: "회사가 갑자기 완전히 다른 사업 방향으로 전환합니다. 새 역할을 맡았습니다.", a: "적응력", b: "자기관리", context: "기존의 전문성이 무색해지는 대변화의 시기, 유연성과 빠른 재도전이 필요한 시점입니다." },
+            { s: "AI가 그럴듯하지만 틀린 보고서를 제출했습니다. 당신만 그것을 의심하고 있습니다.", a: "비판적사고", b: "윤리적판단", context: "모두가 시스템을 맹신하는 가운데, 비판적 의구심을 가지고 팩트를 의심해야 하는 상황입니다." },
+            { s: "10명 팀의 프로젝트 리더로, 팀원 간의 갈등을 유연하게 조율하고 성과를 내야 합니다.", a: "리더십", b: "협업능력", context: "팀원 간의 다양한 이해관계와 감정적 대립 속에서 조직의 화합과 성과를 둘 다 챙겨야 합니다." },
+            { s: "전혀 새로운 돌발 상황 — 매뉴얼이 전혀 없는 상황에서 즉각 대처법을 완성해야 합니다.", a: "창의적사고", b: "문제해결력", context: "예측하지 못한 돌발 위기 속에서 나만의 직관과 임기응변으로 돌파구를 뚫어내야 합니다." },
+            { s: "기업이 이익을 위해 정부의 권장 환경 기준을 조금만 낮추자고 합의를 종용합니다.", a: "윤리적판단", b: "리더십", context: "눈앞의 달콤한 수익 모델과 환경 파괴라는 미래 세대와의 가치관 딜레마입니다." },
+            { s: "매일 수십 개의 대량 보고서와 트렌드가 쏟아집니다. 나에게 쓸모있는 진짜 핵심을 골라야 합니다.", a: "정보분석", b: "비판적사고", context: "정보 과잉의 시대에서 나에게 가장 유용한 원석 정보를 빠르고 논리적으로 골라내는 상황입니다." },
+            { s: "팀원들이 심한 지친 번아웃 상태입니다. 프로젝트 완수도 중요하지만 팀원의 지친 감정을 챙겨야 합니다.", a: "공감능력", b: "리더십", context: "공동의 실적 압박과 인적 케어라는 목표 지향성과 인간 중심의 가치 갈등 상황입니다." },
+            { s: "내가 유통 중인 프로그램이 나도 모르게 사용자 브라우저 데이터를 무단 수집 중임을 발견했습니다.", a: "윤리적판단", b: "디지털리터러시", context: "회사 실적 및 편의성과 사용자의 사생활 보호라는 디지털 윤리관의 대립 구도입니다." }
+        ];
+
+        /* ─── 3. Supabase 초기화 ─── */
+        const SUPABASE_URL = "https://ucmzrkwrsezfdjnnwsww.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw";
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        /* ─── 4. 상태 변수 ─── */
+        let scores = {};
+        let qIdx = 0;
+        let savedResults = [];
+        let isAnimating = false;
+        let studentName = '';
+        let studentClass = '';
+
+        /* ─── 5. 초기 설정 및 탭 전환 ─── */
+        window.addEventListener('DOMContentLoaded', () => {
+            resetScores();
+            
+            // 학급 통계 및 결과 데이터 백그라운드 로드
+            loadSavedResults();
+        });
+
+        function resetScores() {
+            scores = {};
+            COMP_NAMES.forEach(name => {
+                scores[name] = 0;
+            });
+            qIdx = 0;
+        }
+
+        // toggleCustomGradeInput 제거됨 (학반 입력 상자 삭제로 불필요)
+
+        function switchTab(tabName) {
+            const tabs = ['game', 'explorer'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const view = document.getElementById(`${t}-section`);
+                if (t === tabName) {
+                    el.classList.add('active');
+                    view.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                    view.classList.remove('active');
+                }
+            });
+
+            if (tabName === 'explorer') {
+                loadSavedResults();
+            }
+        }
+
+        /* ─── 5.1 인트로 입력 유효성 평가 및 진단 기동 ─── */
+        function validateAndStartGame() {
+            const nameInput = document.getElementById('cfg-name').value.trim();
+            const gradeSelect = document.getElementById('cfg-grade').value;
+
+            if (!nameInput) {
+                alert("이름 또는 닉네임을 입력해 주세요!");
+                document.getElementById('cfg-name').focus();
+                return;
+            }
+
+            if (!gradeSelect) {
+                alert("학년/소속을 선택해 주세요!");
+                document.getElementById('cfg-grade').focus();
+                return;
+            }
+
+            // 기능 테스트 모드 전용 고속 우회 경로
+            if (gradeSelect === '테스트') {
+                studentName = nameInput + " (테스트)";
+                studentClass = "기능테스트";
+                
+                // 임의 난수 스코어 생성 (2~6점)
+                COMP_NAMES.forEach(c => {
+                    scores[c] = Math.floor(Math.random() * 5) + 2;
+                });
+                
+                // 즉시 동기화 및 결과 도달
+                autoSaveAndShowResult();
+                return;
+            }
+
+            // 글로벌 상태 변수에 기록
+            studentName = nameInput;
+            studentClass = `[${gradeSelect}]`;
+
+            startGame();
+        }
+
+        function startGame() {
+            resetScores();
+            document.getElementById('intro-view').style.display = 'none';
+            document.getElementById('play-view').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            renderQ();
+        }
+
+        /* ─── 6. 게임 진행 코어 로직 ─── */
+        function renderQ() {
+            const q = QS[qIdx];
+            document.getElementById('qNum').textContent = qIdx + 1;
+            document.getElementById('progFill').style.width = ((qIdx + 1) / QS.length * 100) + '%';
+            document.getElementById('scenarioTxt').textContent = q.s;
+            
+            // 💡 상황 설명 렌더링
+            document.getElementById('scenarioContext').textContent = q.context || '';
+
+            // 카드 리셋
+            const cardA = document.getElementById('cardA');
+            const cardB = document.getElementById('cardB');
+            
+            cardA.className = 'choice a-card';
+            cardB.className = 'choice b-card';
+
+            document.getElementById('compA').textContent = q.a;
+            document.getElementById('descA').textContent = COMPS[q.a];
+            document.getElementById('compB').textContent = q.b;
+            document.getElementById('descB').textContent = COMPS[q.b];
+
+            renderLiveScores();
+        }
+
+        function pick(side) {
+            if (isAnimating) return; // 연속 클릭 스팸 방지 Lock
+            isAnimating = true;
+
+            const q = QS[qIdx];
+            const chosenComp = side === 'a' ? q.a : q.b;
+            scores[chosenComp] += 1; // 가중치 1점
+
+            // 카드 선택 애니메이션 연출
+            const cardA = document.getElementById('cardA');
+            const cardB = document.getElementById('cardB');
+
+            if (side === 'a') {
+                cardA.classList.add('chosen');
+                cardB.classList.add('dimmed');
+            } else {
+                cardB.classList.add('chosen');
+                cardA.classList.add('dimmed');
+            }
+
+            setTimeout(() => {
+                qIdx++;
+                if (qIdx >= QS.length) {
+                    autoSaveAndShowResult();
+                } else {
+                    renderQ();
+                }
+                isAnimating = false;
+            }, 800);
+        }
+
+        function renderLiveScores() {
+            const sorted = COMP_NAMES.map(c => ({ c, v: scores[c] })).sort((a, b) => b.v - a.v);
+            const max = sorted[0]?.v || 1;
+            
+            document.getElementById('topComp').textContent = sorted[0]?.c || '-';
+
+            const box = document.getElementById('lsRows');
+            box.innerHTML = '';
+            sorted.forEach(({ c, v }, i) => {
+                const color = PALETTE[COMP_NAMES.indexOf(c)];
+                const row = document.createElement('div');
+                row.className = 'ls-row';
+                row.innerHTML = `
+                    <div class="ls-name" style="color: ${i < 6 ? color : 'var(--muted)'}">${c}</div>
+                    <div class="ls-bar-wrap">
+                        <div class="ls-bar" style="width: ${v / max * 100}%; background: ${color}"></div>
+                    </div>
+                    <div class="ls-num" style="color: ${color}">${v}</div>
+                `;
+                box.appendChild(row);
+            });
+        }
+
+        /* ─── 7. 결과 화면 렌더 ─── */
+        function showResult() {
+            document.getElementById('result-view').style.display = 'flex';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            const sorted = COMP_NAMES.map(c => ({ c, v: scores[c] })).sort((a, b) => b.v - a.v);
+            const top6 = sorted.slice(0, 6);
+            
+            // 💡 상황 매칭 리포트 렌더링
+            const topCompetency = sorted[0]?.c;
+            document.getElementById('matchingTitle').textContent = topCompetency;
+            document.getElementById('matchingDesc').textContent = COMP_ANALYSES[topCompetency] || '';
+
+            // 포디움 렌더링
+            const podium = document.getElementById('podium');
+            podium.innerHTML = '';
+            
+            const medals = ['🥇 1위', '🥈 2위', '🥉 3위', '🏅 4위', '🏅 5위', '🏅 6위'];
+            const rankClass = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6'];
+
+            top6.forEach(({ c, v }, i) => {
+                const color = PALETTE[COMP_NAMES.indexOf(c)];
+                const el = document.createElement('div');
+                el.className = `pod-item ${rankClass[i]}`;
+                el.style.animationDelay = (i * 0.08) + 's';
+                el.innerHTML = `
+                    <div class="pod-rank">${medals[i]}</div>
+                    <div class="pod-info">
+                        <div class="pod-name">${c}</div>
+                        <div class="pod-desc">${COMPS[c]}</div>
+                    </div>
+                    <div class="pod-score" style="color: ${color}">${v}</div>
+                `;
+                podium.appendChild(el);
+            });
+
+            // 전체 12가지 목록 렌더링
+            const full = document.getElementById('fullList');
+            full.innerHTML = '';
+            sorted.forEach(({ c, v }, i) => {
+                const color = PALETTE[COMP_NAMES.indexOf(c)];
+                const el = document.createElement('div');
+                el.className = 'full-item';
+                el.style.borderLeftColor = color;
+                el.innerHTML = `
+                    <span class="full-item-name" style="color: ${i < 6 ? color : 'var(--muted)'}">${c}</span>
+                    <span class="full-item-score" style="color: ${color}">${v}</span>
+                `;
+                full.appendChild(el);
+            });
+        }
+
+        function retry() {
+            document.getElementById('result-view').style.display = 'none';
+            document.getElementById('intro-view').style.display = 'block';
+            
+            // 입력창 리셋
+            document.getElementById('cfg-name').value = '';
+            document.getElementById('cfg-grade').value = '';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ─── 8. Supabase 백그라운드 자동 저장 ─── */
+        async function autoSaveAndShowResult() {
+            // Hide play, show syncing loading screen
+            document.getElementById('intro-view').style.display = 'none';
+            document.getElementById('play-view').style.display = 'none';
+            document.getElementById('sync-view').style.display = 'flex';
+            document.getElementById('syncName').textContent = studentName;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            const sorted = COMP_NAMES.map(c => ({ c, v: scores[c] })).sort((a, b) => b.v - a.v);
+            const top6Names = sorted.slice(0, 6).map(item => item.c);
+            const top3Str = top6Names.slice(0, 3).join(', ');
+            const mainType = top6Names[0];
+
+            const resultData = {
+                username: 'anonymous',
+                name: studentName,
+                grade: studentClass,
+                main_type: mainType,
+                top_tags: top3Str,
+                details: {
+                    game_type: 'futurejob',
+                    scores: scores,
+                    top_6: top6Names,
+                    created_at: new Date().toISOString()
+                }
+            };
+
+            try {
+                const { error } = await sb
+                    .from('career_test_results')
+                    .insert([resultData]);
+
+                if (error) throw error;
+                showToast('클라우드에 안전하게 동기화되었습니다! 💾', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('백그라운드 동기화 지연: ' + err.message, 'error');
+            } finally {
+                // 어떤 상황에서도 학생이 결과를 즉시 볼 수 있게 이행
+                document.getElementById('sync-view').style.display = 'none';
+                showResult();
+            }
+        }
+
+        /* ─── 9. Supabase 결과 불러오기 ─── */
+        async function loadSavedResults() {
+            const listContainer = document.getElementById('dbListContainer');
+            listContainer.innerHTML = `
+                <div class="db-loading">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                    <div>데이터베이스에서 결과를 안전하게 로드 중입니다...</div>
+                </div>
+            `;
+
+            try {
+                const { data, error } = await sb
+                    .from('career_test_results')
+                    .select('*')
+                    .eq('details->>game_type', 'futurejob')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                savedResults = data || [];
+                renderResultsList(savedResults);
+            } catch (err) {
+                console.error(err);
+                listContainer.innerHTML = `
+                    <div class="db-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>결과를 가져오는 도중 통신 오류가 발생했습니다.</div>
+                        <div style="font-size: 0.8rem; color: var(--a); margin-top: 6px;">${err.message}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function renderResultsList(list) {
+            const listContainer = document.getElementById('dbListContainer');
+            listContainer.innerHTML = '';
+
+            // 실시간 학급 역량 통계 계산기 트리거 연동
+            compileClassAnalytics(list);
+
+            if (list.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="db-empty">
+                        <i class="fas fa-folder-open"></i>
+                        <div>아직 등록된 진단 결과가 한 건도 없습니다.</div>
+                        <div style="font-size: 0.8rem; color: var(--muted); margin-top: 4px;">첫 번째 미래 역량 설계자가 되어보세요!</div>
+                    </div>
+                `;
+                return;
+            }
+
+            list.forEach(row => {
+                const dateStr = formatDate(row.created_at || (row.details && row.details.created_at));
+                const color = PALETTE[COMP_NAMES.indexOf(row.main_type)] || 'var(--green)';
+
+                const card = document.createElement('div');
+                card.className = 'db-card';
+                card.style.borderTop = `4px solid ${color}`;
+                card.innerHTML = `
+                    <div>
+                        <div class="db-card-meta">
+                            <span class="db-card-grade">${escapeHTML(row.grade)}</span>
+                            <span class="db-card-date">${dateStr}</span>
+                        </div>
+                        <h3 class="db-card-name">${escapeHTML(row.name)}</h3>
+                        <div class="db-card-tag" style="background: ${color}08; color: ${color};">
+                            🥇 ${escapeHTML(row.main_type)}
+                        </div>
+                        <div class="db-card-subtags">
+                            <strong>TOP 3:</strong> ${escapeHTML(row.top_tags)}
+                        </div>
+                    </div>
+                    <div class="db-card-actions">
+                        <button class="db-btn-view" onclick="viewSavedDetail('${row.id}')">
+                            <i class="fas fa-chart-pie"></i> 차트 보기
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        /* ─── 10. 실시간 검색 필터 ─── */
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            if (!query) {
+                renderResultsList(savedResults);
+                return;
+            }
+
+            const filtered = savedResults.filter(row => {
+                const nameMatch = row.name && row.name.toLowerCase().includes(query);
+                const gradeMatch = row.grade && row.grade.toLowerCase().includes(query);
+                const typeMatch = row.main_type && row.main_type.toLowerCase().includes(query);
+                return nameMatch || gradeMatch || typeMatch;
+            });
+
+            renderResultsList(filtered);
+        }
+
+        /* ─── 10.1 학급별 실시간 종합 역량 포디움 계산기 (선생님 혁신 솔루션) ─── */
+        function compileClassAnalytics(list) {
+            const analyticsCard = document.getElementById('classAnalyticsCard');
+            if (!analyticsCard) return;
+
+            if (!list || list.length === 0) {
+                analyticsCard.style.display = 'none';
+                return;
+            }
+
+            const totals = {};
+            COMP_NAMES.forEach(c => totals[c] = 0);
+            let count = 0;
+
+            list.forEach(row => {
+                if (row.details && row.details.scores) {
+                    count++;
+                    COMP_NAMES.forEach(c => {
+                        totals[c] += (row.details.scores[c] || 0);
+                    });
+                }
+            });
+
+            if (count === 0) {
+                analyticsCard.style.display = 'none';
+                return;
+            }
+
+            const sorted = COMP_NAMES.map(c => ({ c, v: totals[c] })).sort((a, b) => b.v - a.v);
+            const top6 = sorted.slice(0, 6);
+
+            const analyticsTitle = document.getElementById('analyticsTitle');
+            const analyticsCount = document.getElementById('analyticsCount');
+            const podiumBox = document.getElementById('analyticsPodium');
+
+            const query = document.getElementById('searchInput').value.trim();
+            if (query) {
+                analyticsTitle.textContent = `"${query}" 필터링 학급`;
+            } else {
+                analyticsTitle.textContent = "전체 학급";
+            }
+
+            analyticsCount.textContent = count;
+            podiumBox.innerHTML = '';
+
+            const medals = ['🥇 1위', '🥈 2위', '🥉 3위', '🏅 4위', '🏅 5위', '🏅 6위'];
+            const itemColors = ['#f59e0b', '#94a3b8', '#60a5fa', 'var(--b)', 'var(--b)', 'var(--b)'];
+
+            top6.forEach(({ c, v }, i) => {
+                const avg = (v / count).toFixed(1);
+                
+                const el = document.createElement('div');
+                el.className = 'analytics-item';
+                el.innerHTML = `
+                    <div style="color: ${itemColors[i]}; font-size: 0.95rem; font-weight: 800; white-space: nowrap;">
+                        ${medals[i]}
+                    </div>
+                    <div style="flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis;">
+                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text);">${c}</div>
+                        <div style="font-size: 0.72rem; color: var(--muted); margin-top: 1px;">평균 ${avg}점 (총 ${v}점)</div>
+                    </div>
+                `;
+                podiumBox.appendChild(el);
+            });
+
+            analyticsCard.style.display = 'block';
+        }
+
+        /* ─── 11. 결과 상세보기 (모달 창) ─── */
+        function viewSavedDetail(id) {
+            const row = savedResults.find(r => r.id === id);
+            if (!row) return;
+
+            document.getElementById('modalName').textContent = `${escapeHTML(row.name)} 학생의 직업 핵심 역량`;
+            
+            const dateStr = formatDate(row.created_at || (row.details && row.details.created_at));
+            document.getElementById('modalGrade').textContent = `${escapeHTML(row.grade)} · 저장 시간: ${dateStr}`;
+
+            const detailScores = row.details && row.details.scores ? row.details.scores : {};
+            const top6Names = row.details && row.details.top_6 ? row.details.top_6 : [];
+
+            // 💡 상황 매칭 리포트 렌더링
+            const modalTopComp = top6Names[0] || row.main_type;
+            document.getElementById('modalMatchingTitle').textContent = modalTopComp;
+            document.getElementById('modalMatchingDesc').textContent = COMP_ANALYSES[modalTopComp] || '선택 기반 핵심 역량 상세 분석 결과를 도출했습니다.';
+
+            // TOP 6 포디움 렌더링
+            const podium = document.getElementById('modalPodium');
+            podium.innerHTML = '';
+            
+            const medals = ['🥇 1위', '🥈 2위', '🥉 3위', '🏅 4위', '🏅 5위', '🏅 6위'];
+            const rankClass = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6'];
+
+            if (top6Names.length > 0) {
+                top6Names.forEach((c, i) => {
+                    const color = PALETTE[COMP_NAMES.indexOf(c)];
+                    const v = detailScores[c] || 0;
+                    const el = document.createElement('div');
+                    el.className = `pod-item ${rankClass[i]}`;
+                    el.style.animationDelay = (i * 0.05) + 's';
+                    el.innerHTML = `
+                        <div class="pod-rank">${medals[i]}</div>
+                        <div class="pod-info">
+                            <div class="pod-name">${c}</div>
+                            <div class="pod-desc">${COMPS[c] || ''}</div>
+                        </div>
+                        <div class="pod-score" style="color: ${color}">${v}</div>
+                    `;
+                    podium.appendChild(el);
+                });
+            }
+
+            // 전체 12개 역량 렌더링
+            const fullList = document.getElementById('modalFullList');
+            fullList.innerHTML = '';
+            
+            const sorted = COMP_NAMES.map(c => ({ c, v: detailScores[c] || 0 })).sort((a, b) => b.v - a.v);
+            sorted.forEach(({ c, v }, i) => {
+                const color = PALETTE[COMP_NAMES.indexOf(c)];
+                const el = document.createElement('div');
+                el.className = 'full-item';
+                el.style.borderLeftColor = color;
+                el.innerHTML = `
+                    <span class="full-item-name" style="color: ${top6Names.includes(c) ? color : 'var(--muted)'}">${c}</span>
+                    <span class="full-item-score" style="color: ${color}">${v}</span>
+                `;
+                fullList.appendChild(el);
+            });
+
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        /* ─── 12. Supabase 결과 삭제 ─── */
+        async function deleteSavedResult(id) {
+            const confirmed = confirm("이 진단 결과를 정말 삭제하시겠습니까? 데이터베이스에서 완전히 삭제됩니다.");
+            if (!confirmed) return;
+
+            try {
+                const { error } = await sb
+                    .from('career_test_results')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                showToast('성공적으로 삭제되었습니다.', 'success');
+                loadSavedResults();
+            } catch (err) {
+                console.error(err);
+                showToast('데이터 삭제 중 오류가 발생했습니다: ' + err.message, 'error');
+            }
+        }
+
+        /* ─── 13. 공통 유틸 함수 ─── */
+        function formatDate(isoString) {
+            if (!isoString) return '-';
+            try {
+                const date = new Date(isoString);
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                const hh = String(date.getHours()).padStart(2, '0');
+                const min = String(date.getMinutes()).padStart(2, '0');
+                return `${yyyy}.${mm}.${dd} ${hh}:${min}`;
+            } catch (e) {
+                return isoString;
+            }
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = '<i class="fas fa-info-circle"></i>';
+            if (type === 'success') icon = '<i class="fas fa-check-circle" style="color: var(--green);"></i>';
+            if (type === 'error') icon = '<i class="fas fa-exclamation-circle" style="color: var(--a);"></i>';
+
+            toast.innerHTML = `${icon}<span>${escapeHTML(message)}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                toast.addEventListener('animationend', () => {
+                    toast.remove();
+                });
+            }, 3000);
+        }
+
+        // 바깥 영역 클릭시 모달 닫기
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('detailModal');
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
