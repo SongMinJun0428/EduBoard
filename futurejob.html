@@ -42,6 +42,17 @@
 
         html {
             scroll-behavior: smooth;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        html::-webkit-scrollbar,
+        body::-webkit-scrollbar,
+        .modal-overlay::-webkit-scrollbar,
+        .modal-body::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+            display: none;
         }
 
         body {
@@ -53,6 +64,8 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
 
         /* ── Animated Background Blur bubbles ── */
@@ -1269,7 +1282,7 @@
             <div id="intro-view" class="screen-view active">
                 <div class="intro-eyebrow">중3 기술·가정 · 미래 진로 탐구</div>
                 <h1>미래 직업에서<br>가장 중요한<br><em>역량은?</em></h1>
-                <p>20가지 긴급한 상황 속에서 나에게 더 필요하다고 여겨지는 핵심 역량을 주도적으로 선택하세요. 나의 성향을 분석해 <strong>직업 역량 TOP 6</strong>를 도출합니다!</p>
+                <p>24가지 긴급한 상황 속에서 나에게 더 필요하다고 여겨지는 핵심 역량을 주도적으로 선택하세요. 나의 성향을 분석해 <strong>직업 역량 TOP 6</strong>를 도출합니다!</p>
 
                 <!-- Config Form Panel modeled exactly like job.html -->
                 <div class="intro-form-card">
@@ -1292,11 +1305,11 @@
                         </select>
                     </div>
 
-                    <!-- Gemini Scorer Engine Badge -->
+                    <!-- 저장 안내 -->
                     <div style="background: rgba(99, 102, 241, 0.04); padding: 14px; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.15); margin-bottom: 16px;">
                         <p style="font-size: 0.8rem; color: var(--text); line-height: 1.6; margin: 0;">
-                            <strong>✨ 차세대 AI(Gemini) 분석 스코어러 연동</strong><br>
-                            구글 제미나이 AI 스코어링 시스템이 완벽하게 지원됩니다.<br>
+                            <strong>✨ 선택 기반 핵심 역량 진단</strong><br>
+                            선택한 답변의 누적 점수를 기준으로 결과 순위가 정해집니다.<br>
                             진단 완료 즉시 클라우드 데이터베이스에 실시간으로 자동 기록됩니다.
                         </p>
                     </div>
@@ -1306,13 +1319,13 @@
                     </button>
                 </div>
                 
-                <p style="font-size: 0.78rem; color: var(--muted); margin-top: 10px;"><i class="far fa-clock"></i> 총 20문항 · 약 3분 소요</p>
+                <p style="font-size: 0.78rem; color: var(--muted); margin-top: 10px;"><i class="far fa-clock"></i> 총 24문항 · 약 4분 소요</p>
             </div>
 
             <!-- ── 게임 플레이 화면 ── -->
             <div id="play-view" class="screen-view" style="display: none;">
                 <div class="game-top">
-                    <div class="q-label">Q<strong id="qNum">1</strong><span style="font-size: 0.78rem; color: var(--muted);">/20</span></div>
+                    <div class="q-label">Q<strong id="qNum">1</strong><span id="qTotal" style="font-size: 0.78rem; color: var(--muted);">/24</span></div>
                     <div class="prog-track">
                         <div class="prog-fill" id="progFill" style="width: 5%"></div>
                     </div>
@@ -1350,7 +1363,7 @@
             <!-- ── 클라우드 동기화 로딩 화면 ── -->
             <div id="sync-view" class="screen-view" style="display: none; text-align: center; padding: 60px 20px;">
                 <div class="premium-loader" style="margin: 0 auto 30px;"></div>
-                <h2 style="font-size: 1.6rem; color: var(--b); margin-bottom: 12px; font-weight: 800; font-family: 'Gmarket Sans', sans-serif;">AI 분석 및 클라우드 동기화 중...</h2>
+                <h2 style="font-size: 1.6rem; color: var(--b); margin-bottom: 12px; font-weight: 800; font-family: 'Gmarket Sans', sans-serif;">결과 계산 및 클라우드 동기화 중...</h2>
                 <p style="font-size: 0.95rem; color: var(--muted); line-height: 1.8; max-width: 500px; margin: 0 auto; word-break: keep-all;">
                     <strong id="syncName" style="color: var(--b);"></strong>님의 진단 상세 정보(12가지 역량 및 선택 지표)를<br>
                     실시간 학급 데이터베이스에 안전하게 동기화하고 있습니다.<br>
@@ -1499,45 +1512,135 @@
         const COMP_ANALYSES = {
             "문제해결력": "당신은 위기 상황에서 침착하게 본질적인 원인을 규명하고 최적의 돌파구를 찾는 '해결사형 인재'입니다. 매뉴얼이 없고 모두가 당황하는 돌발 미래 상황에서 당황하지 않고 빛을 발하는 역량을 가지고 있습니다.",
             "의사소통": "당신은 자신의 생각을 명확하게 표현할 뿐만 아니라 타인의 의도와 감정을 배려 깊게 청취하는 '소통 마스터형 인재'입니다. 복잡한 다자간 이해관계나 글로벌 원격 협력 상황에서 중심 역할을 수행하기에 최적화되어 있습니다.",
-            "디지털리터러시": "당신은 디지털 기술과 AI 도구, 방대한 데이터 중에서 가치 있는 정보를 비판적이고 유연하게 활용할 수 있는 '테크니컬 지휘자형 인재'입니다. 새로운 기술을 두려워하지 않고 실전에 영리하게 녹여내는 강점이 있습니다.",
+            "디지털리터러시": "당신은 디지털 기술과 자동화 도구, 방대한 데이터 중에서 가치 있는 정보를 비판적이고 유연하게 활용할 수 있는 '테크니컬 지휘자형 인재'입니다. 새로운 기술을 두려워하지 않고 실전에 영리하게 녹여내는 강점이 있습니다.",
             "협업능력": "당신은 다양한 역량과 가치관을 가진 동료들과 소통하며 시너지를 만들어 내는 '조화로운 오케스트라형 인재'입니다. 팀워크가 필요한 대규모 프로젝트에서 없어서는 안 될 든든한 가교 역할을 해냅니다.",
-            "비판적사고": "당신은 사실과 주장을 명확히 분리하고, AI나 시스템이 내놓은 그럴듯한 왜곡 속에서도 숨은 모순과 한계를 꿰뚫어 보는 '지적 파수꾼형 인재'입니다. 논리적 판단과 팩트체킹이 필수적인 분야에서 강력한 신뢰를 줍니다.",
+            "비판적사고": "당신은 사실과 주장을 명확히 분리하고, 시스템이 내놓은 그럴듯한 왜곡 속에서도 숨은 모순과 한계를 꿰뚫어 보는 '지적 파수꾼형 인재'입니다. 논리적 판단과 팩트체킹이 필수적인 분야에서 강력한 신뢰를 줍니다.",
             "창의적사고": "당신은 익숙한 규칙과 상식을 넘어 전혀 생각지 못한 기발한 아이디어와 관점을 제시하는 '패러다임 혁신가형 인재'입니다. 모호하고 정의되지 않은 기획 단계나 브랜드 리뉴얼 등 무(無)에서 유(有)를 창조하는 곳에 탁월합니다.",
             "자기관리": "당신은 자율적이고 불규칙한 환경에서도 목표 달성을 위해 자신의 시간과 감정, 우선순위를 능동적으로 통제할 수 있는 '자기 주도형 프로페셔널'입니다. 재택근무나 독립적 업무 스타일에서 극대화된 책임감을 발휘합니다.",
-            "공감능력": "당신은 타인의 미세한 감정 변화를 읽어내고, 기계나 AI가 흉내 낼 수 없는 심리적 따뜻함과 지지를 주는 '감성 가디언형 인재'입니다. 초고도 기술 사회에서 인간성 존중의 가치를 지키고 조율하는 중추적 역할을 수행합니다.",
+            "공감능력": "당신은 타인의 미세한 감정 변화를 읽어내고, 기계가 흉내 내기 어려운 심리적 따뜻함과 지지를 주는 '감성 가디언형 인재'입니다. 초고도 기술 사회에서 인간성 존중의 가치를 지키고 조율하는 중추적 역할을 수행합니다.",
             "적응력": "당신은 급격한 변화의 소용돌이 속에서도 유연하게 대처하며, 새로운 역할과 지식을 빠르게 흡수해 성장하는 '카멜레온형 체인저'입니다. 트렌드와 직업의 변화 주기가 극단적으로 빠른 미래 사회에 가장 최적화되어 있습니다.",
-            "윤리적판단": "당신은 눈앞의 이익이나 편의보다 인간 존엄성, 환경 보호, 정직이라는 보편적 윤리 기준을 굳건히 고수하는 '정의로운 나침반형 인재'입니다. AI와 바이오테크 시대의 가치 기준을 올바르게 세울 핵심 인물입니다.",
+            "윤리적판단": "당신은 눈앞의 이익이나 편의보다 인간 존엄성, 환경 보호, 정직이라는 보편적 윤리 기준을 굳건히 고수하는 '정의로운 나침반형 인재'입니다. 첨단 기술과 바이오테크 시대의 가치 기준을 올바르게 세울 핵심 인물입니다.",
             "정보분석": "당신은 쏟아지는 수백만 건의 데이터와 복잡한 노이즈 속에서 유의미한 패턴을 신속하게 도출해 내는 '데이터 고속 탐색 인재'입니다. 트렌드와 의사결정의 성공 가능성을 데이터로 뒷받침하는 핵심 역할을 합니다.",
             "리더십": "당신은 혼란스러운 상황 속에서 팀원들에게 명확한 비전과 동기를 불어넣으며, 흔들림 없이 목표 지점으로 이끌고 가는 '비전 제시형 리더'입니다. 위기 극복 및 강력한 조직 화합을 도모하는 강점을 가집니다."
         };
 
         const QS = [
-            { s: "2035년, AI가 설계한 식단을 손님이 거부합니다. 손님은 '내 취향이 아니에요'라고 합니다.", a: "공감능력", b: "디지털리터러시", context: "영양학적으로 완벽한 AI 식단과 손님의 인간적인 감정 사이에서 조율해야 하는 상황입니다." },
+            { s: "2035년, 자동 식단 시스템이 추천한 식단을 손님이 거부합니다. 손님은 '내 취향이 아니에요'라고 합니다.", a: "공감능력", b: "디지털리터러시", context: "영양학적으로 완벽한 추천 식단과 손님의 인간적인 감정 사이에서 조율해야 하는 상황입니다." },
             { s: "무인 공장에서 로봇 오류로 납기일이 위기에 처했습니다. 원인을 즉시 찾아야 합니다.", a: "문제해결력", b: "정보분석", context: "시스템 붕괴 직전의 긴박한 공장 상황에서 빠른 분석과 결단력이 필요합니다." },
             { s: "전 세계 팀원 10명과 원격으로 프로젝트를 진행합니다. 의견 충돌이 생겼습니다.", a: "협업능력", b: "의사소통", context: "시차가 다른 시공간에서 다양한 가치관을 조율하여 원활한 협업을 이끌어내야 합니다." },
             { s: "SNS에 가짜 뉴스가 빠르게 퍼지고 있습니다. 팩트체커로서 신속히 판단해야 합니다.", a: "비판적사고", b: "정보분석", context: "디지털 정보의 대홍수 속에서 진실과 왜곡을 철저히 검증해야 하는 팩트체킹 상황입니다." },
-            { s: "새로운 AI 도구가 매달 쏟아지는 시대, 콘텐츠 크리에이터로 살아남으려면?", a: "적응력", b: "디지털리터러시", context: "기술 변화의 격랑 속에서 새로운 도구를 도입할지, 창작의 본질을 지킬지 선택해야 합니다." },
+            { s: "새로운 디지털 도구가 매달 쏟아지는 시대, 콘텐츠 크리에이터로 살아남으려면?", a: "적응력", b: "디지털리터러시", context: "기술 변화의 격랑 속에서 새로운 도구를 도입할지, 창작의 본질을 지킬지 선택해야 합니다." },
             { s: "클라이언트가 '완전히 새로운 느낌'을 원하는 브랜드 리뉴얼 프로젝트를 맡았습니다.", a: "창의적사고", b: "의사소통", context: "모호한 요구조건 속에서 창의적 영감을 발휘하고 고객을 납득시켜야 합니다." },
             { s: "유전자 편집 신약 임상 결과가 효과적이지만 윤리 논란이 예상됩니다.", a: "윤리적판단", b: "비판적사고", context: "의학적 성공의 열매와 생명 윤리라는 보편적 가치 사이에서 갈등하는 상황입니다." },
             { s: "재택근무 중 마감이 겹쳐 우선순위를 스스로 정해야 합니다. 상사가 연락이 닿지 않습니다.", a: "자기관리", b: "문제해결력", context: "자율성이 보장된 비대면 근무 환경에서 자기 조절력과 책임감이 요구되는 상황입니다." },
             { s: "노인 돌봄 로봇 개발 중, 어르신이 로봇에 정서적 거리감을 느낀다고 합니다.", a: "공감능력", b: "창의적사고", context: "기술의 최첨단 기술력과 노년층의 심리적 따뜻함 사이의 간극을 메우는 딜레마입니다." },
-            { s: "스타트업 초기 멤버로 합류했지만 방향이 없습니다. 팀이 당신에게 이끌어달라고 합니다.", a: "리더십", b: "자기관리", context: "혼돈스럽고 나침반이 없는 초기 조직에서 비전을 제시하고 팀을 이끌어야 합니다." },
+            { s: "스타트업 초기 멤버로 합류했지만 방향이 없습니다. 팀은 당신에게 이끌어달라고 하고, 내 업무도 스스로 정리해야 합니다.", a: "리더십", b: "자기관리", context: "혼돈스럽고 나침반이 없는 초기 조직에서 팀을 이끄는 힘과 스스로 우선순위를 잡는 힘이 함께 요구되는 상황입니다." },
             { s: "수백만 건의 고객 데이터를 분석해 새로운 소비 패턴을 발견해야 합니다.", a: "정보분석", b: "디지털리터러시", context: "방대한 디지털 노이즈 중에서 비즈니스 인사이트를 얻어내야 하는 고도의 분석 상황입니다." },
             { s: "글로벌 기업 협상 자리에서 문화적 오해로 대화가 막혔습니다.", a: "의사소통", b: "공감능력", context: "서로 다른 비즈니스 관행과 문화를 넘어 감정을 소통하고 타협을 이끌어내야 합니다." },
             { s: "회사가 갑자기 완전히 다른 사업 방향으로 전환합니다. 새 역할을 맡았습니다.", a: "적응력", b: "자기관리", context: "기존의 전문성이 무색해지는 대변화의 시기, 유연성과 빠른 재도전이 필요한 시점입니다." },
-            { s: "AI가 그럴듯하지만 틀린 보고서를 제출했습니다. 당신만 그것을 의심하고 있습니다.", a: "비판적사고", b: "윤리적판단", context: "모두가 시스템을 맹신하는 가운데, 비판적 의구심을 가지고 팩트를 의심해야 하는 상황입니다." },
+            { s: "자동 보고 시스템이 그럴듯하지만 틀린 보고서를 제출했습니다. 모두 그대로 내자고 하지만, 당신만 그것을 의심하고 있습니다.", a: "비판적사고", b: "윤리적판단", context: "팩트를 의심해 오류를 찾아내는 힘과, 틀린 자료를 그대로 제출하지 않으려는 책임감이 함께 필요한 상황입니다." },
             { s: "10명 팀의 프로젝트 리더로, 팀원 간의 갈등을 유연하게 조율하고 성과를 내야 합니다.", a: "리더십", b: "협업능력", context: "팀원 간의 다양한 이해관계와 감정적 대립 속에서 조직의 화합과 성과를 둘 다 챙겨야 합니다." },
             { s: "전혀 새로운 돌발 상황 — 매뉴얼이 전혀 없는 상황에서 즉각 대처법을 완성해야 합니다.", a: "창의적사고", b: "문제해결력", context: "예측하지 못한 돌발 위기 속에서 나만의 직관과 임기응변으로 돌파구를 뚫어내야 합니다." },
-            { s: "기업이 이익을 위해 정부의 권장 환경 기준을 조금만 낮추자고 합의를 종용합니다.", a: "윤리적판단", b: "리더십", context: "눈앞의 달콤한 수익 모델과 환경 파괴라는 미래 세대와의 가치관 딜레마입니다." },
+            { s: "기업이 이익을 위해 정부의 권장 환경 기준을 조금만 낮추자고 합의를 종용합니다. 팀을 설득해 방향을 정해야 합니다.", a: "윤리적판단", b: "리더십", context: "눈앞의 수익과 환경 보호 사이에서 올바른 기준을 세우고, 주변 사람들을 책임 있게 이끌어야 하는 상황입니다." },
             { s: "매일 수십 개의 대량 보고서와 트렌드가 쏟아집니다. 나에게 쓸모있는 진짜 핵심을 골라야 합니다.", a: "정보분석", b: "비판적사고", context: "정보 과잉의 시대에서 나에게 가장 유용한 원석 정보를 빠르고 논리적으로 골라내는 상황입니다." },
             { s: "팀원들이 심한 지친 번아웃 상태입니다. 프로젝트 완수도 중요하지만 팀원의 지친 감정을 챙겨야 합니다.", a: "공감능력", b: "리더십", context: "공동의 실적 압박과 인적 케어라는 목표 지향성과 인간 중심의 가치 갈등 상황입니다." },
-            { s: "내가 유통 중인 프로그램이 나도 모르게 사용자 브라우저 데이터를 무단 수집 중임을 발견했습니다.", a: "윤리적판단", b: "디지털리터러시", context: "회사 실적 및 편의성과 사용자의 사생활 보호라는 디지털 윤리관의 대립 구도입니다." }
+            { s: "내가 유통 중인 프로그램이 나도 모르게 사용자 브라우저 데이터를 무단 수집 중임을 발견했습니다.", a: "윤리적판단", b: "디지털리터러시", context: "회사 실적 및 편의성과 사용자의 사생활 보호라는 디지털 윤리관의 대립 구도입니다." },
+            { s: "새 학기 융합 프로젝트에서 역할이 자주 바뀌고 팀원들의 속도도 다릅니다. 흐름을 맞춰 결과물을 완성해야 합니다.", a: "협업능력", b: "적응력", context: "서로 다른 사람과 맞춰 일하는 힘과, 변하는 조건에 빠르게 적응하는 힘이 동시에 요구되는 상황입니다." },
+            { s: "봉사 행사 준비 중 팀원들이 여러 의견을 내고 있습니다. 함께 조율하면서도 내 담당 일정은 놓치면 안 됩니다.", a: "협업능력", b: "자기관리", context: "공동의 목표를 위해 협력하는 힘과, 맡은 일을 스스로 계획하고 끝까지 실행하는 힘을 비교하는 상황입니다." },
+            { s: "지역 문제 해결 아이디어를 발표해야 합니다. 실제 원인을 찾아야 하고, 사람들에게 명확하게 설명해야 합니다.", a: "문제해결력", b: "의사소통", context: "문제를 해결하는 사고력과, 해결 과정을 설득력 있게 전달하는 표현력이 함께 필요한 상황입니다." },
+            { s: "미래 직업 박람회 부스를 준비하는데 예상한 자료가 갑자기 사용할 수 없게 되었습니다. 새로운 방식으로 빠르게 바꿔야 합니다.", a: "창의적사고", b: "적응력", context: "기존 계획을 넘어 새 아이디어를 내는 힘과, 갑작스러운 변화에 유연하게 대처하는 힘을 비교하는 상황입니다." }
         ];
 
         /* ─── 3. Supabase 초기화 ─── */
         const SUPABASE_URL = "https://ucmzrkwrsezfdjnnwsww.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjbXpya3dyc2V6ZmRqbm53c3d3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4NDIzODcsImV4cCI6MjA2ODQxODM4N30.rvLItmDStjWb3GfECnCXocHvj-CMTfHfD1CHsAHOLaw";
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function createRestSupabaseClient(url, key) {
+            const headers = {
+                apikey: key,
+                Authorization: `Bearer ${key}`,
+                'Content-Type': 'application/json'
+            };
+
+            class QueryBuilder {
+                constructor(table) {
+                    this.table = table;
+                    this.method = 'GET';
+                    this.params = new URLSearchParams();
+                    this.body = null;
+                }
+
+                select(columns = '*') {
+                    this.method = 'GET';
+                    this.params.set('select', columns);
+                    return this;
+                }
+
+                delete() {
+                    this.method = 'DELETE';
+                    return this;
+                }
+
+                eq(column, value) {
+                    this.params.set(column, `eq.${value}`);
+                    return this;
+                }
+
+                order(column, options = {}) {
+                    const direction = options.ascending === false ? 'desc' : 'asc';
+                    this.params.set('order', `${column}.${direction}`);
+                    return this;
+                }
+
+                async insert(rows) {
+                    return request(this.table, {
+                        method: 'POST',
+                        headers: { Prefer: 'return=minimal' },
+                        body: JSON.stringify(rows)
+                    });
+                }
+
+                then(resolve, reject) {
+                    return this.execute().then(resolve, reject);
+                }
+
+                async execute() {
+                    const query = this.params.toString();
+                    return request(`${this.table}${query ? `?${query}` : ''}`, {
+                        method: this.method,
+                        body: this.body
+                    });
+                }
+            }
+
+            async function request(path, options = {}) {
+                try {
+                    const res = await fetch(`${url}/rest/v1/${path}`, {
+                        method: options.method || 'GET',
+                        headers: { ...headers, ...(options.headers || {}) },
+                        body: options.body || null
+                    });
+                    const text = await res.text();
+                    const data = text ? JSON.parse(text) : null;
+                    if (!res.ok) {
+                        return { data: null, error: { message: data?.message || text || res.statusText } };
+                    }
+                    return { data, error: null };
+                } catch (err) {
+                    return { data: null, error: { message: err.message } };
+                }
+            }
+
+            return {
+                from(table) {
+                    return new QueryBuilder(table);
+                }
+            };
+        }
+
+        const sb = window.supabase
+            ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+            : createRestSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         /* ─── 4. 상태 변수 ─── */
         let scores = {};
@@ -1635,6 +1738,7 @@
         function renderQ() {
             const q = QS[qIdx];
             document.getElementById('qNum').textContent = qIdx + 1;
+            document.getElementById('qTotal').textContent = `/${QS.length}`;
             document.getElementById('progFill').style.width = ((qIdx + 1) / QS.length * 100) + '%';
             document.getElementById('scenarioTxt').textContent = q.s;
             
@@ -1688,7 +1792,10 @@
         }
 
         function renderLiveScores() {
-            const sorted = COMP_NAMES.map(c => ({ c, v: scores[c] })).sort((a, b) => b.v - a.v);
+            const sorted = COMP_NAMES.map(c => ({ c, v: scores[c] })).sort((a, b) => {
+                if (b.v !== a.v) return b.v - a.v;
+                return COMP_NAMES.indexOf(a.c) - COMP_NAMES.indexOf(b.c);
+            });
             const max = sorted[0]?.v || 1;
             
             document.getElementById('topComp').textContent = sorted[0]?.c || '-';
@@ -1715,7 +1822,10 @@
             document.getElementById('result-view').style.display = 'flex';
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            const sorted = COMP_NAMES.map(c => ({ c, v: scores[c] })).sort((a, b) => b.v - a.v);
+            const sorted = COMP_NAMES.map(c => ({ c, v: scores[c] })).sort((a, b) => {
+                if (b.v !== a.v) return b.v - a.v;
+                return COMP_NAMES.indexOf(a.c) - COMP_NAMES.indexOf(b.c);
+            });
             const top6 = sorted.slice(0, 6);
             
             // 💡 상황 매칭 리포트 렌더링
@@ -1782,9 +1892,12 @@
             document.getElementById('syncName').textContent = studentName;
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            const sorted = COMP_NAMES.map(c => ({ c, v: scores[c] })).sort((a, b) => b.v - a.v);
+            const sorted = COMP_NAMES.map(c => ({ c, v: scores[c] })).sort((a, b) => {
+                if (b.v !== a.v) return b.v - a.v;
+                return COMP_NAMES.indexOf(a.c) - COMP_NAMES.indexOf(b.c);
+            });
             const top6Names = sorted.slice(0, 6).map(item => item.c);
-            const top3Str = top6Names.slice(0, 3).join(', ');
+            const top3Str = top6Names.slice(0, 6).join(', ');
             const mainType = top6Names[0];
 
             const resultData = {
@@ -1873,6 +1986,16 @@
                 const dateStr = formatDate(row.created_at || (row.details && row.details.created_at));
                 const color = PALETTE[COMP_NAMES.indexOf(row.main_type)] || 'var(--green)';
 
+                // 💡 TOP 6 전체 추출
+                let top6Str = '';
+                if (row.details && row.details.top_6) {
+                    top6Str = row.details.top_6.join(', ');
+                } else if (row.top_tags) {
+                    top6Str = row.top_tags;
+                } else {
+                    top6Str = row.main_type || '';
+                }
+
                 const card = document.createElement('div');
                 card.className = 'db-card';
                 card.style.borderTop = `4px solid ${color}`;
@@ -1887,7 +2010,7 @@
                             🥇 ${escapeHTML(row.main_type)}
                         </div>
                         <div class="db-card-subtags">
-                            <strong>TOP 3:</strong> ${escapeHTML(row.top_tags)}
+                            <strong>TOP 6:</strong> ${escapeHTML(top6Str)}
                         </div>
                     </div>
                     <div class="db-card-actions">
@@ -1946,7 +2069,10 @@
                 return;
             }
 
-            const sorted = COMP_NAMES.map(c => ({ c, v: totals[c] })).sort((a, b) => b.v - a.v);
+            const sorted = COMP_NAMES.map(c => ({ c, v: totals[c] })).sort((a, b) => {
+                if (b.v !== a.v) return b.v - a.v;
+                return COMP_NAMES.indexOf(a.c) - COMP_NAMES.indexOf(b.c);
+            });
             const top6 = sorted.slice(0, 6);
 
             const analyticsTitle = document.getElementById('analyticsTitle');
@@ -2034,7 +2160,10 @@
             const fullList = document.getElementById('modalFullList');
             fullList.innerHTML = '';
             
-            const sorted = COMP_NAMES.map(c => ({ c, v: detailScores[c] || 0 })).sort((a, b) => b.v - a.v);
+            const sorted = COMP_NAMES.map(c => ({ c, v: detailScores[c] || 0 })).sort((a, b) => {
+                if (b.v !== a.v) return b.v - a.v;
+                return COMP_NAMES.indexOf(a.c) - COMP_NAMES.indexOf(b.c);
+            });
             sorted.forEach(({ c, v }, i) => {
                 const color = PALETTE[COMP_NAMES.indexOf(c)];
                 const el = document.createElement('div');
