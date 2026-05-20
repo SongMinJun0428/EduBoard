@@ -1,0 +1,1866 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>백제 문화유산 조사 | 나만의 국가유산 학습포털</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Serif+KR:wght@400;700;900&display=swap');
+
+    :root {
+      --gok-navy: #163a75;
+      --gok-blue: #003764;
+      --gok-red: #e4032e;
+      --gok-gray: #575757;
+      --gok-teal: #0b7c7a;
+      --gok-accent: #ab834b; /* Gold/Bronze */
+      --gok-light-bg: #f5f7fa;
+      --gok-border: #d9e1ec;
+      --gok-text-dark: #222222;
+      --gok-text-muted: #666666;
+      --wrap: 1200px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--gok-text-dark);
+      font-family: "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      background: #f8fafc;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    a:hover,
+    a:focus {
+      color: var(--gok-teal);
+      text-decoration: none;
+    }
+
+    .skip {
+      position: absolute;
+      top: -48px;
+      left: 16px;
+      z-index: 100;
+      padding: 10px 14px;
+      color: #fff;
+      background: var(--gok-blue);
+      font-weight: 700;
+      transition: top 0.2s ease;
+    }
+
+    .skip:focus {
+      top: 12px;
+    }
+
+    /* Notice Bar (Top) */
+    .notice-bar {
+      border-bottom: 1px solid #e2e8f0;
+      background: #fff;
+      font-size: 13px;
+      color: #475569;
+    }
+
+    .notice-inner,
+    .header-inner,
+    .nav-inner,
+    .page,
+    .footer-inner {
+      width: min(var(--wrap), calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .notice-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 38px;
+    }
+
+    .notice-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .notice-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
+      border-radius: 12px;
+      color: #fff;
+      background: var(--gok-teal);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .utility {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .utility span, .utility a {
+      cursor: pointer;
+      color: #64748b;
+    }
+
+    .utility span:hover, .utility a:hover {
+      color: var(--gok-text-dark);
+    }
+
+    /* Site Header */
+    .site-header {
+      border-bottom: 1px solid #e2e8f0;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      min-height: 90px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-symbol {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+    }
+
+    .brand-symbol img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .brand-title {
+      margin: 0;
+      color: var(--gok-blue);
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-sub {
+      display: block;
+      margin-top: 2px;
+      color: var(--gok-gray);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* Search Box */
+    .search-box {
+      display: flex;
+      align-items: center;
+      width: 380px;
+      height: 46px;
+      border: 2px solid var(--gok-teal);
+      border-radius: 24px;
+      padding: 0 6px 0 18px;
+      background: #fff;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .search-box:focus-within {
+      box-shadow: 0 0 0 3px rgba(11, 124, 122, 0.15);
+    }
+
+    .search-box span {
+      flex-grow: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    .search-icon {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--gok-teal);
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .search-icon:hover {
+      background: #096361;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    .icon-btn {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 1px solid #e2e8f0;
+      border-radius: 50%;
+      background: #fff;
+      color: #334155;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .icon-btn:hover {
+      background: #f8fafc;
+    }
+
+    /* GNB (Main Nav) */
+    .main-nav {
+      border-bottom: 1px solid #e2e8f0;
+      background: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .nav-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-inner a {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 56px;
+      color: #334155;
+      font-size: 16px;
+      font-weight: 700;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .nav-inner a:hover {
+      color: var(--gok-teal);
+      border-bottom-color: var(--gok-teal);
+      background: rgba(11, 124, 122, 0.02);
+    }
+
+    .nav-inner a.active {
+      color: var(--gok-teal);
+      border-bottom-color: var(--gok-teal);
+      font-weight: 800;
+    }
+
+    /* Page Header Bar (instead of hero-strip) */
+    .hero-strip {
+      border-bottom: 1px solid #e2e8f0;
+      background: #fff;
+      color: var(--gok-text-dark);
+    }
+
+    .hero-inner {
+      width: min(var(--wrap), calc(100% - 40px));
+      margin: 0 auto;
+      padding: 24px 0;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 10px;
+      padding: 0;
+      list-style: none;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .breadcrumb li a {
+      color: #64748b;
+    }
+
+    .breadcrumb li a:hover {
+      color: var(--gok-teal);
+    }
+
+    .breadcrumb li:not(:last-child)::after {
+      content: ">";
+      margin-left: 6px;
+      color: #cbd5e1;
+    }
+
+    .hero-title {
+      margin: 0;
+      font-family: "Noto Serif KR", Georgia, serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--gok-blue);
+      line-height: 1.25;
+      letter-spacing: -0.5px;
+    }
+
+    .hero-sub {
+      margin: 8px 0 0;
+      color: #475569;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* Main Page Content Layout */
+    .page {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 40px;
+      padding: 40px 0 80px;
+    }
+
+    /* Sidebar Navigation */
+    .side {
+      align-self: start;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    .side-title {
+      margin: 0;
+      padding: 18px 20px;
+      color: #fff;
+      background: var(--gok-navy);
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .side-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .side-list li a {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      border-top: 1px solid #f1f5f9;
+      color: #334155;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .side-list li a::after {
+      content: "➔";
+      color: #cbd5e1;
+      font-size: 11px;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+
+    .side-list li a:hover {
+      color: var(--gok-teal);
+      background: #fafbfd;
+    }
+
+    .side-list li a:hover::after {
+      color: var(--gok-teal);
+      transform: translateX(3px);
+    }
+
+    .side-list li a.active {
+      color: var(--gok-teal);
+      background: rgba(11, 124, 122, 0.03);
+      font-weight: 700;
+    }
+
+    .side-list li a.active::after {
+      color: var(--gok-teal);
+    }
+
+    /* Content Area */
+    .content-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 2px solid var(--gok-blue);
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+
+    .content-top h2 {
+      margin: 0;
+      font-family: "Noto Serif KR", Georgia, serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gok-blue);
+    }
+
+    .page-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tool {
+      display: inline-grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid #cbd5e1;
+      border-radius: 50%;
+      background: #fff;
+      color: #475569;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tool:hover {
+      border-color: var(--gok-teal);
+      color: var(--gok-teal);
+      background: rgba(11, 124, 122, 0.02);
+    }
+
+    /* Composition Box */
+    .composition {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: center;
+      margin-bottom: 30px;
+      padding: 20px 24px;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid var(--gok-teal);
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.01);
+    }
+
+    .composition strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--gok-blue);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .composition span {
+      color: #475569;
+      font-size: 14px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .tabs a {
+      padding: 10px 18px;
+      border-right: 1px solid #cbd5e1;
+      font-size: 14px;
+      font-weight: 700;
+      color: #475569;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .tabs a:last-child {
+      border-right: 0;
+    }
+
+    .tabs a:hover {
+      color: var(--gok-teal);
+      background: #f8fafc;
+    }
+
+    .tabs a.active {
+      color: #fff;
+      background: var(--gok-teal);
+      border-color: var(--gok-teal);
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 30px;
+    }
+
+    .quick-actions a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      color: #475569;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s ease;
+    }
+
+    .quick-actions a:hover {
+      border-color: var(--gok-teal);
+      color: var(--gok-teal);
+      box-shadow: 0 2px 4px rgba(11, 124, 122, 0.1);
+      background: rgba(11, 124, 122, 0.01);
+    }
+
+    /* Pager Navigation */
+    .pager {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      margin-bottom: 30px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .pager div {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      min-height: 54px;
+    }
+
+    .pager div + div {
+      border-left: 1px solid #cbd5e1;
+    }
+
+    .pager b {
+      display: grid;
+      place-items: center;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .pager span {
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      color: #334155;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .pager span:hover {
+      color: var(--gok-teal);
+      text-decoration: underline;
+    }
+
+    /* Lesson Navigation Buttons */
+    .lesson-nav {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .lesson-link {
+      display: block;
+      border: 1px solid #e2e8f0;
+      border-top: 4px solid var(--gok-blue);
+      border-radius: 6px;
+      padding: 20px 24px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      transition: all 0.2s ease;
+    }
+
+    .lesson-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      border-color: #cbd5e1;
+      border-top-color: var(--gok-teal);
+    }
+
+    .lesson-link strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--gok-blue);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .lesson-link span {
+      display: block;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .lesson-link.final {
+      border-top-color: var(--gok-teal);
+    }
+
+    /* Section Title */
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 50px 0 20px;
+      color: var(--gok-blue);
+      font-family: "Noto Serif KR", Georgia, serif;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .section-title::before {
+      content: "";
+      width: 4px;
+      height: 20px;
+      background: var(--gok-teal);
+      border-radius: 2px;
+    }
+
+    /* Heritage Cards */
+    .heritage-card {
+      margin-bottom: 40px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+
+    .heritage-head {
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid #f1f5f9;
+      background: #fafbfd;
+    }
+
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      color: #475569;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge.gold {
+      border-color: #e2c08d;
+      color: #7c5c29;
+      background: #fefcf6;
+    }
+
+    .heritage-title {
+      margin: 0;
+      font-family: "Noto Serif KR", Georgia, serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gok-blue);
+      line-height: 1.25;
+    }
+
+    .hanja {
+      display: inline-block;
+      margin-left: 10px;
+      color: #475569;
+      font-size: 18px;
+      font-family: "Noto Serif KR", Georgia, serif;
+      font-weight: 400;
+    }
+
+    .english {
+      margin: 6px 0 0;
+      color: var(--gok-gray);
+      font-size: 14px;
+    }
+
+    .heritage-body {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 30px;
+      padding: 28px;
+    }
+
+    /* Photo Viewer */
+    .photo {
+      margin: 0;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    .photo img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .photo:hover img {
+      transform: scale(1.02);
+    }
+
+    .photo figcaption {
+      padding: 12px;
+      color: #64748b;
+      background: #fafbfd;
+      border-top: 1px solid #e2e8f0;
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* Info Table */
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      border-top: 2px solid var(--gok-teal);
+      font-size: 14px;
+    }
+
+    .info-table th,
+    .info-table td {
+      border-bottom: 1px solid #e2e8f0;
+      padding: 12px 16px;
+      vertical-align: middle;
+    }
+
+    .info-table th {
+      width: 120px;
+      color: #334155;
+      background: #f8fafc;
+      text-align: left;
+      font-weight: 700;
+      border-right: 1px solid #e2e8f0;
+    }
+
+    .info-table td {
+      color: var(--gok-text-dark);
+      line-height: 1.6;
+    }
+
+    /* Summary Grid */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .summary-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 16px;
+      background: #fafbfd;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+      transition: background-color 0.2s ease;
+    }
+
+    .summary-box:hover {
+      background: #f1f5f9;
+    }
+
+    .summary-box b {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--gok-teal);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .summary-box p {
+      margin: 0;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* Description */
+    .explain {
+      padding: 0 28px 28px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .explain h4 {
+      margin: 24px 0 12px;
+      color: var(--gok-blue);
+      font-family: "Noto Serif KR", Georgia, serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .explain p {
+      margin: 0 0 12px;
+      color: #334155;
+      font-size: 15px;
+      line-height: 1.8;
+      text-align: justify;
+    }
+
+    .explain p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Lesson Panels & Notes */
+    .note-panel {
+      margin: 40px 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .lesson-page {
+      border-top: 4px solid var(--gok-blue);
+    }
+
+    .lesson-page.final {
+      border-top-color: var(--gok-teal);
+    }
+
+    .note-panel h3 {
+      margin: 0;
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+      color: var(--gok-blue);
+      background: #fafbfd;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .lesson-kicker {
+      display: inline-block;
+      margin-bottom: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #fff;
+      background: var(--gok-blue);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .lesson-page.final .lesson-kicker {
+      background: var(--gok-teal);
+    }
+
+    .note-body {
+      padding: 28px;
+    }
+
+    .note-body h4 {
+      margin: 28px 0 12px;
+      color: var(--gok-navy);
+      font-family: "Noto Serif KR", Georgia, serif;
+      font-size: 17px;
+      font-weight: 700;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 6px;
+    }
+
+    .note-body h4:first-child {
+      margin-top: 0;
+    }
+
+    .note-body p {
+      margin: 0 0 14px;
+      color: #334155;
+      font-size: 15px;
+      line-height: 1.8;
+      text-align: justify;
+    }
+
+    .note-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Sources */
+    .source-list {
+      display: grid;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .source-list li {
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 16px 20px;
+      background: #fafbfd;
+      transition: all 0.2s ease;
+    }
+
+    .source-list li:hover {
+      border-color: var(--gok-teal);
+      background: #fff;
+    }
+
+    .source-list strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #334155;
+      font-size: 14px;
+    }
+
+    .source-list a {
+      color: var(--gok-teal);
+      word-break: break-all;
+      font-size: 13px;
+    }
+
+    .source-list a:hover {
+      text-decoration: underline;
+    }
+
+    /* Lesson page inner sources */
+    .lesson-sources {
+      margin-top: 32px;
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 20px;
+    }
+
+    .lesson-sources h5 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      color: var(--gok-navy);
+      font-weight: 700;
+      font-family: "Noto Serif KR", Georgia, serif;
+    }
+
+    .source-list.mini {
+      gap: 8px;
+    }
+
+    .source-list.mini li {
+      padding: 10px 16px;
+      font-size: 13px;
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .source-list.mini li:hover {
+      border-color: var(--gok-teal);
+      background: #fff;
+    }
+
+    .source-list.mini a {
+      font-size: 12px;
+      color: var(--gok-teal);
+      text-decoration: none;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .source-list.mini a:hover {
+      text-decoration: underline;
+    }
+
+    /* Satisfaction Form (Official Portal Style) */
+    .satisfaction {
+      margin-top: 40px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .satisfaction-title {
+      padding: 16px 24px;
+      background: #fafbfd;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gok-blue);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .satisfaction-body {
+      padding: 24px;
+    }
+
+    .rating {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .rating label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #334155;
+      cursor: pointer;
+    }
+
+    .rating input[type="radio"] {
+      accent-color: var(--gok-teal);
+      width: 16px;
+      height: 16px;
+    }
+
+    .opinion-input-wrapper {
+      display: flex;
+      gap: 10px;
+    }
+
+    .survey-text {
+      flex: 1;
+      height: 44px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 0 16px;
+      font-size: 14px;
+      color: var(--gok-text-dark);
+      background: #fff;
+      transition: border-color 0.2s ease;
+    }
+
+    .survey-text:focus {
+      outline: none;
+      border-color: var(--gok-teal);
+    }
+
+    .survey-submit {
+      width: 90px;
+      height: 44px;
+      border: 0;
+      border-radius: 4px;
+      background: var(--gok-navy);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .survey-submit:hover {
+      background: var(--gok-blue);
+    }
+
+    /* Site Footer */
+    .site-footer {
+      border-top: 1px solid #e2e8f0;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .footer-inner {
+      padding: 40px 0 50px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 16px;
+    }
+
+    .footer-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .footer-emblem {
+      width: 32px;
+      height: 32px;
+      filter: grayscale(100%) opacity(70%);
+    }
+
+    .footer-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      color: #1e293b;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .footer-links a {
+      color: #334155;
+    }
+
+    .footer-links a.privacy {
+      color: var(--gok-teal);
+    }
+
+    .footer-bottom {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 30px;
+      align-items: flex-end;
+    }
+
+    .footer-info p {
+      margin: 4px 0;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .footer-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    /* Family Site Select */
+    .family-select {
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #fff;
+      font-size: 13px;
+      color: #334155;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .family-select:focus {
+      border-color: var(--gok-teal);
+    }
+
+    .kogl-mark {
+      font-size: 11px;
+      padding: 4px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #f8fafc;
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+      .page {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+
+      .side {
+        display: none;
+      }
+
+      .heritage-body {
+        grid-template-columns: 1fr;
+      }
+
+      .photo {
+        max-width: 480px;
+        margin: 0 auto;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px 0;
+        gap: 16px;
+      }
+
+      .search-box {
+        width: 100%;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+
+      .nav-inner {
+        flex-wrap: wrap;
+      }
+
+      .nav-inner a {
+        flex: 1 1 50%;
+        height: 48px;
+        font-size: 14px;
+      }
+
+      .composition {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        flex-wrap: wrap;
+        width: 100%;
+      }
+
+      .tabs a {
+        flex: 1 1 33.33%;
+        border-bottom: 1px solid #cbd5e1;
+      }
+
+      .quick-actions {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .pager {
+        grid-template-columns: 1fr;
+      }
+
+      .pager div + div {
+        border-left: 0;
+        border-top: 1px solid #cbd5e1;
+      }
+
+      .lesson-nav {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .opinion-input-wrapper {
+        flex-direction: column;
+      }
+
+      .survey-submit {
+        width: 100%;
+      }
+
+      .footer-bottom {
+        grid-template-columns: 1fr;
+        align-items: flex-start;
+      }
+
+      .footer-right {
+        align-items: flex-start;
+        width: 100%;
+      }
+
+      .family-select {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">본문 바로가기</a>
+
+  <div class="notice-bar">
+    <div class="notice-inner">
+      <div class="notice-left">
+        <span class="notice-mark">학</span>
+        <span>국가유산포털 화면 구성을 참고해 만든 개인 학습용 페이지입니다.</span>
+      </div>
+      <div class="utility" aria-label="상단 부가 메뉴">
+        <span>누리집 안내지도</span>
+        <span>화면크기 보통</span>
+        <span>Language 한국어</span>
+      </div>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#">
+        <div class="brand-symbol">
+          <img src="img/gov_emblem.svg" alt="대한민국 정부 상징">
+        </div>
+        <div class="brand-text-group">
+          <span class="brand-sub">국가유산청</span>
+          <h1 class="brand-title">국가유산포털</h1>
+        </div>
+      </a>
+
+      <div class="search-box" role="search" aria-label="통합검색">
+        <span>국가유산 명칭을 입력하세요</span>
+        <span class="search-icon" aria-hidden="true">🔍</span>
+      </div>
+
+      <div class="header-actions">
+        <span>통합검색</span>
+        <span class="icon-btn" title="전체메뉴" aria-label="전체메뉴">≡</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="main-nav" aria-label="주요 메뉴">
+    <div class="nav-inner">
+      <a class="active" href="#content">국가유산 검색</a>
+      <a href="#lesson1">조사 메모</a>
+      <a href="#lesson2">최종 정리</a>
+      <a href="#sources">출처</a>
+      <a href="#images">이미지</a>
+    </div>
+  </nav>
+
+  <section class="hero-strip" aria-labelledby="hero-title">
+    <div class="hero-inner">
+      <ol class="breadcrumb" aria-label="현재 위치">
+        <li>홈</li>
+        <li>국가유산 검색</li>
+        <li>백제 문화유산 조사</li>
+      </ol>
+      <h2 class="hero-title" id="hero-title">삼국 시대 백제 문화유산 조사</h2>
+      <p class="hero-sub">서산 용현리 마애여래삼존상, 부여 정림사지 오층석탑, 백제 금동대향로를 국가유산포털식 상세 페이지로 정리했습니다.</p>
+    </div>
+  </section>
+
+  <main class="page" id="content">
+    <aside class="side" aria-label="왼쪽 메뉴">
+      <h2 class="side-title">국가유산 검색</h2>
+      <ul class="side-list">
+        <li><a class="active" href="#basic">기본 정보</a></li>
+        <li><a href="#description">설명</a></li>
+        <li><a href="#lesson1">조사연구자료</a></li>
+        <li><a href="#lesson2">최종 정리 답안</a></li>
+        <li><a href="#sources">출처</a></li>
+      </ul>
+    </aside>
+
+    <section>
+      <div class="content-top">
+        <h2>국가유산 검색</h2>
+        <div class="page-tools" aria-label="페이지 도구">
+          <span class="tool" title="페이지 인쇄">⎙</span>
+          <span class="tool" title="공유">↗</span>
+          <span class="tool" title="북마크">☆</span>
+        </div>
+      </div>
+
+      <div class="composition">
+        <div>
+          <strong>이 페이지의 구성</strong>
+          <span>백제 불상, 백제 불탑, 백제 기술 발전 문화재를 한 페이지에 모았습니다.</span>
+        </div>
+        <nav class="tabs" aria-label="본문 탭">
+          <a class="active" href="#basic">기본 정보</a>
+          <a href="#description">설명</a>
+          <a href="#images">이미지</a>
+          <a href="#lesson1">조사연구자료</a>
+          <a href="#sources">출처</a>
+        </nav>
+      </div>
+
+      <div class="quick-actions">
+        <a href="#lesson1">의견 등록하기</a>
+        <a href="#lesson2">의견처리 결과 확인</a>
+        <a href="#sources">QR코드 바로보기</a>
+        <a href="#description">설명 비교하기</a>
+      </div>
+
+      <div class="pager" aria-label="이전 다음 자료">
+        <div>
+          <b>이전</b>
+          <span>금동미륵보살반가사유상</span>
+        </div>
+        <div>
+          <b>다음</b>
+          <span>부여 능산리사지 석조사리감</span>
+        </div>
+      </div>
+
+      <div class="lesson-nav" aria-label="차시별 자료 바로가기">
+        <a class="lesson-link" href="#lesson1">
+          <strong>1차시 조사 메모</strong>
+          <span>처음 조사한 내용입니다. 문화재의 위치, 형태, 특징, 교과서 연결 내용을 자료별로 정리했습니다.</span>
+        </a>
+        <a class="lesson-link final" href="#lesson2">
+          <strong>2차시 최종 정리 답안</strong>
+          <span>제출용으로 다듬은 최종 답안입니다. 핵심 내용만 자연스럽게 읽히도록 따로 정리했습니다.</span>
+        </a>
+      </div>
+
+      <h3 class="section-title" id="basic">기본 정보</h3>
+
+      <article class="heritage-card" id="buddha">
+        <header class="heritage-head">
+          <div class="badge-row">
+            <span class="badge gold">국보</span>
+            <span class="badge">삼국 시대 불상</span>
+          </div>
+          <h3 class="heritage-title">
+            서산 용현리 마애여래삼존상
+            <span class="hanja">瑞山 龍賢里 磨崖如來三尊像</span>
+          </h3>
+          <p class="english">Rock-carved Buddha Triad in Yonghyeon-ri, Seosan</p>
+        </header>
+
+        <div class="heritage-body">
+          <figure class="photo" id="images">
+            <img src="https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=6298893&ccbaKdcd=11&ccbaAsno=00840000&ccbaCtcd=34" alt="서산 용현리 마애여래삼존상 대표 이미지">
+            <figcaption>대표 이미지 출처: 국가유산청 국가유산포털, 서산 용현리 마애여래삼존상.</figcaption>
+          </figure>
+
+          <div>
+            <table class="info-table">
+              <tbody>
+                <tr><th>분류</th><td>유물 / 불교조각 / 석조 / 불상</td></tr>
+                <tr><th>수량/면적</th><td>3구</td></tr>
+                <tr><th>지정일</th><td>1962.12.20</td></tr>
+                <tr><th>소재지</th><td>충남 서산시 운산면 용현리 2-10번지 / 운산면 마애삼존불로 65-13</td></tr>
+                <tr><th>시대</th><td>백제시대 후기</td></tr>
+                <tr><th>관리자</th><td>서산시</td></tr>
+              </tbody>
+            </table>
+
+            <div class="summary-grid">
+              <div class="summary-box">
+                <b>만든 방식</b>
+                <p>자연 바위나 암벽에 직접 새긴 마애불입니다.</p>
+              </div>
+              <div class="summary-box">
+                <b>형태</b>
+                <p>가운데 여래입상과 양쪽 보살상이 있는 삼존 형식입니다.</p>
+              </div>
+              <div class="summary-box">
+                <b>별칭</b>
+                <p>부드럽고 친근한 얼굴 때문에 ‘백제의 미소’라고 불립니다.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="explain" id="description">
+          <h4>설명</h4>
+          <p>서산 용현리 마애여래삼존상은 충청남도 서산시 운산면 용현리에 있는 백제 시대 후기의 불상이다. 따로 세운 불상이 아니라 자연 암벽에 새긴 마애불이며, 가운데 여래입상과 양쪽 보살상이 함께 배치된 삼존 형식이다.</p>
+          <p>한쪽 보살은 반가사유상 자세를 하고 있어 배치가 독특하다. 얼굴에는 입꼬리와 광대 부분이 자연스럽게 표현되어 밝고 온화한 미소가 나타나며, 백제 불상의 부드럽고 인간적인 아름다움을 보여 주는 대표적인 문화재이다.</p>
+        </div>
+      </article>
+
+      <article class="heritage-card" id="pagoda">
+        <header class="heritage-head">
+          <div class="badge-row">
+            <span class="badge gold">국보</span>
+            <span class="badge">삼국 시대 불탑</span>
+          </div>
+          <h3 class="heritage-title">
+            부여 정림사지 오층석탑
+            <span class="hanja">扶餘 定林寺址 五層石塔</span>
+          </h3>
+          <p class="english">Five-story Stone Pagoda at Jeongnimsa Temple Site, Buyeo</p>
+        </header>
+
+        <div class="heritage-body">
+          <figure class="photo">
+            <img src="https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=6347704&ccbaKdcd=11&ccbaAsno=00090000&ccbaCtcd=34" alt="부여 정림사지 오층석탑 대표 이미지">
+            <figcaption>대표 이미지 출처: 국가유산청 국가유산포털, 부여 정림사지 오층석탑.</figcaption>
+          </figure>
+
+          <div>
+            <table class="info-table">
+              <tbody>
+                <tr><th>분류</th><td>유적건조물 / 종교신앙 / 불교 / 탑</td></tr>
+                <tr><th>수량/면적</th><td>1기</td></tr>
+                <tr><th>지정일</th><td>1962.12.20</td></tr>
+                <tr><th>소재지</th><td>충청남도 부여군 정림로 83 정림사지</td></tr>
+                <tr><th>시대</th><td>백제시대 후기 7세기</td></tr>
+                <tr><th>관리자</th><td>부여군</td></tr>
+              </tbody>
+            </table>
+
+            <div class="summary-grid">
+              <div class="summary-box">
+                <b>재료와 층수</b>
+                <p>돌로 만든 5층 석탑이며 전체 높이는 약 8.33m입니다.</p>
+              </div>
+              <div class="summary-box">
+                <b>구조</b>
+                <p>기단부 위에 5층 탑신부를 쌓은 형태입니다.</p>
+              </div>
+              <div class="summary-box">
+                <b>특징</b>
+                <p>돌로 목조건축의 모습을 표현해 안정감과 균형미가 느껴집니다.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="explain">
+          <h4>설명</h4>
+          <p>부여 정림사지 오층석탑은 충청남도 부여군 정림사지에 있는 백제 시대 후기 7세기의 석탑이다. 아래쪽 기단부 위에 5층의 탑신부를 쌓은 형태이며, 맨 위 상륜부는 현재 일부만 남아 있다.</p>
+          <p>이 탑은 돌로 만들었지만 목조건축의 특징을 석탑으로 표현한 점이 두드러진다. 탑신부가 위로 갈수록 작아져 안정감과 균형미가 느껴지고, 백제의 불교문화와 석조 건축 기술을 보여 주는 대표적인 문화재이다.</p>
+        </div>
+      </article>
+
+      <article class="heritage-card" id="incense">
+        <header class="heritage-head">
+          <div class="badge-row">
+            <span class="badge gold">국보</span>
+            <span class="badge">기술 발전 문화재</span>
+          </div>
+          <h3 class="heritage-title">
+            백제 금동대향로
+            <span class="hanja">百濟 金銅大香爐</span>
+          </h3>
+          <p class="english">Great Gilt-bronze Incense Burner of Baekje</p>
+        </header>
+
+        <div class="heritage-body">
+          <figure class="photo">
+            <img src="https://www.heritage.go.kr/heri/cul/imgHeritage.do?ccimId=6528485&ccbaKdcd=11&ccbaAsno=02870000&ccbaCtcd=34" alt="백제 금동대향로 대표 이미지">
+            <figcaption>대표 이미지 출처: 국가유산청 국가유산포털, 백제 금동대향로.</figcaption>
+          </figure>
+
+          <div>
+            <table class="info-table">
+              <tbody>
+                <tr><th>분류</th><td>유물 / 불교공예 / 공양구</td></tr>
+                <tr><th>수량/면적</th><td>1점</td></tr>
+                <tr><th>지정일</th><td>1996.05.30</td></tr>
+                <tr><th>소재지</th><td>충남 부여군 부여읍 금성로 5, 국립부여박물관</td></tr>
+                <tr><th>시대</th><td>백제시대 6∼7세기</td></tr>
+                <tr><th>관리자</th><td>국립부여박물관</td></tr>
+              </tbody>
+            </table>
+
+            <div class="summary-grid">
+              <div class="summary-box">
+                <b>형태</b>
+                <p>봉황 장식, 산 모양 뚜껑, 연꽃 몸체, 용 받침으로 이루어졌습니다.</p>
+              </div>
+              <div class="summary-box">
+                <b>용도</b>
+                <p>향을 피우는 도구로, 뚜껑 구멍을 통해 향 연기가 피어오릅니다.</p>
+              </div>
+              <div class="summary-box">
+                <b>기술</b>
+                <p>세밀한 금속 공예와 구조 설계가 결합된 백제 공예의 걸작입니다.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="explain">
+          <h4>설명</h4>
+          <p>백제 금동대향로는 백제 시대 6∼7세기에 만들어진 금동 향로로, 현재 국립부여박물관에 있다. 맨 위에는 봉황 장식이 있고, 뚜껑은 여러 산봉우리가 겹쳐진 산 모양이며, 몸체는 연꽃 모양, 아래쪽은 용 모양 받침으로 이루어져 있다.</p>
+          <p>뚜껑에는 악기를 연주하는 사람, 새와 동물, 상상의 동물, 나무와 바위, 물의 흐름 등이 세밀하게 표현되어 있다. 향을 피우는 실용적인 도구이면서도 백제의 종교 사상, 예술성, 금속 공예 기술을 함께 보여 주는 문화재이다.</p>
+        </div>
+      </article>
+
+      <section class="note-panel lesson-page" id="lesson1">
+        <h3><span class="lesson-kicker">1차시</span><br>조사 메모</h3>
+        <div class="note-body">
+          <h4>1. 삼국 시대 불상 - 백제의 서산 용현리 마애여래삼존상</h4>
+          <p>내가 조사할 불상은 백제의 서산 용현리 마애여래삼존상이다. 이 불상은 충청남도 서산시 운산면 용현리에 있는 백제 시대 후기의 불상이다. 국가유산포털에서는 국보로 소개하고 있으며, 분류는 석조 불상, 수량은 3구라고 되어 있다.</p>
+          <p>이 불상은 마애불이다. 마애불은 따로 세워 만든 불상이 아니라 자연 바위나 암벽에 새긴 불상을 말한다. 따라서 이 불상의 만든 방식은 암벽에 직접 새긴 방식이라고 정리할 수 있다.</p>
+          <p>형태적 특징은 가운데에 여래입상이 있고 양쪽에 보살상이 함께 배치된 삼존 형식이라는 점이다. 특히 한쪽 보살은 반가사유상 자세를 하고 있어 배치가 독특하다. 한국민족문화대백과사전에는 이 불상의 높이가 2.8m라고 되어 있다.</p>
+          <p>신체 표현의 특징은 얼굴의 밝고 부드러운 미소이다. 우리역사넷 설명에 따르면 본존불과 협시보살상 모두 입꼬리를 자연스럽게 올리고, 광대 부분을 사실적으로 표현하여 친근하고 온화한 미소가 나타난다. 그래서 이 불상은 ‘백제의 미소’라고 불린다.</p>
+          <p>교과서 내용과 연결하면, 삼국 시대에는 불교가 전해진 뒤 불교 예술이 발달했고, 백제의 서산 용현리 마애여래삼존상은 백제 불상의 부드럽고 인간적인 아름다움을 보여 주는 대표적인 문화재라고 볼 수 있다.</p>
+
+          <h4>2. 삼국 시대 불탑 - 백제의 부여 정림사지 오층석탑</h4>
+          <p>내가 조사할 불탑은 백제의 부여 정림사지 오층석탑이다. 이 탑은 충청남도 부여군 정림사지에 있는 백제 시대 후기 7세기의 석탑이다. 국가유산포털에서는 국보로 소개하고 있으며, 소재지는 충청남도 부여군 정림로 83 정림사지이다.</p>
+          <p>재료는 돌이다. 이름에서도 알 수 있듯이 석탑이며, 층수는 5층이다. 우리역사넷에는 전체 높이가 약 8.33m라고 되어 있다.</p>
+          <p>구조는 아래쪽의 기단부 위에 5층의 탑신부를 쌓은 형태이다. 맨 위에는 원래 상륜부가 있었지만, 현재는 일부만 남아 있어 정확한 원래 모습은 알기 어렵다. 이 탑은 돌로 만들었지만 목조건축의 모습을 석탑으로 표현한 점이 특징이다.</p>
+          <p>현재 위치와 상태는 부여 정림사지에 남아 있는 상태이다. 백제의 마지막 도읍이었던 사비 지역의 대표적인 석탑으로, 백제의 석조 기술과 불교문화를 보여 주는 중요한 문화재이다.</p>
+          <p>교과서 내용과 연결하면, 삼국은 처음에는 목탑을 많이 만들다가 점차 석탑을 만들었고, 백제의 탑으로는 익산 미륵사지 석탑과 부여 정림사지 오층석탑이 대표적이다.</p>
+
+          <h4>3. 삼국 시대 기술 발전을 보여주는 문화재 - 백제 금동대향로</h4>
+          <p>내가 조사할 문화재는 백제 금동대향로이다. 이 문화재는 백제 시대 6∼7세기에 만들어진 금동 향로이다. 국가유산포털에서는 국보로 소개하고 있으며, 현재 충청남도 부여군 국립부여박물관에 있다.</p>
+          <p>형태적 특징은 크게 네 부분으로 나누어 볼 수 있다. 맨 위에는 봉황 장식이 있고, 뚜껑은 여러 산봉우리가 겹쳐진 산 모양이다. 몸체는 연꽃 모양이고, 아래쪽에는 용 모양의 받침이 있다.</p>
+          <p>생김새의 특징은 매우 세밀한 장식이다. 산 모양 뚜껑 사이에는 구멍이 있어 향 연기가 피어오르도록 만들었고, 산봉우리, 악기를 연주하는 사람, 새, 동물, 상상의 동물, 나무, 바위, 폭포, 시냇물 등이 표현되어 있다.</p>
+          <p>용도는 향을 피우는 도구이다. 향로는 향을 피워 부정한 것을 깨끗이 하기 위한 도구로 사용되었다. 백제 금동대향로는 장식품이면서 실제로 향 연기가 나오도록 만든 실용적인 도구이기도 하다.</p>
+          <p>교과서 내용과 연결하면, 삼국 시대에는 금속 공예 기술 등이 발달하였다. 백제 금동대향로는 백제의 금속 공예와 예술적 표현 능력이 높은 수준이었음을 보여 주는 대표적인 문화재이다.</p>
+
+          <div class="lesson-sources">
+            <h5>1차시 - 출처</h5>
+            <ul class="source-list mini">
+              <li>
+                <strong>국가유산청 국가유산포털, 「서산 용현리 마애여래삼존상」</strong>
+                <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400840000" target="_blank" rel="noopener">링크</a>
+              </li>
+              <li>
+                <strong>국사편찬위원회 우리역사넷, 「서산 용현리 마애여래삼존상」</strong>
+                <a href="https://contents.history.go.kr/mobile/kc/view.do?code=kc_age_10&levelId=kc_r100455" target="_blank" rel="noopener">링크</a>
+              </li>
+              <li>
+                <strong>한국민족문화대백과사전, 「서산 용현리 마애여래삼존상」</strong>
+                <a href="https://encykorea.aks.ac.kr/Article/E0027818" target="_blank" rel="noopener">링크</a>
+              </li>
+              <li>
+                <strong>국가유산청 국가유산포털, 「부여 정림사지 오층석탑」</strong>
+                <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400090000" target="_blank" rel="noopener">링크</a>
+              </li>
+              <li>
+                <strong>국사편찬위원회 우리역사넷, 「부여 정림사지 오층석탑」</strong>
+                <a href="https://contents.history.go.kr/mobile/kc/view.do?code=kc_age_10&levelId=kc_r100430" target="_blank" rel="noopener">링크</a>
+              </li>
+              <li>
+                <strong>국가유산청 국가유산포털, 「백제 금동대향로」</strong>
+                <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113402870000" target="_blank" rel="noopener">링크</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="note-panel lesson-page final" id="lesson2">
+        <h3><span class="lesson-kicker">2차시</span><br>최종 정리 답안</h3>
+        <div class="note-body">
+          <h4>1. 삼국 시대 불상 - 백제의 서산 용현리 마애여래삼존상</h4>
+          <p>내가 선택한 불상은 백제의 서산 용현리 마애여래삼존상이다. 이 불상은 충청남도 서산시 운산면 용현리에 있는 백제 시대 후기의 불상으로, 자연 암벽에 새긴 마애불이다.</p>
+          <p>형태적으로는 가운데 여래입상이 있고 양쪽에 보살상이 배치된 삼존 형식이다. 특히 한쪽 보살은 반가사유상 자세를 하고 있어 배치가 독특하다. 크기는 높이 약 2.8m이다.</p>
+          <p>신체 표현의 특징은 얼굴의 밝고 부드러운 미소이다. 입꼬리와 광대 부분이 자연스럽게 표현되어 온화하고 친근한 느낌을 주기 때문에 ‘백제의 미소’라고 불린다. 이러한 점에서 서산 용현리 마애여래삼존상은 백제 불상의 부드럽고 인간적인 아름다움을 보여 주는 문화재라고 할 수 있다.</p>
+
+          <h4>2. 삼국 시대 불탑 - 백제의 부여 정림사지 오층석탑</h4>
+          <p>내가 선택한 불탑은 백제의 부여 정림사지 오층석탑이다. 이 탑은 충청남도 부여군 정림사지에 있는 백제 시대 후기 7세기의 석탑이다.</p>
+          <p>재료는 돌이며, 층수는 5층이다. 전체 높이는 약 8.33m이다. 구조는 아래쪽 기단부 위에 5층의 탑신부를 쌓은 형태이며, 맨 위의 상륜부는 현재 일부만 남아 있다.</p>
+          <p>이 탑은 돌로 만들었지만 목조건축의 특징을 석탑으로 표현한 점이 특징이다. 탑신부가 위로 갈수록 작아져 안정감과 균형미가 느껴진다. 현재는 부여 정림사지에 남아 있으며, 백제의 불교문화와 석조 건축 기술을 보여 주는 대표적인 문화재이다.</p>
+
+          <h4>3. 삼국 시대 기술 발전을 보여주는 문화재 - 백제 금동대향로</h4>
+          <p>내가 선택한 문화재는 백제 금동대향로이다. 이 문화재는 백제 시대 6∼7세기에 만들어진 금동 향로로, 현재 국립부여박물관에 있다.</p>
+          <p>형태적으로는 맨 위의 봉황 장식, 산 모양의 뚜껑, 연꽃 모양의 몸체, 용 모양의 받침으로 이루어져 있다. 뚜껑에는 악기를 연주하는 사람, 동물, 상상의 동물, 산과 물 등이 세밀하게 표현되어 있어 백제인이 생각한 이상 세계를 보여 준다.</p>
+          <p>용도는 향을 피우는 도구이다. 뚜껑 사이에는 향 연기가 피어오르도록 구멍이 뚫려 있어 장식성과 실용성을 함께 갖추고 있다.</p>
+          <p>만든 방법과 기술에서는 백제의 뛰어난 금속 공예 기술을 알 수 있다. 금동으로 만들었고, 여러 부분을 정교하게 연결했으며, 향 연기가 나오도록 구조를 설계하였다. 따라서 백제 금동대향로는 백제의 예술성뿐 아니라 과학적이고 섬세한 제작 기술을 보여 주는 문화재이다.</p>
+
+          <div class="lesson-sources">
+            <h5>2차시 - 출처</h5>
+            <ul class="source-list mini">
+              <li>
+                <strong>국가유산청 국가유산포털, 「서산 용현리 마애여래삼존상」</strong>
+                <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400840000" target="_blank" rel="noopener">링크</a>
+              </li>
+              <li>
+                <strong>국가유산청 국가유산포털, 「부여 정림사지 오층석탑」</strong>
+                <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400090000" target="_blank" rel="noopener">링크</a>
+              </li>
+              <li>
+                <strong>국가유산청 국가유산포털, 「백제 금동대향로」</strong>
+                <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113402870000" target="_blank" rel="noopener">링크</a>
+              </li>
+              <li>
+                <strong>국립부여박물관, 「백제금동대향로」</strong>
+                <a href="https://buyeo.museum.go.kr/rprsPsn/view.do?key=2302150017&rprsPsnCmdtyMngSn=2001010001" target="_blank" rel="noopener">링크</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="note-panel" id="sources">
+        <h3>출처</h3>
+        <div class="note-body">
+          <h4 style="margin-top: 0;">1차시 - 출처</h4>
+          <ul class="source-list" style="margin-bottom: 24px;">
+            <li>
+              <strong>국가유산청 국가유산포털, 「서산 용현리 마애여래삼존상」</strong>
+              <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400840000" target="_blank" rel="noopener">https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400840000</a>
+            </li>
+            <li>
+              <strong>국사편찬위원회 우리역사넷, 「서산 용현리 마애여래삼존상」</strong>
+              <a href="https://contents.history.go.kr/mobile/kc/view.do?code=kc_age_10&levelId=kc_r100455" target="_blank" rel="noopener">https://contents.history.go.kr/mobile/kc/view.do?code=kc_age_10&amp;levelId=kc_r100455</a>
+            </li>
+            <li>
+              <strong>한국민족문화대백과사전, 「서산 용현리 마애여래삼존상」</strong>
+              <a href="https://encykorea.aks.ac.kr/Article/E0027818" target="_blank" rel="noopener">https://encykorea.aks.ac.kr/Article/E0027818</a>
+            </li>
+            <li>
+              <strong>국가유산청 국가유산포털, 「부여 정림사지 오층석탑」</strong>
+              <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400090000" target="_blank" rel="noopener">https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400090000</a>
+            </li>
+            <li>
+              <strong>국사편찬위원회 우리역사넷, 「부여 정림사지 오층석탑」</strong>
+              <a href="https://contents.history.go.kr/mobile/kc/view.do?code=kc_age_10&levelId=kc_r100430" target="_blank" rel="noopener">https://contents.history.go.kr/mobile/kc/view.do?code=kc_age_10&amp;levelId=kc_r100430</a>
+            </li>
+            <li>
+              <strong>국가유산청 국가유산포털, 「백제 금동대향로」</strong>
+              <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113402870000" target="_blank" rel="noopener">https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113402870000</a>
+            </li>
+          </ul>
+
+          <h4>2차시 - 출처</h4>
+          <ul class="source-list" style="margin-bottom: 24px;">
+            <li>
+              <strong>국가유산청 국가유산포털, 「서산 용현리 마애여래삼존상」</strong>
+              <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400840000" target="_blank" rel="noopener">https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400840000</a>
+            </li>
+            <li>
+              <strong>국가유산청 국가유산포털, 「부여 정림사지 오층석탑」</strong>
+              <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400090000" target="_blank" rel="noopener">https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400090000</a>
+            </li>
+            <li>
+              <strong>국가유산청 국가유산포털, 「백제 금동대향로」</strong>
+              <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113402870000" target="_blank" rel="noopener">https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113402870000</a>
+            </li>
+            <li>
+              <strong>국립부여박물관, 「백제금동대향로」</strong>
+              <a href="https://buyeo.museum.go.kr/rprsPsn/view.do?key=2302150017&rprsPsnCmdtyMngSn=2001010001" target="_blank" rel="noopener">https://buyeo.museum.go.kr/rprsPsn/view.do?key=2302150017&amp;rprsPsnCmdtyMngSn=2001010001</a>
+            </li>
+          </ul>
+
+          <h4>전체 출처</h4>
+          <ul class="source-list">
+            <li>
+              <strong>국가유산청 국가유산포털, 「서산 용현리 마애여래삼존상」</strong>
+              <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400840000" target="_blank" rel="noopener">https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400840000</a>
+            </li>
+            <li>
+              <strong>국사편찬위원회 우리역사넷, 「서산 용현리 마애여래삼존상」</strong>
+              <a href="https://contents.history.go.kr/mobile/kc/view.do?code=kc_age_10&levelId=kc_r100455" target="_blank" rel="noopener">https://contents.history.go.kr/mobile/kc/view.do?code=kc_age_10&amp;levelId=kc_r100455</a>
+            </li>
+            <li>
+              <strong>한국민족문화대백과사전, 「서산 용현리 마애여래삼존상」</strong>
+              <a href="https://encykorea.aks.ac.kr/Article/E0027818" target="_blank" rel="noopener">https://encykorea.aks.ac.kr/Article/E0027818</a>
+            </li>
+            <li>
+              <strong>국가유산청 국가유산포털, 「부여 정림사지 오층석탑」</strong>
+              <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400090000" target="_blank" rel="noopener">https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113400090000</a>
+            </li>
+            <li>
+              <strong>국사편찬위원회 우리역사넷, 「부여 정림사지 오층석탑」</strong>
+              <a href="https://contents.history.go.kr/mobile/kc/view.do?code=kc_age_10&levelId=kc_r100430" target="_blank" rel="noopener">https://contents.history.go.kr/mobile/kc/view.do?code=kc_age_10&amp;levelId=kc_r100430</a>
+            </li>
+            <li>
+              <strong>국가유산청 국가유산포털, 「백제 금동대향로」</strong>
+              <a href="https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113402870000" target="_blank" rel="noopener">https://www.heritage.go.kr/heri/cul/culSelectDetail.do?ccbaCpno=1113402870000</a>
+            </li>
+            <li>
+              <strong>국립부여박물관, 「백제금동대향로」</strong>
+              <a href="https://buyeo.museum.go.kr/rprsPsn/view.do?key=2302150017&rprsPsnCmdtyMngSn=2001010001" target="_blank" rel="noopener">https://buyeo.museum.go.kr/rprsPsn/view.do?key=2302150017&amp;rprsPsnCmdtyMngSn=2001010001</a>
+            </li>
+            <li>
+              <strong>국립중앙박물관, 「백제금동대향로」</strong>
+              <a href="https://www.museum.go.kr/MUSEUM/contents/M0501000000.do?pageSize=10&relicRecommendCategory=&relicRecommendId=16891&sc=&schM=view&sv=" target="_blank" rel="noopener">https://www.museum.go.kr/MUSEUM/contents/M0501000000.do?pageSize=10&amp;relicRecommendCategory=&amp;relicRecommendId=16891&amp;sc=&amp;schM=view&amp;sv=</a>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <div class="satisfaction">
+        <div class="satisfaction-title">
+          <span class="icon">✏️</span> 이 페이지에서 제공하는 정보에 만족하십니까?
+        </div>
+        <div class="satisfaction-body">
+          <form onsubmit="event.preventDefault(); alert('소중한 의견이 등록되었습니다.');">
+            <div class="rating">
+              <label><input type="radio" name="sat" value="5" checked> 매우만족</label>
+              <label><input type="radio" name="sat" value="4"> 만족</label>
+              <label><input type="radio" name="sat" value="3"> 보통</label>
+              <label><input type="radio" name="sat" value="2"> 불만족</label>
+              <label><input type="radio" name="sat" value="1"> 매우불만족</label>
+            </div>
+            <div class="opinion-input-wrapper">
+              <input type="text" placeholder="의견을 입력해주세요 (개인정보가 포함되지 않도록 주의해주세요)." class="survey-text">
+              <button type="submit" class="survey-submit">등록</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-title-group">
+          <img class="footer-emblem" src="img/gov_emblem.svg" alt="대한민국 정부 상징">
+          <h3 class="footer-title">국가유산청</h3>
+        </div>
+        <div class="footer-links">
+          <a href="#" class="privacy">개인정보처리방침</a>
+          <a href="#">저작권보호정책</a>
+          <a href="#">웹접근성안내</a>
+          <a href="#">누리집안내지도</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-info">
+          <p>이 사이트는 학교 역사 조사 활동을 위해 제작한 개인 학습용 웹페이지입니다. 국가유산청 국가유산포털의 디자인과 구조를 참고했습니다.</p>
+          <p>(35208) 대전광역시 서구 청사로 189 정부대전청사 1동 국가유산청 | 정부민원안내 콜센터 110</p>
+          <p>Copyright © National Heritage Administration. All Rights Reserved.</p>
+        </div>
+        <div class="footer-right">
+          <div class="kogl-mark">
+            <span>공공누리</span>
+            <strong>제1유형</strong>
+            <span>출처표시</span>
+          </div>
+          <select class="family-select" aria-label="관련 사이트 바로가기" onchange="if(this.value) window.open(this.value);">
+            <option value="">관련 누리집 바로가기</option>
+            <option value="https://www.khs.go.kr">국가유산청</option>
+            <option value="https://www.heritage.go.kr">국가유산포털</option>
+            <option value="https://gogung.go.kr">국립고궁박물관</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
