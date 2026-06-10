@@ -1,362 +1,137 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>가족 갈등 사례와 원인·배경 조사</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영어 관용구 20선</title>
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --card: #ffffff;
+    --text: #1f2430;
+    --sub: #5b6472;
+    --accent: #4f6ef2;
+    --accent-soft: #eef1ff;
+    --border: #e6e8ef;
+    --shadow: 0 2px 8px rgba(31, 36, 48, 0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont,
+                 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 32px 16px 64px;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  header p { color: var(--sub); margin-top: 6px; font-size: 15px; }
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+  .search {
+    width: 100%; padding: 13px 16px; margin-bottom: 24px;
+    border: 1px solid var(--border); border-radius: 12px;
+    font-size: 15px; background: var(--card); box-shadow: var(--shadow);
+    outline: none; transition: border-color .15s;
+  }
+  .search:focus { border-color: var(--accent); }
 
-    :root {
-      --bg: #f8f7f3;
-      --card: #ffffff;
-      --ink: #222222;
-      --sub: #666666;
-      --line: #e6e1d8;
-      --gold: #b99555;
-      --gold-soft: #f4ead7;
-      --green: #6f8f7a;
-      --green-soft: #eef4ee;
-      --shadow: rgba(80, 64, 40, 0.08);
-    }
+  .grid { display: grid; gap: 14px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow);
+    display: flex; gap: 16px; align-items: flex-start;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(31,36,48,.10); }
+  .num {
+    flex: 0 0 38px; height: 38px; border-radius: 10px;
+    background: var(--accent-soft); color: var(--accent);
+    font-weight: 700; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .body { flex: 1; }
+  .en { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; }
+  .ko { color: var(--sub); font-size: 15px; margin-top: 4px; }
 
-    body {
-      margin: 0;
-      font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(185, 149, 85, 0.13), transparent 28%),
-        linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
-      color: var(--ink);
-      min-height: 100vh;
-    }
-
-    .wrap {
-      max-width: 1080px;
-      margin: 0 auto;
-      padding: 44px 20px 70px;
-    }
-
-    .hero {
-      text-align: center;
-      margin-bottom: 34px;
-      padding: 34px 20px;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 8px 16px;
-      border-radius: 999px;
-      background: var(--gold-soft);
-      color: #7b5a24;
-      font-size: 14px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      border: 1px solid #e7d5ae;
-    }
-
-    .hero h1 {
-      margin: 0;
-      font-size: 36px;
-      letter-spacing: -1px;
-      color: #222222;
-    }
-
-    .hero p {
-      margin: 14px 0 0;
-      font-size: 16px;
-      line-height: 1.7;
-      color: var(--sub);
-    }
-
-    .case-section {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 30px;
-      padding: 34px;
-      margin-bottom: 28px;
-      box-shadow: 0 18px 50px var(--shadow);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .case-section::before {
-      content: "";
-      position: absolute;
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      right: -70px;
-      top: -80px;
-      background: rgba(185, 149, 85, 0.10);
-    }
-
-    .case-section.case-two::before {
-      background: rgba(111, 143, 122, 0.12);
-    }
-
-    .case-header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 26px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .case-num {
-      width: 54px;
-      height: 54px;
-      border-radius: 18px;
-      background: linear-gradient(135deg, #c8a96a, var(--gold));
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      font-weight: 900;
-      flex-shrink: 0;
-      box-shadow: 0 10px 24px rgba(185, 149, 85, 0.25);
-    }
-
-    .case-two .case-num {
-      background: linear-gradient(135deg, #8fae91, var(--green));
-      box-shadow: 0 10px 24px rgba(111, 143, 122, 0.22);
-    }
-
-    .case-title-wrap span {
-      display: block;
-      font-size: 14px;
-      color: var(--gold);
-      font-weight: 800;
-      margin-bottom: 5px;
-    }
-
-    .case-two .case-title-wrap span {
-      color: var(--green);
-    }
-
-    .case-title-wrap h2 {
-      margin: 0;
-      font-size: 25px;
-      letter-spacing: -0.6px;
-      color: #222222;
-      word-break: keep-all;
-    }
-
-    .content-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 18px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .info-box {
-      padding: 22px;
-      border-radius: 22px;
-      background: #fbfaf7;
-      border: 1px solid #ece5d9;
-    }
-
-    .case-two .info-box {
-      background: #fafcf9;
-      border-color: #dfe9df;
-    }
-
-    .info-box h3 {
-      margin: 0 0 10px;
-      font-size: 17px;
-      color: #7b5a24;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .case-two .info-box h3 {
-      color: #52735a;
-    }
-
-    .info-box h3::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--gold);
-      display: inline-block;
-    }
-
-    .case-two .info-box h3::before {
-      background: var(--green);
-    }
-
-    .info-box p {
-      margin: 0;
-      font-size: 16px;
-      line-height: 1.9;
-      color: #333333;
-      word-break: keep-all;
-    }
-
-    .difference-box {
-      background: var(--gold-soft);
-      border: 1px solid #e5d0a7;
-    }
-
-    .case-two .difference-box {
-      background: var(--green-soft);
-      border-color: #d4e2d4;
-    }
-
-    .source {
-      margin-top: 30px;
-      padding: 22px;
-      background: #ffffff;
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      box-shadow: 0 12px 34px rgba(80, 64, 40, 0.06);
-      color: #5f5547;
-      font-size: 15px;
-      line-height: 1.8;
-      word-break: keep-all;
-    }
-
-    .footer {
-      text-align: center;
-      margin-top: 28px;
-      font-size: 13px;
-      color: #999999;
-    }
-
-    @media (max-width: 760px) {
-      .wrap {
-        padding: 30px 15px 50px;
-      }
-
-      .hero h1 {
-        font-size: 29px;
-      }
-
-      .case-section {
-        padding: 24px;
-        border-radius: 24px;
-      }
-
-      .case-header {
-        align-items: flex-start;
-      }
-
-      .case-title-wrap h2 {
-        font-size: 21px;
-      }
-
-      .info-box {
-        padding: 18px;
-      }
-    }
-  </style>
+  footer { text-align: center; color: var(--sub); font-size: 13px; margin-top: 32px; }
+  .empty { text-align:center; color: var(--sub); padding: 40px 0; display:none; }
+</style>
 </head>
-
 <body>
-  <div class="wrap">
-    <header class="hero">
-      <div class="badge">기술·가정 수행평가 참고 자료</div>
-      <h1>가족 갈등 사례와 원인·배경 조사</h1>
-      <p>
-        사례 1과 사례 2를 구분하여 갈등 상황, 원인·배경, 차이 분석을 정리한 자료입니다.
-      </p>
-    </header>
+<div class="wrap">
+  <header>
+    <h1>🗣️ 영어 관용구 20선</h1>
+    <p>자주 쓰이는 영어 idiom과 한국어 뜻 정리</p>
+  </header>
 
-    <section class="case-section">
-      <div class="case-header">
-        <div class="case-num">1</div>
-        <div class="case-title-wrap">
-          <span>사례 1</span>
-          <h2>스마트폰 사용 시간으로 인한 부모와 자녀의 갈등</h2>
-        </div>
+  <input id="search" class="search" type="text" placeholder="🔍 영어 또는 한국어로 검색…">
+
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty">검색 결과가 없어요 🥲</div>
+
+  <footer>총 20개 · 검색창에 단어를 입력하면 바로 필터링돼요</footer>
+</div>
+
+<script>
+const idioms = [
+  ["Hold your horses", "흥분을 가라앉히다, 잠깐 기다리다"],
+  ["Let the cat out of the bag", "무심코 비밀을 누설하다"],
+  ["Cat got your tongue?", "왜 아무 말도 못 하니?, 왜 꿀 먹은 벙어리처럼 있니?"],
+  ["Bark up the wrong tree", "헛다리짚다, 엉뚱한 사람이나 대상을 의심하다"],
+  ["Kill two birds with one stone", "일석이조, 한 가지 일로 두 가지 이익을 얻다"],
+  ["The elephant in the room", "모두가 알고 있지만 말하기 꺼리는 큰 문제"],
+  ["Straight from the horse’s mouth", "확실한 소식통이나 당사자에게 직접 들은"],
+  ["Raining cats and dogs", "비가 억수같이 쏟아지다"],
+  ["Hit the nail on the head", "정곡을 찌르다, 정확히 맞히다"],
+  ["Pull someone’s leg", "누군가를 놀리다, 장난치다"],
+  ["Get cold feet", "갑자기 겁을 먹다, 주저하다"],
+  ["Butterflies in one’s stomach", "긴장해서 가슴이 두근거리거나 속이 조마조마하다"],
+  ["Turn a blind eye", "못 본 체하다, 일부러 눈감아 주다"],
+  ["Bite one’s tongue", "하고 싶은 말을 꾹 참다"],
+  ["Break the ice", "서먹한 분위기를 깨다"],
+  ["Lose one’s touch", "실력이 녹슬다, 예전만 못하다"],
+  ["Cry over spilled milk", "이미 지나간 일을 후회하다"],
+  ["Burn bridges", "관계를 완전히 끊어 버리다, 배수진을 치다"],
+  ["Skeleton in the closet", "감추고 싶은 집안의 비밀이나 약점"],
+  ["Go down in flames", "완전히 실패하다, 처참하게 무너지다"],
+];
+
+const grid = document.getElementById('grid');
+const empty = document.getElementById('empty');
+const search = document.getElementById('search');
+
+function render(list) {
+  grid.innerHTML = list.map(([en, ko], i) => `
+    <div class="card">
+      <div class="num">${i + 1}</div>
+      <div class="body">
+        <div class="en">${en}</div>
+        <div class="ko">${ko}</div>
       </div>
+    </div>`).join('');
+  empty.style.display = list.length ? 'none' : 'block';
+}
 
-      <div class="content-grid">
-        <div class="info-box">
-          <h3>갈등 상황</h3>
-          <p>
-            자녀는 하교 후 학원까지 다녀오면 피곤해서 스마트폰으로 친구와 연락하고 영상을 보며 쉬고 싶어 한다.
-            부모는 오래 사용하면 공부 시간이 줄고 밤늦게 자 생활 습관이 흐트러질까 걱정한다.
-            부모가 사용을 줄이라고 하자 자녀는 무조건 간섭한다고 느끼고, 이런 말다툼이 반복되며 가족 분위기가 불편해진다.
-          </p>
-        </div>
-
-        <div class="info-box">
-          <h3>원인·배경</h3>
-          <p>
-            청소년은 스마트폰을 친구와 소통하고 휴식하는 도구로 사용하지만, 부모는 과사용이 학업, 수면, 건강에 영향을 준다고 본다.
-            특히 부모는 자녀가 스스로 사용 시간을 조절하지 못할까 봐 걱정하고, 자녀는 부모가 자신의 생활을 지나치게 통제한다고 느낀다.
-            서로 입장을 듣기보다 “그만해”, “왜 나만 못 하게 해”처럼 감정적으로 말해 갈등이 커진다.
-          </p>
-        </div>
-
-        <div class="info-box difference-box">
-          <h3>차이 분석 1 차이 이름</h3>
-          <p>
-            역할 기대의 차이 - 부모는 자녀가 학생으로서 공부와 규칙적인 생활을 우선하길 기대하지만,
-            자녀는 부모가 자신의 휴식 시간과 친구 관계도 이해해 주기를 기대한다.
-            서로가 상대에게 바라는 역할이 달라 스마트폰 사용 문제로 갈등이 생긴다.
-          </p>
-        </div>
+search.addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  const filtered = idioms
+    .map((item, idx) => [...item, idx])
+    .filter(([en, ko]) => en.toLowerCase().includes(q) || ko.includes(q));
+  // keep original numbering
+  grid.innerHTML = filtered.map(([en, ko, idx]) => `
+    <div class="card">
+      <div class="num">${idx + 1}</div>
+      <div class="body">
+        <div class="en">${en}</div>
+        <div class="ko">${ko}</div>
       </div>
-    </section>
+    </div>`).join('');
+  empty.style.display = filtered.length ? 'none' : 'block';
+});
 
-    <section class="case-section case-two">
-      <div class="case-header">
-        <div class="case-num">2</div>
-        <div class="case-title-wrap">
-          <span>사례 2</span>
-          <h2>진로 선택으로 인한 부모와 자녀의 갈등</h2>
-        </div>
-      </div>
-
-      <div class="content-grid">
-        <div class="info-box">
-          <h3>갈등 상황</h3>
-          <p>
-            자녀는 평소 그림과 영상 편집을 좋아해 디자인·콘텐츠 분야로 진로를 정하고 싶어 한다.
-            부모는 그 분야가 불안정하고 수입이 일정하지 않을까 걱정해 안정적인 직업을 갖길 바란다.
-            부모가 그런 일은 취미로 해도 된다고 반대하자 자녀는 자신의 꿈을 인정받지 못했다고 느끼고, 진로 이야기를 피하게 된다.
-          </p>
-        </div>
-
-        <div class="info-box">
-          <h3>원인·배경</h3>
-          <p>
-            부모는 경제적 안정과 현실성을 중요하게 생각하고, 자녀는 흥미와 적성을 중요하게 여긴다.
-            부모는 자녀가 앞으로 안정적인 생활을 하기를 바라는 마음에서 조언하지만, 자녀는 부모가 자신의 꿈을 인정하지 않는다고 느낀다.
-            세대에 따라 좋은 직업을 판단하는 기준이 다르고, 서로의 생각을 충분히 설명하지 못해 갈등이 생긴다.
-          </p>
-        </div>
-
-        <div class="info-box difference-box">
-          <h3>차이 분석 1 차이 이름</h3>
-          <p>
-            인식의 차이 - 부모는 진로를 안정적인 생활을 위한 선택으로 보고,
-            자녀는 자신의 꿈과 개성을 실현하는 중요한 선택으로 본다.
-            같은 진로 문제를 두고 부모와 자녀가 다르게 생각하기 때문에 갈등이 생긴다.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <div class="source">
-      출처: 경기일보, 「[청소년 Q&A] 스마트폰 사용으로 인한 자녀와의 갈등, 갈수록 악화됩니다」 /
-      「[청소년 Q&A] 아이와 진로갈등, 어떻게 소통해야 할까요」 참고
-    </div>
-
-    <div class="footer">
-      Family Conflict Case Study · Technology & Home Economics
-    </div>
-  </div>
+render(idioms);
+</script>
 </body>
 </html>
